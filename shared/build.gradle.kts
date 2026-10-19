@@ -57,6 +57,9 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
+        val androidHostTest by getting {
+            dependsOn(commonTest.get())
+        }
     }
 }
 
