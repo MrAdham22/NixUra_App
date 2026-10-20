@@ -1,65 +1,37 @@
-# NixUra — Development Status
-
-**Last updated:** 2026-10-19
-
-## Current phase
-
-**Phase 3** — Design system + representative screen (**awaiting your visual review**).  
-**Phase 4** — Not authorized.
-
-## Last completed milestone
-
-- Project memory: `AGENTS.md`, `docs/PROJECT_CONTEXT.md`, `docs/PHASE2_ARCHITECTURE.md`, four Cursor skills.
-- Phase 3 implementation: `NixUraTheme`, palette tokens, `StreakColorMapper`, `HabitCard`, `DesignPreviewScreen`, progression unit tests.
-
-## Current task
-
-Your review of Phase 3 visuals and provisional streak color thresholds.
-
-## Files changed (Phase 3 + docs session)
-
-| Area | Files |
-|------|--------|
-| Docs | `AGENTS.md`, `docs/*.md`, `README.md` |
-| Skills | `.cursor/skills/nixura-*/SKILL.md` |
-| Theme | `presentation/theme/NixUraPalette.kt`, `NixUraTheme.kt` |
-| Appearance | `StreakColorProgressionConfig.kt`, `StreakProgression.kt`, `StreakColorMapper.kt` |
-| UI | `HabitCard.kt`, `ProgressStageIndicator.kt`, `DesignPreviewScreen.kt`, `App.kt` |
-| Tests | `commonTest/.../StreakProgressionTest.kt` |
-| Gradle | `shared/build.gradle.kts` — `androidHostTest` depends on `commonTest` (runs shared unit tests) |
-
-## Verification results
-
-| Check | Result | Date |
-|-------|--------|------|
-| `gradlew :androidApp:assembleDebug` | **PASS** | 2026-10-19 |
-| `gradlew :shared:testAndroidHostTest` | **PASS** | 2026-10-19 |
-| `gradlew :shared:allTests` | **PASS** (iOS simulator tests skipped on Windows) | 2026-10-19 |
-
-## Blockers / risks
-
-- Room KMP + KSP compatibility **not verified** (required before Phase 4 persistence).
-- iOS not verified on Windows host.
-
-## Awaiting approval
-
-- Phase 3 visual direction and habit-card progression feel.
-- Provisional color thresholds (1d, 3d, 7d, 14d, 30d) after design review.
-
-## Next recommended task
-
-After Phase 3 approval: **Phase 4a** — Room/KSP compatibility gate only (no feature work until gate passes).
-
-## Git
-
-| Item | Value |
-|------|--------|
-| Branch | `master` |
-| Remote | `origin` → `https://github.com/MrAdham22/ReclaimApp.git` |
-| Previous commit | `2f2ba4b` — Test |
-| Session commit | `d14b86f` — feat: add NixUra design preview and project memory |
-| Pushed | **Failed** — GitHub HTTPS auth (2026-10-19). Commit is local only on `master`. |
-
-## Uncommitted changes
-
-None after session commit (unless DEVELOPMENT_STATUS push follow-up).
+# NixUra — Development Status
+
+**Last updated:** 2026-10-20 (offline tracking vertical slice — **pending commit**)
+
+## Current phase
+
+**Phase 4 (initial slice)** — Room KMP persistence, domain tracking logic, MVVM habits screen on Android.  
+AI, accounts, backend, sync — **not in scope**.
+
+## Implemented (this slice)
+
+- **Persistence:** Room 2.7.2 + KSP 2.3.12, `habits` / `habit_events`, transactional create + initial `TRACKING_START`.
+- **Domain:** event-sourced `TrackingStateCalculator`, use cases (create habit, observe tracking, record relapse).
+- **Presentation:** `HabitsScreen` + `HabitsViewModel` (live 1s tick), reuses `HabitCard` / streak colors / `formatElapsed`.
+- **DI:** Koin (Android `MainActivity`, iOS `MainViewController`).
+- **Phase 3 polish retained:** timer formats, milestone stage indicator, card contrast fixes.
+
+## Verification (2026-10-20)
+
+| Command | Result |
+|---------|--------|
+| `:shared:testAndroidHostTest --rerun-tasks` | **PASS** — 30 tests, 0 failures |
+| `:shared:compileAndroidMain` | **PASS** |
+| `:androidApp:assembleDebug` | **PASS** |
+
+## Not yet implemented
+
+- Multi-habit UX polish, event edit/delete, archive, onboarding.
+- Room schema export file (Gradle warning; `exportSchema = true` but schema dir not emitted to repo yet).
+- iOS runtime verification on Windows.
+
+## Git
+
+- Branch: `master`
+- Commit/push: see latest agent report after authorized commit.
+
+**Phase 4 full roadmap** (notifications, all MVP use cases) — incremental; not complete in one slice.

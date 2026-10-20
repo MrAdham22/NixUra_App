@@ -12,14 +12,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.reclaimapp.presentation.theme.NixUraPalette
 
 @Composable
 fun ProgressStageIndicator(
     stageCount: Int,
     activeStageIndex: Int,
     modifier: Modifier = Modifier,
+    labelColor: Color,
+    activeStageColor: Color,
+    inactiveStageColor: Color,
 ) {
     Row(
         modifier = modifier,
@@ -32,15 +35,13 @@ fun ProgressStageIndicator(
                 modifier = Modifier
                     .size(if (index == activeStageIndex) 10.dp else 8.dp)
                     .clip(CircleShape)
-                    .background(
-                        if (active) NixUraPalette.Orange else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                    ),
+                    .background(if (active) activeStageColor else inactiveStageColor),
             )
         }
         Text(
             text = "Stage ${activeStageIndex + 1}/$stageCount",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = labelColor,
         )
     }
 }

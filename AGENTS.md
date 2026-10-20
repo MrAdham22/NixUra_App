@@ -18,7 +18,7 @@ NixUra is an offline-first habit-quitting app (Kotlin Multiplatform, Compose Mul
 - Single module `:shared` with **domain**, **data**, **presentation** packages.
 - **Domain:** pure Kotlin — models, use cases, calculators, repository **interfaces**. No Room, Compose, or network.
 - **Data:** Room (when implemented), mappers, repository **implementations**, transactions.
-- **Presentation:** Compose, ViewModels, theme, `StreakColorMapper`. No business rules in Composables.
+- **Presentation:** **MVVM** — Compose UI, ViewModels, UI state/events; theme, `StreakColorMapper`. No business rules in Composables. (MVVM = Model-View-ViewModel; not a separate “MVP” UI pattern.)
 - **DI:** Koin.
 - **MVP:** offline tracking only — no accounts, backend, AI, or sync until authorized.
 

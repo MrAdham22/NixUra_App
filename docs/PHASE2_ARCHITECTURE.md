@@ -15,7 +15,7 @@ Single `:shared` module:
 
 - **domain** — entities, validators, `TrackingStateCalculator`, use cases, repository interfaces, `Clock`.
 - **data** — Room entities/DAOs (Phase 4+), mappers, `@Transaction` writes, preference stores.
-- **presentation** — `NixUraTheme`, components, ViewModels, `StreakColorMapper`, screens.
+- **presentation** — **MVVM:** Compose views, ViewModels (UI state/events), `NixUraTheme`, components, `StreakColorMapper`, screens. ViewModels call domain use cases only.
 
 Dependency direction: presentation → domain ← data.
 
@@ -42,7 +42,7 @@ Persisted `activePeriodStart` + `Clock`; UI ticker in ViewModel; **no** DB write
 
 ## Habit-card colors (presentation)
 
-Hybrid: six palette stops with interpolation within bands. Configurable thresholds (provisional: 24h, 3d, 7d, 14d, 30d). Reset to dark stop on relapse (active elapsed only).
+Hybrid: six palette stops with interpolation within bands. Configurable thresholds (provisional: **1d, 3d, 7d, 14d, 30d**). Reset to dark stop on relapse (active elapsed only). **Thresholds** (time bounds) and **stage-indicator milestones** are separate concepts; stage semantics may be refined after Phase 3 review.
 
 ## AI (deferred)
 

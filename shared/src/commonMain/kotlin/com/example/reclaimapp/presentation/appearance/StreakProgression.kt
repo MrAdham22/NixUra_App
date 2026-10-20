@@ -47,13 +47,21 @@ object StreakProgression {
         )
     }
 
-    /** Active stage index (0..stopCount-1) for non-color indicators. */
+    /**
+     * Active stage index (0..stopCount-1) for non-color indicators.
+     * Reflects milestones actually reached (upper bounds), not interpolation midpoint.
+     */
     fun activeStageIndex(elapsed: Duration, config: StreakColorProgressionConfig): Int {
-        val seg = segmentFor(elapsed, config)
-        return if (seg.fromStopIndex == seg.toStopIndex) {
-            seg.fromStopIndex
-        } else {
-            seg.fromStopIndex + if (seg.fraction >= 0.5f) 1 else 0
-        }.coerceIn(0, config.stopCount - 1)
+        require(elapsed >= Duration.ZERO) { "Elapsed must be non-negative" }
+        val bounds = config.segmentUpperBounds
+        var index = 0
+        for (i in bounds.indices) {
+            if (elapsed >= bounds[i]) {
+                index = i
+            } else {
+                break
+            }
+        }
+        return index.coerceIn(0, config.stopCount - 1)
     }
 }

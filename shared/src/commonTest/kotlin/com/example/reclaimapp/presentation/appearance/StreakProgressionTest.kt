@@ -48,4 +48,29 @@ class StreakProgressionTest {
         assertEquals(2, seg.toStopIndex)
         assertEquals(true, seg.fraction > 0.4f && seg.fraction < 0.6f)
     }
+
+    @Test
+    fun stageIndexAtTwelveHoursStaysOnFirstMilestone() {
+        assertEquals(0, StreakProgression.activeStageIndex(12.hours, config))
+    }
+
+    @Test
+    fun stageIndexAtOneDayBoundary() {
+        assertEquals(1, StreakProgression.activeStageIndex(1.days, config))
+    }
+
+    @Test
+    fun stageIndexMidSegmentBeforeNextMilestone() {
+        assertEquals(1, StreakProgression.activeStageIndex(2.days, config))
+    }
+
+    @Test
+    fun stageIndexAtThreeDayMilestone() {
+        assertEquals(2, StreakProgression.activeStageIndex(3.days, config))
+    }
+
+    @Test
+    fun stageIndexAtThirtyDays() {
+        assertEquals(config.stopCount - 1, StreakProgression.activeStageIndex(30.days, config))
+    }
 }

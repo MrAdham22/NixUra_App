@@ -39,5 +39,5 @@ fun Color.prefersLightContentOnCard(): Boolean {
     val g = green
     val b = blue
     val luminance = 0.2126f * r + 0.7152f * g + 0.0722f * b
-    return luminance < 0.45f
+    return luminance < 0.55f
 }

@@ -51,7 +51,13 @@ Premium, warm, hierarchical; not minimal-empty; not cluttered. Semantic tokens f
 
 ## 7. Technical architecture
 
-KMP + Compose Multiplatform + Koin + Room KMP (Phase 4, after compatibility gate). Clean Architecture in `:shared`.
+KMP + Compose Multiplatform + Koin + Room KMP (Phase 4, after compatibility gate). **Clean Architecture** in `:shared`, with **MVVM** in the presentation layer:
+
+- **View:** Compose screens/components render state and forward user events.
+- **ViewModel:** Exposes observable UI state, invokes domain use cases (no Room/DAO access).
+- **Model (domain):** Use cases, entities, and rules — not Android-specific types in shared domain code.
+
+Not every screen must have a ViewModel immediately (e.g. static previews); production flows should use ViewModels as features land.
 
 ## 8. Package responsibilities
 
@@ -78,6 +84,8 @@ Room v1: `habits`, `habit_events`. Schema export; explicit migrations; no destru
 ## 12. Live timer
 
 ViewModel combines event-driven Flow + periodic tick; domain/calculator uses `Clock` and persisted anchors.
+
+**Display format** (Phase 3 preview via `formatElapsed` in presentation): under 1 hour `MM:SS`; from 1 hour until 1 day `HH:MM:SS`; from 1 day `Dd HH:MM:SS` (leading zeros on time fields).
 
 ## 13. AI (future)
 
