@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.reclaimapp.domain.calculator.TrackingStateCalculator
 import com.example.reclaimapp.domain.clock.Clock
+import com.example.reclaimapp.domain.model.HabitEventType
 import com.example.reclaimapp.domain.model.HabitTracking
+import com.example.reclaimapp.domain.usecase.ArchiveHabitUseCase
 import com.example.reclaimapp.domain.usecase.CreateHabitAndStartTrackingUseCase
 import com.example.reclaimapp.domain.usecase.ObserveActiveHabitTrackingUseCase
 import com.example.reclaimapp.domain.usecase.RecordRelapseUseCase
+import com.example.reclaimapp.domain.usecase.UpdateHabitUseCase
 import com.example.reclaimapp.presentation.appearance.StreakColorMapper
 import com.example.reclaimapp.presentation.appearance.StreakColorProgressionConfig
 import com.example.reclaimapp.presentation.util.formatElapsed
@@ -26,6 +29,8 @@ class HabitsViewModel(
     private val createHabitAndStartTracking: CreateHabitAndStartTrackingUseCase,
     private val recordRelapse: RecordRelapseUseCase,
     private val clock: Clock,
+    private val updateHabit: UpdateHabitUseCase,
+    private val archiveHabit: ArchiveHabitUseCase,
 ) : ViewModel() {
 
     private val mapper = StreakColorMapper()
@@ -98,6 +103,44 @@ class HabitsViewModel(
         }
     }
 
+    /** Creates a habit from the full-screen form. [onSuccess] runs after it is saved (e.g. navigate back). */
+    fun onCreateHabit(name: String, colorArgb: Long?, startAtEpochMillis: Long, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true, errorMessage = null) }
+            val result = createHabitAndStartTracking(name, startAtEpochMillis, colorArgb)
+            _uiState.update { state ->
+                result.fold(
+                    onSuccess = { state.copy(isSaving = false) },
+                    onFailure = { error -> state.copy(isSaving = false, errorMessage = error.message ?: "Could not create habit") },
+                )
+            }
+            if (result.isSuccess) onSuccess()
+        }
+    }
+
+    fun onUpdateHabit(habitId: Long, name: String, colorArgb: Long?, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true, errorMessage = null) }
+            val result = updateHabit(habitId, name, colorArgb)
+            _uiState.update { state ->
+                result.fold(
+                    onSuccess = { state.copy(isSaving = false) },
+                    onFailure = { error -> state.copy(isSaving = false, errorMessage = error.message ?: "Could not save changes") },
+                )
+            }
+            if (result.isSuccess) onSuccess()
+        }
+    }
+
+    fun onArchiveHabit(habitId: Long, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            archiveHabit(habitId).fold(
+                onSuccess = { onSuccess() },
+                onFailure = { error -> _uiState.update { it.copy(errorMessage = error.message ?: "Could not remove habit") } },
+            )
+        }
+    }
+
     fun onRecordRelapse(habitId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(errorMessage = null) }
@@ -122,6 +165,14 @@ class HabitsViewModel(
             longestStreakLabel = formatElapsed(tracking.longestStreakMillis.milliseconds),
             activeStageIndex = mapper.stageIndexFor(elapsed),
             stageCount = stageCount,
+            colorArgb = habit.colorArgb,
+            longestStreak = tracking.longestStreakMillis.milliseconds,
+            relapseCount = events.count { it.type == HabitEventType.RELAPSE },
+            activePeriodStartEpochMillis = tracking.activePeriodStartEpochMillis,
+            trackingStartEpochMillis = events.firstOrNull { it.type == HabitEventType.TRACKING_START }?.occurredAtEpochMillis,
+            relapseTimestamps = events.filter { it.type == HabitEventType.RELAPSE }
+                .map { it.occurredAtEpochMillis }
+                .sortedDescending(),
         )
     }
 }

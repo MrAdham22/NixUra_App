@@ -18,10 +18,18 @@ Does **not** grant product approval — follow user authorization and [DEVELOPME
 6. Respect domain / data / presentation boundaries; no Room in domain; no business logic in Composables.
 7. Avoid speculative abstractions and unnecessary dependencies.
 8. Implement incrementally; add tests for business rules and presentation mappers.
-9. After verification, update [DEVELOPMENT_STATUS.md](../../../docs/DEVELOPMENT_STATUS.md) and README if needed.
+9. After every change (verified or not), update README / DEVELOPMENT_STATUS / PROJECT_CONTEXT as required by the auto-update rule below — automatically.
 10. Use [nixura-verification-and-release](nixura-verification-and-release/SKILL.md) for commit/push when appropriate.
 
-## Phase guards
+## Scope guards
 
-- **Phase 3:** theme and UI only — no Room Gradle changes.
-- **Phase 4+:** Room only after compatibility gate passes and is authorized.
+- Offline only: no accounts, backend, sync or online AI without explicit owner approval.
+- New UI text goes in `presentation/strings/Strings.kt`.
+- Room entity changes need a new migration and a schema check; never use destructive fallback.
+- The merged UI/features build and run on Android (owner-confirmed 2026-10-23). **iOS is in scope and unrestricted**: you may implement and fix iOS code (`iosMain`, `iosApp/`, iOS notifications via `UNUserNotificationCenter`) like any other code, keeping Android/iOS parity via `expect`/`actual` or Koin platform modules. iOS only compiles on macOS; if you cannot run it, mark iOS work **unverified** and give the owner the Mac commands (see AGENTS.md).
+- Insets: use `WindowInsets.safeDrawing`, never `safeContentPadding()` (it adds gesture-inset gaps).
+- The coach is offline behind `CoachResponder`; online AI follows `docs/AI_COACH_UPGRADE.md`.
+
+## Documentation auto-update (mandatory, every time)
+
+After **any** modification, decide whether `README.md` or other docs are now stale and update them **automatically, in the same change, without waiting to be asked**. The full table of "changed X → update Y" is in [AGENTS.md](../../../AGENTS.md) ("Documentation auto-update rule"). At minimum: README for features/architecture/stack/build/test changes; `docs/DEVELOPMENT_STATUS.md` for fixes, bugs found, verification results, risks and the "what is left" list; `docs/PROJECT_CONTEXT.md` for scope/data-model changes. Say which docs you updated in your final reply.

@@ -35,12 +35,13 @@ class HabitTrackingRepositoryImpl(
         }
     }
 
-    override suspend fun createHabitAndStartTracking(name: String, startAtEpochMillis: Long): Long {
+    override suspend fun createHabitAndStartTracking(name: String, startAtEpochMillis: Long, colorArgb: Long?): Long {
         val createdAt = clock.nowEpochMillis()
         return habitWriteDao.createHabitWithStartEvent(
             habit = HabitEntity(
                 name = name,
                 createdAtEpochMillis = createdAt,
+                colorArgb = colorArgb,
             ),
             startEvent = HabitEventEntity(
                 habitId = 0,
@@ -67,5 +68,15 @@ class HabitTrackingRepositoryImpl(
                 occurredAtEpochMillis = atEpochMillis,
             ),
         )
+    }
+
+    override suspend fun updateHabit(habitId: Long, name: String, colorArgb: Long?) {
+        habitDao.getById(habitId) ?: throw IllegalArgumentException("Habit not found")
+        habitDao.updateDetails(habitId, name, colorArgb)
+    }
+
+    override suspend fun archiveHabit(habitId: Long, atEpochMillis: Long) {
+        habitDao.getById(habitId) ?: throw IllegalArgumentException("Habit not found")
+        habitDao.archive(habitId, atEpochMillis)
     }
 }

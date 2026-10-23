@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark by default so there is no light flash before Compose draws. In-app theme is chosen in Settings. -->
+    <style name="Theme.NixUra" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/nixura_navy</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

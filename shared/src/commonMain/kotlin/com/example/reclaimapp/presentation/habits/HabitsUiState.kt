@@ -9,6 +9,15 @@ data class HabitCardUiModel(
     val longestStreakLabel: String,
     val activeStageIndex: Int,
     val stageCount: Int,
+    /** User-chosen base color (ARGB) or `null` for the default NixUra progression. */
+    val colorArgb: Long? = null,
+    val longestStreak: Duration = Duration.ZERO,
+    val relapseCount: Int = 0,
+    /** When the current clean streak began (null if no tracking start). */
+    val activePeriodStartEpochMillis: Long? = null,
+    val trackingStartEpochMillis: Long? = null,
+    /** Timestamps of recorded relapses, newest first. */
+    val relapseTimestamps: List<Long> = emptyList(),
 )
 
 data class HabitsUiState(

@@ -9,5 +9,6 @@ fun getRoomDatabase(builder: RoomDatabase.Builder<NixUraDatabase>): NixUraDataba
     return builder
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
+        .addMigrations(MIGRATION_1_2)
         .build()
 }

@@ -7,7 +7,7 @@
 ## Product
 
 - **NixUra** — quit/unwanted habit change; event-sourced tracking; relapse preserves history.
-- Android-first KMP; Compose Multiplatform; offline MVP; no backend/accounts in tracking MVP.
+- KMP targeting Android and iOS (Android built first); Compose Multiplatform; offline MVP; no backend/accounts in tracking MVP.
 
 ## Module structure
 
@@ -59,3 +59,16 @@ Domain streak/edit/multi-habit/timezone; presentation color mapper; Room DAO/mig
 ## Git / docs process
 
 See [AGENTS.md](../AGENTS.md) and [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md).
+
+---
+
+## Addendum — October 2026
+
+The Phase 2 architecture still holds (domain / data / presentation, MVVM, Koin, Room KMP). Changes since:
+
+- Room schema is now **v2** with extra tables (good habits, logs, events, coach messages, preferences) and a hand-written migration.
+- New domain areas: `time`, `coach`, `notification`; new ports: `NotificationScheduler`, `NotificationPermissionGateway`, `CoachResponder`, `TimeZoneOffsetProvider`.
+- Navigation is a small custom `Navigator` (no navigation library).
+- `HabitsScreen` was replaced by `BadHabitsScreen`; `AppRoot` (presentation/screen/AppShell.kt) is the root composable.
+- "No AI/notifications in MVP" is superseded: an offline coach and Android local notifications exist. Online AI remains out of scope.
+- iOS is an approved target: iOS-specific code lives in `shared/src/iosMain` and `iosApp/`; notifications get an iOS implementation of the same ports.

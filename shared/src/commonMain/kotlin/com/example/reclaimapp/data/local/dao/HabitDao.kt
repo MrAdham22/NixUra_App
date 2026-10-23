@@ -16,4 +16,10 @@ interface HabitDao {
 
     @Query("SELECT * FROM habits WHERE id = :habitId LIMIT 1")
     suspend fun getById(habitId: Long): HabitEntity?
+
+    @Query("UPDATE habits SET name = :name, color_argb = :colorArgb WHERE id = :habitId")
+    suspend fun updateDetails(habitId: Long, name: String, colorArgb: Long?)
+
+    @Query("UPDATE habits SET archived_at = :archivedAt WHERE id = :habitId")
+    suspend fun archive(habitId: Long, archivedAt: Long)
 }

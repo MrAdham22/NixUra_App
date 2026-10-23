@@ -10,4 +10,5 @@ data class HabitEntity(
     val name: String,
     @ColumnInfo(name = "created_at") val createdAtEpochMillis: Long,
     @ColumnInfo(name = "archived_at") val archivedAtEpochMillis: Long? = null,
+    @ColumnInfo(name = "color_argb") val colorArgb: Long? = null,
 )

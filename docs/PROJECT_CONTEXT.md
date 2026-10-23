@@ -20,7 +20,7 @@ Users need persistent, honest progress (not a fragile timer), relapse support wi
 
 ## 4. Confirmed product decisions
 
-- Android-first; iOS in repo for later.
+- Android and iOS are both target platforms. Android was built first and runs; iOS is approved work (bring-up + notifications), not yet built or run.
 - Offline-first; no accounts in tracking MVP.
 - Event history = source of truth.
 - Relapse resets **active** period only; history + longest streak remain.
@@ -102,3 +102,28 @@ Unit tests for calculator and color progression; Room tests after Phase 4 gate. 
 - `unarchiveHabit` in MVP?
 - License for README.
 - DB file naming at Room implementation.
+
+---
+
+## Update — October 2026 (supersedes the MVP scope above where they conflict)
+
+The owner approved expanding the app. Current scope:
+
+- **Quit habits** (original core) with user-chosen card colors (`ShadeRamp`), analysis screen, recovery timeline from an offline knowledge base, backdated start, edit/archive.
+- **Good habits:** daily target counters (`good_habits`, `good_habit_logs` keyed by local day index), streaks, 7/30-day completion, calendar with green done squares, past-day edits.
+- **Events:** countdown/count-up, categories, multiple reminder lead times (`events.reminders` = comma-separated millis), Android local notifications.
+- **Coach:** offline, rule-based (`CoachEngine`, `HabitKnowledgeBase`) behind `CoachResponder`; chat persisted in `coach_messages`; crisis messages answered locally with a support message; alcohol/gambling carry safety notes. No network.
+- **Profile & settings:** name/email/age stored locally in `preferences` (key/value); settings: dark/light, language (English only), notifications, daily check-in time, erase all data; first-run onboarding.
+- **Scores (derived, not stored):** "Breaking free" = average progress of active quit habits toward 30 days; "Discipline" = weighted good-habit completion over 7 days; Momentum = average of available scores.
+
+Still **out of scope:** accounts, backend, cloud sync, online AI, ads/analytics.
+
+Persistence: Room **v2** — tables `habits` (+`color_argb`), `habit_events`, `good_habits`, `good_habit_logs` (unique `good_habit_id`+`day_index`), `events`, `coach_messages`, `preferences`. `MIGRATION_1_2` is hand-written. No destructive fallback.
+
+Time: local "day index" = days since 1970-01-01 in the device time zone (`DayCalculator`, offset from the platform: `java.util.TimeZone` on Android, `NSTimeZone` on iOS).
+
+Notifications: `NotificationPlanner` (pure) builds event reminders + next two streak milestones per habit + 14 daily check-ins; `NotificationSyncService` re-plans while the app is open; Android `AndroidNotificationScheduler` arms `AlarmManager` (inexact) and `BootReceiver` restores after reboot. iOS: currently a no-op placeholder; the plan is a `UNUserNotificationCenter`-based `NotificationScheduler`/`NotificationPermissionGateway` in `iosMain` (calendar/time-interval triggers; iOS allows at most 64 pending local notifications, so the planner output must be capped there).
+
+Display format for counters: days → hours → minutes → seconds blocks from the largest non-zero unit (`CounterParts`); the older `formatElapsed` string format is still used in a few places.
+
+Concurrency notes: `EnsureCoachGreetingUseCase` and `UpdateSettingsUseCase` use a `Mutex` (the first prevents a duplicate greeting when the view model and screen both trigger it; the second serializes settings read-modify-write). Persistence changes are checked with `tools/room_migration_check.py`.

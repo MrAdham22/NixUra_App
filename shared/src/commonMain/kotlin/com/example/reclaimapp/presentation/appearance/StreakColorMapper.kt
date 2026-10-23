@@ -21,6 +21,18 @@ class StreakColorMapper(
         }
     }
 
+    /**
+     * Card color for a habit. With no user-chosen color this is the default NixUra brand progression
+     * ([cardBackgroundForActiveStreak]); with a chosen color the card starts at an almost-darkest shade of
+     * it and gets lighter day after day (see [ShadeRamp]).
+     */
+    fun cardBackground(elapsed: Duration, customBaseArgb: Long?): Color {
+        if (customBaseArgb == null) return cardBackgroundForActiveStreak(elapsed)
+        val ramp = ShadeRamp.stops(customBaseArgb, config.stopCount)
+        val argb = ShadeRamp.colorFor(ramp, StreakProgression.segmentFor(elapsed, config))
+        return Color(argb.toInt())
+    }
+
     fun stageIndexFor(elapsed: Duration): Int =
         StreakProgression.activeStageIndex(elapsed, config)
 
