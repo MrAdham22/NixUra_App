@@ -139,4 +139,26 @@ class CoachEngineTest {
         assertTrue(engine.suggestions(snapshot()).contains("I have a craving"))
         assertTrue(!engine.suggestions(CoachSnapshot()).contains("I have a craving"))
     }
+
+    @Test
+    fun pickedHabitIsUsedForCravingAndBodyReplies() {
+        val picked = snapshot().copy(focusHabitId = 2)
+        assertTrue(engine.reply("what's happening in my body?", picked, 0).contains("Late night scrolling"))
+        // Without a pick the newest habit (shortest streak) is used, as before.
+        assertTrue(engine.reply("what's happening in my body?", snapshot(), 0).contains("Smoking"))
+    }
+
+    @Test
+    fun mentionedHabitBeatsPickedHabit() {
+        val picked = snapshot().copy(focusHabitId = 2)
+        assertTrue(engine.reply("body effects of smoking?", picked, 0).contains("Smoking"))
+    }
+
+    @Test
+    fun pickedHabitGetsOverviewForOpenChat() {
+        val picked = snapshot().copy(focusHabitId = 1)
+        val reply = engine.reply("ok let's start", picked, 0)
+        assertTrue(reply.contains("let's talk about Smoking"))
+        assertTrue(engine.reply("ok let's start", snapshot(), 0).contains("I can help with"))
+    }
 }

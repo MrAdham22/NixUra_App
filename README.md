@@ -31,7 +31,7 @@ All screens use the NixUra palette, dark theme by default (navy `#1D1A39` backgr
 | Build (good habits) | Daily target counters (+/-), 7-day strip, streak, green squares |
 | Good habit analysis | Month calendar (green = done, light green = partial), tap any past day to correct it, 7/30-day completion, best streak, totals |
 | Events | Live countdown cards (count-up after the date), multiple reminders per event (preset + custom lead times) |
-| AI Coach | Offline chat (persisted), quick prompts, craving/relapse/progress/body/plan replies, crisis safety reply |
+| AI Coach | **Full-screen** (top bar and bottom nav hidden; compact header with back arrow, mode line and clear-chat; system back returns to Home). Offline chat (persisted), "today's focus" strip you tap to pick which quit habit to talk about (the coach then uses that habit's data), quick prompts, craving/relapse/progress/body/plan replies, crisis safety reply |
 | Profile | Opened from the avatar in the top bar. Name, email, age (local only), "Breaking free" and "Discipline" scores, totals, nearest event countdown. Gear icon at the top right opens Settings |
 | Settings | Reached from the gear icon on the Profile screen (back returns to Profile). Dark/Light, language (English only for now), notifications + daily check-in time, erase all data, about |
 

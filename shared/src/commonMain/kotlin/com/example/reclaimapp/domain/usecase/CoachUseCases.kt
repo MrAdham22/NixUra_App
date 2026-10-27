@@ -87,13 +87,13 @@ class SendCoachMessageUseCase(
     private val buildSnapshot: BuildCoachSnapshotUseCase,
 ) {
     /** Stores the user's message, waits [replyDelayMillis] (typing feel), then stores the coach's reply. */
-    suspend operator fun invoke(text: String, replyDelayMillis: Long = 0): Result<Unit> = runCatching {
+    suspend operator fun invoke(text: String, replyDelayMillis: Long = 0, focusHabitId: Long? = null): Result<Unit> = runCatching {
         val clean = text.trim()
         require(clean.isNotEmpty()) { "Message is empty" }
         require(clean.length <= MAX_COACH_MESSAGE) { "Message is too long" }
         repository.append(CoachRole.USER, clean)
         if (replyDelayMillis > 0) delay(replyDelayMillis)
-        repository.append(CoachRole.COACH, responder.respond(clean, buildSnapshot()))
+        repository.append(CoachRole.COACH, responder.respond(clean, buildSnapshot().copy(focusHabitId = focusHabitId)))
     }
 }
 
@@ -103,6 +103,10 @@ class ClearCoachChatUseCase(private val repository: CoachRepository) {
 
 data class CoachContext(
     val suggestions: List<String>,
+    /** Active quit habits the user can pick from in the focus strip. */
+    val habits: List<com.example.reclaimapp.domain.coach.BadHabitSnapshot> = emptyList(),
+    /** The habit actually in focus (the picked one if it still exists, otherwise the habit with the shortest streak). */
+    val focusHabitId: Long? = null,
     /** Short "today's focus" card shown above the chat; `null` when there is nothing to focus on yet. */
     val insight: com.example.reclaimapp.domain.coach.CoachNote?,
 )
@@ -112,10 +116,11 @@ class GetCoachContextUseCase(
     private val engine: com.example.reclaimapp.domain.coach.CoachEngine,
     private val clock: Clock,
 ) {
-    suspend operator fun invoke(): CoachContext {
+    suspend operator fun invoke(selectedHabitId: Long? = null): CoachContext {
         val snapshot = buildSnapshot()
         val seed = clock.nowEpochMillis() / 86_400_000L
-        val focus = snapshot.badHabits.minByOrNull { it.elapsed }
+        val picked = selectedHabitId?.let { id -> snapshot.badHabits.firstOrNull { it.id == id } }
+        val focus = picked ?: snapshot.badHabits.minByOrNull { it.elapsed }
         val insight = when {
             focus != null -> com.example.reclaimapp.domain.coach.CoachNote(
                 title = "${focus.name} · ${com.example.reclaimapp.domain.coach.durationText(focus.elapsed)}",
@@ -123,6 +128,6 @@ class GetCoachContextUseCase(
             )
             else -> null
         }
-        return CoachContext(engine.suggestions(snapshot), insight)
+        return CoachContext(engine.suggestions(snapshot), snapshot.badHabits, focus?.id, insight)
     }
 }

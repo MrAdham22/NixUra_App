@@ -8,6 +8,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -38,8 +40,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.reclaimapp.domain.coach.BadHabitSnapshot
+import com.example.reclaimapp.domain.coach.durationText
 import com.example.reclaimapp.domain.model.CoachRole
 import com.example.reclaimapp.presentation.coach.CoachViewModel
 import com.example.reclaimapp.presentation.components.ConfirmDialog
@@ -50,7 +55,6 @@ import com.example.reclaimapp.presentation.components.NixIcon
 import com.example.reclaimapp.presentation.components.NixIconButton
 import com.example.reclaimapp.presentation.components.NixIconView
 import com.example.reclaimapp.presentation.components.NixTextField
-import com.example.reclaimapp.presentation.components.ScreenHeader
 import com.example.reclaimapp.presentation.navigation.Navigator
 import com.example.reclaimapp.presentation.strings.LocalStrings
 import com.example.reclaimapp.presentation.theme.Nix
@@ -81,24 +85,22 @@ fun CoachScreen(navigator: Navigator) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ScreenHeader(
-                eyebrow = s.coachEyebrow,
-                title = s.coachTitle,
-                trailing = { NixIconButton(NixIcon.Trash, { confirmClear = true }, tint = c.textSecondary) },
-            )
+        CoachHeader(
+            title = s.coachTitle,
+            onBack = { navigator.back() },
+            onClear = { confirmClear = true },
+        )
+        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             state.insight?.let { insight ->
-                NixCard(color = c.accent.copy(alpha = 0.10f), borderColor = c.accent.copy(alpha = 0.35f), padding = androidx.compose.foundation.layout.PaddingValues(14.dp)) {
-                    Row(verticalAlignment = Alignment.Top) {
-                        NixIconView(NixIcon.Sparkle, c.accent, size = 18.dp)
-                        Spacer(Modifier.size(10.dp))
-                        Column {
-                            Text(s.todaysFocus.uppercase() + " · " + insight.title, style = NixType.Eyebrow, color = c.accent, maxLines = 1)
-                            Spacer(Modifier.height(4.dp))
-                            Text(insight.body, style = NixType.Small, color = c.textPrimary)
-                        }
-                    }
-                }
+                FocusPicker(
+                    label = s.todaysFocus,
+                    pickHint = s.coachPickHabit,
+                    title = insight.title,
+                    body = insight.body,
+                    habits = state.habits,
+                    focusHabitId = state.focusHabitId,
+                    onPick = vm::onSelectHabit,
+                )
             }
             state.errorMessage?.let { ErrorBanner(it, vm::onDismissError) }
         }
@@ -129,8 +131,8 @@ fun CoachScreen(navigator: Navigator) {
             }
         }
 
-        Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (state.suggestions.isNotEmpty()) {
+        Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (state.suggestions.isNotEmpty() && !state.isTyping) {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     state.suggestions.forEach { suggestion ->
                         NixChip(suggestion, selected = false, onClick = { send(suggestion) })
@@ -154,7 +156,6 @@ fun CoachScreen(navigator: Navigator) {
                     bordered = false,
                 )
             }
-            Text(s.coachOfflineNote, style = NixType.Small, color = c.textMuted)
         }
     }
 
@@ -191,6 +192,97 @@ private fun TypingDots() {
                 label = "dot$index",
             )
             Box(Modifier.size(8.dp).alpha(alpha).clip(CircleShape).background(c.textSecondary))
+        }
+    }
+}
+
+/** Compact header: back button, title with the mode line underneath, clear-chat button. */
+@Composable
+private fun CoachHeader(title: String, onBack: () -> Unit, onClear: () -> Unit) {
+    val c = Nix.colors
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        NixIconButton(NixIcon.Back, onBack, size = 40.dp)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = NixType.Heading, color = c.textPrimary, maxLines = 1)
+            CoachModeLine()
+        }
+        NixIconButton(NixIcon.Trash, onClear, tint = c.textSecondary, size = 40.dp)
+    }
+}
+
+/** Isolated subtitle slot. Mission 3 replaces its text with the Offline / AI mode label. */
+@Composable
+private fun CoachModeLine() {
+    Text(LocalStrings.current.coachModeOfflineShort, style = NixType.Small, color = Nix.colors.textMuted, maxLines = 1)
+}
+
+/** One-line "today's focus" strip. Tap it to open the list of quit habits and pick the one to talk about. */
+@Composable
+private fun FocusPicker(
+    label: String,
+    pickHint: String,
+    title: String,
+    body: String,
+    habits: List<BadHabitSnapshot>,
+    focusHabitId: Long?,
+    onPick: (Long) -> Unit,
+) {
+    val c = Nix.colors
+    var open by rememberSaveable { mutableStateOf(false) }
+    NixCard(
+        color = c.accent.copy(alpha = 0.10f),
+        borderColor = c.accent.copy(alpha = 0.35f),
+        padding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+        onClick = { open = !open },
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            NixIconView(NixIcon.Sparkle, c.accent, size = 16.dp)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                label.uppercase() + " · " + title,
+                style = NixType.Eyebrow,
+                color = c.accent,
+                maxLines = 1,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(8.dp))
+            NixIconView(NixIcon.Chevron, c.accent, size = 16.dp, modifier = Modifier.rotate(if (open) -90f else 90f))
+        }
+        if (open) {
+            Spacer(Modifier.height(8.dp))
+            Text(body, style = NixType.Small, color = c.textPrimary)
+            if (habits.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Text(pickHint, style = NixType.Eyebrow, color = c.textMuted)
+                Spacer(Modifier.height(6.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    habits.forEach { habit ->
+                        val selected = habit.id == focusHabitId
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(if (selected) c.accent.copy(alpha = 0.25f) else c.surface)
+                                .border(1.dp, if (selected) c.accent else c.border, RoundedCornerShape(14.dp))
+                                .clickable { onPick(habit.id); open = false }
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(habit.name, style = NixType.Body, color = c.textPrimary, maxLines = 1, modifier = Modifier.weight(1f))
+                            Spacer(Modifier.width(8.dp))
+                            Text(durationText(habit.elapsed), style = NixType.Small, color = c.textMuted, maxLines = 1)
+                            if (selected) {
+                                Spacer(Modifier.width(8.dp))
+                                NixIconView(NixIcon.CircleCheck, c.accent, size = 16.dp)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

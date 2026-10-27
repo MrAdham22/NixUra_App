@@ -2,6 +2,7 @@ package com.example.reclaimapp.presentation.coach
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.reclaimapp.domain.coach.BadHabitSnapshot
 import com.example.reclaimapp.domain.coach.CoachNote
 import com.example.reclaimapp.domain.model.CoachMessage
 import com.example.reclaimapp.domain.usecase.ClearCoachChatUseCase
@@ -22,6 +23,10 @@ data class CoachUiState(
     val isTyping: Boolean = false,
     val suggestions: List<String> = emptyList(),
     val insight: CoachNote? = null,
+    /** Active quit habits the user can choose to talk about. */
+    val habits: List<BadHabitSnapshot> = emptyList(),
+    /** Habit currently shown in the focus strip. */
+    val focusHabitId: Long? = null,
     val errorMessage: String? = null,
 )
 
@@ -34,6 +39,9 @@ class CoachViewModel(
 ) : ViewModel() {
 
     private val transient = MutableStateFlow(CoachUiState())
+
+    /** Habit the user explicitly picked; `null` until they choose one. Sent with every message. */
+    private var selectedHabitId: Long? = null
 
     val uiState: StateFlow<CoachUiState> = combine(observeMessages(), transient) { messages, extra ->
         extra.copy(messages = messages)
@@ -62,10 +70,16 @@ class CoachViewModel(
         if (transient.value.isTyping) return
         viewModelScope.launch {
             transient.update { it.copy(isTyping = true, errorMessage = null) }
-            val result = sendMessage(text, replyDelayMillis = REPLY_DELAY_MILLIS)
+            val result = sendMessage(text, replyDelayMillis = REPLY_DELAY_MILLIS, focusHabitId = selectedHabitId)
             transient.update { it.copy(isTyping = false, errorMessage = result.exceptionOrNull()?.message) }
             refreshContext()
         }
+    }
+
+    /** The user picked which quit habit to talk about; the coach uses its data from now on. */
+    fun onSelectHabit(habitId: Long) {
+        selectedHabitId = habitId
+        viewModelScope.launch { refreshContext() }
     }
 
     fun onClear() {
@@ -80,8 +94,17 @@ class CoachViewModel(
     }
 
     private suspend fun refreshContext() {
-        val context = getContext()
-        transient.update { it.copy(suggestions = context.suggestions, insight = context.insight) }
+        val context = getContext(selectedHabitId)
+        // If the picked habit was archived or deleted, forget the pick.
+        if (selectedHabitId != null && context.habits.none { it.id == selectedHabitId }) selectedHabitId = null
+        transient.update {
+            it.copy(
+                suggestions = context.suggestions,
+                insight = context.insight,
+                habits = context.habits,
+                focusHabitId = context.focusHabitId,
+            )
+        }
     }
 
     private companion object {

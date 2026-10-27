@@ -126,6 +126,8 @@ Notifications: `NotificationPlanner` (pure) builds event reminders + next two st
 
 Navigation chrome: the top bar (tab screens only) shows the logo + "NixUra" on the left and the profile avatar on the right. Settings is no longer in the top bar: it is opened by a gear icon (`NixIcon.Gear`, rendered with the official Material `Icons.Filled.Settings`) in the top-right `actions` slot of the Profile screen header (`SubScreen`), and back from Settings returns to Profile. `NixIcon.Sliders` was removed.
 
+Coach is full-screen: `Route.Coach` is still a `Route.Tab`, but `MainContent()` in `AppShell.kt` hides both `TopBar` and `BottomNav` for it (`showChrome = isTab && route != Route.Coach`). `CoachScreen` has its own compact header (back -> `navigator.back()` -> Home, title, mode line, clear chat). The mode line is the isolated `CoachModeLine()` composable (currently the static offline text) so the AI mode label can replace it. The "today's focus" strip at the top opens a list of active quit habits; the pick is kept in `CoachViewModel`, sent with each message (`SendCoachMessageUseCase(focusHabitId)` -> `CoachSnapshot.focusHabitId`) and `CoachEngine` answers about that habit (an explicitly mentioned habit still wins).
+
 Display format for counters: days → hours → minutes → seconds blocks from the largest non-zero unit (`CounterParts`); the older `formatElapsed` string format is still used in a few places.
 
 Concurrency notes: `EnsureCoachGreetingUseCase` and `UpdateSettingsUseCase` use a `Mutex` (the first prevents a duplicate greeting when the view model and screen both trigger it; the second serializes settings read-modify-write). Persistence changes are checked with `tools/room_migration_check.py`.

@@ -29,6 +29,8 @@ data class CoachSnapshot(
     val badHabits: List<BadHabitSnapshot> = emptyList(),
     val goodHabits: List<GoodHabitSnapshot> = emptyList(),
     val nextEvent: EventSnapshot? = null,
+    /** Quit habit the user picked in the coach screen to talk about (`null` = none picked). */
+    val focusHabitId: Long? = null,
 )
 
 data class HabitInsight(
@@ -153,7 +155,8 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
     fun reply(userText: String, snapshot: CoachSnapshot, seed: Long): String {
         val text = userText.lowercase().trim()
         val words = tokenize(text)
-        val habit = findMentionedHabit(text, words, snapshot) ?: snapshot.badHabits.minByOrNull { it.elapsed }
+        val focused = snapshot.focusHabitId?.let { id -> snapshot.badHabits.firstOrNull { it.id == id } }
+        val habit = findMentionedHabit(text, words, snapshot) ?: focused ?: snapshot.badHabits.minByOrNull { it.elapsed }
         val name = snapshot.userName.trim()
         val lead = if (name.isEmpty()) "" else "$name, "
 
@@ -170,6 +173,7 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
             hasStem(text, words, EVENTS) -> eventReply(snapshot)
             hasWord(words, THANKS) -> "You're welcome, ${name.ifEmpty { "friend" }}. I'm here whenever you need a reset or a boost."
             hasWord(words, GREETING) -> greeting(snapshot, seed)
+            focused != null -> habitOverviewReply(lead, focused)
             else -> "I can help with cravings, your progress, what is happening in your body, or a reset plan. " +
                 "Tell me what is on your mind, or pick one of the suggestions below."
         }
@@ -215,6 +219,18 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
         }
         insight.category.safetyNote?.let { sb.append("Important: $it\n\n") }
         sb.append("This is general information, not medical advice.")
+        return sb.toString()
+    }
+
+    /** Shown when the user picked a habit and sent something that matches no other topic. */
+    private fun habitOverviewReply(lead: String, habit: BadHabitSnapshot): String {
+        val insight = insightFor(habit.name, habit.elapsed)
+        val sb = StringBuilder("${lead}let's talk about ${habit.name} (${insight.category.label}). ")
+        sb.append("You are ${durationText(habit.elapsed)} in; your longest streak is ${durationText(habit.longest)}")
+        sb.append(if (habit.relapseCount == 0) " and you have no relapses recorded.\n\n" else " with ${habit.relapseCount} relapse(s) recorded.\n\n")
+        insight.achieved.lastOrNull()?.let { sb.append("Where your body is now: ${it.title}. ${it.detail}\n\n") }
+        insight.category.safetyNote?.let { sb.append("Important: $it\n\n") }
+        sb.append("I can help with a craving, explain what is happening in your body, or build a reset plan for ${habit.name}. What do you need?")
         return sb.toString()
     }
 

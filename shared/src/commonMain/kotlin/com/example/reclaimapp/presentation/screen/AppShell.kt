@@ -36,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.reclaimapp.domain.notification.NotificationSyncService
 import com.example.reclaimapp.presentation.components.Avatar
 import com.example.reclaimapp.presentation.components.NixIcon
+import com.example.reclaimapp.presentation.components.NixIconButton
 import com.example.reclaimapp.presentation.components.NixIconView
 import com.example.reclaimapp.presentation.navigation.Navigator
 import com.example.reclaimapp.presentation.navigation.Route
@@ -82,14 +83,16 @@ fun AppRoot() {
 private fun MainContent(navigator: Navigator) {
     val route = navigator.current
     val isTab = route is Route.Tab
+    // The coach is full-screen: no top bar, no bottom nav (it has its own compact header with a back button).
+    val showChrome = isTab && route != Route.Coach
     Column(Modifier.fillMaxSize()) {
-        if (isTab) TopBar(navigator)
+        if (showChrome) TopBar(navigator)
         Box(Modifier.weight(1f).fillMaxWidth()) {
             Crossfade(targetState = route, animationSpec = tween(180), label = "route") { target ->
                 RouteContent(target, navigator)
             }
         }
-        if (isTab) BottomNav(route, navigator)
+        if (showChrome) BottomNav(route, navigator)
     }
 }
 

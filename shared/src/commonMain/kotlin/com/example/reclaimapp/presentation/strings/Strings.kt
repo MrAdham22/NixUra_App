@@ -211,6 +211,8 @@ data class Strings(
     val coachTitle: String = "AI Coach",
     val coachInputHint: String = "Ask for help, a plan or motivation…",
     val coachOfflineNote: String = "Replies are generated on your device. Private, but not a substitute for professional care.",
+    val coachModeOfflineShort: String = "Offline · private, on your device",
+    val coachPickHabit: String = "Choose a habit to talk about",
     val clearChatTitle: String = "Clear the conversation?",
     val clearChatBody: String = "Your chat history will be deleted. Your habits stay untouched.",
 
