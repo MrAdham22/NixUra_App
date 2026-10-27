@@ -148,18 +148,7 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
         }
 
         // Coach note
-        NixCard(color = c.accent.copy(alpha = 0.10f), borderColor = c.accent.copy(alpha = 0.35f)) {
-            Text(s.coachNote.uppercase(), style = NixType.Eyebrow, color = c.accent)
-            Spacer(Modifier.height(6.dp))
-            val seed = model.activeElapsed.inWholeDays + model.habitId
-            Text(engine.motivation(model.name, model.activeElapsed, seed), style = NixType.Body, color = c.textPrimary)
-            category.safetyNote?.let {
-                Spacer(Modifier.height(10.dp))
-                Text(it, style = NixType.Small, color = c.accentWarm)
-            }
-            Spacer(Modifier.height(12.dp))
-            NixButton(s.askCoach, { navigator.selectTab(Route.Coach) }, style = NixButtonStyle.Secondary, icon = NixIcon.Sparkle, modifier = Modifier.fillMaxWidth())
-        }
+
 
         // Body & mind timeline
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -203,7 +192,7 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
                     if (index != category.milestones.lastIndex) Spacer(Modifier.height(2.dp))
                 }
             }
-            Text(s.medicalDisclaimer, style = NixType.Small, color = c.textMuted)
+            Text(s.medicalDisclaimer, style = NixType.Smaller, color = c.textMuted)
         }
 
         // Relapse history
@@ -223,7 +212,7 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
         }
 
         NixButton(s.recordRelapse, { confirmRelapse = true }, style = NixButtonStyle.Danger, icon = NixIcon.Reset, modifier = Modifier.fillMaxWidth())
-        Text(s.relapseHint, style = NixType.Small, color = c.textMuted)
+        Text(s.relapseHint, style = NixType.Smaller, color = c.textMuted)
     }
 
     if (confirmRelapse && model != null) {
