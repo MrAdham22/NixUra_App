@@ -26,6 +26,7 @@ import com.example.reclaimapp.presentation.components.NixButton
 import com.example.reclaimapp.presentation.components.NixButtonStyle
 import com.example.reclaimapp.presentation.components.NixCard
 import com.example.reclaimapp.presentation.components.NixIcon
+import com.example.reclaimapp.presentation.components.NixIconButton
 import com.example.reclaimapp.presentation.components.NixProgressBar
 import com.example.reclaimapp.presentation.components.NixTextField
 import com.example.reclaimapp.presentation.components.SectionLabel
@@ -55,7 +56,11 @@ fun ProfileScreen(navigator: Navigator) {
     var age by rememberSaveable { mutableStateOf("") }
     val stats = state.stats
 
-    SubScreen(title = s.profileTitle, onBack = { navigator.back() }) {
+    SubScreen(
+        title = s.profileTitle,
+        onBack = { navigator.back() },
+        actions = { NixIconButton(NixIcon.Gear, { navigator.push(Route.Settings) }) },
+    ) {
         state.errorMessage?.let { ErrorBanner(it, vm::onDismissError) }
 
         NixCard {
@@ -112,8 +117,6 @@ fun ProfileScreen(navigator: Navigator) {
                 Text(s.noUpcomingEvents, style = NixType.Body, color = c.textSecondary)
             }
         }
-
-        NixButton(s.settingsTitle, { navigator.push(Route.Settings) }, style = NixButtonStyle.Secondary, icon = NixIcon.Sliders, modifier = Modifier.fillMaxWidth())
     }
 }
 

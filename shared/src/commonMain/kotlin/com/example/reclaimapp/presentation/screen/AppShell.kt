@@ -36,7 +36,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.reclaimapp.domain.notification.NotificationSyncService
 import com.example.reclaimapp.presentation.components.Avatar
 import com.example.reclaimapp.presentation.components.NixIcon
-import com.example.reclaimapp.presentation.components.NixIconButton
 import com.example.reclaimapp.presentation.components.NixIconView
 import com.example.reclaimapp.presentation.navigation.Navigator
 import com.example.reclaimapp.presentation.navigation.Route
@@ -128,8 +127,6 @@ private fun TopBar(navigator: Navigator) {
         Spacer(Modifier.width(10.dp))
         Text("NixUra", style = NixType.Heading, color = c.textPrimary)
         Spacer(Modifier.weight(1f))
-        NixIconButton(NixIcon.Sliders, { navigator.push(Route.Settings) }, size = 40.dp)
-        Spacer(Modifier.width(10.dp))
         Avatar(
             initial = profile.name.ifBlank { "N" },
             size = 40.dp,

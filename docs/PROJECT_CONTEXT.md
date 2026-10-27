@@ -124,6 +124,8 @@ Time: local "day index" = days since 1970-01-01 in the device time zone (`DayCal
 
 Notifications: `NotificationPlanner` (pure) builds event reminders + next two streak milestones per habit + 14 daily check-ins; `NotificationSyncService` re-plans while the app is open; Android `AndroidNotificationScheduler` arms `AlarmManager` (inexact) and `BootReceiver` restores after reboot. iOS: currently a no-op placeholder; the plan is a `UNUserNotificationCenter`-based `NotificationScheduler`/`NotificationPermissionGateway` in `iosMain` (calendar/time-interval triggers; iOS allows at most 64 pending local notifications, so the planner output must be capped there).
 
+Navigation chrome: the top bar (tab screens only) shows the logo + "NixUra" on the left and the profile avatar on the right. Settings is no longer in the top bar: it is opened by a gear icon (`NixIcon.Gear`, rendered with the official Material `Icons.Filled.Settings`) in the top-right `actions` slot of the Profile screen header (`SubScreen`), and back from Settings returns to Profile. `NixIcon.Sliders` was removed.
+
 Display format for counters: days → hours → minutes → seconds blocks from the largest non-zero unit (`CounterParts`); the older `formatElapsed` string format is still used in a few places.
 
 Concurrency notes: `EnsureCoachGreetingUseCase` and `UpdateSettingsUseCase` use a `Mutex` (the first prevents a duplicate greeting when the view model and screen both trigger it; the second serializes settings read-modify-write). Persistence changes are checked with `tools/room_migration_check.py`.

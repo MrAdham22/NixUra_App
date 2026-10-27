@@ -2,6 +2,9 @@ package com.example.reclaimapp.presentation.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -20,13 +23,17 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 enum class NixIcon {
-    Home, Shield, CircleCheck, Calendar, Sparkle, User, Sliders, Plus, Back, Chevron, Bell, Trash,
+    Home, Shield, CircleCheck, Calendar, Sparkle, User, Gear, Plus, Back, Chevron, Bell, Trash,
     Pencil, Flame, Send, Close, Tick, Minus, Reset, Archive, Moon, Sun, Globe, Clock, Info, Leaf,
 }
 
-/** Hand-drawn 24×24 line icons (no icon library dependency). */
+/** 24×24 icons drawn in code; [NixIcon.Gear] uses the official Material "Settings" icon (material-icons-core). */
 @Composable
 fun NixIconView(icon: NixIcon, tint: Color, modifier: Modifier = Modifier, size: Dp = 22.dp, strokeWidth: Float = 1.8f) {
+    if (icon == NixIcon.Gear) {
+        Icon(Icons.Filled.Settings, contentDescription = null, tint = tint, modifier = modifier.size(size))
+        return
+    }
     Canvas(modifier.size(size)) {
         val s = this.size.width / 24f
         val stroke = Stroke(width = strokeWidth * s, cap = StrokeCap.Round, join = StrokeJoin.Round)
@@ -89,14 +96,7 @@ private fun DrawScope.drawNixIcon(icon: NixIcon, c: Color, s: Float, st: Stroke)
             p.cubicTo(16f * s, 13.5f * s, 19.5f * s, 15f * s, 19.5f * s, 20f * s)
             drawPath(p, c, style = st)
         }
-        NixIcon.Sliders -> {
-            line(c, s, w, 4f, 7f, 6.6f, 7f); line(c, s, w, 11.4f, 7f, 20f, 7f)
-            drawCircle(c, 2.4f * s, Offset(9f * s, 7f * s), style = st)
-            line(c, s, w, 4f, 12f, 12.6f, 12f); line(c, s, w, 17.4f, 12f, 20f, 12f)
-            drawCircle(c, 2.4f * s, Offset(15f * s, 12f * s), style = st)
-            line(c, s, w, 4f, 17f, 5.6f, 17f); line(c, s, w, 10.4f, 17f, 20f, 17f)
-            drawCircle(c, 2.4f * s, Offset(8f * s, 17f * s), style = st)
-        }
+        NixIcon.Gear -> Unit // rendered by NixIconView with the Material Settings icon
         NixIcon.Plus -> { line(c, s, w, 12f, 5f, 12f, 19f); line(c, s, w, 5f, 12f, 19f, 12f) }
         NixIcon.Back -> poly(c, s, st, false, 15f, 5f, 8f, 12f, 15f, 19f)
         NixIcon.Chevron -> poly(c, s, st, false, 9f, 5f, 16f, 12f, 9f, 19f)

@@ -32,8 +32,8 @@ All screens use the NixUra palette, dark theme by default (navy `#1D1A39` backgr
 | Good habit analysis | Month calendar (green = done, light green = partial), tap any past day to correct it, 7/30-day completion, best streak, totals |
 | Events | Live countdown cards (count-up after the date), multiple reminders per event (preset + custom lead times) |
 | AI Coach | Offline chat (persisted), quick prompts, craving/relapse/progress/body/plan replies, crisis safety reply |
-| Profile | Name, email, age (local only), "Breaking free" and "Discipline" scores, totals, nearest event countdown |
-| Settings | Dark/Light, language (English only for now), notifications + daily check-in time, erase all data, about |
+| Profile | Opened from the avatar in the top bar. Name, email, age (local only), "Breaking free" and "Discipline" scores, totals, nearest event countdown. Gear icon at the top right opens Settings |
+| Settings | Reached from the gear icon on the Profile screen (back returns to Profile). Dark/Light, language (English only for now), notifications + daily check-in time, erase all data, about |
 
 Notifications: event reminders, streak milestones and a daily check-in. **Android:** implemented with `AlarmManager`, restored after reboot. **iOS:** not implemented yet (planned with `UNUserNotificationCenter`).
 
@@ -59,7 +59,7 @@ Smaller backlog (not blocking): Arabic/RTL and translated content, accessibility
 | Warm orange | `#F39F5A` |
 | Blush pink | `#E8BCB9` |
 
-Semantic tokens (dark/light) are in `presentation/theme/NixColors.kt`. UI was adapted from a v0 design ("NixUra UI", a Next.js mock-up) into Compose; icons are hand-drawn (`components/NixIcons.kt`), there is no icon library dependency.
+Semantic tokens (dark/light) are in `presentation/theme/NixColors.kt`. UI was adapted from a v0 design ("NixUra UI", a Next.js mock-up) into Compose; icons are drawn in code (`components/NixIcons.kt`); the settings gear is the official Material "Settings" icon from `material-icons-core`. Icon libraries are allowed.
 
 ## Technology stack
 
@@ -71,6 +71,7 @@ Semantic tokens (dark/light) are in `presentation/theme/NixColors.kt`. UI was ad
 | Material 3 (Compose) | 1.12.0-alpha03 |
 | Room KMP / KSP | 2.7.2 / 2.3.12 |
 | Koin | 4.0.1 |
+| Material icons core (`org.jetbrains.compose.material:material-icons-core`, used for the settings gear) | 1.7.3 |
 | minSdk / compileSdk | 24 / 37 |
 
 ## Architecture
