@@ -14,12 +14,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.reclaimapp.domain.recognition.HabitNameHandoff
+import com.example.reclaimapp.domain.recognition.HabitPolarity
+import com.example.reclaimapp.domain.recognition.HabitRecognizer
 import com.example.reclaimapp.presentation.components.ErrorBanner
 import com.example.reclaimapp.presentation.components.NixButton
 import com.example.reclaimapp.presentation.components.NixCard
@@ -30,15 +34,19 @@ import com.example.reclaimapp.presentation.components.Stepper
 import com.example.reclaimapp.presentation.components.SubScreen
 import com.example.reclaimapp.presentation.goodhabits.GoodHabitsViewModel
 import com.example.reclaimapp.presentation.navigation.Navigator
+import com.example.reclaimapp.presentation.navigation.Route
 import com.example.reclaimapp.presentation.strings.LocalStrings
 import com.example.reclaimapp.presentation.theme.Nix
 import com.example.reclaimapp.presentation.theme.NixType
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
     val vm: GoodHabitsViewModel = koinViewModel()
     val state by vm.uiState.collectAsStateWithLifecycle()
+    val recognizer = koinInject<HabitRecognizer>()
+    val handoff = koinInject<HabitNameHandoff>()
     val s = LocalStrings.current
     val c = Nix.colors
     val editing = editId != null
@@ -46,6 +54,11 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
     var name by rememberSaveable { mutableStateOf("") }
     var target by rememberSaveable { mutableStateOf(1) }
     var loadedEdit by rememberSaveable { mutableStateOf(false) }
+
+    // A name carried over from the Quit form ("Add it to Build instead").
+    LaunchedEffect(Unit) {
+        if (!editing) handoff.take()?.let { name = it }
+    }
 
     LaunchedEffect(editId, state.habits) {
         if (editId != null && !loadedEdit) {
@@ -67,6 +80,22 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
             placeholder = s.goodNamePlaceholder,
             maxLength = 80,
         )
+
+        if (!editing && name.isNotBlank()) {
+            val recognition = remember(name) { recognizer.recognize(name) }
+            RecognitionHints(
+                recognition = recognition,
+                formPolarity = HabitPolarity.GOOD,
+                switchBanner = s.looksBadBanner,
+                switchLabel = s.moveToQuit,
+                onSwitch = {
+                    handoff.put(name)
+                    navigator.back()
+                    navigator.push(Route.BadHabitForm())
+                },
+                onApplyCorrection = { name = it },
+            )
+        }
 
         if (!editing) {
             SectionLabel(s.quickPicks)

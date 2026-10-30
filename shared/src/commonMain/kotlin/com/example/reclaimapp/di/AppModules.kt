@@ -16,6 +16,8 @@ import com.example.reclaimapp.domain.coach.HabitKnowledgeBase
 import com.example.reclaimapp.domain.coach.RuleBasedCoachResponder
 import com.example.reclaimapp.domain.notification.NotificationPlanner
 import com.example.reclaimapp.domain.notification.NotificationSyncService
+import com.example.reclaimapp.domain.recognition.HabitNameHandoff
+import com.example.reclaimapp.domain.recognition.HabitRecognizer
 import com.example.reclaimapp.domain.repository.CoachRepository
 import com.example.reclaimapp.domain.repository.DataMaintenanceRepository
 import com.example.reclaimapp.domain.repository.EventRepository
@@ -92,6 +94,8 @@ fun appModule() = module {
 
     // Coach (offline, rule-based). Swap RuleBasedCoachResponder for an AI-backed one later.
     single { HabitKnowledgeBase() }
+    single { HabitRecognizer(get()) }
+    single { HabitNameHandoff() }
     single { CoachEngine(get()) }
     single<CoachResponder> { RuleBasedCoachResponder(get(), get()) }
 

@@ -1,5 +1,10 @@
 package com.example.reclaimapp.domain.coach
 
+import com.example.reclaimapp.domain.coach.catalog.BehaviorCatalog
+import com.example.reclaimapp.domain.coach.catalog.SubstanceCatalog
+import com.example.reclaimapp.domain.recognition.CategoryMatch
+import com.example.reclaimapp.domain.recognition.HabitMatcher
+import com.example.reclaimapp.domain.recognition.MatchOutcome
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
@@ -25,11 +30,21 @@ data class HabitCategory(
 /**
  * Offline, rule-based "understanding" of a habit. The user's habit name is matched against keywords
  * (English + common Arabic spellings) to pick a category with a recovery timeline and craving tips.
+ * Matching is typo-tolerant and word-boundary aware (see `domain/recognition`).
  * General wellbeing information only — never medical advice.
+ *
+ * Catalog = built-in categories + `SubstanceCatalog` + `BehaviorCatalog`, merged by `id`;
+ * a later list overrides an earlier entry with the same id.
  */
-class HabitKnowledgeBase {
+class HabitKnowledgeBase internal constructor(
+    builtIn: List<HabitCategory>?,
+    substance: List<HabitCategory>,
+    behavior: List<HabitCategory>,
+) {
 
-    val categories: List<HabitCategory> = listOf(
+    constructor() : this(null, SubstanceCatalog.categories, BehaviorCatalog.categories)
+
+    private val builtInCategories: List<HabitCategory> = listOf(
         HabitCategory(
             id = "nicotine",
             label = "Nicotine",
@@ -242,19 +257,29 @@ class HabitKnowledgeBase {
         ),
     )
 
-    /** Picks the best-matching category for a free-text habit name. */
-    fun match(habitName: String): HabitCategory {
-        val text = habitName.lowercase().trim()
-        if (text.isEmpty()) return generic
-        var best: HabitCategory? = null
-        var bestScore = 0
-        for (category in categories) {
-            val score = category.keywords.count { keyword -> text.contains(keyword) }
-            if (score > bestScore) {
-                best = category
-                bestScore = score
-            }
+    /** All categories: built-in, then substance, then behaviour; the same id is overridden by the later list. */
+    val categories: List<HabitCategory> = mergeById(builtIn ?: builtInCategories, substance, behavior)
+
+    private val matcher: HabitMatcher by lazy { HabitMatcher(categories) }
+
+    /** Picks the best-matching category for a free-text habit name, or [generic] when nothing matches well. */
+    fun match(habitName: String): HabitCategory = matchDetailed(habitName)?.category ?: generic
+
+    /** Like [match] but with the confidence, the keyword that matched and the word the user typed; null when nothing matched. */
+    fun matchDetailed(habitName: String): CategoryMatch? {
+        if (habitName.isBlank()) return null
+        return matcher.outcome(habitName).category
+    }
+
+    internal fun outcomeFor(rawText: String): MatchOutcome = matcher.outcome(rawText)
+
+    internal fun correctionFor(typedWord: String): String? = matcher.correctionFor(typedWord)
+
+    private fun mergeById(vararg lists: List<HabitCategory>): List<HabitCategory> {
+        val merged = LinkedHashMap<String, HabitCategory>()
+        for (list in lists) for (category in list) {
+            if (category.id != generic.id) merged[category.id] = category
         }
-        return best ?: generic
+        return merged.values.toList()
     }
 }

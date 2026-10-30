@@ -125,6 +125,13 @@ data class Strings(
     val removeHabitTitle: String = "Remove this habit?",
     val removeHabitBody: String = "It disappears from your lists. This can't be undone.",
 
+    // ---- Agent 1: smart recognition ----
+    val looksGoodBanner: String = "This looks like a good habit. Add it to Build instead?",
+    val moveToBuild: String = "Add to Build",
+    val looksBadBanner: String = "This looks like a habit to quit. Track it as a quit habit instead?",
+    val moveToQuit: String = "Track as quit habit",
+    val didYouMean: (String) -> String = { "Did you mean \u201C$it\u201D?" },
+
     // Good habits
     val goodEyebrow: String = "Level up",
     val goodTitle: String = "Habits to build",

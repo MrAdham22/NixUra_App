@@ -25,9 +25,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.reclaimapp.domain.clock.Clock
 import com.example.reclaimapp.domain.coach.CoachEngine
+import com.example.reclaimapp.domain.recognition.HabitNameHandoff
+import com.example.reclaimapp.domain.recognition.HabitPolarity
+import com.example.reclaimapp.domain.recognition.HabitRecognition
+import com.example.reclaimapp.domain.recognition.HabitRecognizer
 import com.example.reclaimapp.presentation.components.ColorPickerRow
 import com.example.reclaimapp.presentation.components.ErrorBanner
 import com.example.reclaimapp.presentation.components.NixButton
+import com.example.reclaimapp.presentation.components.NixButtonStyle
 import com.example.reclaimapp.presentation.components.NixCard
 import com.example.reclaimapp.presentation.components.NixChip
 import com.example.reclaimapp.presentation.components.NixTextField
@@ -37,6 +42,7 @@ import com.example.reclaimapp.presentation.components.Stepper
 import com.example.reclaimapp.presentation.components.SubScreen
 import com.example.reclaimapp.presentation.habits.HabitsViewModel
 import com.example.reclaimapp.presentation.navigation.Navigator
+import com.example.reclaimapp.presentation.navigation.Route
 import com.example.reclaimapp.presentation.strings.LocalStrings
 import com.example.reclaimapp.presentation.theme.Nix
 import com.example.reclaimapp.presentation.theme.NixType
@@ -50,6 +56,8 @@ fun BadHabitFormScreen(editId: Long?, navigator: Navigator) {
     val vm: HabitsViewModel = koinViewModel()
     val state by vm.uiState.collectAsStateWithLifecycle()
     val engine = koinInject<CoachEngine>()
+    val recognizer = koinInject<HabitRecognizer>()
+    val handoff = koinInject<HabitNameHandoff>()
     val clock = koinInject<Clock>()
     val s = LocalStrings.current
     val c = Nix.colors
@@ -61,6 +69,11 @@ fun BadHabitFormScreen(editId: Long?, navigator: Navigator) {
     var customDays by rememberSaveable { mutableStateOf(0) }
     var customHours by rememberSaveable { mutableStateOf(0) }
     var loadedEdit by rememberSaveable { mutableStateOf(false) }
+
+    // A name carried over from the Build form ("Track it as a quit habit instead").
+    LaunchedEffect(Unit) {
+        if (!editing) handoff.take()?.let { name = it }
+    }
 
     LaunchedEffect(editId, state.habits) {
         if (editId != null && !loadedEdit) {
@@ -94,7 +107,22 @@ fun BadHabitFormScreen(editId: Long?, navigator: Navigator) {
         )
 
         if (name.isNotBlank()) {
-            val category = remember(name) { engine.categoryFor(name) }
+            val recognition = remember(name) { recognizer.recognize(name) }
+            if (!editing) {
+                RecognitionHints(
+                    recognition = recognition,
+                    formPolarity = HabitPolarity.BAD,
+                    switchBanner = s.looksGoodBanner,
+                    switchLabel = s.moveToBuild,
+                    onSwitch = {
+                        handoff.put(name)
+                        navigator.back()
+                        navigator.push(Route.GoodHabitForm())
+                    },
+                    onApplyCorrection = { name = it },
+                )
+            }
+            val category = recognition.category ?: engine.categoryFor(name)
             NixCard(color = c.accent.copy(alpha = 0.10f), borderColor = c.accent.copy(alpha = 0.35f)) {
                 Text(s.coachUnderstood.uppercase(), style = NixType.Eyebrow, color = c.accent)
                 Spacer(Modifier.height(6.dp))
@@ -159,5 +187,48 @@ fun BadHabitFormScreen(editId: Long?, navigator: Navigator) {
             loading = state.isSaving,
             modifier = Modifier.fillMaxWidth(),
         )
+    }
+}
+
+/** Confidence needed before a form offers to move the habit to the other list. */
+private const val SWITCH_CONFIDENCE = 0.7f
+
+/**
+ * Non-blocking hints under the name field: "this looks like a good/bad habit" with a switch button, and a
+ * "Did you mean ...?" chip for typos. Never prevents saving.
+ */
+@Composable
+internal fun RecognitionHints(
+    recognition: HabitRecognition,
+    formPolarity: HabitPolarity,
+    switchBanner: String,
+    switchLabel: String,
+    onSwitch: () -> Unit,
+    onApplyCorrection: (String) -> Unit,
+) {
+    val s = LocalStrings.current
+    val c = Nix.colors
+    val suggestsOtherList = recognition.polarity != HabitPolarity.UNKNOWN &&
+        recognition.polarity != formPolarity &&
+        recognition.polarityConfidence >= SWITCH_CONFIDENCE
+    val fixedText = recognition.correctedText
+    val fixedWord = recognition.suggestedCorrection
+
+    if (fixedText != null && fixedWord != null) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            NixChip(s.didYouMean(fixedWord), selected = false, onClick = { onApplyCorrection(fixedText) })
+        }
+    }
+    if (suggestsOtherList) {
+        NixCard(color = c.accentWarm.copy(alpha = 0.10f), borderColor = c.accentWarm.copy(alpha = 0.35f)) {
+            Text(switchBanner, style = NixType.Body, color = c.textPrimary)
+            Spacer(Modifier.height(10.dp))
+            NixButton(
+                text = switchLabel,
+                onClick = onSwitch,
+                style = NixButtonStyle.Secondary,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
