@@ -38,7 +38,8 @@ class CoachEngineTest {
     @Test
     fun betDoesNotMatchBetterOrBetween() {
         assertEquals("generic", kb.match("Be better between meals").id)
-        assertEquals("spending", kb.match("Betting").id)
+        // "betting" belongs to the gambling entry once the behaviour catalog is merged (legacy: spending).
+        assertTrue(kb.match("Betting").id in setOf("spending", "gambling"))
     }
 
     @Test
@@ -160,5 +161,162 @@ class CoachEngineTest {
         val reply = engine.reply("ok let's start", picked, 0)
         assertTrue(reply.contains("let's talk about Smoking"))
         assertTrue(engine.reply("ok let's start", snapshot(), 0).contains("I can help with"))
+    }
+
+    // ---------- "What happens if I stop for ..." ----------
+
+    private fun single() = CoachSnapshot(badHabits = listOf(BadHabitSnapshot(1, "Smoking", 3.days, 12.days, 2)))
+
+    @Test
+    fun whatHappensWithADurationUsesThatMoment() {
+        val reply = engine.reply("what happens if I stop smoking for 6 hours", snapshot(), 0)
+        assertTrue(reply.contains("6 hours"), reply)
+        assertTrue(reply.contains("Timelines vary"), reply)
+        assertTrue(!reply.contains("which habit"), reply)
+    }
+
+    @Test
+    fun whatHappensAnswersForTheSingleActiveHabit() {
+        val reply = engine.reply("what will I feel after 3 days without it?", single(), 0)
+        assertTrue(reply.contains("3 days"), reply)
+        assertTrue(reply.contains("Smoking"), reply)
+    }
+
+    @Test
+    fun whatHappensWithoutADurationSummarisesTheNextMilestones() {
+        val picked = snapshot().copy(focusHabitId = 1)
+        val reply = engine.reply("how long until cravings stop", picked, 0)
+        assertTrue(reply.contains("coming up"), reply)
+        assertTrue(reply.contains("Next:"), reply)
+        assertTrue(reply.contains("Tell me a time"), reply)
+    }
+
+    @Test
+    fun whatHappensWithSeveralHabitsAndNoHintAsksWhichOne() {
+        val reply = engine.reply("what happens if I stop for 2 days", snapshot(), 0)
+        assertTrue(reply.contains("which habit"), reply)
+        assertTrue(reply.contains("Smoking"), reply)
+        assertTrue(reply.contains("Late night scrolling"), reply)
+    }
+
+    @Test
+    fun whatHappensUsesThePickedHabitWhenTheMessageHasNone() {
+        val picked = snapshot().copy(focusHabitId = 2)
+        val reply = engine.reply("what happens if I stop for 2 days", picked, 0)
+        assertTrue(!reply.contains("which habit"), reply)
+        assertTrue(reply.contains("Late night scrolling"), reply)
+    }
+
+    @Test
+    fun whatHappensToleratesTyposInTheQuestionAndTheHabit() {
+        val reply = engine.reply("what hapens if i stop smokng for 6 hours", snapshot(), 0)
+        assertTrue(reply.contains("6 hours"), reply)
+        assertTrue(reply.contains("Smoking"), reply)
+        assertTrue(!reply.contains("which habit"), reply)
+    }
+
+    @Test
+    fun whatHappensWorksInArabic() {
+        val reply = engine.reply("ماذا يحدث لو بطلت يومين", single(), 0)
+        assertTrue(reply.contains("2 days"), reply)
+    }
+
+    @Test
+    fun whatHappensFollowUpReusesThePreviousHabit() {
+        val s = snapshot().copy(recentUserTexts = listOf("what happens if I stop smoking for 6 hours"))
+        val reply = engine.reply("and after a week?", s, 0)
+        assertTrue(reply.contains("7 days"), reply)
+        assertTrue(reply.contains("Smoking"), reply)
+        assertTrue(!reply.contains("which habit"), reply)
+    }
+
+    @Test
+    fun whatHappensForAnUnknownHabitIsAGeneralTimeline() {
+        val s = CoachSnapshot(badHabits = listOf(BadHabitSnapshot(1, "qwzx plorf", 1.days, 1.days, 0)))
+        val reply = engine.reply("what happens if I stop for 2 days", s, 0)
+        assertTrue(reply.contains("general timeline"), reply)
+    }
+
+    @Test
+    fun whatHappensWithNoHabitsAtAllStillAnswers() {
+        val reply = engine.reply("what happens if I stop for 3 days", CoachSnapshot(), 0)
+        assertTrue(reply.contains("3 days"), reply)
+        assertTrue(reply.contains("general timeline"), reply)
+    }
+
+    @Test
+    fun whatHappensIncludesTheSafetyNoteInFull() {
+        val s = CoachSnapshot(badHabits = listOf(BadHabitSnapshot(1, "Alcohol", 1.days, 1.days, 0)))
+        val reply = engine.reply("what happens if I stop for 2 days", s, 0)
+        assertTrue(reply.contains("Important:"), reply)
+        assertTrue(reply.contains("withdrawal can be dangerous"), reply)
+    }
+
+    @Test
+    fun plainBodyQuestionsStillGetTheBodyReply() {
+        val reply = engine.reply("what's happening in my body?", snapshot(), 0)
+        assertTrue(reply.contains("here is what is happening with"), reply)
+    }
+
+    @Test
+    fun sensitiveHabitsAreShownByTheirLabelNotTheTypedWords() {
+        val sensitive = HabitCategory(
+            id = "explicitcontent",
+            label = "Explicit content",
+            keywords = listOf("xyzword"),
+            whyItMatters = "why",
+            milestones = listOf(BodyMilestone(1.days, "A day", "detail")),
+            cravingTips = listOf("tip"),
+        )
+        val local = CoachEngine(HabitKnowledgeBase(listOf(sensitive), emptyList(), emptyList()))
+        val s = CoachSnapshot(badHabits = listOf(BadHabitSnapshot(1, "xyzword", 2.days, 2.days, 0)))
+        val reply = local.reply("what happens after 2 days of xyzword", s, 0)
+        assertTrue(reply.contains("Explicit content"), reply)
+        assertTrue(!reply.contains("xyzword"), reply)
+        assertTrue(!local.reply("I have a craving", s, 0).contains("xyzword"))
+        assertEquals("Explicit content", local.displayName("xyzword"))
+        assertEquals("Smoking", engine.displayName("Smoking"))
+    }
+
+    @Test
+    fun crisisRepliesStillWinOverEverythingElse() {
+        listOf(
+            "I want to kill myself",
+            "what happens if I end my life in 2 days",
+            "i keep thinking about suicde",
+            "عايز اموت",
+            "I want to die and stop for 3 days",
+        ).forEach {
+            val reply = engine.reply(it, snapshot(), 0)
+            assertTrue(reply.contains("emergency"), "$it -> $reply")
+            assertTrue(!reply.contains("Timelines vary"), it)
+        }
+    }
+
+    @Test
+    fun intentMatchingToleratesTypos() {
+        assertTrue(engine.reply("I just relasped", snapshot(), 0).contains("not the end"))
+        assertTrue(engine.reply("thnaks", snapshot(), 0).let { "welcome" in it || "Anytime" in it || "Glad" in it })
+        assertTrue(engine.reply("how am i doing", snapshot(), 0).contains("Smoking"))
+    }
+
+    @Test
+    fun smallTalkGetsAnAnswer() {
+        assertTrue(engine.reply("how are you", snapshot(), 0).contains("how are you doing today"))
+        assertTrue(engine.reply("what can you do", snapshot(), 0).contains("offline"))
+        assertTrue(engine.reply("bye", snapshot(), 0).startsWith("Take care"))
+    }
+
+    @Test
+    fun thanksRepliesVaryWithTheSeed() {
+        val replies = (0L..2L).map { engine.reply("thanks", snapshot(), it) }.toSet()
+        assertEquals(3, replies.size)
+    }
+
+    @Test
+    fun explainStopIsAvailableOnTheEngine() {
+        val a = engine.explainStop("Smoking", 6.hours)
+        assertTrue(!a.isGenericProfile)
+        assertTrue(engine.explainStop("qwzx plorf", 6.hours).isGenericProfile)
     }
 }

@@ -30,6 +30,8 @@ import com.example.reclaimapp.domain.time.DayCalculator
 import com.example.reclaimapp.presentation.components.ConfirmDialog
 import com.example.reclaimapp.presentation.components.DateTimePickerDialog
 import com.example.reclaimapp.presentation.components.ErrorBanner
+import com.example.reclaimapp.domain.widget.WidgetKind
+import com.example.reclaimapp.presentation.components.AddToHomeScreenButton
 import com.example.reclaimapp.presentation.components.NixButton
 import com.example.reclaimapp.presentation.components.NixButtonStyle
 import com.example.reclaimapp.presentation.components.NixCard
@@ -175,6 +177,9 @@ fun EventFormScreen(editId: Long?, navigator: Navigator) {
             loading = state.isSaving,
             modifier = Modifier.fillMaxWidth(),
         )
+        if (editing && editId != null) {
+            AddToHomeScreenButton(WidgetKind.EVENT, editId)
+        }
         if (editing) {
             NixButton(s.deleteEvent, { confirmDelete = true }, style = NixButtonStyle.Danger, icon = NixIcon.Trash, modifier = Modifier.fillMaxWidth())
         }

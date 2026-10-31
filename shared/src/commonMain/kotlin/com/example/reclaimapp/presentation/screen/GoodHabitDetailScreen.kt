@@ -1,5 +1,7 @@
 package com.example.reclaimapp.presentation.screen
 
+import com.example.reclaimapp.domain.widget.WidgetKind
+import com.example.reclaimapp.presentation.components.AddToHomeScreenButton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -87,6 +89,8 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
             Spacer(Modifier.height(14.dp))
             NixProgressBar(habit.todayCount.toFloat() / habit.dailyTarget, color = if (habit.doneToday) c.positive else c.accent)
         }
+
+        AddToHomeScreenButton(WidgetKind.GOOD_QUICK_LOG, habit.id)
 
         // Stats
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

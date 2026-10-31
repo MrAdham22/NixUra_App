@@ -1,0 +1,16 @@
+If you must NOT overwrite the three screen files, make these small additions by hand.
+
+All three files need these two imports (any position among the imports):
+    import com.example.reclaimapp.domain.widget.WidgetKind
+    import com.example.reclaimapp.presentation.components.AddToHomeScreenButton
+
+1) presentation/screen/BadHabitDetailScreen.kt - just before the "// Stats" Row (the one that starts with StatTile(s.statCurrent...):
+        AddToHomeScreenButton(WidgetKind.QUIT_COUNTER, model.habitId)
+
+2) presentation/screen/GoodHabitDetailScreen.kt - just before the "// Stats" Row (starts with StatTile(s.statCurrentStreak...):
+        AddToHomeScreenButton(WidgetKind.GOOD_QUICK_LOG, habit.id)
+
+3) presentation/screen/EventFormScreen.kt - right before the line  "if (editing) {  NixButton(s.deleteEvent, ..."  add:
+        if (editing && editId != null) {
+            AddToHomeScreenButton(WidgetKind.EVENT, editId)
+        }

@@ -18,6 +18,10 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.compose)
 
+    // Widgets: Compose Color (card shades) and coroutines (refresh scope). Both catalog entries already exist.
+    implementation(libs.compose.ui)
+    implementation(libs.kotlinx.coroutines.core)
+
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)
 }

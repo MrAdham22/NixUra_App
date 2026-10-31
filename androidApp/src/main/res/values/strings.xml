@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">ReclaimApp</string>
+
+    <!-- Home-screen widget picker texts (the OS reads these; in-widget text comes from the shared Strings class). -->
+    <string name="widget_quit_label">NixUra quit counter</string>
+    <string name="widget_quit_description">Live time since your last slip for one quit habit.</string>
+    <string name="widget_good_label">NixUra quick log</string>
+    <string name="widget_good_description">See today\'s progress and record a good habit with one tap.</string>
+    <string name="widget_event_label">NixUra events</string>
+    <string name="widget_event_description">Countdown to your next event, or to one you choose.</string>
+    <string name="widget_config_label">Choose for widget</string>
 </resources>

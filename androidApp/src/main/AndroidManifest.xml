@@ -34,6 +34,77 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <!-- Home-screen widgets. Providers must be exported so the launcher can bind them. -->
+        <receiver
+            android:name=".widgets.QuitCounterWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_quit_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_quit_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widgets.GoodHabitWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_good_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_good_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widgets.EventWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_event_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_event_info" />
+        </receiver>
+
+        <!-- Launcher starts this when a widget is placed or reconfigured, so it must be exported. -->
+        <activity
+            android:name=".widgets.WidgetConfigActivity"
+            android:exported="true"
+            android:label="@string/widget_config_label"
+            android:theme="@style/Theme.NixUra">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
+        <!-- Told by the system when a pinned ("Add to Home screen") widget has been placed. -->
+        <receiver
+            android:name=".widgets.WidgetPinReceiver"
+            android:exported="false" />
+
+        <!-- "+" / "-" buttons: only our own PendingIntents target this. -->
+        <receiver
+            android:name=".widgets.WidgetActionReceiver"
+            android:exported="false" />
+
+        <!-- Boot, app update, time/date/time-zone changes and the refresh alarm. System broadcasts reach non-exported receivers. -->
+        <receiver
+            android:name=".widgets.WidgetSystemReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

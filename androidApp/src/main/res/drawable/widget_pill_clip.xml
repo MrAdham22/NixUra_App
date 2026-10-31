@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Progress fill: ImageView.setImageLevel(0..10000) clips it; tinted by the renderer. -->
+<clip xmlns:android="http://schemas.android.com/apk/res/android" android:drawable="@drawable/widget_pill" android:clipOrientation="horizontal" android:gravity="start|fill_vertical" />

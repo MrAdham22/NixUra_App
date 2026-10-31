@@ -223,6 +223,23 @@ data class Strings(
     val clearChatTitle: String = "Clear the conversation?",
     val clearChatBody: String = "Your chat history will be deleted. Your habits stay untouched.",
 
+    // ---- Agent 4: what happens if I stop for ... ----
+    val coachQuickWhatHappens: String = "What happens if I stop for…",
+    val coachWhatHappensPrefix: String = "What happens if I stop for ",
+    val stopExplorerTitle: String = "What happens if I stop for…",
+    val stopExplorerHint: String = "Pick a time or type your own. Timelines vary from person to person.",
+    val stopExplorerNow: String = "My streak",
+    val stopExplorerChipLabels: List<String> = listOf("1h", "3h", "6h", "12h", "1d", "3d", "1w", "2w", "1mo"),
+    val stopExplorerCustomPlaceholder: String = "e.g. 6 hours, 2 days, 3 weeks",
+    val stopExplorerShow: String = "Show",
+    val stopExplorerUnreadable: String = "I couldn't read that time. Try \"6 hours\" or \"2 days\" (up to 10 years).",
+    val stopExplorerHappeningLabel: String = "What is happening",
+    val stopExplorerNextLabel: String = "Coming next",
+    val stopExplorerNextIn: (String, String) -> String = { title, time -> "$title, about $time later" },
+    val stopExplorerNothingNext: String = "The main milestones on this timeline are behind you.",
+    val stopExplorerTipsLabel: String = "If urges show up",
+    val stopExplorerSafetyLabel: String = "Important",
+
     // Profile
     val profileTitle: String = "Profile",
     val profileNoName: String = "Add your name",

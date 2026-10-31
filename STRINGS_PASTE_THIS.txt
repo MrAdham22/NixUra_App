@@ -1,0 +1,33 @@
+PASTE this block into shared/src/commonMain/kotlin/com/example/reclaimapp/presentation/strings/Strings.kt
+at the VERY END of the Strings(...) constructor, right after the last field of the '// Settings' section (the line
+   val aboutBody: ... ,) and BEFORE the closing ')'. Keep the other agents' sections as they are.
+(Strings.kt is NOT included as a file because it would overwrite Agent 1/4's sections.)
+
+    // ---- Agent 5: Android home-screen widgets ----
+    val widgetQuitCaption: String = "since your last slip",
+    val widgetDaysSuffix: String = "d",
+    val widgetNoQuitHabits: String = "No quit habits yet",
+    val widgetNoGoodHabits: String = "No good habits yet",
+    val widgetNoEvents: String = "No events yet",
+    val widgetTapToAdd: String = "Tap to add one",
+    val widgetTapToChoose: String = "Tap to choose one",
+    val widgetTapToChooseAnother: String = "Tap to choose another",
+    val widgetHabitRemoved: String = "Habit removed",
+    val widgetEventRemoved: String = "Event removed",
+    val widgetGoodDone: String = "Done for today",
+    val widgetGoodToGo: String = "to go",
+    val widgetAddOne: String = "Add one",
+    val widgetRemoveOne: String = "Remove one",
+    val widgetEventNext: String = "Next event",
+    val widgetEventUntil: String = "until",
+    val widgetEventSince: String = "since",
+    val widgetError: String = "Couldn't load",
+    val widgetTapToOpen: String = "Tap to open NixUra",
+    val widgetConfigTitleQuit: String = "Choose a quit habit",
+    val widgetConfigTitleGood: String = "Choose a good habit",
+    val widgetConfigTitleEvent: String = "Choose an event",
+    val widgetConfigNearestEvent: String = "Nearest upcoming event",
+    val widgetConfigEmptyQuit: String = "You have no quit habits yet. Add one in NixUra first, or place the widget now and tap it later.",
+    val widgetConfigEmptyGood: String = "You have no good habits yet. Add one in NixUra first, or place the widget now and tap it later.",
+    val widgetConfigPlaceAnyway: String = "Place widget anyway",
+    val widgetConfigCancel: String = "Cancel",

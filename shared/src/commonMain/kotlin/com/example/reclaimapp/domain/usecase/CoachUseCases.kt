@@ -24,6 +24,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlin.time.Duration.Companion.milliseconds
 
 const val MAX_COACH_MESSAGE = 500
+private const val RECENT_USER_MESSAGES = 6
 
 class BuildCoachSnapshotUseCase(
     private val tracking: HabitTrackingRepository,
@@ -91,9 +92,15 @@ class SendCoachMessageUseCase(
         val clean = text.trim()
         require(clean.isNotEmpty()) { "Message is empty" }
         require(clean.length <= MAX_COACH_MESSAGE) { "Message is too long" }
+        // The earlier things the user said, so the coach can handle follow-ups ("and after a week?").
+        val earlier = repository.observeMessages().first()
+            .filter { it.role == CoachRole.USER }
+            .takeLast(RECENT_USER_MESSAGES)
+            .map { it.text }
         repository.append(CoachRole.USER, clean)
         if (replyDelayMillis > 0) delay(replyDelayMillis)
-        repository.append(CoachRole.COACH, responder.respond(clean, buildSnapshot().copy(focusHabitId = focusHabitId)))
+        val snapshot = buildSnapshot().copy(focusHabitId = focusHabitId, recentUserTexts = earlier)
+        repository.append(CoachRole.COACH, responder.respond(clean, snapshot))
     }
 }
 
@@ -123,7 +130,7 @@ class GetCoachContextUseCase(
         val focus = picked ?: snapshot.badHabits.minByOrNull { it.elapsed }
         val insight = when {
             focus != null -> com.example.reclaimapp.domain.coach.CoachNote(
-                title = "${focus.name} · ${com.example.reclaimapp.domain.coach.durationText(focus.elapsed)}",
+                title = "${engine.displayName(focus.name)} · ${com.example.reclaimapp.domain.coach.durationText(focus.elapsed)}",
                 body = engine.motivation(focus.name, focus.elapsed, seed),
             )
             else -> null

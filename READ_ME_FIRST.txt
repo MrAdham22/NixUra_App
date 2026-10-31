@@ -1,8 +1,21 @@
-AGENT 2 DELIVERY - copy over the project root (merge folders, overwrite when asked).
+AGENT 5 DELIVERY v3 - widgets look like the in-app cards + "Add to Home screen" + final docs (Agents 1-5 merged in README/docs).
 
-Overwrites: shared/.../domain/coach/catalog/SubstanceCatalog.kt (Agent 1's empty stub), README.md, docs/DEVELOPMENT_STATUS.md, docs/PROJECT_CONTEXT.md
-Adds:       shared/.../domain/coach/catalog/Substance{Nicotine,Drinks,Food,Drugs}.kt
-            shared/src/commonTest/.../domain/coach/catalog/SubstanceCatalogTest.kt
-
-WARNING: if Agent 3 or you already changed README.md / docs/*.md, do NOT overwrite them blindly - merge the "Round 2 - Agent 2" sections by hand.
-Kotlin NOT compiled yet. Run: gradlew.bat :shared:testAndroidHostTest   then   gradlew.bat :androidApp:assembleDebug
+1) Copy this folder's contents over your project root (merge folders, overwrite when asked).
+2) DELETE these old files (v1/v2 layouts/drawables, now unused):
+     androidApp/src/main/res/layout/widget_counter_compact.xml
+     androidApp/src/main/res/layout/widget_counter_wide.xml
+     androidApp/src/main/res/layout/widget_good_compact.xml
+     androidApp/src/main/res/layout/widget_good_wide.xml
+     androidApp/src/main/res/drawable/widget_bg_round.xml
+     androidApp/src/main/res/drawable/widget_btn_plus.xml
+     androidApp/src/main/res/drawable/widget_btn_minus.xml
+     androidApp/src/main/res/drawable/widget_progress.xml
+   (Leaving them does no harm, but the old layouts are not used any more.)
+3) Strings.kt: nothing to do. If you pasted my widget block into it earlier, it is simply unused now (you may delete it).
+4) THREE SCREEN FILES are included only so you can copy-paste. If you have since changed or merged other agents' versions of them
+   (Agent 4 edits BadHabitDetailScreen), DON'T overwrite - add just these lines instead (see PATCH_SCREENS.txt):
+     BadHabitDetailScreen.kt, GoodHabitDetailScreen.kt, EventFormScreen.kt
+5) Build: gradlew.bat :shared:testAndroidHostTest   then   gradlew.bat :androidApp:assembleDebug
+   Gradle sync needs nothing new. Send me any compiler error text.
+6) After installing: remove and re-add the widgets once (the layouts changed).
+NOT compiled with Gradle / not run on a device by me.

@@ -31,6 +31,8 @@ data class CoachSnapshot(
     val nextEvent: EventSnapshot? = null,
     /** Quit habit the user picked in the coach screen to talk about (`null` = none picked). */
     val focusHabitId: Long? = null,
+    /** The user's earlier chat messages (oldest first, without the current one), used for follow-ups like "and after a week?". */
+    val recentUserTexts: List<String> = emptyList(),
 )
 
 data class HabitInsight(
@@ -49,7 +51,21 @@ data class CoachNote(val title: String, val body: String)
  */
 class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase()) {
 
+    private val explainer = StopTimelineExplainer(knowledge)
+
     fun categoryFor(habitName: String): HabitCategory = knowledge.match(habitName)
+
+    /** "What happens if I stop for [elapsed]?" for any habit name (generic profile when the habit is not recognised). */
+    fun explainStop(habitName: String, elapsed: Duration): StopTimelineAnswer = explainer.explain(habitName, elapsed)
+
+    /**
+     * The name to show in coach text. Sensitive habits are shown by their neutral category label, never by the
+     * words the user typed.
+     */
+    fun displayName(habitName: String): String {
+        val category = knowledge.match(habitName)
+        return if (category.id in SENSITIVE_IDS) category.label else habitName
+    }
 
     fun insightFor(habitName: String, elapsed: Duration): HabitInsight {
         val category = knowledge.match(habitName)
@@ -109,7 +125,7 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
         val focus = snapshot.badHabits.minByOrNull { it.elapsed }
         val pendingGood = snapshot.goodHabits.firstOrNull { it.todayCount < it.dailyTarget }
         val body = when {
-            focus != null -> "${focus.name}: ${durationText(focus.elapsed)} clear. ${motivation(focus.name, focus.elapsed, seed)}"
+            focus != null -> "${displayName(focus.name)}: ${durationText(focus.elapsed)} clear. ${motivation(focus.name, focus.elapsed, seed)}"
             pendingGood != null -> "Don't forget \"${pendingGood.name}\" today — ${pendingGood.todayCount} of ${pendingGood.dailyTarget} so far."
             else -> "Take a minute to notice how you are doing. Small steps count."
         }
@@ -119,7 +135,7 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
     fun milestoneNote(habitName: String, reached: Duration): CoachNote {
         val category = knowledge.match(habitName)
         val milestone = category.milestones.lastOrNull { it.after <= reached }
-        val title = "${durationText(reached)} clear: $habitName"
+        val title = "${durationText(reached)} clear: ${displayName(habitName)}"
         val body = milestone?.let { "${it.title}. ${it.detail}" }
             ?: "You reached ${durationText(reached)}. Keep going — you are proving it to yourself."
         return CoachNote(title, body)
@@ -132,7 +148,7 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
         val hello = if (name.isEmpty()) "Hi there." else "Hi $name."
         val focus = snapshot.badHabits.maxByOrNull { it.elapsed }
         val status = when {
-            focus != null -> " You are ${durationText(focus.elapsed)} clear on ${focus.name}. ${motivation(focus.name, focus.elapsed, seed)}"
+            focus != null -> " You are ${durationText(focus.elapsed)} clear on ${displayName(focus.name)}. ${motivation(focus.name, focus.elapsed, seed)}"
             snapshot.goodHabits.isNotEmpty() -> " Your good habits are waiting for today's check-in."
             else -> " Add a habit you want to leave behind and I will help you through it."
         }
@@ -154,35 +170,161 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
 
     fun reply(userText: String, snapshot: CoachSnapshot, seed: Long): String {
         val text = userText.lowercase().trim()
-        val words = tokenize(text)
+        val tokens = CoachText.tokens(userText)
         val focused = snapshot.focusHabitId?.let { id -> snapshot.badHabits.firstOrNull { it.id == id } }
-        val habit = findMentionedHabit(text, words, snapshot) ?: focused ?: snapshot.badHabits.minByOrNull { it.elapsed }
+        val habit = findMentionedHabit(text, tokens, snapshot) ?: focused ?: snapshot.badHabits.minByOrNull { it.elapsed }
         val name = snapshot.userName.trim()
         val lead = if (name.isEmpty()) "" else "$name, "
+        val parsedDuration = DurationParser.find(userText)
 
         return when {
-            isCrisis(text) -> crisisReply()
-            hasStem(text, words, RELAPSE) -> relapseReply(lead, habit, seed)
-            hasStem(text, words, CRAVING) -> cravingReply(lead, habit, seed)
-            hasStem(text, words, BODY) -> bodyReply(lead, habit)
-            hasStem(text, words, PROGRESS) -> progressReply(snapshot)
-            hasStem(text, words, PLAN) -> planReply(lead, habit)
-            hasStem(text, words, EMOTION) -> emotionReply(lead, habit)
-            hasStem(text, words, MOTIVATION) -> motivationReply(lead, habit, seed)
-            hasStem(text, words, GOOD) -> goodHabitsReply(snapshot)
-            hasStem(text, words, EVENTS) -> eventReply(snapshot)
-            hasWord(words, THANKS) -> "You're welcome, ${name.ifEmpty { "friend" }}. I'm here whenever you need a reset or a boost."
-            hasWord(words, GREETING) -> greeting(snapshot, seed)
+            isCrisis(userText) -> crisisReply()
+            isWhatHappens(userText, tokens, parsedDuration, snapshot) -> whatHappensReply(lead, userText, parsedDuration, snapshot, focused, seed)
+            hasAny(text, tokens, RELAPSE) -> relapseReply(lead, habit, seed)
+            hasAny(text, tokens, CRAVING) -> cravingReply(lead, habit, seed)
+            hasAny(text, tokens, BODY) -> bodyReply(lead, habit)
+            hasAny(text, tokens, PROGRESS) -> progressReply(snapshot)
+            hasAny(text, tokens, PLAN) -> planReply(lead, habit)
+            hasAny(text, tokens, EMOTION) -> emotionReply(lead, habit)
+            hasAny(text, tokens, MOTIVATION) -> motivationReply(lead, habit, seed)
+            hasAny(text, tokens, GOOD) -> goodHabitsReply(snapshot)
+            hasAny(text, tokens, EVENTS) -> eventReply(snapshot)
+            hasWord(tokens, THANKS) -> thanksReply(name, seed)
+            hasWord(tokens, GREETING) -> greeting(snapshot, seed)
+            hasPhrase(tokens, HOW_ARE_YOU) -> "I'm doing well, thank you for asking. More importantly, how are you doing today?"
+            hasPhrase(tokens, WHO_ARE_YOU) -> capabilitiesReply()
+            hasPhrase(tokens, GOODBYE) -> "Take care${if (name.isEmpty()) "" else ", $name"}. I'm here whenever you need a reset or a boost."
             focused != null -> habitOverviewReply(lead, focused)
-            else -> "I can help with cravings, your progress, what is happening in your body, or a reset plan. " +
+            else -> "I can help with cravings, your progress, what is happening in your body, what happens when you stop for a while, or a reset plan. " +
                 "Tell me what is on your mind, or pick one of the suggestions below."
         }
     }
 
+    // ---------- "What happens if I stop for ...?" ----------
+
+    /**
+     * True for questions like "what happens if I stop for 6 hours", "what will I feel after 3 days without it",
+     * "how long until cravings stop", "ماذا يحدث لو بطلت يومين", and for short follow-ups such as "and after a week?".
+     */
+    private fun isWhatHappens(userText: String, tokens: List<String>, duration: ParsedDuration?, snapshot: CoachSnapshot): Boolean {
+        if (looksLikeWhatHappens(tokens, duration, userText)) return true
+        // Follow-up: the previous question was a "what happens" one and this is just a new time.
+        if (duration != null && tokens.size <= FOLLOW_UP_MAX_WORDS) {
+            val previous = snapshot.recentUserTexts.lastOrNull() ?: return false
+            return looksLikeWhatHappens(CoachText.tokens(previous), DurationParser.find(previous), previous)
+        }
+        return false
+    }
+
+    private fun looksLikeWhatHappens(tokens: List<String>, duration: ParsedDuration?, rawText: String): Boolean {
+        if (tokens.isEmpty()) return false
+        val trigger = WHAT_HAPPENS_TRIGGERS.any { CoachText.hasPhrase(tokens, it) }
+        val stopContext = STOP_CONTEXT.any { CoachText.hasWord(tokens, it) } || STOP_CONTEXT_PHRASES.any { CoachText.hasPhrase(tokens, it) }
+        if (trigger && (duration != null || stopContext)) return true
+        val timeWord = tokens.any { it == "after" || it == "without" || it == "بعد" || it == "بدون" }
+        val questionLike = rawText.contains('?') || rawText.contains('؟') || QUESTION_WORDS.any { CoachText.hasWord(tokens, it) }
+        return duration != null && (stopContext || timeWord) && questionLike
+    }
+
+    private class Resolved(val snap: BadHabitSnapshot?, val name: String)
+
+    /** The habit a piece of text talks about: one of the user's habits, or just a recognised category. */
+    private fun resolveMention(rawText: String, snapshot: CoachSnapshot): Resolved? {
+        val tokens = CoachText.tokens(rawText)
+        findMentionedHabit(rawText.lowercase(), tokens, snapshot)?.let { return Resolved(it, it.name) }
+        val match = knowledge.matchDetailed(rawText) ?: return null
+        return Resolved(null, match.category.label)
+    }
+
+    private fun whatHappensReply(
+        lead: String,
+        userText: String,
+        duration: ParsedDuration?,
+        snapshot: CoachSnapshot,
+        focused: BadHabitSnapshot?,
+        seed: Long,
+    ): String {
+        val remainder = if (duration != null) userText.removeRange(duration.start, duration.end) else userText
+        val resolved: Resolved? = resolveMention(remainder, snapshot)
+            ?: snapshot.recentUserTexts.asReversed().firstNotNullOfOrNull { resolveMention(it, snapshot) }
+            ?: focused?.let { Resolved(it, it.name) }
+            ?: snapshot.badHabits.singleOrNull()?.let { Resolved(it, it.name) }
+
+        if (resolved == null && snapshot.badHabits.size > 1) {
+            val names = snapshot.badHabits.map { displayName(it.name) }
+            val list = names.dropLast(1).joinToString(", ") + " or " + names.last()
+            return "${lead}which habit do you mean: $list? Tell me its name together with the time, " +
+                "for example \"what happens to ${names.first()} after 6 hours?\""
+        }
+
+        val habitName = resolved?.name ?: ""
+        val snap = resolved?.snap
+        val actual = snap?.elapsed ?: Duration.ZERO
+        val opener = seed.mod(3L).toInt()
+
+        if (duration == null) {
+            val upcoming = explainer.upcoming(habitName, actual, 2)
+            val answer = explainer.explain(habitName, actual)
+            val where = if (snap != null) " You are ${elapsedText(actual)} in." else ""
+            val shown = if (snap != null) displayName(snap.name) else answer.habitLabel
+            val sb = StringBuilder("${lead}here is what is coming up for $shown.$where\n\n")
+            if (upcoming.isEmpty()) {
+                sb.append("The main milestones on this timeline are behind you. From here it is mostly about keeping your routines and knowing your triggers.\n\n")
+            } else {
+                upcoming.forEachIndexed { index, m ->
+                    val label = if (index == 0) "Next" else "After that"
+                    sb.append("$label: ${m.title}, in about ${elapsedText(m.after - actual)}. ${m.detail}\n\n")
+                }
+            }
+            sb.append("Tell me a time, for example \"what happens after 3 days?\", and I will show you that moment.\n\n")
+            appendSafetyAndDisclaimer(sb, answer)
+            return sb.toString().trimEnd()
+        }
+
+        val answer = explainer.explain(habitName, duration.duration)
+        val shown = if (snap != null) displayName(snap.name) else answer.habitLabel
+        val intro = when (opener) {
+            0 -> "here is what typically happens around ${elapsedText(duration.duration)} in with $shown."
+            1 -> "around ${elapsedText(duration.duration)} in with $shown, this is the usual picture."
+            else -> "this is what many people notice about ${elapsedText(duration.duration)} into $shown."
+        }
+        val sb = StringBuilder("$lead$intro\n\n")
+        sb.append("${answer.headline}\n${answer.whatIsHappening}\n\n")
+        val before = answer.alreadyHappened.dropLast(1).takeLast(2)
+        if (before.isNotEmpty()) sb.append("Earlier on the way: ${before.joinToString("; ") { it.title }}.\n\n")
+        if (answer.next != null && answer.timeToNext != null) {
+            sb.append("Next: ${answer.next.title}, about ${elapsedText(answer.timeToNext)} later.\n\n")
+        }
+        if (answer.cravingTips.isNotEmpty()) {
+            sb.append("If urges show up: ${answer.cravingTips[seed.mod(answer.cravingTips.size.toLong()).toInt()]}\n\n")
+        }
+        if (snap != null) sb.append("You are actually ${elapsedText(snap.elapsed)} in right now.\n\n")
+        appendSafetyAndDisclaimer(sb, answer, includeDisclaimer = false)
+        return sb.toString().trimEnd()
+    }
+
+    private fun appendSafetyAndDisclaimer(sb: StringBuilder, answer: StopTimelineAnswer, includeDisclaimer: Boolean = true) {
+        answer.safetyNote?.let { sb.append("Important: $it\n\n") }
+        if (includeDisclaimer) sb.append("Timelines vary, and this is general information, not medical advice.")
+    }
+
+    private fun thanksReply(name: String, seed: Long): String {
+        val who = name.ifEmpty { "friend" }
+        return listOf(
+            "You're welcome, $who. I'm here whenever you need a reset or a boost.",
+            "Anytime, $who. Every check-in counts.",
+            "Glad to help, $who. Keep going, one step at a time.",
+        )[seed.mod(3L).toInt()]
+    }
+
+    private fun capabilitiesReply(): String =
+        "I'm your offline NixUra coach. I can help you through a craving, explain what happens in your body and mind when you stop for a few hours or days, " +
+            "review your progress, build a reset plan, or just cheer you on. Replies are generated on your device."
+
     private fun cravingReply(lead: String, habit: BadHabitSnapshot?, seed: Long): String {
         val category = habit?.let { knowledge.match(it.name) } ?: knowledge.generic
         val tip = category.cravingTips[seed.mod(category.cravingTips.size.toLong()).toInt()]
-        val where = habit?.let { " You are ${durationText(it.elapsed)} into ${it.name}." } ?: ""
+        val where = habit?.let { " You are ${durationText(it.elapsed)} into ${displayName(it.name)}." } ?: ""
         val safety = category.safetyNote?.let { "\n\nImportant: $it" } ?: ""
         return "${lead}that urge is real, and it is temporary. Most cravings fade in 10 minutes.$where\n\n" +
             "Try this now:\n1. Delay — set a 10-minute timer.\n2. Breathe — 5 slow breaths (in 4, out 6).\n" +
@@ -208,7 +350,7 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
         val insight = insightFor(habit.name, habit.elapsed)
         val latest = insight.achieved.lastOrNull()
         val next = insight.next
-        val sb = StringBuilder("${lead}here is what is happening with ${habit.name} (${insight.category.label}), ${durationText(habit.elapsed)} in:\n\n")
+        val sb = StringBuilder("${lead}here is what is happening with ${displayName(habit.name)} (${insight.category.label}), ${durationText(habit.elapsed)} in:\n\n")
         if (latest != null) {
             sb.append("Now: ${latest.title}. ${latest.detail}\n\n")
         } else {
@@ -225,12 +367,12 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
     /** Shown when the user picked a habit and sent something that matches no other topic. */
     private fun habitOverviewReply(lead: String, habit: BadHabitSnapshot): String {
         val insight = insightFor(habit.name, habit.elapsed)
-        val sb = StringBuilder("${lead}let's talk about ${habit.name} (${insight.category.label}). ")
+        val sb = StringBuilder("${lead}let's talk about ${displayName(habit.name)} (${insight.category.label}). ")
         sb.append("You are ${durationText(habit.elapsed)} in; your longest streak is ${durationText(habit.longest)}")
         sb.append(if (habit.relapseCount == 0) " and you have no relapses recorded.\n\n" else " with ${habit.relapseCount} relapse(s) recorded.\n\n")
         insight.achieved.lastOrNull()?.let { sb.append("Where your body is now: ${it.title}. ${it.detail}\n\n") }
         insight.category.safetyNote?.let { sb.append("Important: $it\n\n") }
-        sb.append("I can help with a craving, explain what is happening in your body, or build a reset plan for ${habit.name}. What do you need?")
+        sb.append("I can help with a craving, explain what is happening in your body, or build a reset plan for ${displayName(habit.name)}. What do you need?")
         return sb.toString()
     }
 
@@ -240,19 +382,19 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
         }
         val sb = StringBuilder("Here is where you stand:\n\n")
         snapshot.badHabits.forEach {
-            sb.append("• ${it.name}: ${durationText(it.elapsed)} clear (best ${durationText(it.longest)})\n")
+            sb.append("• ${displayName(it.name)}: ${durationText(it.elapsed)} clear (best ${durationText(it.longest)})\n")
         }
         snapshot.goodHabits.forEach {
             sb.append("• ${it.name}: ${it.todayCount}/${it.dailyTarget} today, streak ${it.streakDays} ${plural(it.streakDays, "day", "days")}\n")
         }
         val best = snapshot.badHabits.maxByOrNull { it.elapsed }
-        if (best != null) sb.append("\nYour strongest streak is ${best.name}. Keep it protected.")
+        if (best != null) sb.append("\nYour strongest streak is ${displayName(best.name)}. Keep it protected.")
         return sb.toString().trimEnd()
     }
 
     private fun planReply(lead: String, habit: BadHabitSnapshot?): String {
         val category = habit?.let { knowledge.match(it.name) } ?: knowledge.generic
-        val target = habit?.name ?: "your habit"
+        val target = habit?.let { displayName(it.name) } ?: "your habit"
         return "${lead}here is a simple reset plan for $target:\n\n" +
             "1. Spot the trigger — when and where does the urge usually start?\n" +
             "2. Pick a replacement — ${category.cravingTips.first()}\n" +
@@ -263,7 +405,7 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
     }
 
     private fun emotionReply(lead: String, habit: BadHabitSnapshot?): String {
-        val target = habit?.let { " around ${it.name}" } ?: ""
+        val target = habit?.let { " around ${displayName(it.name)}" } ?: ""
         return "${lead}strong feelings are one of the most common triggers$target — and feeling them does not mean you have to act on them.\n\n" +
             "Try box breathing for 2 minutes: in 4, hold 4, out 4, hold 4. Then name the feeling out loud (\"I feel stressed\") and ask what you actually need: rest, food, company, or a break.\n\n" +
             "If these feelings are heavy or last for weeks, talking to someone you trust or a professional can make a real difference."
@@ -271,7 +413,7 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
 
     private fun motivationReply(lead: String, habit: BadHabitSnapshot?, seed: Long): String {
         return if (habit != null) {
-            "$lead${motivation(habit.name, habit.elapsed, seed)}\n\nYou are ${durationText(habit.elapsed)} into ${habit.name}. That is real, measurable progress."
+            "$lead${motivation(habit.name, habit.elapsed, seed)}\n\nYou are ${durationText(habit.elapsed)} into ${displayName(habit.name)}. That is real, measurable progress."
         } else {
             "${lead}every habit begins with a decision. Add one you want to leave behind and I will cheer you on every step."
         }
@@ -303,41 +445,81 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
 
     // ---------- Helpers ----------
 
-    private fun findMentionedHabit(text: String, words: Set<String>, snapshot: CoachSnapshot): BadHabitSnapshot? =
-        snapshot.badHabits.firstOrNull { habit ->
-            val n = habit.name.lowercase()
-            text.contains(n) || tokenize(n).any { it.length >= 4 && words.any { w -> w.startsWith(it) || it.startsWith(w) && w.length >= 4 } }
+    private fun findMentionedHabit(text: String, tokens: List<String>, snapshot: CoachSnapshot): BadHabitSnapshot? {
+        val normalized = CoachText.normalize(text)
+        val byName = snapshot.badHabits.firstOrNull { habit ->
+            val n = CoachText.normalize(habit.name)
+            n.isNotEmpty() && (
+                normalized.contains(n) ||
+                    CoachText.tokens(n).any { key ->
+                        key.length >= 4 && tokens.any { w ->
+                            w.startsWith(key) || (key.startsWith(w) && w.length >= 4) || CoachText.wordMatches(w, key)
+                        }
+                    }
+                )
         }
+        if (byName != null) return byName
+        // Not named, but a word that belongs to the same category ("cigarette" for a habit called "Smoking").
+        val mentioned = knowledge.matchDetailed(text)?.category ?: return null
+        return snapshot.badHabits.firstOrNull { knowledge.match(it.name).id == mentioned.id }
+    }
 
     /** True when [userText] suggests self-harm. Callers (including any future online AI) must handle this locally. */
     fun isCrisis(userText: String): Boolean {
         val text = userText.lowercase()
-        return CRISIS.any { text.contains(it) }
+        if (CRISIS.any { text.contains(it) }) return true
+        val tokens = CoachText.tokens(userText)
+        return CRISIS_PHRASES.any { CoachText.hasPhrase(tokens, it) }
     }
 
-    private fun tokenize(text: String): Set<String> {
-        val result = mutableSetOf<String>()
-        val current = StringBuilder()
-        for (ch in text) {
-            if (ch.isLetterOrDigit() || ch == '\'') {
-                current.append(ch)
-            } else if (current.isNotEmpty()) {
-                result += current.toString()
-                current.clear()
-            }
+    /** A stem ("crav") matches a word that starts with it; a multi-word phrase matches consecutive words (typos allowed). */
+    private fun hasAny(text: String, tokens: List<String>, stems: List<String>): Boolean = stems.any { stem ->
+        val parts = CoachText.tokens(stem)
+        when {
+            parts.isEmpty() -> false
+            parts.size > 1 -> CoachText.hasPhrase(tokens, parts)
+            else -> tokens.any { CoachText.stemMatches(it, parts[0]) }
         }
-        if (current.isNotEmpty()) result += current.toString()
-        return result
     }
 
-    private fun hasStem(text: String, words: Set<String>, stems: List<String>): Boolean = stems.any { stem ->
-        if (stem.contains(' ')) text.contains(stem) else words.any { it.startsWith(stem) }
-    }
+    private fun hasPhrase(tokens: List<String>, phrases: List<List<String>>): Boolean = phrases.any { CoachText.hasPhrase(tokens, it) }
 
-    private fun hasWord(words: Set<String>, candidates: List<String>): Boolean = candidates.any { it in words }
+    private fun hasWord(tokens: List<String>, candidates: List<String>): Boolean =
+        candidates.any { CoachText.hasWord(tokens, CoachText.normalize(it)) }
 
     companion object {
         private val ONE_HOUR = Duration.parse("1h")
+        private const val FOLLOW_UP_MAX_WORDS = 7
+
+        /** Habit categories that are shown by their neutral label in coach text, never by the typed words. */
+        private val SENSITIVE_IDS = setOf("explicitcontent")
+
+        private fun phrases(vararg raw: String): List<List<String>> = raw.map { CoachText.phrase(it) }
+
+        private val WHAT_HAPPENS_TRIGGERS = phrases(
+            "what happens", "what will happen", "what would happen", "what is going to happen", "whats happening", "what is happening",
+            "what do i feel", "what will i feel", "what would i feel", "how will i feel", "how would i feel", "what to expect",
+            "what changes", "how long until", "how long before", "how long till", "how long will it take", "when will it get easier",
+            "when does it get easier", "when do cravings", "when will cravings", "when does the craving", "when will the cravings",
+            "ماذا يحدث", "ماذا سيحدث", "ماذا يحصل", "ايه اللي بيحصل", "ايه اللي هيحصل", "ايه اللي يحصل", "هيحصل ايه", "بيحصل ايه",
+            "ايه بيحصل", "ايه هيحصل", "ايش يصير", "شو يصير", "شو بيصير", "هحس بايه", "ماذا اشعر", "امتى هيروح", "متى تتوقف",
+        )
+        private val STOP_CONTEXT = listOf(
+            "stop", "stopped", "stopping", "quit", "quitting", "quitted", "without", "abstain", "abstaining", "clear",
+            "cravings", "craving", "easier", "fade",
+            "بطلت", "ابطل", "هبطل", "بطل", "اقلع", "اقلعت", "توقفت", "توقف", "بدون", "امتنع", "تركت", "اترك", "لو",
+        )
+        private val STOP_CONTEXT_PHRASES = phrases("go away", "cut out", "cut down", "من غير", "give up")
+        private val QUESTION_WORDS = listOf("what", "how", "when", "will", "would", "ماذا", "ايه", "امتى", "هحس")
+
+        private val CRISIS_PHRASES = phrases(
+            "suicide", "suicidal", "kill myself", "killing myself", "end my life", "want to die", "wanna die", "hurt myself",
+            "self harm", "dont want to live", "no reason to live", "better off dead", "wish i was dead", "end it all",
+            "انتحار", "عايز اموت", "عاوز اموت", "نفسي اموت", "اقتل نفسي", "هقتل نفسي", "اموت نفسي", "مش عايز اعيش",
+        )
+        private val HOW_ARE_YOU = phrases("how are you", "how are you doing", "how r u", "كيف حالك", "عامل ايه", "ازيك", "اخبارك ايه")
+        private val WHO_ARE_YOU = phrases("who are you", "what are you", "what can you do", "what do you do", "انت مين", "بتعمل ايه")
+        private val GOODBYE = phrases("bye", "goodbye", "see you", "good night", "مع السلامه", "تصبح على خير")
 
         private val CRISIS = listOf(
             "suicid", "kill myself", "end my life", "want to die", "hurt myself", "self harm", "self-harm", "انتحار", "اموت نفسي", "أموت نفسي",

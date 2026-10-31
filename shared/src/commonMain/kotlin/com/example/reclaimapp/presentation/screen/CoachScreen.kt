@@ -132,8 +132,10 @@ fun CoachScreen(navigator: Navigator) {
         }
 
         Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (state.suggestions.isNotEmpty() && !state.isTyping) {
+            if (!state.isTyping) {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Starts the "what happens if I stop for ..." question; the user finishes it with a time.
+                    NixChip(s.coachQuickWhatHappens, selected = false, onClick = { input = s.coachWhatHappensPrefix })
                     state.suggestions.forEach { suggestion ->
                         NixChip(suggestion, selected = false, onClick = { send(suggestion) })
                     }

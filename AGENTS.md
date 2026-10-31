@@ -16,15 +16,15 @@ NixUra is an offline-first habit app for **Android and iOS** (Kotlin Multiplatfo
 
 ## Current state in one line
 
-The merged UI + features (good habits, events, profile, settings, coach, Android notifications) **are built, run and tested on Android and work properly** (owner-confirmed, 2026-10-23). The owner's remaining work: fine-tune the UI, add a real AI agent, add curated info on many bad habits with recognition of free-typed habit names, and make the app work on iOS (never built or run; iOS notifications not implemented). When asked to continue: check the "What is left" list in DEVELOPMENT_STATUS.md, run what your machine can (`:androidApp:assembleDebug`, `:shared:testAndroidHostTest`; on macOS also the iOS tasks), and never claim a build or test passed unless you ran it.
+The merged UI + features (good habits, events, profile, settings, coach, Android notifications) **are built, run and tested on Android and work properly** (owner-confirmed, 2026-10-23). The owner's remaining work: fine-tune the UI, add a real AI agent, add curated info on many bad habits with recognition of free-typed habit names, and make the app work on iOS (never built or run; iOS notifications not implemented). When asked to continue: check the "What is left" list in DEVELOPMENT_STATUS.md, run what your machine can (`:androidApp:assembleDebug`, `:shared:testAndroidHostTest`; on macOS also the iOS tasks), and never claim a build or test passed unless you ran it. Round 2 added Android home-screen widgets (quit counter, good-habit quick log, events, styled like the in-app cards, plus "Add to Home screen" buttons) in `androidApp/.../widgets/` with shared logic in `domain/widget/`. The earlier widget version was confirmed working on a device by the owner; the card redesign and the pin buttons are **unverified** (type-checked and unit-tested only). Round 2 coach/catalog work from other agents is also **unverified** unless the docs say otherwise. iOS widgets are not implemented (need macOS + WidgetKit + App Group).
 
 ## Architecture (mandatory)
 
-- Single module `:shared` with **domain**, **data**, **presentation** packages (+ `di`). Android-only code lives in `:androidApp` (Application, Activity, notifications); iOS-only code lives in `shared/src/iosMain` and `iosApp/` (Swift host, Xcode project).
+- Single module `:shared` with **domain**, **data**, **presentation** packages (+ `di`). Android-only code lives in `:androidApp` (Application, Activity, notifications, home-screen widgets); iOS-only code lives in `shared/src/iosMain` and `iosApp/` (Swift host, Xcode project).
 - **Domain:** pure Kotlin — models, use cases, calculators, coach engine, notification planner, repository **interfaces**. No Room, Compose, or network.
 - **Data:** Room (DB version 2 with `MIGRATION_1_2`), mappers, repository **implementations**.
 - **Presentation:** **MVVM** — Compose UI, ViewModels, `Strings` (all UI text), `Navigator` (no nav library). No business rules in Composables.
-- **DI:** Koin (`di/AppModules.kt`; platform modules (Android and iOS) provide DB, `NotificationScheduler`, `NotificationPermissionGateway`).
+- **DI:** Koin (`di/AppModules.kt`; platform modules (Android and iOS) provide DB, `NotificationScheduler`, `NotificationPermissionGateway`; the Android module also registers the widget use cases).
 - **Scope:** offline only — no accounts, backend or sync. The coach is offline rule-based behind `CoachResponder`; a real AI needs the owner's approval, a consent toggle and a server-side key (see AI_COACH_UPGRADE.md).
 
 ## iOS is a first-class target (approved)

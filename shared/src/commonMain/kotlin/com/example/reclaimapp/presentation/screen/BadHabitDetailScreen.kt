@@ -37,6 +37,8 @@ import com.example.reclaimapp.presentation.components.CounterBlocks
 import com.example.reclaimapp.presentation.components.ConfirmDialog
 import com.example.reclaimapp.presentation.components.ErrorBanner
 import com.example.reclaimapp.presentation.components.GlyphBadge
+import com.example.reclaimapp.presentation.components.AddToHomeScreenButton
+import com.example.reclaimapp.domain.widget.WidgetKind
 import com.example.reclaimapp.presentation.components.NixButton
 import com.example.reclaimapp.presentation.components.NixButtonStyle
 import com.example.reclaimapp.presentation.components.NixCard
@@ -132,6 +134,8 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
                 Text(s.shadeMax, style = NixType.Small, color = muted)
             }
         }
+
+        AddToHomeScreenButton(WidgetKind.QUIT_COUNTER, model.habitId)
 
         // Stats
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
