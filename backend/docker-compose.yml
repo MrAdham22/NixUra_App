@@ -1,0 +1,28 @@
+# Local development: Postgres + the API. Not a production recipe (use managed Postgres + secrets there).
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nixura
+      POSTGRES_PASSWORD: nixura
+      POSTGRES_DB: nixura
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nixura"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  api:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      NODE_ENV: development   # console mailer: codes are printed in the api logs
+      DATABASE_URL: postgres://nixura:nixura@db:5432/nixura
+      JWT_SECRET: dev-only-jwt-secret-dev-only-jwt-secret-1234
+      OTP_PEPPER: dev-only-otp-pepper-dev-only-otp-pepper-1234
+      EMAIL_PROVIDER: console
+    ports: ["8080:8080"]
+volumes:
+  pgdata:
