@@ -37,17 +37,17 @@ fun formatClockMinutes(minutesOfDay: Int, s: Strings): String {
     return "$hour12:${minute.toString().padStart(2, '0')} $suffix"
 }
 
-/** e.g. "Tue, 20 Oct 2026 · 8:30 PM" */
-fun formatDateTime(epochMillis: Long, days: DayCalculator, s: Strings): String {
+/** e.g. "Tue, 20 Oct 2026 · 8:30 PM"; with [includeYear] = false (home-screen widgets): "Tue, 20 Oct · 8:30 PM". */
+fun formatDateTime(epochMillis: Long, days: DayCalculator, s: Strings, includeYear: Boolean = true): String {
     val dayIndex = days.dayIndexOf(epochMillis)
     val minutes = (days.millisOfDay(epochMillis) / 60_000L).toInt()
-    return "${formatDate(dayIndex, s, includeWeekday = true)} · ${formatClockMinutes(minutes, s)}"
+    return "${formatDate(dayIndex, s, includeWeekday = true, includeYear = includeYear)} · ${formatClockMinutes(minutes, s)}"
 }
 
-fun formatDate(dayIndex: Long, s: Strings, includeWeekday: Boolean = false): String {
+fun formatDate(dayIndex: Long, s: Strings, includeWeekday: Boolean = false, includeYear: Boolean = true): String {
     val civil = CivilCalendar.civilFromDayIndex(dayIndex)
     val weekday = s.weekdayShort[CivilCalendar.isoWeekday(dayIndex) - 1]
-    val base = "${civil.day} ${s.monthShort[civil.month - 1]} ${civil.year}"
+    val base = if (includeYear) "${civil.day} ${s.monthShort[civil.month - 1]} ${civil.year}" else "${civil.day} ${s.monthShort[civil.month - 1]}"
     return if (includeWeekday) "$weekday, $base" else base
 }
 

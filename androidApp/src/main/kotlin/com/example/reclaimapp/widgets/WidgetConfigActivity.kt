@@ -19,7 +19,9 @@ import com.example.reclaimapp.domain.repository.GoodHabitRepository
 import com.example.reclaimapp.domain.repository.HabitTrackingRepository
 import com.example.reclaimapp.domain.usecase.LoadWidgetStateUseCase
 import com.example.reclaimapp.domain.widget.WidgetKind
-import com.example.reclaimapp.domain.widget.WidgetStrings
+import com.example.reclaimapp.presentation.strings.EnglishStrings
+import com.example.reclaimapp.presentation.strings.Strings
+import com.example.reclaimapp.presentation.strings.stringsFor
 import kotlinx.coroutines.flow.first
 import org.koin.mp.KoinPlatform
 import java.text.DateFormat
@@ -60,15 +62,15 @@ class WidgetConfigActivity : Activity() {
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                WidgetStrings() to emptyList()
+                EnglishStrings to emptyList()
             }
             runOnUiThread { if (!isFinishing) show(strings, options) }
         }
     }
 
-    private suspend fun load(): Pair<WidgetStrings, List<Option>> {
+    private suspend fun load(): Pair<Strings, List<Option>> {
         val koin = KoinPlatform.getKoin()
-        val strings = WidgetStrings.forLanguage(koin.get<LoadWidgetStateUseCase>().appearance().languageCode)
+        val strings = stringsFor(koin.get<LoadWidgetStateUseCase>().appearance().languageCode)
         val options = when (kind) {
             WidgetKind.QUIT_COUNTER -> koin.get<HabitTrackingRepository>().observeActiveHabitTracking().first()
                 .filter { !it.habit.isArchived }
@@ -86,7 +88,7 @@ class WidgetConfigActivity : Activity() {
         return strings to options
     }
 
-    private fun show(strings: WidgetStrings, options: List<Option>) {
+    private fun show(strings: Strings, options: List<Option>) {
         val title = when (kind) {
             WidgetKind.QUIT_COUNTER -> strings.widgetConfigTitleQuit
             WidgetKind.GOOD_QUICK_LOG -> strings.widgetConfigTitleGood

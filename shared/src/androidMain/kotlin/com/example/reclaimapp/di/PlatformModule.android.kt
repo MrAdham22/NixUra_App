@@ -5,7 +5,9 @@ import com.example.reclaimapp.data.local.NixUraDatabase
 import com.example.reclaimapp.data.local.getDatabaseBuilder
 import com.example.reclaimapp.data.local.getRoomDatabase
 import com.example.reclaimapp.domain.notification.NotificationPermissionGateway
+import com.example.reclaimapp.domain.notification.AlwaysAvailableReminderCapabilities
 import com.example.reclaimapp.domain.notification.NotificationScheduler
+import com.example.reclaimapp.domain.notification.ReminderCapabilities
 import com.example.reclaimapp.domain.usecase.DecrementGoodHabitTodayUseCase
 import com.example.reclaimapp.domain.usecase.IncrementGoodHabitTodayUseCase
 import com.example.reclaimapp.domain.usecase.LoadWidgetStateUseCase
@@ -22,6 +24,8 @@ fun platformModule(
     }
     single<NotificationScheduler> { scheduler }
     single<NotificationPermissionGateway> { permissionGateway }
+    // The Android gateway also reports blocked notifications / exact alarms; any other gateway reports "all allowed".
+    single<ReminderCapabilities> { permissionGateway as? ReminderCapabilities ?: AlwaysAvailableReminderCapabilities }
 
     // Android home-screen widgets (registered here because AppModules.kt belongs to another agent this round).
     // Their repositories, Clock and DayCalculator come from appModule().

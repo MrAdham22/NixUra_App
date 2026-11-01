@@ -24,18 +24,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:gravity="center_vertical"
+        android:gravity="center"
         android:padding="16dp">
 <LinearLayout
+        android:id="@+id/w_hdr"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
-<LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_weight="1">
+        android:orientation="vertical">
 <TextView
         android:id="@+id/w_eyebrow_cat"
         android:layout_width="match_parent"
@@ -45,10 +40,11 @@
         android:includeFontPadding="false"
         android:text="travel"
         android:textColor="#FFFFFFFF"
-        android:textSize="11sp"
+        android:textSize="8.5sp"
         android:fontFamily="sans-serif-medium"
         android:textAllCaps="true"
-        android:letterSpacing="0.12" />
+        android:letterSpacing="0.12"
+        android:gravity="center" />
 <TextView
         android:id="@+id/w_name"
         android:layout_width="match_parent"
@@ -59,8 +55,9 @@
         android:includeFontPadding="false"
         android:text=""
         android:textColor="#FFFFFFFF"
-        android:textSize="17sp"
-        android:fontFamily="sans-serif-medium" />
+        android:textSize="20sp"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center" />
 <TextView
         android:id="@+id/w_date"
         android:layout_width="match_parent"
@@ -71,48 +68,8 @@
         android:includeFontPadding="false"
         android:text=""
         android:textColor="#FFFFFFFF"
-        android:textSize="12sp" />
-    </LinearLayout>
-<FrameLayout
-        android:id="@+id/w_bell_pill"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp">
-<ImageView
-        android:id="@+id/w_bell_bg"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:importantForAccessibility="no"
-        android:src="@drawable/widget_pill" android:scaleType="fitXY" />
-<LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingLeft="10dp"
-        android:paddingRight="10dp"
-        android:paddingTop="6dp"
-        android:paddingBottom="6dp">
-<ImageView
-        android:id="@+id/w_bell_icon"
-        android:layout_width="14dp"
-        android:layout_height="14dp"
-        android:importantForAccessibility="no"
-        android:src="@drawable/ic_w_bell" />
-<TextView
-        android:id="@+id/w_bell_count"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:includeFontPadding="false"
-        android:text="2"
-        android:textColor="#FFFFFFFF"
         android:textSize="12sp"
-        android:fontFamily="sans-serif-medium" />
-    </LinearLayout>
-    </FrameLayout>
+        android:gravity="center" />
     </LinearLayout>
 <TextView
         android:id="@+id/w_eyebrow"
@@ -140,7 +97,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_marginEnd="12dp">
+        android:gravity="center_horizontal"
+        android:layout_marginEnd="6dp">
 <TextView
         android:id="@+id/w_days"
         android:layout_width="wrap_content"
@@ -163,7 +121,7 @@
         android:includeFontPadding="false"
         android:text="days"
         android:textColor="#FFFFFFFF"
-        android:textSize="9sp"
+        android:textSize="6.5sp"
         android:fontFamily="sans-serif-medium"
         android:textAllCaps="true"
         android:letterSpacing="0.12" />
@@ -177,63 +135,132 @@
         android:id="@+id/w_clock"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="end"
         android:includeFontPadding="false"
         android:maxLines="1"
+        android:letterSpacing="0.1"
         android:textColor="#FFFFFFFF"
         android:textSize="30sp"
         android:textStyle="bold"
         android:fontFeatureSettings="tnum" />
 <LinearLayout
         android:id="@+id/w_clock_labels"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginTop="2dp">
+        android:layout_marginTop="2dp"
+        android:layout_gravity="end">
+<FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+<TextView
+        android:id="@+id/w_gh_h"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:visibility="invisible"
+        android:maxLines="1"
+        android:includeFontPadding="false"
+        android:text="0"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.1"
+        android:fontFeatureSettings="tnum" />
 <TextView
         android:id="@+id/w_lbl_h"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:maxLines="1"
-        android:ellipsize="end"
         android:includeFontPadding="false"
         android:text="hrs"
         android:textColor="#FFFFFFFF"
-        android:textSize="9sp"
+        android:textSize="6.5sp"
         android:fontFamily="sans-serif-medium"
         android:textAllCaps="true"
         android:letterSpacing="0.12"
-        android:layout_weight="1"
-        android:gravity="center" />
+        android:layout_gravity="center" />
+    </FrameLayout>
+<TextView
+        android:id="@+id/w_sp_hm"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:visibility="invisible"
+        android:maxLines="1"
+        android:includeFontPadding="false"
+        android:text=":"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.1"
+        android:fontFeatureSettings="tnum" />
+<FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+<TextView
+        android:id="@+id/w_gh_m"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:visibility="invisible"
+        android:maxLines="1"
+        android:includeFontPadding="false"
+        android:text="00"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.1"
+        android:fontFeatureSettings="tnum" />
 <TextView
         android:id="@+id/w_lbl_m"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:maxLines="1"
-        android:ellipsize="end"
         android:includeFontPadding="false"
         android:text="min"
         android:textColor="#FFFFFFFF"
-        android:textSize="9sp"
+        android:textSize="6.5sp"
         android:fontFamily="sans-serif-medium"
         android:textAllCaps="true"
         android:letterSpacing="0.12"
-        android:layout_weight="1"
-        android:gravity="center" />
+        android:layout_gravity="center" />
+    </FrameLayout>
+<TextView
+        android:id="@+id/w_sp_ms"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:visibility="invisible"
+        android:maxLines="1"
+        android:includeFontPadding="false"
+        android:text=":"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.1"
+        android:fontFeatureSettings="tnum" />
+<FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+<TextView
+        android:id="@+id/w_gh_s"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:visibility="invisible"
+        android:maxLines="1"
+        android:includeFontPadding="false"
+        android:text="00"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.1"
+        android:fontFeatureSettings="tnum" />
 <TextView
         android:id="@+id/w_lbl_s"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:maxLines="1"
-        android:ellipsize="end"
         android:includeFontPadding="false"
         android:text="sec"
         android:textColor="#FFFFFFFF"
-        android:textSize="9sp"
+        android:textSize="6.5sp"
         android:fontFamily="sans-serif-medium"
         android:textAllCaps="true"
         android:letterSpacing="0.12"
-        android:layout_weight="1"
-        android:gravity="center" />
+        android:layout_gravity="center" />
+    </FrameLayout>
     </LinearLayout>
     </LinearLayout>
     </LinearLayout>

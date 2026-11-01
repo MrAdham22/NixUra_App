@@ -60,10 +60,16 @@ class WidgetStateMapperTest {
         assertFalse(s.clock.showsHours)
     }
 
-    @Test fun quitAfterFirstHourChangesAtTheNextWholeDay() {
+    @Test fun quitAfterFirstHourChangesWhenTheHoursGetASecondDigit() {
         val s = assertIs<QuitWidgetState.Active>(WidgetStateMapper.quit(1, listOf(habitTracking(1, startAt = 500)), 500 + DAY + 3 * HOUR))
+        assertEquals(500 + DAY + 10 * HOUR, s.nextChangeAtEpochMillis) // H:MM:SS -> HH:MM:SS
+        assertTrue(s.clock.showsHours); assertEquals(1, s.clock.hoursDigits)
+    }
+
+    @Test fun quitAfterTenHoursChangesAtTheNextWholeDay() {
+        val s = assertIs<QuitWidgetState.Active>(WidgetStateMapper.quit(1, listOf(habitTracking(1, startAt = 500)), 500 + DAY + 11 * HOUR))
         assertEquals(500 + 2 * DAY, s.nextChangeAtEpochMillis)
-        assertTrue(s.clock.showsHours)
+        assertEquals(2, s.clock.hoursDigits)
     }
 
     @Test fun quitCarriesLongestStreak() {
@@ -136,7 +142,7 @@ class WidgetStateMapperTest {
         val s = assertIs<EventWidgetState.Passed>(WidgetStateMapper.event(1, listOf(event(1, 0), event(2, 10 * DAY)), 2 * DAY + HOUR))
         assertEquals(1L, s.eventId)
         assertEquals(2L, s.clock.days); assertEquals(HOUR, s.clock.remainderMillis)
-        assertEquals(3 * DAY, s.nextChangeAtEpochMillis)
+        assertEquals(2 * DAY + 10 * HOUR, s.nextChangeAtEpochMillis)
     }
 
     @Test fun eventUpcomingNextChangeIsChronometerZero() {
@@ -165,7 +171,15 @@ class WidgetStateMapperTest {
         val soon = assertIs<EventWidgetState.Passed>(WidgetStateMapper.event(1, listOf(event(1, 0)), 10 * 60_000L))
         assertEquals(HOUR, soon.nextChangeAtEpochMillis)
         val later = assertIs<EventWidgetState.Passed>(WidgetStateMapper.event(1, listOf(event(1, 0)), 2 * HOUR))
-        assertEquals(DAY, later.nextChangeAtEpochMillis)
+        assertEquals(10 * HOUR, later.nextChangeAtEpochMillis)
+        val evening = assertIs<EventWidgetState.Passed>(WidgetStateMapper.event(1, listOf(event(1, 0)), 11 * HOUR))
+        assertEquals(DAY, evening.nextChangeAtEpochMillis)
+    }
+
+    @Test fun eventUpcomingHoursFieldDropsToOneDigitAtTenHours() {
+        val s = assertIs<EventWidgetState.Upcoming>(WidgetStateMapper.event(1, listOf(event(1, 12 * HOUR)), 0))
+        assertEquals(2, s.clock.hoursDigits)
+        assertEquals(2 * HOUR + 1_000L, s.nextChangeAtEpochMillis) // 9:59:59 left
     }
 
     @Test fun eventCarriesCategoryAndReminderCount() {

@@ -4,9 +4,11 @@ import com.example.reclaimapp.data.local.NixUraDatabase
 import com.example.reclaimapp.data.local.getDatabaseBuilder
 import com.example.reclaimapp.data.local.getRoomDatabase
 import com.example.reclaimapp.domain.notification.AlwaysGrantedPermissionGateway
+import com.example.reclaimapp.domain.notification.AlwaysAvailableReminderCapabilities
 import com.example.reclaimapp.domain.notification.NoOpNotificationScheduler
 import com.example.reclaimapp.domain.notification.NotificationPermissionGateway
 import com.example.reclaimapp.domain.notification.NotificationScheduler
+import com.example.reclaimapp.domain.notification.ReminderCapabilities
 import org.koin.dsl.module
 
 /**
@@ -19,4 +21,5 @@ fun platformModule() = module {
     }
     single<NotificationScheduler> { NoOpNotificationScheduler }
     single<NotificationPermissionGateway> { AlwaysGrantedPermissionGateway }
+    single<ReminderCapabilities> { AlwaysAvailableReminderCapabilities }
 }

@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.example.reclaimapp.domain.widget.WidgetKind
 import com.example.reclaimapp.domain.widget.WidgetPinResult
 import com.example.reclaimapp.domain.widget.WidgetPinner
-import com.example.reclaimapp.domain.widget.WidgetStrings
+import com.example.reclaimapp.presentation.strings.LocalStrings
 import com.example.reclaimapp.presentation.theme.Nix
 import com.example.reclaimapp.presentation.theme.NixType
 import org.koin.mp.KoinPlatform
@@ -26,7 +26,7 @@ import org.koin.mp.KoinPlatform
 @Composable
 fun AddToHomeScreenButton(kind: WidgetKind, targetId: Long?, modifier: Modifier = Modifier) {
     val pinner = remember { runCatching { KoinPlatform.getKoin().getOrNull<WidgetPinner>() }.getOrNull() } ?: return
-    val text = remember { WidgetStrings() }
+    val text = LocalStrings.current
     var note by remember { mutableStateOf<String?>(null) }
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         NixButton(

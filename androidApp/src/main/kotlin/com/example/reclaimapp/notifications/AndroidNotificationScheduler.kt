@@ -11,8 +11,15 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * Schedules planned notifications with [AlarmManager] (inexact, doze-friendly: no special permission needed)
- * and keeps the plan in SharedPreferences so [BootReceiver] can restore it after a reboot.
+ * Schedules planned notifications with [AlarmManager] and keeps the plan in SharedPreferences so
+ * [BootReceiver] can restore it after a reboot or app update.
+ *
+ * Event reminders use exact alarms when the user allows them (Android 12+ permission), otherwise they fall
+ * back to inexact, doze-friendly alarms. Streak milestones and the daily check-in are always inexact.
+ *
+ * Every notification has a stable key (`event:<id>:<lead>`, `milestone:...`, `daily:<day>`). The key is both the
+ * alarm's identity (data URI + request code) and the stored plan entry, so [replaceAll] cancels exactly the alarms
+ * it armed before, including a reminder that was edited (new lead = new key) or removed (key missing).
  */
 class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
 
@@ -41,7 +48,18 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
     }
 
     private fun schedule(item: PlannedNotification) {
-        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, item.triggerAtEpochMillis, pendingIntent(item))
+        val operation = pendingIntent(item)
+        val exact = item.key.startsWith(EVENT_KEY_PREFIX) && AndroidNotificationPermission.canScheduleExactAlarms(appContext)
+        try {
+            if (exact) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, item.triggerAtEpochMillis, operation)
+            } else {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, item.triggerAtEpochMillis, operation)
+            }
+        } catch (failure: SecurityException) {
+            // The exact-alarm permission was revoked between the check and the call: degrade to an inexact alarm.
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, item.triggerAtEpochMillis, operation)
+        }
     }
 
     private fun pendingIntent(item: PlannedNotification): PendingIntent {
@@ -51,7 +69,7 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
             .putExtra(ReminderReceiver.EXTRA_TITLE, item.title)
             .putExtra(ReminderReceiver.EXTRA_BODY, item.body)
             .putExtra(ReminderReceiver.EXTRA_ID, item.key.hashCode())
-        return PendingIntent.getBroadcast(appContext, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        return PendingIntent.getBroadcast(appContext, item.key.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
     private fun encode(items: List<PlannedNotification>): String {
@@ -83,5 +101,6 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
         const val PREFS = "nixura_notifications"
         const val KEY_PLAN = "plan"
         const val MAX_SCHEDULED = 60
+        const val EVENT_KEY_PREFIX = "event:"
     }
 }

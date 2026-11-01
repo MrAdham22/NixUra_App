@@ -46,7 +46,7 @@ Quit-habit card background follows the **active streak duration** (derived, neve
 ## Coding
 
 - SOLID, Clean Architecture, small focused changes. No speculative abstractions.
-- UI text goes through `presentation/strings/Strings.kt`; no hard-coded literals in screens.
+- UI text goes through `presentation/strings/Strings.kt`; no hard-coded literals in screens. Add new strings as `open val` members in the **body** of `Strings` (never as constructor parameters: 256+ parameters crashed D8/ART with a `VerifyError` in `StringsKt.<clinit>`).
 - Do not rename technical identifiers or change major dependency versions silently.
 - Room entity changes require a new migration + schema check.
 - Prefer files written with a real compile: this repo has no CI yet.

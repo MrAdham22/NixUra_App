@@ -35,12 +35,12 @@
         android:id="@+id/w_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:maxLines="1"
+        android:maxLines="3"
         android:ellipsize="end"
         android:includeFontPadding="false"
         android:text=""
         android:textColor="#FFFFFFFF"
-        android:textSize="15sp"
+        android:textSize="17sp"
         android:fontFamily="sans-serif-medium" />
 <TextView
         android:id="@+id/w_sub"
