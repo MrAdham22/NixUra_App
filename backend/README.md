@@ -7,10 +7,10 @@ with their own numbered files in `migrations/` and their own route modules regis
 ```bash
 cp .env.example .env            # then edit secrets
 docker compose up --build       # Postgres + API on :8080; verification codes are printed in the api logs
-# or, without Docker (needs Postgres and DATABASE_URL):
+# or, without Docker (needs Postgres; dev and migrate read .env):
 npm install && npm run migrate && npm run dev
 ```
-Android emulator reaches the host at `http://10.0.2.2:8080`.
+Android emulator reaches the host at `http://10.0.2.2:8080`. A real phone over USB: run `adb reverse tcp:8080 tcp:8080` and build the app with `-PnixuraDebugApiBaseUrl=http://localhost:8080`.
 
 ## Test
 ```bash
