@@ -1,0 +1,219 @@
+package com.example.reclaimapp.presentation.auth
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.reclaimapp.domain.auth.AuthValidation
+import com.example.reclaimapp.presentation.components.Avatar
+import com.example.reclaimapp.presentation.components.ConfirmDialog
+import com.example.reclaimapp.presentation.components.ErrorBanner
+import com.example.reclaimapp.presentation.components.NixButton
+import com.example.reclaimapp.presentation.components.NixButtonStyle
+import com.example.reclaimapp.presentation.components.NixCard
+import com.example.reclaimapp.presentation.components.NixIcon
+import com.example.reclaimapp.presentation.components.SectionLabel
+import com.example.reclaimapp.presentation.components.SubScreen
+import com.example.reclaimapp.presentation.legal.LegalBlockStyle
+import com.example.reclaimapp.presentation.legal.LegalContent
+import com.example.reclaimapp.presentation.legal.LegalDocument
+import com.example.reclaimapp.presentation.navigation.Navigator
+import com.example.reclaimapp.presentation.navigation.Route
+import com.example.reclaimapp.presentation.strings.LocalStrings
+import com.example.reclaimapp.presentation.theme.Nix
+import com.example.reclaimapp.presentation.theme.NixType
+import org.koin.compose.viewmodel.koinViewModel
+
+/** Settings > Account: who is signed in, sign in / out, password, devices, deletion, legal links. */
+@Composable
+fun AccountScreen(navigator: Navigator) {
+    val s = LocalStrings.current
+    val c = Nix.colors
+    val vm: AccountViewModel = koinViewModel()
+    val user by vm.user.collectAsStateWithLifecycle()
+    var confirmSignOut by remember { mutableStateOf(false) }
+
+    SubScreen(title = s.accountTitle, onBack = { navigator.back() }) {
+        val u = user
+        if (u == null) {
+            NixCard {
+                Text(s.accountSignedOutBody, style = NixType.Body, color = c.textSecondary)
+                Spacer(Modifier.height(14.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    NixButton(s.authCreateAccount, { navigator.push(Route.Auth.Register) }, Modifier.fillMaxWidth())
+                    NixButton(s.authSignIn, { navigator.push(Route.Auth.Login) }, Modifier.fillMaxWidth(), style = NixButtonStyle.Secondary)
+                }
+            }
+        } else {
+            NixCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Avatar(u.name.ifBlank { u.email }.take(1).uppercase(), size = 48.dp)
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(s.accountSignedInAs, style = NixType.Small, color = c.textMuted)
+                        Text(u.email, style = NixType.BodyStrong, color = c.textPrimary)
+                    }
+                }
+            }
+            NixCard {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    NixButton(s.accountChangePassword, { navigator.push(Route.ChangePassword) }, Modifier.fillMaxWidth(), style = NixButtonStyle.Secondary)
+                    NixButton(s.accountDevices, { navigator.push(Route.Devices) }, Modifier.fillMaxWidth(), style = NixButtonStyle.Secondary)
+                    NixButton(s.accountSignOut, { confirmSignOut = true }, Modifier.fillMaxWidth(), style = NixButtonStyle.Secondary)
+                }
+            }
+            NixButton(s.accountDelete, { navigator.push(Route.DeleteAccount) }, Modifier.fillMaxWidth(), style = NixButtonStyle.Danger, icon = NixIcon.Trash)
+        }
+        SectionLabel(s.authPrivacyLink)
+        NixCard {
+            Column {
+                AuthLink(s.legalPrivacyTitle, { navigator.push(Route.Legal(LegalDocument.Privacy)) })
+                AuthLink(s.legalTermsTitle, { navigator.push(Route.Legal(LegalDocument.Terms)) })
+            }
+        }
+    }
+    if (confirmSignOut) {
+        ConfirmDialog(
+            title = s.accountSignOutTitle, message = s.accountSignOutBody, confirmText = s.accountSignOut, cancelText = s.cancel,
+            onConfirm = { confirmSignOut = false; vm.signOut() }, onDismiss = { confirmSignOut = false },
+        )
+    }
+}
+
+@Composable
+fun ChangePasswordScreen(navigator: Navigator) {
+    val s = LocalStrings.current
+    val vm: ChangePasswordViewModel = koinViewModel()
+    val state by vm.state.collectAsStateWithLifecycle()
+    var current by remember { mutableStateOf("") }
+    var new by remember { mutableStateOf("") }
+    var finished by remember { mutableStateOf(false) }
+    var submitted by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        vm.dismissError()
+        vm.done.collect { finished = true }
+    }
+    val problems = AuthValidation.passwordProblems(new)
+    val submit = { submitted = true; vm.change(current, new) }
+
+    SubScreen(title = s.cpTitle, onBack = { navigator.back() }) {
+        if (finished) {
+            Text(s.cpDone, style = NixType.Body, color = Nix.colors.positive)
+            NixButton(s.authBack, { navigator.back() }, Modifier.fillMaxWidth())
+            return@SubScreen
+        }
+        AuthTextField(current, { current = it }, s.authCurrentPasswordLabel, isPassword = true, autofill = AutofillKind.Password)
+        AuthTextField(
+            new, { new = it }, s.authNewPasswordLabel, isPassword = true, autofill = AutofillKind.NewPassword,
+            imeAction = ImeAction.Done, onImeAction = submit,
+            error = if ((submitted || new.length >= 4) && problems.isNotEmpty()) passwordProblemText(problems.first(), s) else null,
+        )
+        PasswordStrengthBar(new, "")
+        AuthErrorText(state.error)
+        NixButton(s.cpButton, submit, Modifier.fillMaxWidth(), loading = state.loading)
+    }
+}
+
+@Composable
+fun DeleteAccountScreen(navigator: Navigator) {
+    val s = LocalStrings.current
+    val vm: DeleteAccountViewModel = koinViewModel()
+    val state by vm.state.collectAsStateWithLifecycle()
+    var password by remember { mutableStateOf("") }
+    var confirm by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { vm.dismissError() }
+
+    SubScreen(title = s.delTitle, onBack = { navigator.back() }) {
+        NixCard {
+            Text(s.delWarn, style = NixType.Body, color = Nix.colors.textSecondary)
+        }
+        AuthTextField(password, { password = it }, s.delPasswordLabel, isPassword = true, autofill = AutofillKind.Password)
+        AuthErrorText(state.error)
+        NixButton(
+            s.delButton, { confirm = true }, Modifier.fillMaxWidth(),
+            style = NixButtonStyle.Danger, icon = NixIcon.Trash, enabled = password.isNotEmpty(), loading = state.loading,
+        )
+    }
+    if (confirm) {
+        ConfirmDialog(
+            title = s.delConfirmTitle, message = s.delConfirmBody, confirmText = s.delButton, cancelText = s.cancel, danger = true,
+            onConfirm = { confirm = false; vm.delete(password) }, onDismiss = { confirm = false },
+        )
+    }
+}
+
+@Composable
+fun DevicesScreen(navigator: Navigator) {
+    val s = LocalStrings.current
+    val c = Nix.colors
+    val vm: DevicesViewModel = koinViewModel()
+    val state by vm.state.collectAsStateWithLifecycle()
+    var confirmAll by remember { mutableStateOf(false) }
+
+    SubScreen(title = s.devTitle, onBack = { navigator.back() }) {
+        state.error?.let { ErrorBanner(authErrorText(it, s), vm::dismissError) }
+        when {
+            state.loading -> CircularProgressIndicator(color = c.accent, strokeWidth = 2.dp)
+            state.devices.isEmpty() -> Text(s.devEmpty, style = NixType.Body, color = c.textMuted)
+            else -> state.devices.forEach { d ->
+                NixCard {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(d.deviceName.ifBlank { d.platform.ifBlank { "?" } }, style = NixType.BodyStrong, color = c.textPrimary)
+                            Text(
+                                if (d.isCurrent) s.devThisDevice else s.devLastActive(d.lastUsedAtIso.take(10)),
+                                style = NixType.Small, color = if (d.isCurrent) c.positive else c.textMuted,
+                            )
+                        }
+                        if (!d.isCurrent) NixButton(s.devSignOut, { vm.revoke(d.id) }, style = NixButtonStyle.Secondary)
+                    }
+                }
+            }
+        }
+        if (state.devices.isNotEmpty()) {
+            NixButton(s.devSignOutAll, { confirmAll = true }, Modifier.fillMaxWidth(), style = NixButtonStyle.Danger)
+        }
+    }
+    if (confirmAll) {
+        ConfirmDialog(
+            title = s.devSignOutAllTitle, message = s.devSignOutAllBody, confirmText = s.devSignOutAll, cancelText = s.cancel, danger = true,
+            onConfirm = { confirmAll = false; vm.logoutAll() }, onDismiss = { confirmAll = false },
+        )
+    }
+}
+
+/** In-app Privacy Policy / Terms, generated from docs/legal/*.md (see tools/gen_legal_text.py). */
+@Composable
+fun LegalScreen(document: LegalDocument, navigator: Navigator) {
+    val s = LocalStrings.current
+    val c = Nix.colors
+    val (title, blocks) = when (document) {
+        LegalDocument.Privacy -> s.legalPrivacyTitle to LegalContent.privacy
+        LegalDocument.Terms -> s.legalTermsTitle to LegalContent.terms
+    }
+    SubScreen(title = title, onBack = { navigator.back() }) {
+        for (b in blocks) when (b.style) {
+            LegalBlockStyle.Title -> Unit // the screen header already shows it
+            LegalBlockStyle.Heading -> Text(b.text, style = NixType.Heading, color = c.textPrimary)
+            LegalBlockStyle.Paragraph -> Text(b.text, style = NixType.Body, color = c.textSecondary)
+            LegalBlockStyle.Bullet -> Text("\u2022  " + b.text, style = NixType.Body, color = c.textSecondary)
+            LegalBlockStyle.Note -> Text(b.text, style = NixType.Small, color = c.textMuted)
+        }
+    }
+}

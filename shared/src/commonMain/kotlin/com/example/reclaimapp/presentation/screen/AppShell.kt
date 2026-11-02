@@ -27,6 +27,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
+import com.example.reclaimapp.data.auth.SessionManagerImpl
+import com.example.reclaimapp.domain.auth.AccountProfileSync
+import com.example.reclaimapp.domain.auth.SessionState
+import com.example.reclaimapp.presentation.auth.AccountScreen
+import com.example.reclaimapp.presentation.auth.AuthHost
+import com.example.reclaimapp.presentation.auth.ChangePasswordScreen
+import com.example.reclaimapp.presentation.auth.DeleteAccountScreen
+import com.example.reclaimapp.presentation.auth.DevicesScreen
+import com.example.reclaimapp.presentation.auth.LegalScreen
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
@@ -71,6 +84,33 @@ fun AppRoot() {
     val sync = koinInject<NotificationSyncService>()
     LaunchedEffect(Unit) { sync.run() }
 
+    // Accounts: optional sign-in. The app stays fully usable offline without an account ("Continue without an account").
+    val sessionManager = koinInject<SessionManagerImpl>()
+    val profileSync = koinInject<AccountProfileSync>()
+    val session by sessionManager.state.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    var authPromptSeen by remember { mutableStateOf<Boolean?>(null) }
+    var wasSignedIn by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        sessionManager.restore()
+        authPromptSeen = sessionManager.authPromptSeen()
+    }
+    LaunchedEffect(session) {
+        when (session) {
+            is SessionState.SignedIn -> {
+                wasSignedIn = true
+                authPromptSeen = false // after a later sign-out the Welcome screen is offered again
+                while (navigator.current is Route.Auth) navigator.back() // leave the sign-in screens
+                profileSync.sync()
+            }
+            SessionState.SignedOut -> if (wasSignedIn) {
+                wasSignedIn = false
+                navigator.selectTab(Route.Home) // signed out / account deleted: do not stay on an account screen
+            }
+            SessionState.Loading -> Unit
+        }
+    }
+
     NixUraTheme(darkTheme = state.settings.darkTheme) {
         SystemBarsEffect(state.settings.darkTheme)
         CompositionLocalProvider(LocalStrings provides stringsFor(state.settings.languageCode)) {
@@ -83,6 +123,11 @@ fun AppRoot() {
                 when {
                     !state.loaded -> Unit
                     !state.settings.onboardingCompleted -> OnboardingScreen(settingsVm)
+                    session is SessionState.Loading || authPromptSeen == null -> Unit
+                    session is SessionState.SignedOut && authPromptSeen == false -> AuthHost(
+                        navigator,
+                        onSkip = { scope.launch { sessionManager.markAuthPromptSeen(); authPromptSeen = true } },
+                    )
                     else -> MainContent(navigator)
                 }
             }
@@ -218,6 +263,12 @@ private fun RouteContent(route: Route, navigator: Navigator) {
         is Route.BadHabitForm -> BadHabitFormScreen(route.editId, navigator)
         is Route.GoodHabitForm -> GoodHabitFormScreen(route.editId, navigator)
         is Route.EventForm -> EventFormScreen(route.editId, navigator)
+        is Route.Auth -> AuthHost(navigator, onSkip = null)
+        Route.Account -> AccountScreen(navigator)
+        Route.ChangePassword -> ChangePasswordScreen(navigator)
+        Route.DeleteAccount -> DeleteAccountScreen(navigator)
+        Route.Devices -> DevicesScreen(navigator)
+        is Route.Legal -> LegalScreen(route.document, navigator)
     }
 }
 

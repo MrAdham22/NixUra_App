@@ -23,6 +23,22 @@ sealed interface Route {
     data class BadHabitForm(val editId: Long? = null) : Route
     data class GoodHabitForm(val editId: Long? = null) : Route
     data class EventForm(val editId: Long? = null) : Route
+
+    /** Account screens (Agent 2). Shown in the sign-in gate or pushed from Settings > Account. */
+    sealed interface Auth : Route {
+        data object Welcome : Auth
+        data object Login : Auth
+        data object Register : Auth
+        data class VerifyOtp(val email: String) : Auth
+        data object ForgotPassword : Auth
+        data class ResetPassword(val email: String) : Auth
+    }
+
+    data object Account : Route
+    data object ChangePassword : Route
+    data object DeleteAccount : Route
+    data object Devices : Route
+    data class Legal(val document: com.example.reclaimapp.presentation.legal.LegalDocument) : Route
 }
 
 /** Minimal back-stack navigator (no external navigation library). Registered as a Koin singleton. */

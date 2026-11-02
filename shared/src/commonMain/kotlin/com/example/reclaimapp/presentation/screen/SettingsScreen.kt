@@ -55,6 +55,11 @@ fun SettingsScreen(navigator: Navigator) {
     SubScreen(title = s.settingsTitle, onBack = { navigator.back() }) {
         state.errorMessage?.let { ErrorBanner(it, vm::onDismissError) }
 
+        SectionLabel(s.accountTitle)
+        NixCard(onClick = { navigator.push(Route.Account) }) {
+            Text(s.settingsAccountRow, style = NixType.BodyStrong, color = c.textPrimary)
+        }
+
         SectionLabel(s.appearance)
         NixCard {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

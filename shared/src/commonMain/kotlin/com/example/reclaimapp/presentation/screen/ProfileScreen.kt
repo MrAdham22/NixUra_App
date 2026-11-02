@@ -85,7 +85,11 @@ fun ProfileScreen(navigator: Navigator) {
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     NixTextField(name, { name = it }, label = s.nameLabel, placeholder = s.namePlaceholder, maxLength = 40)
-                    NixTextField(email, { email = it }, label = s.emailLabel, placeholder = "name@example.com", keyboardType = KeyboardType.Email, maxLength = 80)
+                    if (state.accountEmail == null) {
+                        NixTextField(email, { email = it }, label = s.emailLabel, placeholder = "name@example.com", keyboardType = KeyboardType.Email, maxLength = 80)
+                    } else {
+                        Text(s.accountEmailManaged, style = NixType.Small, color = c.textMuted)
+                    }
                     NixTextField(age, { age = it.filter { ch -> ch.isDigit() } }, label = s.ageLabel, placeholder = "25", keyboardType = KeyboardType.Number, maxLength = 3)
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         NixButton(s.cancel, { editing = false }, Modifier.weight(1f), style = NixButtonStyle.Secondary)

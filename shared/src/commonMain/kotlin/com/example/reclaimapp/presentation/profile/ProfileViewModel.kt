@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.reclaimapp.domain.calculator.GoodHabitStatsCalculator
 import com.example.reclaimapp.domain.calculator.ScoreCalculator
 import com.example.reclaimapp.domain.calculator.TrackingStateCalculator
+import com.example.reclaimapp.domain.auth.AuthRepository
+import com.example.reclaimapp.domain.auth.SessionManager
+import com.example.reclaimapp.domain.auth.SessionState
 import com.example.reclaimapp.domain.clock.Clock
 import com.example.reclaimapp.domain.model.Event
 import com.example.reclaimapp.domain.time.DayCalculator
@@ -42,6 +45,8 @@ data class ProfileUiState(
     val name: String = "",
     val email: String = "",
     val age: Int? = null,
+    /** Non-null while signed in: the account's email, which cannot be edited here. */
+    val accountEmail: String? = null,
     val stats: ProfileStats = ProfileStats(),
     val isSaving: Boolean = false,
     val errorMessage: String? = null,
@@ -55,6 +60,8 @@ class ProfileViewModel(
     private val saveProfile: SaveProfileUseCase,
     private val clock: Clock,
     private val dayCalculator: DayCalculator,
+    private val sessions: SessionManager,
+    private val auth: AuthRepository,
 ) : ViewModel() {
 
     private val tick = MutableStateFlow(0L)
@@ -86,8 +93,9 @@ class ProfileViewModel(
         )
     }
 
-    val uiState: StateFlow<ProfileUiState> = combine(stats, observeProfile(), transient) { s, profile, extra ->
-        extra.copy(name = profile.name, email = profile.email, age = profile.age, stats = s)
+    val uiState: StateFlow<ProfileUiState> = combine(stats, observeProfile(), transient, sessions.state) { s, profile, extra, session ->
+        val accountEmail = (session as? SessionState.SignedIn)?.user?.email
+        extra.copy(name = profile.name, email = accountEmail ?: profile.email, age = profile.age, accountEmail = accountEmail, stats = s)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -111,7 +119,10 @@ class ProfileViewModel(
         }
         viewModelScope.launch {
             transient.update { it.copy(isSaving = true, errorMessage = null) }
-            val result = saveProfile(name, email, age)
+            val signedIn = sessions.state.value as? SessionState.SignedIn
+            val result = saveProfile(name, signedIn?.user?.email ?: email, age)
+            // Best effort: if the server cannot be reached the local copy stays and the next sign-in sync reconciles it.
+            if (result.isSuccess && signedIn != null) viewModelScope.launch { auth.updateProfile(name.trim(), age) }
             transient.update { it.copy(isSaving = false, errorMessage = result.exceptionOrNull()?.message) }
             if (result.isSuccess) onSuccess()
         }

@@ -36,6 +36,7 @@ class SessionManagerImpl internal constructor(private val store: SecureStore) : 
         // A different account (or the first ever) is now on this device: the sync layer must adopt or clear local data.
         if (last != session.user.id) store.put(KEY_PENDING, session.user.id + SEP + (last ?: ""))
         store.put(KEY_LAST_USER, session.user.id)
+        store.remove(KEY_PROMPT_SEEN) // a later sign-out shows the Welcome screen again
         _state.value = SessionState.SignedIn(session.user.toAuthUser())
     }
 
