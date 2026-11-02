@@ -65,8 +65,3 @@ CREATE TABLE login_attempts (
   locked_until TIMESTAMPTZ,
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
-CREATE TABLE schema_migrations (
-  name       TEXT PRIMARY KEY,
-  applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);

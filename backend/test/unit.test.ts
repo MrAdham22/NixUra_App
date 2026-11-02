@@ -47,7 +47,7 @@ test('OTP: always 6 digits, hash is bound to user and purpose, constant-time com
 });
 
 test('Argon2id hasher: PHC string, verify, rehash when parameters tighten', async () => {
-  const weak = createArgon2Hasher({ ARGON2_MEMORY_KIB: 8192, ARGON2_TIME_COST: 1, ARGON2_PARALLELISM: 1 });
+  const weak = createArgon2Hasher({ ARGON2_MEMORY_KIB: 8192, ARGON2_TIME_COST: 2, ARGON2_PARALLELISM: 1 });
   const h = await weak.hash('s3cret-pass-phrase');
   assert.match(h, /^\$argon2id\$/);
   assert.ok(!h.includes('s3cret'));

@@ -36,7 +36,7 @@ export const testEnv = {
   JWT_SECRET: 'test-jwt-secret-test-jwt-secret-test-jwt-secret',
   OTP_PEPPER: 'test-otp-pepper-test-otp-pepper-test-otp-pepper',
   ARGON2_MEMORY_KIB: '8192', // minimum allowed; keeps tests fast, still real Argon2id
-  ARGON2_TIME_COST: '1',
+  ARGON2_TIME_COST: '2', // argon2 rejects anything lower
   OTP_RESEND_COOLDOWN_SECONDS: '60',
 } satisfies Record<string, string>;
 

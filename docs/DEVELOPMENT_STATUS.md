@@ -166,3 +166,21 @@ Branch `agent-5-widgets` (earlier commits e10193d, 0c3214a; the card redesign an
 
 **Known risks:** Ktor/serialization versions vs Kotlin 2.4.20; Compose autofill `ContentType` API; iOS Keychain casts; per-process rate limiter; legal texts are drafts.
 
+## First real build of Wave 1 (2026-11-02, run on Windows)
+
+**Ran:** backend `tsc` and `npm test`; `:shared:testAndroidHostTest`; `:androidApp:assembleDebug`.
+
+**Results:** backend typecheck passes and **43/43 tests pass** (PGlite, no real Postgres or email provider). `:androidApp:assembleDebug` **passes**. `:shared:testAndroidHostTest`: **342 of 345 pass, 3 fail** (see below). Not run: the app on a device, the backend against real Postgres, anything on iOS.
+
+**Fixed:**
+- `shared` did not compile: the comment text `docs/legal/*.md` in `AccountScreens.kt` opened a nested Kotlin comment.
+- Backend could not start on any fresh database: `001_accounts.sql` created `schema_migrations`, which `migrate.ts` had already created.
+- `ARGON2_TIME_COST=1` was accepted by config but rejected by argon2; the minimum is now 2.
+- Emails with surrounding spaces got a 422 because validation ran before trimming.
+- `trustProxy` type error in `app.ts`; behaviour is unchanged.
+- An uncommitted copy of `androidApp/build.gradle.kts` had replaced the root `build.gradle.kts` in the owner's checkout, which caused "plugin is already on the classpath with an unknown version". Restored from git; not a repo change.
+
+**Still failing (owner to decide, code not changed):** `CoachEngineTest.matchesCategoriesByKeyword` ("Sugary drinks" now gives `softdrinks`, test expects `sugar`), `CoachEngineTest.insightTracksAchievedAndNextMilestone` (next smoking milestone after 30 min is now 1 h, test expects 12 h), `WidgetLayoutPlannerTest.quitAndGoodUseLessInnerPaddingThanEvents` (event widget padding is 8 dp, test expects 16 dp).
+
+**Windows note:** if `npm` prints nothing and exits 0, a 0-byte `C:\Windows\system32\npm` is shadowing it; call `C:\Program Files\nodejs\npm.cmd`.
+

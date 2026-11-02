@@ -1,6 +1,8 @@
 # Agent 2 handoff: accounts (backend, sign-in, email OTP, password security)
 
 ## Verification state: read this first
+**Update 2026-11-02:** the backend and Kotlin client have since been built and tested, and first-run bugs were fixed. See "First real build of Wave 1" in `docs/DEVELOPMENT_STATUS.md`. The table below describes the original session.
+
 This session had **no network, no Gradle/kotlinc, no Docker, no emulator**. Therefore:
 
 | Part | State |

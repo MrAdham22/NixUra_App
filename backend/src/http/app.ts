@@ -22,7 +22,7 @@ declare module 'fastify' {
   }
 }
 
-const email = z.string().max(254).email().transform(normalizeEmail);
+const email = z.string().trim().max(254).email().transform(normalizeEmail);
 const device = z.object({ deviceName: z.string().max(80).optional(), platform: z.enum(['android', 'ios', 'web', 'other']).optional() }).partial();
 const password = z.string().min(1).max(256); // policy is enforced by the service; this only bounds the input
 const code = z.string().regex(/^\d{6}$/, 'The code has 6 digits.');
@@ -32,7 +32,8 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const limiter = deps.limiter ?? new MemoryRateLimiter();
   const app = Fastify({
     logger: cfg.NODE_ENV === 'test' ? false : { level: 'info', redact: ['req.headers.authorization', 'req.headers.cookie'] },
-    trustProxy: cfg.TRUST_PROXY_HOPS > 0 ? cfg.TRUST_PROXY_HOPS : false,
+    // Same as Fastify's numeric hop count, which its types do not accept.
+    trustProxy: cfg.TRUST_PROXY_HOPS > 0 ? (_addr: string, hop: number) => hop < cfg.TRUST_PROXY_HOPS : false,
     bodyLimit: 16 * 1024,
     disableRequestLogging: false,
   });

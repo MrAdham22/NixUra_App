@@ -15,7 +15,7 @@ const schema = z.object({
   CORS_ORIGINS: z.string().default(''),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
   ARGON2_MEMORY_KIB: z.coerce.number().int().min(8192).default(19456),
-  ARGON2_TIME_COST: z.coerce.number().int().min(1).default(2),
+  ARGON2_TIME_COST: z.coerce.number().int().min(2).default(2),
   ARGON2_PARALLELISM: z.coerce.number().int().min(1).default(1),
   HIBP_CHECK: bool.default('false'),
   ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(60).default(900),

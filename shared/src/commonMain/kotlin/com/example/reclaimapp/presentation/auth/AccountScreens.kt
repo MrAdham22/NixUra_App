@@ -198,7 +198,7 @@ fun DevicesScreen(navigator: Navigator) {
     }
 }
 
-/** In-app Privacy Policy / Terms, generated from docs/legal/*.md (see tools/gen_legal_text.py). */
+/** In-app Privacy Policy / Terms, generated from the markdown in docs/legal (see tools/gen_legal_text.py). */
 @Composable
 fun LegalScreen(document: LegalDocument, navigator: Navigator) {
     val s = LocalStrings.current
