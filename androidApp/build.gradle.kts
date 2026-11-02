@@ -36,6 +36,8 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        // Backend base URL. Override with -PnixuraApiBaseUrl=https://api.yourdomain.com (release must be https).
+        buildConfigField("String", "NIXURA_API_BASE_URL", "\"${(project.findProperty("nixuraApiBaseUrl") as String?) ?: "https://api.nixura.example"}\"")
     }
     packaging {
         resources {
@@ -43,6 +45,10 @@ android {
         }
     }
     buildTypes {
+        debug {
+            // Emulator reaches the host machine at 10.0.2.2 (cleartext is allowed in debug builds only).
+            buildConfigField("String", "NIXURA_API_BASE_URL", "\"${(project.findProperty("nixuraDebugApiBaseUrl") as String?) ?: "http://10.0.2.2:8080"}\"")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -57,5 +63,6 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }

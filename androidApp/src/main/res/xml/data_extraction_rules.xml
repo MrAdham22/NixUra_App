@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+: cloud backup and device-to-device transfer both skip the encrypted account tokens
+     (they are also bound to this device's Keystore key, so a copy would be unreadable anyway). -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="nixura_secure.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="nixura_secure.xml" />
+    </device-transfer>
+</data-extraction-rules>

@@ -1,6 +1,7 @@
 package com.example.reclaimapp
 
 import android.app.Application
+import com.example.reclaimapp.data.auth.ApiConfig
 import com.example.reclaimapp.di.initAndroidKoin
 import com.example.reclaimapp.notifications.AndroidNotificationPermission
 import com.example.reclaimapp.notifications.AndroidNotificationScheduler
@@ -19,6 +20,8 @@ class NixUraApplication : Application() {
         super.onCreate()
         ReminderReceiver.ensureChannel(this)
         initAndroidKoin(this, AndroidNotificationScheduler(this), notificationPermission)
+        // Backend address comes from BuildConfig (the shared module cannot see it). Cleartext only in debug builds.
+        loadKoinModules(module { single { ApiConfig(BuildConfig.NIXURA_API_BASE_URL, allowCleartext = BuildConfig.DEBUG) } })
         // Home-screen widgets: keep them in sync with data/time changes while the process is alive.
         // Never let a widget problem stop the app from starting.
         runCatching {

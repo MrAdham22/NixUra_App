@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and lower: habits still back up, but the encrypted account tokens never do. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="nixura_secure.xml" />
+</full-backup-content>
