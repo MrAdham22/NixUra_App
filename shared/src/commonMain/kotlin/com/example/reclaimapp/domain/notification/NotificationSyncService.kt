@@ -7,6 +7,7 @@ import com.example.reclaimapp.domain.repository.HabitTrackingRepository
 import com.example.reclaimapp.domain.repository.PreferencesRepository
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 
 /**
  * Keeps the OS-level scheduled notifications in sync with app data.
@@ -22,16 +23,21 @@ class NotificationSyncService(
     private val clock: Clock,
 ) {
     suspend fun run() {
-        combine(
-            tracking.observeActiveHabitTracking(),
-            goodHabits.observeGoodHabits(),
-            events.observeEvents(),
-            preferences.observeSettings(),
-            preferences.observeProfile(),
-        ) { bad, good, upcoming, settings, profile ->
-            planner.plan(clock.nowEpochMillis(), settings, profile.name, bad, good, upcoming)
-        }
-            .distinctUntilChanged()
-            .collect { scheduler.replaceAll(it) }
+        plans().distinctUntilChanged().collect { scheduler.replaceAll(it) }
+    }
+
+    /** Re-arms once, for background work that changed data while no screen is open (alarms are per device). */
+    suspend fun syncOnce() {
+        scheduler.replaceAll(plans().first())
+    }
+
+    private fun plans() = combine(
+        tracking.observeActiveHabitTracking(),
+        goodHabits.observeGoodHabits(),
+        events.observeEvents(),
+        preferences.observeSettings(),
+        preferences.observeProfile(),
+    ) { bad, good, upcoming, settings, profile ->
+        planner.plan(clock.nowEpochMillis(), settings, profile.name, bad, good, upcoming)
     }
 }

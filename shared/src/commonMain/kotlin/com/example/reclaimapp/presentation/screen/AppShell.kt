@@ -52,8 +52,10 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.semantics
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.reclaimapp.domain.notification.NotificationSyncService
+import com.example.reclaimapp.domain.sync.SyncCoordinator
 import com.example.reclaimapp.presentation.components.Avatar
 import com.example.reclaimapp.presentation.components.DropletNavBar
 import com.example.reclaimapp.presentation.components.DropletNavItem
@@ -83,6 +85,15 @@ fun AppRoot() {
     val navigator = koinInject<Navigator>()
     val sync = koinInject<NotificationSyncService>()
     LaunchedEffect(Unit) { sync.run() }
+
+    // Cloud sync: acts only while signed in. Guests stay completely offline.
+    val cloudSync = koinInject<SyncCoordinator>()
+    val syncScope = rememberCoroutineScope()
+    LaunchedEffect(Unit) { cloudSync.run() }
+    LifecycleResumeEffect(Unit) {
+        syncScope.launch { cloudSync.onAppForeground() }
+        onPauseOrDispose { }
+    }
 
     // Accounts: optional sign-in. The app stays fully usable offline without an account ("Continue without an account").
     val sessionManager = koinInject<SessionManagerImpl>()

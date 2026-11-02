@@ -10,8 +10,10 @@ Fill the form from the real data flows below. Other agents append their own rows
 | Personal info | Age (not "date of birth") | Yes (optional field) | No | Optional | App functionality |
 | App info and performance / Device or other IDs | Device sessions (device model name, platform) and an account id | Yes | No | Required for an account | Account management, security |
 | Security log | Account events | Yes | No | Required for an account | Security, fraud prevention |
+| App activity / Other user-generated content | Habit names, relapse dates, good-habit logs, events, reminders (cloud sync; habit names can reveal health information, so review whether to also declare Health info) | Yes, with an account only | No | Optional (no account means nothing leaves the device) | App functionality |
+| App activity / Other actions | Theme, language and notification settings | Yes, with an account only | No | Optional | App functionality |
 
-Not collected by this release: location, contacts, photos, files, financial info, health info (habit data stays on the device until sync ships), advertising ID.
+Not collected by this release: location, contacts, photos, files, financial info, advertising ID. Guests send nothing.
 
 ## Security practices section
 - Data is encrypted in transit (HTTPS): **Yes**.
@@ -26,7 +28,6 @@ Not collected by this release: location, contacts, photos, files, financial info
 - Privacy policy URL (host `PRIVACY_POLICY.md`) in the store listing and inside the app.
 - Provide a test account for app review (create one verified account; share its credentials in Play Console > App access).
 
-<!-- AGENT-3: habits/events/settings synced to the server (App activity). -->
 <!-- AGENT-4: user-generated chat content processed by Google Gemini via our server. -->
 <!-- AGENT-5: calendar events and Notion content imported (Calendar, Files and docs). -->
 <!-- AGENT-6: analytics (app interactions, crash logs, diagnostics), opt-in. -->

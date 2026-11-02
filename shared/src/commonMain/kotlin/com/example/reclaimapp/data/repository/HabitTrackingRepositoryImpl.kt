@@ -72,7 +72,7 @@ class HabitTrackingRepositoryImpl(
 
     override suspend fun updateHabit(habitId: Long, name: String, colorArgb: Long?) {
         habitDao.getById(habitId) ?: throw IllegalArgumentException("Habit not found")
-        habitDao.updateDetails(habitId, name, colorArgb)
+        habitDao.updateDetails(habitId, name, colorArgb, clock.nowEpochMillis())
     }
 
     override suspend fun archiveHabit(habitId: Long, atEpochMillis: Long) {

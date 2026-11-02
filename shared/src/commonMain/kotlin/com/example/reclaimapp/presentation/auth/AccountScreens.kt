@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -21,6 +22,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.reclaimapp.domain.auth.AuthValidation
+import com.example.reclaimapp.domain.clock.Clock
+import com.example.reclaimapp.domain.sync.SyncStatus
 import com.example.reclaimapp.presentation.components.Avatar
 import com.example.reclaimapp.presentation.components.ConfirmDialog
 import com.example.reclaimapp.presentation.components.ErrorBanner
@@ -38,6 +41,7 @@ import com.example.reclaimapp.presentation.navigation.Route
 import com.example.reclaimapp.presentation.strings.LocalStrings
 import com.example.reclaimapp.presentation.theme.Nix
 import com.example.reclaimapp.presentation.theme.NixType
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 /** Settings > Account: who is signed in, sign in / out, password, devices, deletion, legal links. */
@@ -47,6 +51,9 @@ fun AccountScreen(navigator: Navigator) {
     val c = Nix.colors
     val vm: AccountViewModel = koinViewModel()
     val user by vm.user.collectAsStateWithLifecycle()
+    val syncStatus by vm.syncStatus.collectAsStateWithLifecycle()
+    val signOutState by vm.signOutState.collectAsStateWithLifecycle()
+    val clock = koinInject<Clock>()
     var confirmSignOut by remember { mutableStateOf(false) }
 
     SubScreen(title = s.accountTitle, onBack = { navigator.back() }) {
@@ -72,10 +79,25 @@ fun AccountScreen(navigator: Navigator) {
                 }
             }
             NixCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(s.syncTitle, style = NixType.BodyStrong, color = c.textPrimary)
+                        val failed = syncStatus is SyncStatus.Failed
+                        Text(syncStatusText(syncStatus, clock.nowEpochMillis()), style = NixType.Small, color = if (failed) c.danger else c.textMuted)
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    if (syncStatus is SyncStatus.Syncing) {
+                        CircularProgressIndicator(color = c.accent, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                    } else {
+                        AuthLink(s.syncNow, vm::syncNow)
+                    }
+                }
+            }
+            NixCard {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     NixButton(s.accountChangePassword, { navigator.push(Route.ChangePassword) }, Modifier.fillMaxWidth(), style = NixButtonStyle.Secondary)
                     NixButton(s.accountDevices, { navigator.push(Route.Devices) }, Modifier.fillMaxWidth(), style = NixButtonStyle.Secondary)
-                    NixButton(s.accountSignOut, { confirmSignOut = true }, Modifier.fillMaxWidth(), style = NixButtonStyle.Secondary)
+                    NixButton(s.accountSignOut, { confirmSignOut = true }, Modifier.fillMaxWidth(), style = NixButtonStyle.Secondary, loading = signOutState.inProgress)
                 }
             }
             NixButton(s.accountDelete, { navigator.push(Route.DeleteAccount) }, Modifier.fillMaxWidth(), style = NixButtonStyle.Danger, icon = NixIcon.Trash)
@@ -93,6 +115,37 @@ fun AccountScreen(navigator: Navigator) {
             title = s.accountSignOutTitle, message = s.accountSignOutBody, confirmText = s.accountSignOut, cancelText = s.cancel,
             onConfirm = { confirmSignOut = false; vm.signOut() }, onDismiss = { confirmSignOut = false },
         )
+    }
+    if (signOutState.changesNotUploaded) {
+        ConfirmDialog(
+            title = s.accountSignOutUnsavedTitle, message = s.accountSignOutUnsavedBody, confirmText = s.accountSignOutAnyway, cancelText = s.cancel,
+            danger = true,
+            onConfirm = { vm.signOut(discardUnsaved = true) }, onDismiss = vm::dismissSignOutWarning,
+        )
+    }
+}
+
+@Composable
+private fun syncStatusText(status: SyncStatus, nowEpochMillis: Long): String {
+    val s = LocalStrings.current
+    val last = status.lastSyncedAt
+    val since = when {
+        last == null -> s.syncNeverYet
+        else -> {
+            val minutes = (nowEpochMillis - last).coerceAtLeast(0) / 60_000
+            when {
+                minutes < 1 -> s.syncJustNow
+                minutes < 60 -> s.syncMinutesAgo(minutes)
+                minutes < 24 * 60 -> s.syncHoursAgo(minutes / 60)
+                else -> s.syncDaysAgo(minutes / (24 * 60))
+            }
+        }
+    }
+    return when (status) {
+        is SyncStatus.Syncing -> s.syncInProgress
+        is SyncStatus.Offline -> s.syncOffline(since)
+        is SyncStatus.Failed -> s.syncFailed(since)
+        is SyncStatus.Idle -> since
     }
 }
 

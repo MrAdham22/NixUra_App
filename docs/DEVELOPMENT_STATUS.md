@@ -194,9 +194,15 @@ Branch `agent-5-widgets` (earlier commits e10193d, 0c3214a; the card redesign an
 
 **Landing and sign-in redesign (2026-11-02, branch `agent-3/cloud-sync`):** new `LandingScreen` replaces the Welcome screen, with the ash effect (`AshField`, `AshWord`), `AuraBackdrop` and a redesigned `AuthScaffold`. Sign-out and account deletion land on it. Guest mode stays, with a warning that data is not in the cloud and can be lost. Erase all data now deletes habits, events and chats, and keeps profile and settings. 352 tests pass, `installDebug` passed, `room_migration_check.py` passed; the look and the animation are **not yet confirmed on a device**, and the ash code on iOS is unverified.
 
-**Owner decisions for Agent 3:** sign-out uploads pending changes, then clears the data from the phone (warns if it cannot upload). **Not built yet:** sign-out does not clear data until sync exists, because clearing now would lose it for good. Erase all data must also delete the data from the account once sync exists. Guests make no network calls.
+The owner confirmed the landing and sign-in look on the phone (2026-11-03).
 
-**Next:** Agent 3 (cloud sync).
+## Wave 2 - Agent 3 (cloud sync)
+
+**Built:** push and pull endpoints, Room v3 (`MIGRATION_2_3`), `SyncEngine`, background sync on Android, sync status in Settings > Account, sign-out that uploads then clears the phone, Erase all data that also reaches the account. Details: [agents/agent-3-handoff.md](agents/agent-3-handoff.md).
+
+**Verification:** backend 55/55, shared 369 tests, build and install pass, migration check passes, and the v2 to v3 migration ran on the owner's phone with real data (all rows kept). **Not yet tested on a device:** actual syncing, two devices, sign-out clearing, erase across devices. `RoomSyncLocalStore` has no automated test. Background sync not run. iOS not compiled.
+
+**Next:** the owner tests sync on the phone, then Agent 4 (Gemini coach).
 
 **Windows note:** if `npm` prints nothing and exits 0, a 0-byte `C:\Windows\system32\npm` is shadowing it; call `C:\Program Files\nodejs\npm.cmd`.
 

@@ -11,6 +11,11 @@ import com.example.reclaimapp.domain.auth.AuthUser
 import com.example.reclaimapp.domain.auth.DeviceSession
 import com.example.reclaimapp.domain.auth.SessionManager
 import com.example.reclaimapp.domain.auth.SessionState
+import com.example.reclaimapp.domain.sync.DetachDataAfterAccountDeletionUseCase
+import com.example.reclaimapp.domain.sync.SignOutResult
+import com.example.reclaimapp.domain.sync.SignOutUseCase
+import com.example.reclaimapp.domain.sync.SyncEngine
+import com.example.reclaimapp.domain.sync.SyncStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -106,11 +111,18 @@ class ChangePasswordViewModel(private val auth: AuthRepository, private val sess
     }
 }
 
-class DeleteAccountViewModel(private val auth: AuthRepository) : FormViewModel() {
+class DeleteAccountViewModel(
+    private val auth: AuthRepository,
+    private val detachData: DetachDataAfterAccountDeletionUseCase,
+) : FormViewModel() {
     /** After success the session is gone and the root gate leaves the account screens. */
     fun delete(password: String) {
         if (password.isEmpty()) return fail(invalid())
-        submit({ auth.deleteAccount(password) })
+        submit({
+            val result = auth.deleteAccount(password)
+            if (result is AuthResult.Success) detachData()
+            result
+        })
     }
 }
 
@@ -120,7 +132,7 @@ data class DevicesUiState(
     val error: AuthError? = null,
 )
 
-class DevicesViewModel(private val auth: AuthRepository) : ViewModel() {
+class DevicesViewModel(private val auth: AuthRepository, private val signOut: SignOutUseCase) : ViewModel() {
     private val _state = MutableStateFlow(DevicesUiState())
     val state: StateFlow<DevicesUiState> = _state.asStateFlow()
 
@@ -148,7 +160,7 @@ class DevicesViewModel(private val auth: AuthRepository) : ViewModel() {
     /** Signs out everywhere including this device; the root gate reacts to the session change. */
     fun logoutAll() {
         viewModelScope.launch {
-            val r = auth.logoutAllDevices()
+            val r = signOut.everywhere()
             if (r is AuthResult.Failure) _state.update { it.copy(error = r.error) }
         }
     }
@@ -156,13 +168,35 @@ class DevicesViewModel(private val auth: AuthRepository) : ViewModel() {
     fun dismissError() = _state.update { it.copy(error = null) }
 }
 
-/** Hub screen: who is signed in, sign out. */
-class AccountViewModel(private val auth: AuthRepository, sessions: SessionManager) : ViewModel() {
+data class SignOutUiState(val inProgress: Boolean = false, val changesNotUploaded: Boolean = false)
+
+/** Hub screen: who is signed in, sync status, sign out. */
+class AccountViewModel(
+    private val signOutUseCase: SignOutUseCase,
+    private val engine: SyncEngine,
+    sessions: SessionManager,
+) : ViewModel() {
     val user: StateFlow<AuthUser?> = sessions.state
         .map { (it as? SessionState.SignedIn)?.user }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), (sessions.state.value as? SessionState.SignedIn)?.user)
+    val syncStatus: StateFlow<SyncStatus> = engine.status
 
-    fun signOut() {
-        viewModelScope.launch { auth.logout() }
+    private val _signOut = MutableStateFlow(SignOutUiState())
+    val signOutState: StateFlow<SignOutUiState> = _signOut.asStateFlow()
+
+    fun syncNow() {
+        viewModelScope.launch { engine.syncNow() }
     }
+
+    /** [discardUnsaved] is true only after the user was told some changes could not be uploaded. */
+    fun signOut(discardUnsaved: Boolean = false) {
+        if (_signOut.value.inProgress) return
+        _signOut.value = SignOutUiState(inProgress = true)
+        viewModelScope.launch {
+            val result = signOutUseCase(discardUnsaved)
+            _signOut.value = SignOutUiState(changesNotUploaded = result == SignOutResult.ChangesNotUploaded)
+        }
+    }
+
+    fun dismissSignOutWarning() = _signOut.update { it.copy(changesNotUploaded = false) }
 }

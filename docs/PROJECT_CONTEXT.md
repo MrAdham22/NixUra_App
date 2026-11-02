@@ -116,9 +116,13 @@ The owner approved expanding the app. Current scope:
 - **Profile & settings:** name/email/age stored locally in `preferences` (key/value); settings: dark/light, language (English only), notifications, daily check-in time, erase all data; first-run onboarding.
 - **Scores (derived, not stored):** "Breaking free" = average progress of active quit habits toward 30 days; "Discipline" = weighted good-habit completion over 7 days; Momentum = average of available scores.
 
-Still **out of scope:** accounts, backend, cloud sync, online AI, ads/analytics.
+Still **out of scope:** ads. Accounts and cloud sync now exist (see "Accounts and cloud sync" below); online AI and analytics are planned.
 
-Persistence: Room **v2** — tables `habits` (+`color_argb`), `habit_events`, `good_habits`, `good_habit_logs` (unique `good_habit_id`+`day_index`), `events`, `coach_messages`, `preferences`. `MIGRATION_1_2` is hand-written. No destructive fallback.
+Persistence: Room **v3** — tables `habits` (+`color_argb`), `habit_events`, `good_habits`, `good_habit_logs` (unique `good_habit_id`+`day_index`), `events`, `coach_messages`, `preferences`. The first five also have `sync_id`, `updated_at`, `deleted_at` and `dirty`. `MIGRATION_1_2` and `MIGRATION_2_3` are hand-written. No destructive fallback.
+
+## Accounts and cloud sync
+
+Accounts are optional. Signed out, the app shows `LandingScreen` ("Let's Nix the bad Aura"); Get Started opens sign-in. "Continue without an account" warns first, and guests make no network calls. Signed in, `SyncEngine` keeps Room and the server in step: newest edit per item wins, deletes are soft, and local `Long` ids stay while `sync_id` identifies a row across devices. Sign-out uploads, then clears the phone. Erase all data removes habits, events and chats, also from the account when signed in, and keeps profile and settings. See `docs/agents/agent-2-handoff.md` and `docs/agents/agent-3-handoff.md`.
 
 Time: local "day index" = days since 1970-01-01 in the device time zone (`DayCalculator`, offset from the platform: `java.util.TimeZone` on Android, `NSTimeZone` on iOS).
 

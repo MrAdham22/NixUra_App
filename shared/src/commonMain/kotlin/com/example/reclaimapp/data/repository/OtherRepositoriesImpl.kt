@@ -59,15 +59,25 @@ class GoodHabitRepositoryImpl(
         )
 
     override suspend fun update(id: Long, name: String, dailyTarget: Int, colorArgb: Long?) =
-        goodHabitDao.updateDetails(id, name, dailyTarget, colorArgb)
+        goodHabitDao.updateDetails(id, name, dailyTarget, colorArgb, clock.nowEpochMillis())
 
     override suspend fun archive(id: Long) = goodHabitDao.archive(id, clock.nowEpochMillis())
 
     override suspend fun setCount(id: Long, dayIndex: Long, count: Int) {
+        val now = clock.nowEpochMillis()
         if (count <= 0) {
-            logDao.delete(id, dayIndex)
+            logDao.markDeleted(id, dayIndex, now)
         } else {
-            logDao.upsert(GoodHabitLogEntity(goodHabitId = id, dayIndex = dayIndex, count = count))
+            val habitSyncId = goodHabitDao.syncIdOf(id) ?: return
+            logDao.upsert(
+                GoodHabitLogEntity(
+                    goodHabitId = id,
+                    dayIndex = dayIndex,
+                    count = count,
+                    syncId = "$habitSyncId:$dayIndex",
+                    updatedAtEpochMillis = now,
+                ),
+            )
         }
     }
 }
@@ -91,9 +101,9 @@ class EventRepositoryImpl(
         )
 
     override suspend fun update(id: Long, title: String, category: EventCategory, targetAtEpochMillis: Long, reminderLeadMillis: List<Long>) =
-        dao.update(id, title, category.name, targetAtEpochMillis, encodeReminders(reminderLeadMillis))
+        dao.update(id, title, category.name, targetAtEpochMillis, encodeReminders(reminderLeadMillis), clock.nowEpochMillis())
 
-    override suspend fun delete(id: Long) = dao.delete(id)
+    override suspend fun delete(id: Long) = dao.markDeleted(id, clock.nowEpochMillis())
 }
 
 class CoachRepositoryImpl(
@@ -111,6 +121,7 @@ class CoachRepositoryImpl(
 
 class PreferencesRepositoryImpl(
     private val dao: PreferenceDao,
+    private val clock: Clock,
 ) : PreferencesRepository {
 
     override fun observeProfile(): Flow<UserProfile> = dao.observeAll().map { items ->
@@ -146,18 +157,26 @@ class PreferencesRepositoryImpl(
     }
 
     override suspend fun saveSettings(settings: AppSettings) {
-        dao.upsertAll(
-            listOf(
-                PreferenceEntity(KEY_DARK, if (settings.darkTheme) "1" else "0"),
-                PreferenceEntity(KEY_LANGUAGE, settings.languageCode),
-                PreferenceEntity(KEY_NOTIFICATIONS, if (settings.notificationsEnabled) "1" else "0"),
-                PreferenceEntity(KEY_CHECKIN, settings.dailyCheckInMinutes.toString()),
-                PreferenceEntity(KEY_ONBOARDED, if (settings.onboardingCompleted) "1" else "0"),
-            ),
+        val before = dao.getAll().associate { it.key to it.value }
+        val synced = listOf(
+            PreferenceEntity(KEY_DARK, if (settings.darkTheme) "1" else "0"),
+            PreferenceEntity(KEY_LANGUAGE, settings.languageCode),
+            PreferenceEntity(KEY_NOTIFICATIONS, if (settings.notificationsEnabled) "1" else "0"),
+            PreferenceEntity(KEY_CHECKIN, settings.dailyCheckInMinutes.toString()),
         )
+        // Onboarding is per device, so finishing it does not count as a settings change to upload.
+        val changed = synced.any { before[it.key] != it.value }
+        val marks = if (changed) {
+            listOf(PreferenceEntity(KEY_SETTINGS_DIRTY, "1"), PreferenceEntity(KEY_SETTINGS_UPDATED, clock.nowEpochMillis().toString()))
+        } else {
+            emptyList()
+        }
+        dao.upsertAll(synced + PreferenceEntity(KEY_ONBOARDED, if (settings.onboardingCompleted) "1" else "0") + marks)
     }
 
-    private companion object {
+    internal companion object {
+        const val KEY_SETTINGS_DIRTY = "sync.settings.dirty"
+        const val KEY_SETTINGS_UPDATED = "sync.settings.updated_at"
         const val KEY_NAME = "profile.name"
         const val KEY_EMAIL = "profile.email"
         const val KEY_AGE = "profile.age"
@@ -173,4 +192,6 @@ class DataMaintenanceRepositoryImpl(
     private val dao: MaintenanceDao,
 ) : DataMaintenanceRepository {
     override suspend fun clearAllData() = dao.clearAll()
+
+    override suspend fun markAllDataDeleted(atEpochMillis: Long) = dao.markAllDeleted(atEpochMillis)
 }

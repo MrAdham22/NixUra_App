@@ -90,7 +90,7 @@ fun appModule() = module {
     single<GoodHabitRepository> { GoodHabitRepositoryImpl(get(), get(), get()) }
     single<EventRepository> { EventRepositoryImpl(get(), get()) }
     single<CoachRepository> { CoachRepositoryImpl(get(), get()) }
-    single<PreferencesRepository> { PreferencesRepositoryImpl(get()) }
+    single<PreferencesRepository> { PreferencesRepositoryImpl(get(), get()) }
     single<DataMaintenanceRepository> { DataMaintenanceRepositoryImpl(get()) }
 
     // Coach (offline, rule-based). Swap RuleBasedCoachResponder for an AI-backed one later.
@@ -133,7 +133,7 @@ fun appModule() = module {
     factory { ObserveSettingsUseCase(get()) }
     factory { SaveProfileUseCase(get()) }
     factory { UpdateSettingsUseCase(get()) }
-    factory { ClearAllDataUseCase(get()) }
+    factory { ClearAllDataUseCase(get(), get(), get()) }
 
     // View models
     viewModel {

@@ -22,6 +22,9 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.kotlinx.coroutines.core)
 
+    // Cloud sync while the app is closed.
+    implementation(libs.androidx.work.runtime)
+
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)
 }

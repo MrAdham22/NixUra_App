@@ -1,5 +1,8 @@
 package com.example.reclaimapp.domain.usecase
 
+import com.example.reclaimapp.domain.auth.SessionManager
+import com.example.reclaimapp.domain.auth.SessionState
+import com.example.reclaimapp.domain.clock.Clock
 import com.example.reclaimapp.domain.model.AppSettings
 import com.example.reclaimapp.domain.model.UserProfile
 import com.example.reclaimapp.domain.repository.DataMaintenanceRepository
@@ -50,6 +53,17 @@ class UpdateSettingsUseCase(private val repository: PreferencesRepository) {
     }
 }
 
-class ClearAllDataUseCase(private val repository: DataMaintenanceRepository) {
-    suspend operator fun invoke(): Result<Unit> = runCatching { repository.clearAllData() }
+/** Settings > Erase all data. Signed in, the erase also reaches the account and other devices; as a guest it is local. */
+class ClearAllDataUseCase(
+    private val repository: DataMaintenanceRepository,
+    private val sessions: SessionManager,
+    private val clock: Clock,
+) {
+    suspend operator fun invoke(): Result<Unit> = runCatching {
+        if (sessions.state.value is SessionState.SignedIn) {
+            repository.markAllDataDeleted(clock.nowEpochMillis())
+        } else {
+            repository.clearAllData()
+        }
+    }
 }

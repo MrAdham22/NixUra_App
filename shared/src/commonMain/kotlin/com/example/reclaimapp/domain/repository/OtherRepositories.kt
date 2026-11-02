@@ -40,5 +40,9 @@ interface PreferencesRepository {
 }
 
 interface DataMaintenanceRepository {
+    /** Removes habits, events and chats from this device only. */
     suspend fun clearAllData()
+
+    /** Marks habits and events as deleted, so the next sync removes them from the account and other devices too; chats go right away. */
+    suspend fun markAllDataDeleted(atEpochMillis: Long)
 }

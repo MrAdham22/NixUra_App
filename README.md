@@ -11,7 +11,8 @@
 | Offline quit tracking (Room, MVVM, Koin) | Built and **verified earlier** (30 tests, `assembleDebug` passed on the author's machine before the UI merge) |
 | NixUra UI merge + all features below | **Built, run and tested on Android — working properly (owner-confirmed).** First-run bugs fixed: stale Room database crash, screen padding from gesture insets. The Android app is considered feature-complete for the current scope. |
 | Pure-logic unit tests (day math, coach, planner, scores, shade ramp, counters) | 71 tests compiled with plain `kotlinc` 2.4.20 and **passed** outside Gradle. They also live in `shared/src/commonTest`. |
-| Room v2 schema + `MIGRATION_1_2` | Audited with `tools/room_migration_check.py` (real SQLite: migration vs entities, all 25 queries, erase order) — **OK**. Works on Android (owner-tested). |
+| Room v3 schema + migrations | Audited with `tools/room_migration_check.py` (real SQLite: migrations vs entities, backfill, all queries, erase order) — **OK**. v2 to v3 ran on the owner's phone with real data. |
+| Cloud sync | Built. Backend and engine tests pass; syncing on real devices **not yet confirmed**. See [docs/agents/agent-3-handoff.md](docs/agents/agent-3-handoff.md). |
 | AI coach | Offline rule-based coach ships and works. A **real AI agent is the next planned feature** (see roadmap); guide in [docs/AI_COACH_UPGRADE.md](docs/AI_COACH_UPGRADE.md) |
 | Android home-screen widgets (quit counter, good-habit quick log, events) | **Logic confirmed on a device by the owner** (numbers, live clock, "+"/"-", choosing a habit/event). The **card-style redesign** (widgets mirror the in-app cards, size-aware layouts) and the **"Add to Home screen" buttons** are written and type-checked but **not yet run on a device**. 90 pure-logic tests (planner, state mapping, quick-log use cases) compiled with plain `kotlinc` outside Gradle and **passed**. iOS widgets are **not implemented** (planned; need macOS, WidgetKit and an App Group). |
 | iOS | **Approved target, not yet built or run.** Shared UI/logic is written for it (Compose host in `iosApp`, `iosMain` actuals). Reminders are a no-op placeholder until a `UNUserNotificationCenter` implementation is added. Needs macOS + Xcode to verify. |
@@ -39,6 +40,7 @@ All screens use the NixUra palette, dark theme by default (navy `#1D1A39` backgr
 | AI Coach | **Full-screen** (top bar and bottom nav hidden; compact header with back arrow, mode line and clear-chat; system back returns to Home). Offline chat (persisted), "today's focus" strip you tap to pick which quit habit to talk about (the coach then uses that habit's data), quick prompts (incl. "What happens if I stop for...", answered from the habit's timeline for any duration, EN/AR, typo-tolerant; unverified), craving/relapse/progress/body/plan replies, crisis safety reply |
 | Home-screen widgets (Android) | Three resizable widgets drawn like the in-app cards: **Quit counter** (same card color, everything centered, glyph badge, habit name, days + live clock with DAYS/HRS/MIN/SEC labels (6.5 sp, same size as on the events widget; the hours field is always shown, "0" in the first hour of a day; the label cells are measured from the real clock text so HRS/MIN/SEC are centered under their digits), longest streak; no category line and no stage row), **Good habit quick log** (today's count, "-" and "+" buttons that record without opening the app, progress bar, 7-day strip, streak row; the week strip has priority over the day streak row, which has priority over the progress bar; the quit and good widgets use only 8 dp of inner padding so more rows fit), **Events** (category, title, date without the year, countdown / count-up; **no reminder count**, reminders stay in the app). Tap opens the habit or Events. Choose the habit/event when placing the widget, or press **"Add to Home screen"** on a quit-habit analysis screen, a good-habit analysis screen, or an event's edit screen: the launcher then shows its own placement UI, where you pick the page/position and can resize or move the widget afterwards. Layout adapts to size (stacked, one row, two compact lines); quit and event titles are never hidden and their optional rows only appear when they fit. Follows the app's dark/light setting. |
 | Profile | Opened from the avatar in the top bar. Name, email, age (local only), "Breaking free" and "Discipline" scores, totals, nearest event countdown. Gear icon at the top right opens Settings |
+| Account | Sign in or out, cloud sync status with Sync now, password, devices, delete account. Signing out uploads pending changes, then clears the phone. Signed-in data syncs across devices; guests stay completely offline. |
 | Settings | Reached from the gear icon on the Profile screen (back returns to Profile). Account row (shows the signed-in email), Dark/Light, language (English only for now), notifications + daily check-in time, erase all data, about |
 
 Notifications: event reminders, streak milestones and a daily check-in. **Android:** implemented with `AlarmManager`, restored after reboot. **iOS:** not implemented yet (planned with `UNUserNotificationCenter`).
@@ -91,7 +93,7 @@ Single `:shared` module, Clean Architecture + MVVM:
 - **`:androidApp`**: `NixUraApplication` (starts Koin), `MainActivity`, `notifications/` (alarm scheduler, receivers, permission bridge). Widgets: `widgets/` (three `AppWidgetProvider`s, `WidgetRenderer`, `WidgetUpdater`, quick-log / system / pin receivers, `WidgetConfigActivity`, `AndroidWidgetPinner`); `MainActivity` also handles widget deep links; `NixUraApplication` starts the widget updater and registers the Android `WidgetPinner` binding. Layouts `res/layout/widget_*.xml` are generated by `tools/gen_widget_layouts.py`.
 - **iOS**: `shared/src/iosMain` (`MainViewController`, database builder, `platformModule()`, UTC offset, system bars) and `iosApp/` (SwiftUI `ContentView` hosting the Compose view controller; framework name `Shared`).
 
-Database: Room **version 2** (`MIGRATION_1_2` in `data/local/Migrations.kt`). Tables: `habits`, `habit_events`, `good_habits`, `good_habit_logs`, `events`, `coach_messages`, `preferences`.
+Database: Room **version 3** (`MIGRATION_1_2`, `MIGRATION_2_3` in `data/local/Migrations.kt`). Tables: `habits`, `habit_events`, `good_habits`, `good_habit_logs`, `events`, `coach_messages`, `preferences`.
 
 The coach is behind `CoachResponder` (`RuleBasedCoachResponder` today). A real AI is a second implementation; see the upgrade guide.
 
@@ -105,11 +107,12 @@ Habbit_app/
 │   ├── PROJECT_CONTEXT.md         # product + architecture reference
 │   ├── DEVELOPMENT_STATUS.md      # what happened, what is verified, what is left
 │   ├── agents/agent-1-handoff.md  # swipe tabs, droplet nav bar, reminder edit/remove (unverified, see file)
-│   ├── agents/agent-2-handoff.md  # accounts: backend, email OTP login, token security, privacy docs (unverified, see file)
+│   ├── agents/agent-2-handoff.md  # accounts: backend, email OTP login, token security, privacy docs
+│   ├── agents/agent-3-handoff.md  # cloud sync: rules, verification state, known limitations
 │   ├── PHASE2_ARCHITECTURE.md     # original architecture (see addendum at the end)
 │   └── AI_COACH_UPGRADE.md        # how to make the coach a real AI (free options)
 ├── iosApp/                        # iOS app: Xcode project + SwiftUI host that embeds the shared Compose UI
-├── tools/room_migration_check.py  # validates MIGRATION_1_2 + DAO SQL against the entities (python3, no deps)
+├── tools/room_migration_check.py  # validates the migrations + DAO SQL against the entities (python3, no deps)
 ├── shared/src/{commonMain,androidMain,iosMain,commonTest}/kotlin/com/example/reclaimapp/
 └── .cursor/skills/                # workflow skills (onboarding, feature dev, verification, handoff)
 ```

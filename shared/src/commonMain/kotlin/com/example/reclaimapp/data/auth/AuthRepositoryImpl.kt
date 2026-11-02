@@ -17,10 +17,6 @@ class AuthRepositoryImpl internal constructor(
     private val device: DeviceInfoProvider,
 ) : AuthRepository {
 
-    /** Wiring helper for DI (the internal collaborators are not part of the public API). */
-    constructor(transport: ApiTransport, sessions: SessionManagerImpl, device: DeviceInfoProvider) :
-        this(transport, AuthorizedApi(transport, sessions), sessions, device)
-
     override suspend fun register(email: String, password: String, name: String?): AuthResult<Unit> =
         publicPost("/v1/auth/register", AuthJson.encodeToString(RegisterRequest.serializer(), RegisterRequest(email, password, name?.takeIf { it.isNotBlank() })), setOf(202)) { }
 

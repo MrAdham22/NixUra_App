@@ -15,6 +15,8 @@ import com.example.reclaimapp.data.auth.IosDeviceInfo
 import com.example.reclaimapp.data.auth.KeychainSecureStore
 import com.example.reclaimapp.data.auth.SecureStore
 import com.example.reclaimapp.data.auth.iosApiConfig
+import com.example.reclaimapp.domain.sync.BackgroundSyncScheduler
+import com.example.reclaimapp.domain.sync.NoOpBackgroundSyncScheduler
 import org.koin.dsl.module
 
 /**
@@ -33,4 +35,7 @@ fun platformModule() = module {
     single<SecureStore> { KeychainSecureStore() }
     single<DeviceInfoProvider> { IosDeviceInfo() }
     single<ApiConfig> { iosApiConfig() }
+
+    // iOS syncs while the app is open; background sync (BGTaskScheduler) is not implemented yet.
+    single<BackgroundSyncScheduler> { NoOpBackgroundSyncScheduler }
 }

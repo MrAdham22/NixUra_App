@@ -42,3 +42,48 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         )
     }
 }
+
+/**
+ * v2 → v3: cloud sync. Additive only: every synced table gets a global id, a last-change time, a delete marker and a
+ * "needs upload" flag. Existing rows keep their local ids and start as "needs upload". Written statement by statement
+ * so tools/room_migration_check.py can run them.
+ */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `habits` ADD COLUMN `sync_id` TEXT NOT NULL DEFAULT ''")
+        connection.execSQL("ALTER TABLE `habits` ADD COLUMN `updated_at` INTEGER NOT NULL DEFAULT 0")
+        connection.execSQL("ALTER TABLE `habits` ADD COLUMN `deleted_at` INTEGER")
+        connection.execSQL("ALTER TABLE `habits` ADD COLUMN `dirty` INTEGER NOT NULL DEFAULT 1")
+        connection.execSQL("ALTER TABLE `habit_events` ADD COLUMN `sync_id` TEXT NOT NULL DEFAULT ''")
+        connection.execSQL("ALTER TABLE `habit_events` ADD COLUMN `updated_at` INTEGER NOT NULL DEFAULT 0")
+        connection.execSQL("ALTER TABLE `habit_events` ADD COLUMN `deleted_at` INTEGER")
+        connection.execSQL("ALTER TABLE `habit_events` ADD COLUMN `dirty` INTEGER NOT NULL DEFAULT 1")
+        connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `sync_id` TEXT NOT NULL DEFAULT ''")
+        connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `updated_at` INTEGER NOT NULL DEFAULT 0")
+        connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `deleted_at` INTEGER")
+        connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `dirty` INTEGER NOT NULL DEFAULT 1")
+        connection.execSQL("ALTER TABLE `good_habit_logs` ADD COLUMN `sync_id` TEXT NOT NULL DEFAULT ''")
+        connection.execSQL("ALTER TABLE `good_habit_logs` ADD COLUMN `updated_at` INTEGER NOT NULL DEFAULT 0")
+        connection.execSQL("ALTER TABLE `good_habit_logs` ADD COLUMN `deleted_at` INTEGER")
+        connection.execSQL("ALTER TABLE `good_habit_logs` ADD COLUMN `dirty` INTEGER NOT NULL DEFAULT 1")
+        connection.execSQL("ALTER TABLE `events` ADD COLUMN `sync_id` TEXT NOT NULL DEFAULT ''")
+        connection.execSQL("ALTER TABLE `events` ADD COLUMN `updated_at` INTEGER NOT NULL DEFAULT 0")
+        connection.execSQL("ALTER TABLE `events` ADD COLUMN `deleted_at` INTEGER")
+        connection.execSQL("ALTER TABLE `events` ADD COLUMN `dirty` INTEGER NOT NULL DEFAULT 1")
+
+        connection.execSQL("UPDATE `habits` SET `sync_id` = lower(hex(randomblob(16))), `updated_at` = `created_at`")
+        connection.execSQL("UPDATE `habit_events` SET `sync_id` = lower(hex(randomblob(16))), `updated_at` = `occurred_at`")
+        connection.execSQL("UPDATE `good_habits` SET `sync_id` = lower(hex(randomblob(16))), `updated_at` = `created_at`")
+        connection.execSQL(
+            "UPDATE `good_habit_logs` SET `updated_at` = CAST(strftime('%s','now') AS INTEGER) * 1000, " +
+                "`sync_id` = COALESCE((SELECT g.`sync_id` FROM `good_habits` g WHERE g.`id` = `good_habit_id`), lower(hex(randomblob(16)))) || ':' || `day_index`",
+        )
+        connection.execSQL("UPDATE `events` SET `sync_id` = lower(hex(randomblob(16))), `updated_at` = `created_at`")
+
+        connection.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_habits_sync_id` ON `habits` (`sync_id`)")
+        connection.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_habit_events_sync_id` ON `habit_events` (`sync_id`)")
+        connection.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_good_habits_sync_id` ON `good_habits` (`sync_id`)")
+        connection.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_good_habit_logs_sync_id` ON `good_habit_logs` (`sync_id`)")
+        connection.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_events_sync_id` ON `events` (`sync_id`)")
+    }
+}

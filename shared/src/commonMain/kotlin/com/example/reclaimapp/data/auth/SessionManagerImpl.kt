@@ -68,6 +68,11 @@ class SessionManagerImpl internal constructor(private val store: SecureStore) : 
 
     override suspend fun markGuestHandoffHandled() = mutex.withLock { store.remove(KEY_PENDING) }
 
+    override suspend fun forgetLastUser() = mutex.withLock {
+        store.remove(KEY_LAST_USER)
+        store.remove(KEY_PENDING)
+    }
+
     /** True once the first-launch "create an account?" screen was shown or skipped. */
     suspend fun authPromptSeen(): Boolean = store.get(KEY_PROMPT_SEEN) == "1"
     suspend fun markAuthPromptSeen() = store.put(KEY_PROMPT_SEEN, "1")

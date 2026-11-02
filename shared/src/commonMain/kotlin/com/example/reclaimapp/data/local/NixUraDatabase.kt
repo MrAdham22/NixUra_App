@@ -13,6 +13,7 @@ import com.example.reclaimapp.data.local.dao.HabitEventDao
 import com.example.reclaimapp.data.local.dao.HabitWriteDao
 import com.example.reclaimapp.data.local.dao.MaintenanceDao
 import com.example.reclaimapp.data.local.dao.PreferenceDao
+import com.example.reclaimapp.data.local.dao.SyncDao
 import com.example.reclaimapp.data.local.entity.CoachMessageEntity
 import com.example.reclaimapp.data.local.entity.EventEntity
 import com.example.reclaimapp.data.local.entity.GoodHabitEntity
@@ -31,7 +32,7 @@ import com.example.reclaimapp.data.local.entity.PreferenceEntity
         CoachMessageEntity::class,
         PreferenceEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @ConstructedBy(NixUraDatabaseConstructor::class)
@@ -45,6 +46,7 @@ abstract class NixUraDatabase : RoomDatabase() {
     abstract fun coachMessageDao(): CoachMessageDao
     abstract fun preferenceDao(): PreferenceDao
     abstract fun maintenanceDao(): MaintenanceDao
+    abstract fun syncDao(): SyncDao
 }
 
 @Suppress("KotlinNoActualForExpect")

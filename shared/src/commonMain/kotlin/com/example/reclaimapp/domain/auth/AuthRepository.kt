@@ -48,6 +48,9 @@ interface SessionManager {
     suspend fun pendingGuestHandoff(): GuestDataHandoff?
     suspend fun markGuestHandoffHandled()
 
+    /** After a clean sign-out or account deletion, anything created next is guest data, not another account's. */
+    suspend fun forgetLastUser()
+
     /** Clears the local session without calling the server (used when the server already ended it). */
     suspend fun signOutLocally()
 }
