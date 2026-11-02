@@ -6,7 +6,7 @@ import com.example.reclaimapp.presentation.navigation.Route
 
 /**
  * Renders the account flow for whatever [Route.Auth] (or Legal) route is current. Used by the first-launch gate
- * (with [onSkip]) and by Settings > Account (without). Anything else shows the Welcome screen.
+ * (with [onSkip]) and by Settings > Account (without). Anything else shows the Landing screen.
  */
 @Composable
 fun AuthHost(navigator: Navigator, onSkip: (() -> Unit)?) {
@@ -17,6 +17,6 @@ fun AuthHost(navigator: Navigator, onSkip: (() -> Unit)?) {
         Route.Auth.ForgotPassword -> ForgotPasswordScreen(navigator)
         is Route.Auth.ResetPassword -> ResetPasswordScreen(r.email, navigator)
         is Route.Legal -> LegalScreen(r.document, navigator)
-        else -> WelcomeScreen(navigator, onSkip)
+        else -> LandingScreen(navigator, onSkip)
     }
 }

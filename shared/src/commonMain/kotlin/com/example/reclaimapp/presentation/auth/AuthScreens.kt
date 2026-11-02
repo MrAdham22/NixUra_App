@@ -21,8 +21,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.reclaimapp.domain.auth.AuthErrorKind
 import com.example.reclaimapp.domain.auth.AuthValidation
 import com.example.reclaimapp.domain.auth.EmailProblem
-import com.example.reclaimapp.presentation.components.NixButton
-import com.example.reclaimapp.presentation.components.NixButtonStyle
 import com.example.reclaimapp.presentation.legal.LegalDocument
 import com.example.reclaimapp.presentation.navigation.Navigator
 import com.example.reclaimapp.presentation.navigation.Route
@@ -38,20 +36,6 @@ private fun emailErrorText(email: String, s: Strings): String? = when (AuthValid
     null -> null
     EmailProblem.Empty -> s.authEmailEmpty
     else -> s.authEmailInvalid
-}
-
-/** First screen of the gate. [onSkip] is non-null only in the first-launch gate ("Continue without an account"). */
-@Composable
-fun WelcomeScreen(navigator: Navigator, onSkip: (() -> Unit)?) {
-    val s = LocalStrings.current
-    AuthScaffold(s.authWelcomeTitle, s.authWelcomeBody, onBack = null) {
-        NixButton(s.authCreateAccount, { navigator.push(Route.Auth.Register) }, Modifier.fillMaxWidth())
-        NixButton(s.authSignIn, { navigator.push(Route.Auth.Login) }, Modifier.fillMaxWidth(), style = NixButtonStyle.Secondary)
-        if (onSkip != null) {
-            NixButton(s.authContinueOffline, onSkip, Modifier.fillMaxWidth(), style = NixButtonStyle.Ghost)
-            Text(s.authOfflineNote, style = NixType.Small, color = Nix.colors.textMuted)
-        }
-    }
 }
 
 @Composable
@@ -83,10 +67,10 @@ fun LoginScreen(navigator: Navigator) {
             imeAction = ImeAction.Done, onImeAction = submit,
             error = if (submitted && password.isEmpty()) s.authPasswordRequired else null,
         )
+        AuthLink(s.authForgotLink, { navigator.push(Route.Auth.ForgotPassword) }, Modifier.align(Alignment.End))
         AuthErrorText(state.error)
-        NixButton(s.authSignIn, submit, Modifier.fillMaxWidth(), loading = state.loading)
-        AuthLink(s.authForgotLink, { navigator.push(Route.Auth.ForgotPassword) })
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        AuthGradientButton(s.authSignIn, submit, Modifier.fillMaxWidth(), loading = state.loading)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
             Text(s.authNewHere, style = NixType.Body, color = Nix.colors.textSecondary)
             AuthLink(s.authCreateAccount, { navigator.push(Route.Auth.Register) })
         }
@@ -126,7 +110,7 @@ fun RegisterScreen(navigator: Navigator) {
             PasswordStrengthBar(password, email)
         }
         AuthErrorText(state.error)
-        NixButton(s.authCreateAccount, submit, Modifier.fillMaxWidth(), loading = state.loading)
+        AuthGradientButton(s.authCreateAccount, submit, Modifier.fillMaxWidth(), loading = state.loading)
         Column {
             Text(s.authAgreeText, style = NixType.Small, color = Nix.colors.textMuted)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -160,7 +144,7 @@ fun VerifyOtpScreen(email: String, navigator: Navigator) {
         )
         AuthErrorText(state.error)
         if (resent) Text(s.authCodeResent, style = NixType.Small, color = Nix.colors.positive)
-        NixButton(s.authVerifyButton, { vm.verify(email, code) }, Modifier.fillMaxWidth(), loading = state.loading, enabled = AuthValidation.isCompleteOtp(code))
+        AuthGradientButton(s.authVerifyButton, { vm.verify(email, code) }, Modifier.fillMaxWidth(), loading = state.loading, enabled = AuthValidation.isCompleteOtp(code))
         AuthLink(if (seconds > 0) s.authResendIn(seconds) else s.authResend, { vm.resend(email) }, enabled = seconds == 0)
     }
 }
@@ -185,7 +169,7 @@ fun ForgotPasswordScreen(navigator: Navigator) {
             imeAction = ImeAction.Done, onImeAction = submit, error = if (submitted) emailErrorText(email, s) else null,
         )
         AuthErrorText(state.error)
-        NixButton(s.authSendCode, submit, Modifier.fillMaxWidth(), loading = state.loading)
+        AuthGradientButton(s.authSendCode, submit, Modifier.fillMaxWidth(), loading = state.loading)
     }
 }
 
@@ -209,7 +193,7 @@ fun ResetPasswordScreen(email: String, navigator: Navigator) {
     if (finished) {
         AuthScaffold(s.authResetButton, s.authResetDone, onBack = null) {
             // Back to the Login screen that opened "Forgot password" (Login > Forgot > Reset).
-            NixButton(s.authSignIn, { repeat(2) { navigator.back() } }, Modifier.fillMaxWidth())
+            AuthGradientButton(s.authSignIn, { repeat(2) { navigator.back() } }, Modifier.fillMaxWidth())
         }
         return
     }
@@ -222,7 +206,7 @@ fun ResetPasswordScreen(email: String, navigator: Navigator) {
         )
         PasswordStrengthBar(password, email)
         AuthErrorText(state.error)
-        NixButton(s.authResetButton, submit, Modifier.fillMaxWidth(), loading = state.loading, enabled = AuthValidation.isCompleteOtp(code))
+        AuthGradientButton(s.authResetButton, submit, Modifier.fillMaxWidth(), loading = state.loading, enabled = AuthValidation.isCompleteOtp(code))
         AuthLink(s.authResend, { vm.resend(email) })
         Spacer(Modifier.height(8.dp))
     }

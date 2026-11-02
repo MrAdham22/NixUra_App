@@ -27,6 +27,8 @@ All screens use the NixUra palette, dark theme by default (navy `#1D1A39` backgr
 | Screen | What it does |
 |--------|--------------|
 | Onboarding | Welcome + optional name (first launch only) |
+| Landing | Shown when signed out. NixUra brand, "Let's Nix the bad Aura" where "Aura" blows away as ash and returns on a loop (stays still with "remove animations"), Get Started opens sign-in. "Continue without an account" warns that data stays on the phone only and the app runs completely offline. Always dark. |
+| Sign-in and account forms | Animated brand backdrop, form on a glass card, icons in the fields, eye icon for password visibility. Always dark. |
 | Home | Greeting, coach "today's focus", momentum score + 7-day bars, previews of quit habits, good habits and the next event |
 | Quit (bad habits) | Cards with live days/hours/minutes/seconds. Card starts dark and lightens over 0/1/3/7/14/30 days. Pick your own card color (starts ~30% brightness of it, ends in a light tint) or use the default brand gradient. |
 | Quit habit analysis | Big counter, progress to next shade, stats (current/best streak, relapses, tracking since), coach note, **"What happens if I stop for..." explorer** (chips + custom time, unverified), body & mind recovery timeline, relapse history, edit / remove / record relapse |

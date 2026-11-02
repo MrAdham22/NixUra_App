@@ -99,7 +99,7 @@ fun AppRoot() {
         when (session) {
             is SessionState.SignedIn -> {
                 wasSignedIn = true
-                authPromptSeen = false // after a later sign-out the Welcome screen is offered again
+                authPromptSeen = false // a later sign-out shows the Landing screen again
                 while (navigator.current is Route.Auth) navigator.back() // leave the sign-in screens
                 profileSync.sync()
             }
@@ -111,8 +111,11 @@ fun AppRoot() {
         }
     }
 
-    NixUraTheme(darkTheme = state.settings.darkTheme) {
-        SystemBarsEffect(state.settings.darkTheme)
+    // The landing and sign-in screens are always the dark brand look, whatever the app's theme setting is.
+    val inGate = state.loaded && state.settings.onboardingCompleted && session is SessionState.SignedOut && authPromptSeen == false
+    val darkTheme = state.settings.darkTheme || inGate || navigator.current is Route.Auth
+    NixUraTheme(darkTheme = darkTheme) {
+        SystemBarsEffect(darkTheme)
         CompositionLocalProvider(LocalStrings provides stringsFor(state.settings.languageCode)) {
             Box(
                 Modifier

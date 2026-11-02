@@ -4,7 +4,7 @@ import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Transaction
 
-/** Wipes every table. Used by Settings → Erase all data. */
+/** Wipes habits, events and chats; profile and settings stay. Used by Settings → Erase all data. */
 @Dao
 abstract class MaintenanceDao {
     @Query("DELETE FROM habit_events")
@@ -25,9 +25,6 @@ abstract class MaintenanceDao {
     @Query("DELETE FROM coach_messages")
     abstract suspend fun deleteCoachMessages()
 
-    @Query("DELETE FROM preferences")
-    abstract suspend fun deletePreferences()
-
     @Transaction
     open suspend fun clearAll() {
         deleteHabitEvents()
@@ -36,6 +33,5 @@ abstract class MaintenanceDao {
         deleteGoodHabits()
         deleteEvents()
         deleteCoachMessages()
-        deletePreferences()
     }
 }

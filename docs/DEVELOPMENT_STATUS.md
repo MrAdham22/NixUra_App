@@ -192,6 +192,10 @@ Branch `agent-5-widgets` (earlier commits e10193d, 0c3214a; the card redesign an
 
 **Small UI changes (2026-11-02):** the password show/hide text is now an eye icon, and the Settings account row shows the signed-in email. Build and tests pass; not yet seen on a device.
 
+**Landing and sign-in redesign (2026-11-02, branch `agent-3/cloud-sync`):** new `LandingScreen` replaces the Welcome screen, with the ash effect (`AshField`, `AshWord`), `AuraBackdrop` and a redesigned `AuthScaffold`. Sign-out and account deletion land on it. Guest mode stays, with a warning that data is not in the cloud and can be lost. Erase all data now deletes habits, events and chats, and keeps profile and settings. 352 tests pass, `installDebug` passed, `room_migration_check.py` passed; the look and the animation are **not yet confirmed on a device**, and the ash code on iOS is unverified.
+
+**Owner decisions for Agent 3:** sign-out uploads pending changes, then clears the data from the phone (warns if it cannot upload). **Not built yet:** sign-out does not clear data until sync exists, because clearing now would lose it for good. Erase all data must also delete the data from the account once sync exists. Guests make no network calls.
+
 **Next:** Agent 3 (cloud sync).
 
 **Windows note:** if `npm` prints nothing and exits 0, a 0-byte `C:\Windows\system32\npm` is shadowing it; call `C:\Program Files\nodejs\npm.cmd`.

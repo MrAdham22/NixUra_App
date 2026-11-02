@@ -25,7 +25,7 @@ import kotlin.math.sin
 enum class NixIcon {
     Home, Shield, CircleCheck, Calendar, Sparkle, User, Gear, Plus, Back, Chevron, Bell, Trash,
     Pencil, Flame, Send, Close, Tick, Minus, Reset, Archive, Moon, Sun, Globe, Clock, Info, Leaf,
-    Eye, EyeOff,
+    Eye, EyeOff, Mail, Lock,
 }
 
 /** 24×24 icons drawn in code; [NixIcon.Gear] uses the official Material "Settings" icon (material-icons-core). */
@@ -196,6 +196,20 @@ private fun DrawScope.drawNixIcon(icon: NixIcon, c: Color, s: Float, st: Stroke)
         NixIcon.EyeOff -> {
             drawEye(c, s, st)
             line(c, s, w, 4.5f, 4.5f, 19.5f, 19.5f)
+        }
+        NixIcon.Mail -> {
+            drawRoundRect(c, Offset(3.5f * s, 5.5f * s), Size(17f * s, 13f * s), CornerRadius(2.5f * s), style = st)
+            poly(c, s, st, false, 4f, 7.5f, 12f, 13f, 20f, 7.5f)
+        }
+        NixIcon.Lock -> {
+            drawRoundRect(c, Offset(5f * s, 10.5f * s), Size(14f * s, 10f * s), CornerRadius(2.5f * s), style = st)
+            val p = Path()
+            p.moveTo(8f * s, 10.5f * s)
+            p.lineTo(8f * s, 7.5f * s)
+            p.cubicTo(8f * s, 5f * s, 9.8f * s, 3.5f * s, 12f * s, 3.5f * s)
+            p.cubicTo(14.2f * s, 3.5f * s, 16f * s, 5f * s, 16f * s, 7.5f * s)
+            p.lineTo(16f * s, 10.5f * s)
+            drawPath(p, c, style = st)
         }
     }
 }
