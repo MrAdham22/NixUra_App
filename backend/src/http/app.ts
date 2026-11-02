@@ -5,12 +5,14 @@ import { ZodError, z } from 'zod';
 import type { Config } from '../config.js';
 import { AuthService, normalizeEmail, type DeviceInfo } from '../auth/authService.js';
 import { AppError } from '../errors.js';
+import { SYNC_ENTITY_TYPES, type SyncService } from '../sync/syncService.js';
 import { MemoryRateLimiter, type RateLimiter } from './rateLimiter.js';
 import { openApiDocument } from './openapi.js';
 
 export interface AppDeps {
   cfg: Config;
   auth: AuthService;
+  sync: SyncService;
   limiter?: RateLimiter;
   /** Used by /health to verify the database answers. */
   ping: () => Promise<void>;
@@ -26,6 +28,13 @@ const email = z.string().trim().max(254).email().transform(normalizeEmail);
 const device = z.object({ deviceName: z.string().max(80).optional(), platform: z.enum(['android', 'ios', 'web', 'other']).optional() }).partial();
 const password = z.string().min(1).max(256); // policy is enforced by the service; this only bounds the input
 const code = z.string().regex(/^\d{6}$/, 'The code has 6 digits.');
+const syncChange = z.object({
+  type: z.enum(SYNC_ENTITY_TYPES),
+  id: z.string().min(1).max(120),
+  updatedAt: z.number().int().min(0),
+  deleted: z.boolean(),
+  payload: z.string().max(8 * 1024),
+});
 
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const { cfg, auth } = deps;
@@ -169,6 +178,21 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   app.patch('/v1/me', { preHandler: requireAuth }, async (req) => {
     const b = z.object({ name: z.string().max(60).optional(), age: z.number().int().min(5).max(120).nullable().optional() }).parse(req.body);
     return { user: await auth.updateMe(user(req).userId, b) };
+  });
+
+  // -------------------------------------------------------------- cloud sync (signed in)
+  app.post('/v1/sync/push', { preHandler: requireAuth, bodyLimit: 2 * 1024 * 1024 }, async (req) => {
+    const b = z.object({ changes: z.array(syncChange).max(200) }).parse(req.body);
+    guard('sync', user(req).userId, req.ip, 600, 300, 900);
+    return { results: await deps.sync.push(user(req).userId, b.changes) };
+  });
+  app.get('/v1/sync/pull', { preHandler: requireAuth }, async (req) => {
+    const q = z.object({
+      cursor: z.string().regex(/^\d{1,19}$/).default('0'),
+      limit: z.coerce.number().int().min(1).max(500).default(200),
+    }).parse(req.query);
+    guard('sync', user(req).userId, req.ip, 600, 300, 900);
+    return deps.sync.pull(user(req).userId, q.cursor, q.limit);
   });
 
   return app;

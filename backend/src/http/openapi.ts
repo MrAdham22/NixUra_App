@@ -35,6 +35,8 @@ export const openApiDocument = {
     '/v1/auth/delete-account': { post: { summary: 'Permanently delete the account and its data (password required)', security: secured, requestBody: body({ password: s }, ['password']), responses: { 204: { description: 'deleted' }, 401: err } } },
     '/v1/auth/sessions': { get: { summary: 'List active device sessions', security: secured, responses: { 200: { description: 'sessions' } } } },
     '/v1/auth/sessions/{id}': { delete: { summary: 'Revoke one session', security: secured, parameters: [{ name: 'id', in: 'path', required: true, schema: s }], responses: { 204: { description: 'done' }, 404: err } } },
+    '/v1/sync/push': { post: { summary: 'Send local changes (max 200). Newest edit per item wins; retries are safe', security: secured, requestBody: body({ changes: { type: 'array', items: { type: 'object' } } }, ['changes']), responses: { 200: { description: 'results: one {type,id,applied} per change' }, 401: err, 422: err, 429: err } } },
+    '/v1/sync/pull': { get: { summary: 'Changes after ?cursor= (default 0), ?limit= up to 500. Returns items, cursor and hasMore', security: secured, responses: { 200: { description: 'page of changes' }, 401: err, 422: err, 429: err } } },
     '/v1/me': {
       get: { summary: 'Current user', security: secured, responses: { 200: { description: 'user' } } },
       patch: { summary: 'Update name / age', security: secured, requestBody: body({ name: s, age: { type: ['integer', 'null'] } }, []), responses: { 200: { description: 'user' }, 422: err } },

@@ -10,6 +10,7 @@ import { AuthService } from '../src/auth/authService.js';
 import { CapturingEmailSender } from '../src/email/senders.js';
 import { buildApp } from '../src/http/app.js';
 import { MemoryRateLimiter } from '../src/http/rateLimiter.js';
+import { SyncService } from '../src/sync/syncService.js';
 
 /** Adapts PGlite (real Postgres compiled to WASM) to the app's [Db] port. */
 export class PgliteDb implements Db {
@@ -70,7 +71,7 @@ export async function makeCtx(env: Record<string, string> = {}, breachCheck?: (p
   const clock = () => new Date(t);
   const mail = new CapturingEmailSender();
   const auth = new AuthService({ db, cfg, hasher: createArgon2Hasher(cfg), tokens: createAccessTokenService(cfg), email: mail, clock, breachCheck });
-  const app = await buildApp({ cfg, auth, limiter: new MemoryRateLimiter(() => t), ping: async () => void (await db.query('SELECT 1')) });
+  const app = await buildApp({ cfg, auth, sync: new SyncService(db, clock), limiter: new MemoryRateLimiter(() => t), ping: async () => void (await db.query('SELECT 1')) });
 
   const send = async (method: 'GET' | 'POST' | 'DELETE', url: string, body?: unknown, token?: string, ip = '10.0.0.1'): Promise<Res> => {
     const r = await app.inject({

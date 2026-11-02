@@ -5,6 +5,7 @@ import { createAccessTokenService } from './auth/tokens.js';
 import { AuthService } from './auth/authService.js';
 import { ConsoleEmailSender, ResendEmailSender } from './email/senders.js';
 import { buildApp } from './http/app.js';
+import { SyncService } from './sync/syncService.js';
 
 const cfg = loadConfig();
 const db = new PgDb(cfg.DATABASE_URL);
@@ -23,7 +24,7 @@ const auth = new AuthService({
   log: { error: (o, m) => holder.log?.error(o, m) },
 });
 
-const app = await buildApp({ cfg, auth, ping: async () => void (await db.query('SELECT 1')) });
+const app = await buildApp({ cfg, auth, sync: new SyncService(db), ping: async () => void (await db.query('SELECT 1')) });
 holder.log = app.log;
 
 const shutdown = async (signal: string) => {
