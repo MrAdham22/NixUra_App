@@ -103,6 +103,7 @@ Habbit_app/
 │   ├── PROJECT_CONTEXT.md         # product + architecture reference
 │   ├── DEVELOPMENT_STATUS.md      # what happened, what is verified, what is left
 │   ├── agents/agent-1-handoff.md  # swipe tabs, droplet nav bar, reminder edit/remove (unverified, see file)
+│   ├── agents/agent-2-handoff.md  # accounts: backend, email OTP login, token security, privacy docs (unverified, see file)
 │   ├── PHASE2_ARCHITECTURE.md     # original architecture (see addendum at the end)
 │   └── AI_COACH_UPGRADE.md        # how to make the coach a real AI (free options)
 ├── iosApp/                        # iOS app: Xcode project + SwiftUI host that embeds the shared Compose UI

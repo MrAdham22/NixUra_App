@@ -25,7 +25,7 @@ The merged UI + features (good habits, events, profile, settings, coach, Android
 - **Data:** Room (DB version 2 with `MIGRATION_1_2`), mappers, repository **implementations**.
 - **Presentation:** **MVVM** — Compose UI, ViewModels, `Strings` (all UI text), `Navigator` (no nav library). No business rules in Composables.
 - **DI:** Koin (`di/AppModules.kt`; platform modules (Android and iOS) provide DB, `NotificationScheduler`, `NotificationPermissionGateway`; the Android module also registers the widget use cases).
-- **Scope:** offline only — no accounts, backend or sync. The coach is offline rule-based behind `CoachResponder`; a real AI needs the owner's approval, a consent toggle and a server-side key (see AI_COACH_UPGRADE.md).
+- **Scope:** offline-first. Optional accounts (sign-in, email OTP) exist as of Agent 2: `/backend`, `domain/auth`, `data/auth`, `presentation/auth` (see docs/agents/agent-2-handoff.md); sync is still not built. The coach is offline rule-based behind `CoachResponder`; a real AI needs the owner's approval, a consent toggle and a server-side key (see AI_COACH_UPGRADE.md).
 
 ## iOS is a first-class target (approved)
 
