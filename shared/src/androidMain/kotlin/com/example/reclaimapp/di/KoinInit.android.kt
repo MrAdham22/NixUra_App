@@ -15,7 +15,7 @@ fun initAndroidKoin(
     if (KoinPlatformTools.defaultContext().getOrNull() == null) {
         startKoin {
             androidContext(context.applicationContext)
-            modules(platformModule(context.applicationContext, scheduler, permissionGateway), appModule())
+            modules(platformModule(context.applicationContext, scheduler, permissionGateway), appModule(), authModule())
         }
     }
 }

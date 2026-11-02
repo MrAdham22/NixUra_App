@@ -9,6 +9,12 @@ import com.example.reclaimapp.domain.notification.NoOpNotificationScheduler
 import com.example.reclaimapp.domain.notification.NotificationPermissionGateway
 import com.example.reclaimapp.domain.notification.NotificationScheduler
 import com.example.reclaimapp.domain.notification.ReminderCapabilities
+import com.example.reclaimapp.data.auth.ApiConfig
+import com.example.reclaimapp.data.auth.DeviceInfoProvider
+import com.example.reclaimapp.data.auth.IosDeviceInfo
+import com.example.reclaimapp.data.auth.KeychainSecureStore
+import com.example.reclaimapp.data.auth.SecureStore
+import com.example.reclaimapp.data.auth.iosApiConfig
 import org.koin.dsl.module
 
 /**
@@ -22,4 +28,9 @@ fun platformModule() = module {
     single<NotificationScheduler> { NoOpNotificationScheduler }
     single<NotificationPermissionGateway> { AlwaysGrantedPermissionGateway }
     single<ReminderCapabilities> { AlwaysAvailableReminderCapabilities }
+
+    // Accounts
+    single<SecureStore> { KeychainSecureStore() }
+    single<DeviceInfoProvider> { IosDeviceInfo() }
+    single<ApiConfig> { iosApiConfig() }
 }

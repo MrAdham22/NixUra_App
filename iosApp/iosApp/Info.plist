@@ -4,5 +4,8 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Backend base URL (https only). The owner sets the real host before release. -->
+	<key>NixUraApiBaseUrl</key>
+	<string>https://api.nixura.example</string>
 </dict>
 </plist>

@@ -12,6 +12,10 @@ import com.example.reclaimapp.domain.usecase.DecrementGoodHabitTodayUseCase
 import com.example.reclaimapp.domain.usecase.IncrementGoodHabitTodayUseCase
 import com.example.reclaimapp.domain.usecase.LoadWidgetStateUseCase
 import com.example.reclaimapp.domain.usecase.ObserveWidgetDataChangesUseCase
+import com.example.reclaimapp.data.auth.AndroidDeviceInfo
+import com.example.reclaimapp.data.auth.AndroidSecureStore
+import com.example.reclaimapp.data.auth.DeviceInfoProvider
+import com.example.reclaimapp.data.auth.SecureStore
 import org.koin.dsl.module
 
 fun platformModule(
@@ -33,4 +37,8 @@ fun platformModule(
     factory { IncrementGoodHabitTodayUseCase(get(), get(), get()) }
     factory { DecrementGoodHabitTodayUseCase(get(), get(), get()) }
     factory { ObserveWidgetDataChangesUseCase(get(), get(), get(), get()) }
+
+    // Accounts: encrypted token storage + device label. ApiConfig is bound by NixUraApplication (needs BuildConfig).
+    single<SecureStore> { AndroidSecureStore(context) }
+    single<DeviceInfoProvider> { AndroidDeviceInfo() }
 }
