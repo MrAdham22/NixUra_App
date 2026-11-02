@@ -27,9 +27,10 @@ class CoachEngineTest {
     fun matchesCategoriesByKeyword() {
         assertEquals("nicotine", kb.match("Smoking").id)
         assertEquals("nicotine", kb.match("تدخين").id)
-        assertEquals("sugar", kb.match("Sugary drinks").id)
-        assertEquals("caffeine", kb.match("Energy drink").id)
-        assertEquals("alcohol", kb.match("Drinking").id)
+        assertEquals("softdrinks", kb.match("Sugary drinks").id)
+        assertEquals("energydrinks", kb.match("Energy drink").id)
+        assertEquals("generic", kb.match("Drinking").id) // too vague alone (owner decision)
+        assertEquals("alcohol", kb.match("Drinking alcohol").id)
         assertEquals("screens", kb.match("Late night scrolling").id)
         assertEquals("generic", kb.match("Skipping breakfast").id)
         assertEquals("generic", kb.match("  ").id)
@@ -62,7 +63,7 @@ class CoachEngineTest {
     fun insightTracksAchievedAndNextMilestone() {
         val early = engine.insightFor("Smoking", 30.minutes)
         assertEquals(1, early.achieved.size)
-        assertEquals(12.hours, early.next?.after)
+        assertEquals(1.hours, early.next?.after)
         assertTrue(early.progressToNext in 0f..1f)
 
         val none = engine.insightFor("Smoking", 5.minutes)

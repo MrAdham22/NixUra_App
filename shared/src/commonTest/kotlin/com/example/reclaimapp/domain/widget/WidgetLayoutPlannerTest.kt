@@ -66,10 +66,10 @@ class WidgetLayoutPlannerTest {
         assertTrue(r.showWeek && r.showStreakRow && r.showProgress)
     }
 
-    @Test fun quitAndGoodUseLessInnerPaddingThanEvents() {
+    @Test fun fullWidgetsUseEightDpInnerPadding() {
         assertEquals(8, WidgetLayoutPlanner.plan(WidgetKind.QUIT_COUNTER, 160, 150).paddingDp)
         assertEquals(8, WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 150).paddingDp)
-        assertEquals(16, WidgetLayoutPlanner.plan(WidgetKind.EVENT, 160, 150).paddingDp)
+        assertEquals(8, WidgetLayoutPlanner.plan(WidgetKind.EVENT, 160, 150).paddingDp)
     }
 
     @Test fun quitTwoByTwoKeepsTheClearForLine() {

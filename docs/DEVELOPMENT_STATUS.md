@@ -170,7 +170,7 @@ Branch `agent-5-widgets` (earlier commits e10193d, 0c3214a; the card redesign an
 
 **Ran:** backend `tsc` and `npm test`; `:shared:testAndroidHostTest`; `:androidApp:assembleDebug`.
 
-**Results:** backend typecheck passes and **43/43 tests pass** (PGlite, no real Postgres or email provider). `:androidApp:assembleDebug` **passes**. `:shared:testAndroidHostTest`: **342 of 345 pass, 3 fail** (see below). Not run: the app on a device, the backend against real Postgres, anything on iOS.
+**Results:** backend typecheck passes and **43/43 tests pass** (PGlite, no real Postgres or email provider). `:androidApp:assembleDebug` **passes**. `:shared:testAndroidHostTest`: **345/345 pass** after the test updates below. Not run: the app on a device, the backend against real Postgres, anything on iOS.
 
 **Fixed:**
 - `shared` did not compile: the comment text `docs/legal/*.md` in `AccountScreens.kt` opened a nested Kotlin comment.
@@ -180,7 +180,11 @@ Branch `agent-5-widgets` (earlier commits e10193d, 0c3214a; the card redesign an
 - `trustProxy` type error in `app.ts`; behaviour is unchanged.
 - An uncommitted copy of `androidApp/build.gradle.kts` had replaced the root `build.gradle.kts` in the owner's checkout, which caused "plugin is already on the classpath with an unknown version". Restored from git; not a repo change.
 
-**Still failing (owner to decide, code not changed):** `CoachEngineTest.matchesCategoriesByKeyword` ("Sugary drinks" now gives `softdrinks`, test expects `sugar`), `CoachEngineTest.insightTracksAchievedAndNextMilestone` (next smoking milestone after 30 min is now 1 h, test expects 12 h), `WidgetLayoutPlannerTest.quitAndGoodUseLessInnerPaddingThanEvents` (event widget padding is 8 dp, test expects 16 dp).
+**Out-of-date tests updated to match the code (owner decision):** "Sugary drinks" gives `softdrinks`, "Energy drink" gives `energydrinks`, "Drinking" alone gives `generic` because it is too vague (so it gets no alcohol safety note unless the name says alcohol, beer, etc.), the next smoking milestone after 30 min is 1 h, and event widget padding is 8 dp.
+
+**Removed:** `STRINGS_PASTE_THIS.txt` (leftover paste instructions).
+
+**Next:** the owner tests Wave 1 on a phone before Agents 3, 4 and 5 start.
 
 **Windows note:** if `npm` prints nothing and exits 0, a 0-byte `C:\Windows\system32\npm` is shadowing it; call `C:\Program Files\nodejs\npm.cmd`.
 
