@@ -15,8 +15,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.reclaimapp.domain.auth.SessionManager
+import com.example.reclaimapp.domain.auth.SessionState
 import com.example.reclaimapp.domain.notification.NotificationPermissionGateway
 import com.example.reclaimapp.presentation.components.ConfirmDialog
 import com.example.reclaimapp.presentation.components.ErrorBanner
@@ -46,6 +49,8 @@ fun SettingsScreen(navigator: Navigator) {
     val vm: SettingsViewModel = koinViewModel()
     val state by vm.uiState.collectAsStateWithLifecycle()
     val permission = koinInject<NotificationPermissionGateway>()
+    val session by koinInject<SessionManager>().state.collectAsStateWithLifecycle()
+    val signedInEmail = (session as? SessionState.SignedIn)?.user?.email
     val s = LocalStrings.current
     val c = Nix.colors
     val settings = state.settings
@@ -57,7 +62,13 @@ fun SettingsScreen(navigator: Navigator) {
 
         SectionLabel(s.accountTitle)
         NixCard(onClick = { navigator.push(Route.Account) }) {
-            Text(s.settingsAccountRow, style = NixType.BodyStrong, color = c.textPrimary)
+            Text(
+                signedInEmail ?: s.settingsAccountRow,
+                style = NixType.BodyStrong,
+                color = c.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
 
         SectionLabel(s.appearance)

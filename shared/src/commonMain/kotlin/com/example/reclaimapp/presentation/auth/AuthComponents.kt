@@ -170,12 +170,14 @@ fun AuthTextField(
                 ) {
                     Box(Modifier.weight(1f).padding(vertical = 14.dp)) { inner() }
                     if (isPassword) {
+                        val toggleLabel = if (visible) s.authHidePassword else s.authShowPassword
                         Box(
-                            Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
-                                .clickable(role = Role.Button) { visible = !visible }.padding(horizontal = 12.dp),
+                            Modifier.size(48.dp).clip(RoundedCornerShape(12.dp))
+                                .clickable(role = Role.Button) { visible = !visible }
+                                .semantics { contentDescription = toggleLabel },
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text(if (visible) s.authHidePassword else s.authShowPassword, style = NixType.SmallStrong, color = c.accent)
+                            NixIconView(if (visible) NixIcon.EyeOff else NixIcon.Eye, c.accent)
                         }
                     }
                 }

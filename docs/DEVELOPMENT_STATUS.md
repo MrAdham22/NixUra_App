@@ -186,11 +186,13 @@ Branch `agent-5-widgets` (earlier commits e10193d, 0c3214a; the card redesign an
 
 **Owner phone test (2026-11-02):** the owner reports all Wave 1 features and the older features work on Android. Register, email code and login were not part of that test, because no server was running.
 
-**Backend on real PostgreSQL 18 (2026-11-02, local):** migration applied; `/health`, register, login refused before verification, verify, login, wrong password refused, `/v1/me`, token refresh and refresh-replay rejection all behaved correctly over HTTP. Sign-in from the app on a phone is **not yet tested**. `npm run dev` and `npm run migrate` now read `backend/.env`.
+**Backend on real PostgreSQL 18 (2026-11-02, local):** migration applied; `/health`, register, login refused before verification, verify, login, wrong password refused, `/v1/me`, token refresh and refresh-replay rejection all behaved correctly over HTTP. The owner then tested sign-in from the app on a phone against this server and reports it works (2026-11-02). `npm run dev` and `npm run migrate` now read `backend/.env`.
 
 **Decision (owner, 2026-11-02):** keep this Fastify + PostgreSQL backend rather than moving to Firebase or Supabase. Hosting is chosen later; development uses local PostgreSQL. Firebase may still be used for analytics and crash reports (Agent 6).
 
-**Next:** the owner tests sign-in on the phone, then Agent 3 starts.
+**Small UI changes (2026-11-02):** the password show/hide text is now an eye icon, and the Settings account row shows the signed-in email. Build and tests pass; not yet seen on a device.
+
+**Next:** Agent 3 (cloud sync).
 
 **Windows note:** if `npm` prints nothing and exits 0, a 0-byte `C:\Windows\system32\npm` is shadowing it; call `C:\Program Files\nodejs\npm.cmd`.
 
