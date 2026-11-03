@@ -5,12 +5,17 @@ import androidx.lifecycle.viewModelScope
 import com.example.reclaimapp.domain.calculator.GoodHabitStatsCalculator
 import com.example.reclaimapp.domain.clock.Clock
 import com.example.reclaimapp.domain.model.GoodHabitWithLogs
+import com.example.reclaimapp.domain.recognition.GoodHabitFillStyle
+import com.example.reclaimapp.domain.recognition.GoodHabitFillStyleDetector
 import com.example.reclaimapp.domain.time.DayCalculator
 import com.example.reclaimapp.domain.usecase.ArchiveGoodHabitUseCase
 import com.example.reclaimapp.domain.usecase.CreateGoodHabitUseCase
 import com.example.reclaimapp.domain.usecase.ObserveGoodHabitsUseCase
 import com.example.reclaimapp.domain.usecase.SetGoodHabitCountUseCase
 import com.example.reclaimapp.domain.usecase.UpdateGoodHabitUseCase
+import com.example.reclaimapp.domain.usecase.DeletableItem
+import com.example.reclaimapp.presentation.deletion.PendingDeletions
+import com.example.reclaimapp.presentation.deletion.hides
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -36,6 +41,7 @@ data class GoodHabitUi(
     /** dayIndex → count. Used to draw calendars. */
     val countsByDay: Map<Long, Int>,
     val createdDayIndex: Long,
+    val fillStyle: GoodHabitFillStyle = GoodHabitFillStyle.PLAIN,
 )
 
 data class GoodHabitsUiState(
@@ -54,6 +60,8 @@ class GoodHabitsViewModel(
     private val setCount: SetGoodHabitCountUseCase,
     private val clock: Clock,
     private val dayCalculator: DayCalculator,
+    private val fillStyles: GoodHabitFillStyleDetector,
+    pendingDeletions: PendingDeletions,
 ) : ViewModel() {
 
     private val transient = MutableStateFlow(GoodHabitsUiState())
@@ -61,10 +69,10 @@ class GoodHabitsViewModel(
     private val initialState = GoodHabitsUiState(todayIndex = dayCalculator.dayIndexOf(clock.nowEpochMillis()))
 
     val uiState: StateFlow<GoodHabitsUiState> =
-        combine(observeGoodHabits(), tick, transient) { items, _, extra ->
+        combine(observeGoodHabits(), tick, transient, pendingDeletions.pending) { items, _, extra, pending ->
             val today = dayCalculator.dayIndexOf(clock.nowEpochMillis())
             extra.copy(
-                habits = items.map { it.toUi(today) },
+                habits = items.filterNot { pending.hides(DeletableItem.GoodHabit(it.habit.id)) }.map { it.toUi(today) },
                 todayIndex = today,
                 isLoading = false,
             )
@@ -151,6 +159,7 @@ class GoodHabitsViewModel(
             completion30 = stats.completionLast30,
             countsByDay = GoodHabitStatsCalculator.countsByDay(this),
             createdDayIndex = createdDay,
+            fillStyle = fillStyles.styleFor(habit.name),
         )
     }
 }

@@ -1,5 +1,7 @@
 package com.example.reclaimapp.presentation.screen
 
+import com.example.reclaimapp.domain.usecase.DeletableItem
+import com.example.reclaimapp.presentation.deletion.rememberDeleteFlow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
@@ -36,6 +38,7 @@ fun EventsScreen(navigator: Navigator) {
     val days = koinInject<DayCalculator>()
     val s = LocalStrings.current
     val c = Nix.colors
+    val deleteFlow = rememberDeleteFlow()
 
     val upcoming = state.events.filter { it.targetAtEpochMillis > now }
     val past = state.events.filter { it.targetAtEpochMillis <= now }.sortedByDescending { it.targetAtEpochMillis }
@@ -71,7 +74,11 @@ fun EventsScreen(navigator: Navigator) {
             SectionLabel(s.upcoming)
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 upcoming.forEach { event ->
-                    EventCard(event, now, formatDateTime(event.targetAtEpochMillis, days, s), onClick = { navigator.push(Route.EventForm(event.id)) })
+                    EventCard(
+                        event, now, formatDateTime(event.targetAtEpochMillis, days, s),
+                        onClick = { navigator.push(Route.EventForm(event.id)) },
+                        onLongClick = { deleteFlow.open(DeletableItem.Event(event.id), event.title) },
+                    )
                 }
             }
         }
@@ -79,7 +86,11 @@ fun EventsScreen(navigator: Navigator) {
             SectionLabel(s.pastEvents)
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 past.forEach { event ->
-                    EventCard(event, now, formatDateTime(event.targetAtEpochMillis, days, s), onClick = { navigator.push(Route.EventForm(event.id)) }, modifier = Modifier)
+                    EventCard(
+                        event, now, formatDateTime(event.targetAtEpochMillis, days, s),
+                        onClick = { navigator.push(Route.EventForm(event.id)) },
+                        onLongClick = { deleteFlow.open(DeletableItem.Event(event.id), event.title) },
+                    )
                 }
             }
         }

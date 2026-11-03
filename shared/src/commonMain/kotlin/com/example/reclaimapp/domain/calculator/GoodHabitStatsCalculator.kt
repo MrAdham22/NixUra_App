@@ -26,6 +26,13 @@ object GoodHabitStatsCalculator {
         else -> DayStatus.PARTIAL
     }
 
+    /**
+     * How full today's card is, 0..1: each tap adds 1 / target (target 10 → 10% per tap), capped at full. The same
+     * number drives the in-app liquid and the widget's fill steps, so both always agree.
+     */
+    fun fillLevel(count: Int, target: Int): Float =
+        (count.coerceAtLeast(0).toFloat() / target.coerceAtLeast(1)).coerceIn(0f, 1f)
+
     fun countsByDay(item: GoodHabitWithLogs): Map<Long, Int> =
         item.logs.associate { it.dayIndex to it.count }
 

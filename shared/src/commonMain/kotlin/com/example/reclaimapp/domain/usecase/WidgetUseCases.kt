@@ -1,6 +1,8 @@
 package com.example.reclaimapp.domain.usecase
 
 import com.example.reclaimapp.domain.clock.Clock
+import com.example.reclaimapp.domain.recognition.GoodHabitFillStyle
+import com.example.reclaimapp.domain.recognition.GoodHabitFillStyleDetector
 import com.example.reclaimapp.domain.repository.EventRepository
 import com.example.reclaimapp.domain.repository.GoodHabitRepository
 import com.example.reclaimapp.domain.repository.HabitTrackingRepository
@@ -71,12 +73,15 @@ class LoadWidgetStateUseCase(
     private val preferences: PreferencesRepository,
     private val clock: Clock,
     private val days: DayCalculator,
+    private val fillStyles: GoodHabitFillStyleDetector? = null,
 ) {
     suspend fun quit(habitId: Long?): QuitWidgetState =
         WidgetStateMapper.quit(habitId, habits.observeActiveHabitTracking().first(), clock.nowEpochMillis())
 
     suspend fun good(habitId: Long?): GoodWidgetState =
-        WidgetStateMapper.good(habitId, goodHabits.observeGoodHabits().first(), clock.nowEpochMillis(), days)
+        WidgetStateMapper.good(habitId, goodHabits.observeGoodHabits().first(), clock.nowEpochMillis(), days) { name ->
+            fillStyles?.styleFor(name) ?: GoodHabitFillStyle.PLAIN
+        }
 
     /** [eventId] `null` = nearest event. */
     suspend fun event(eventId: Long?): EventWidgetState =

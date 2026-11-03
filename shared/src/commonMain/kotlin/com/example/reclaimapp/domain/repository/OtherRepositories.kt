@@ -56,4 +56,10 @@ interface DataMaintenanceRepository {
 
     /** Marks habits and events as deleted, so the next sync removes them from the account and other devices too; chats go right away. */
     suspend fun markAllDataDeleted(atEpochMillis: Long)
+
+    /** Deletes one quit habit and its history (here, on the account and on other devices after the next sync). */
+    suspend fun deleteBadHabit(habitId: Long, atEpochMillis: Long)
+
+    /** Deletes one good habit and all its logged days. */
+    suspend fun deleteGoodHabit(habitId: Long, atEpochMillis: Long)
 }

@@ -66,6 +66,34 @@ abstract class MaintenanceDao {
         deleteCoachConversations()
     }
 
+    // ---- deleting one item: rows stay marked as deleted, so the delete also reaches the account and other devices ----
+
+    @Query("UPDATE habit_events SET deleted_at = :at, updated_at = :at, dirty = 1 WHERE habit_id = :habitId AND deleted_at IS NULL")
+    abstract suspend fun markEventsOfHabitDeleted(habitId: Long, at: Long)
+
+    @Query("UPDATE habits SET deleted_at = :at, updated_at = :at, dirty = 1 WHERE id = :habitId AND deleted_at IS NULL")
+    abstract suspend fun markHabitDeleted(habitId: Long, at: Long)
+
+    @Query("UPDATE good_habit_logs SET count = 0, deleted_at = :at, updated_at = :at, dirty = 1 WHERE good_habit_id = :habitId AND deleted_at IS NULL")
+    abstract suspend fun markLogsOfGoodHabitDeleted(habitId: Long, at: Long)
+
+    @Query("UPDATE good_habits SET deleted_at = :at, updated_at = :at, dirty = 1 WHERE id = :habitId AND deleted_at IS NULL")
+    abstract suspend fun markGoodHabitDeleted(habitId: Long, at: Long)
+
+    /** A quit habit with its whole history (start, relapses). */
+    @Transaction
+    open suspend fun deleteBadHabit(habitId: Long, at: Long) {
+        markEventsOfHabitDeleted(habitId, at)
+        markHabitDeleted(habitId, at)
+    }
+
+    /** A good habit with every day it was logged. */
+    @Transaction
+    open suspend fun deleteGoodHabit(habitId: Long, at: Long) {
+        markLogsOfGoodHabitDeleted(habitId, at)
+        markGoodHabitDeleted(habitId, at)
+    }
+
     @Query("UPDATE habit_events SET dirty = 1")
     abstract suspend fun markHabitEventsDirty()
 

@@ -54,14 +54,17 @@ fun NixCard(
     borderColor: Color = Nix.colors.border,
     padding: PaddingValues = PaddingValues(18.dp),
     shapeRadius: Dp = 22.dp,
+    /** Custom painting inside the card's shape (a liquid fill, say), drawn instead of [color]. */
+    paint: Modifier? = null,
+    onLongClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(shapeRadius)
     Column(
         modifier = modifier
-            .then(if (onClick != null) Modifier.pressable(pressedScale = 0.98f, onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.pressable(pressedScale = 0.98f, onLongClick = onLongClick, onClick = onClick) else Modifier)
             .clip(shape)
-            .background(color, shape)
+            .then(paint ?: Modifier.background(color, shape))
             .border(1.dp, borderColor, shape)
             .padding(padding),
         content = content,

@@ -53,6 +53,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import com.example.reclaimapp.presentation.deletion.UndoDeleteBar
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -258,9 +259,10 @@ private fun TabsHost(navigator: Navigator, initialTab: Route) {
 
     Column(Modifier.fillMaxSize()) {
         TopBar(navigator)
+        Box(Modifier.weight(1f).fillMaxWidth()) {
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.weight(1f).fillMaxWidth(),
+            modifier = Modifier.fillMaxSize(),
             // Neighbours are pre-composed so a swipe never reveals an empty page; farther pages are disposed
             // (their scroll positions are saved by the pager and restored when they return).
             beyondViewportPageCount = 1,
@@ -279,6 +281,9 @@ private fun TabsHost(navigator: Navigator, initialTab: Route) {
                     else -> EventsScreen(navigator)
                 }
             }
+        }
+            // Undo for a long-press delete, just above the bar, on every tab.
+            UndoDeleteBar(Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 8.dp))
         }
         DropletNavBar(
             items = items,

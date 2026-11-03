@@ -1,5 +1,7 @@
 package com.example.reclaimapp.presentation.screen
 
+import com.example.reclaimapp.domain.usecase.DeletableItem
+import com.example.reclaimapp.presentation.deletion.rememberDeleteFlow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,6 +39,7 @@ fun GoodHabitsScreen(navigator: Navigator) {
     val state by vm.uiState.collectAsStateWithLifecycle()
     val s = LocalStrings.current
     val c = Nix.colors
+    val deleteFlow = rememberDeleteFlow()
 
     TabScreen {
         ScreenHeader(
@@ -82,6 +85,7 @@ fun GoodHabitsScreen(navigator: Navigator) {
                         onClick = { navigator.push(Route.GoodHabitDetail(habit.id)) },
                         onPlus = { vm.onChangeToday(habit.id, +1) },
                         onMinus = { vm.onChangeToday(habit.id, -1) },
+                        onLongClick = { deleteFlow.open(DeletableItem.GoodHabit(habit.id), habit.name) },
                     )
                 }
             }

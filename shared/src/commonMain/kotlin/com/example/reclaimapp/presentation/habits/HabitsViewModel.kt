@@ -11,6 +11,9 @@ import com.example.reclaimapp.domain.usecase.CreateHabitAndStartTrackingUseCase
 import com.example.reclaimapp.domain.usecase.ObserveActiveHabitTrackingUseCase
 import com.example.reclaimapp.domain.usecase.RecordRelapseUseCase
 import com.example.reclaimapp.domain.usecase.UpdateHabitUseCase
+import com.example.reclaimapp.domain.usecase.DeletableItem
+import com.example.reclaimapp.presentation.deletion.PendingDeletions
+import com.example.reclaimapp.presentation.deletion.hides
 import com.example.reclaimapp.presentation.appearance.StreakColorMapper
 import com.example.reclaimapp.presentation.appearance.StreakColorProgressionConfig
 import com.example.reclaimapp.presentation.util.formatElapsed
@@ -31,6 +34,7 @@ class HabitsViewModel(
     private val clock: Clock,
     private val updateHabit: UpdateHabitUseCase,
     private val archiveHabit: ArchiveHabitUseCase,
+    pendingDeletions: PendingDeletions,
 ) : ViewModel() {
 
     private val mapper = StreakColorMapper()
@@ -49,8 +53,9 @@ class HabitsViewModel(
     }
 
     private val _uiState = MutableStateFlow(HabitsUiState())
-    val uiState: StateFlow<HabitsUiState> = combine(_uiState, liveTracking) { state, tracking ->
-        state.copy(habits = tracking.map { it.toCardUi() })
+    val uiState: StateFlow<HabitsUiState> = combine(_uiState, liveTracking, pendingDeletions.pending) { state, tracking, pending ->
+        // A habit waiting out its undo window is already gone from the lists.
+        state.copy(habits = tracking.filterNot { pending.hides(DeletableItem.BadHabit(it.habit.id)) }.map { it.toCardUi() })
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

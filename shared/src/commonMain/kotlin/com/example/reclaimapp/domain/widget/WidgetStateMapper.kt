@@ -5,6 +5,7 @@ import com.example.reclaimapp.domain.calculator.TrackingStateCalculator
 import com.example.reclaimapp.domain.model.Event
 import com.example.reclaimapp.domain.model.GoodHabitWithLogs
 import com.example.reclaimapp.domain.model.HabitTracking
+import com.example.reclaimapp.domain.recognition.GoodHabitFillStyle
 import com.example.reclaimapp.domain.time.CivilCalendar
 import com.example.reclaimapp.domain.time.DayCalculator
 
@@ -35,6 +36,7 @@ object WidgetStateMapper {
         habits: List<GoodHabitWithLogs>,
         nowEpochMillis: Long,
         days: DayCalculator,
+        fillStyleOf: (String) -> GoodHabitFillStyle = { GoodHabitFillStyle.PLAIN },
     ): GoodWidgetState {
         val active = habits.filter { it.habit.archivedAtEpochMillis == null }
         if (active.isEmpty()) return GoodWidgetState.NoHabits
@@ -51,6 +53,7 @@ object WidgetStateMapper {
                 status = GoodHabitStatsCalculator.statusOf(counts[day] ?: 0, stats.dailyTarget),
                 enabled = day >= createdDayIndex - 6, // same rule as the in-app week strip
                 isToday = offset == 0,
+                ratio = GoodHabitStatsCalculator.fillLevel(counts[day] ?: 0, stats.dailyTarget),
             )
         }
         return GoodWidgetState.Active(
@@ -62,6 +65,7 @@ object WidgetStateMapper {
             week = week,
             currentStreakDays = stats.currentStreakDays,
             totalTimesDone = stats.totalTimesDone,
+            fillStyle = fillStyleOf(item.habit.name),
         )
     }
 

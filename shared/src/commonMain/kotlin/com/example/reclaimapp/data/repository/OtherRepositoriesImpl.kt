@@ -219,4 +219,8 @@ class DataMaintenanceRepositoryImpl(
     override suspend fun clearAllData() = dao.clearAll()
 
     override suspend fun markAllDataDeleted(atEpochMillis: Long) = dao.markAllDeleted(atEpochMillis)
+
+    override suspend fun deleteBadHabit(habitId: Long, atEpochMillis: Long) = dao.deleteBadHabit(habitId, atEpochMillis)
+
+    override suspend fun deleteGoodHabit(habitId: Long, atEpochMillis: Long) = dao.deleteGoodHabit(habitId, atEpochMillis)
 }

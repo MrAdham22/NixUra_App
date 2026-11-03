@@ -4,7 +4,7 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.runtime.Composable
@@ -30,6 +30,8 @@ fun Modifier.pressable(
     pressedScale: Float = 0.97f,
     haptic: Boolean = false,
     role: Role? = Role.Button,
+    /** Long press (with a firm haptic), e.g. to open a card's delete option. */
+    onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit,
 ): Modifier {
     val source = remember { MutableInteractionSource() }
@@ -48,7 +50,18 @@ fun Modifier.pressable(
             scaleY = scale
             alpha = dim
         }
-        .clickable(source, indication = null, enabled = enabled, role = role) {
+        .combinedClickable(
+            interactionSource = source,
+            indication = null,
+            enabled = enabled,
+            role = role,
+            onLongClick = onLongClick?.let { long ->
+                {
+                    feedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    long()
+                }
+            },
+        ) {
             if (haptic) feedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             onClick()
         }

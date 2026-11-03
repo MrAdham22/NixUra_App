@@ -2,6 +2,7 @@ package com.example.reclaimapp.presentation.auth
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -104,9 +105,14 @@ fun AccountScreen(navigator: Navigator) {
         }
         SectionLabel(s.authPrivacyLink)
         NixCard {
-            Column {
-                AuthLink(s.legalPrivacyTitle, { navigator.push(Route.Legal(LegalDocument.Privacy)) })
-                AuthLink(s.legalTermsTitle, { navigator.push(Route.Legal(LegalDocument.Terms)) })
+            // One centered row; at large font scales the second link wraps under the first instead of clipping
+            FlowRow(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+            ) {
+                AuthLink(s.legalPrivacyTitle, { navigator.push(Route.Legal(LegalDocument.Privacy)) }, Modifier.align(Alignment.CenterVertically))
+                Text("·", style = NixType.BodyStrong, color = c.textMuted, modifier = Modifier.align(Alignment.CenterVertically))
+                AuthLink(s.legalTermsTitle, { navigator.push(Route.Legal(LegalDocument.Terms)) }, Modifier.align(Alignment.CenterVertically))
             }
         }
     }

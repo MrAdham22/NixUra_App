@@ -23,6 +23,9 @@ data class NixColors(
     val positive: Color,
     val positiveSoft: Color,
     val danger: Color,
+    /** Liquid fill of water habits: lighter surface → deeper body. Cool blue that sits well on navy and on white. */
+    val water: Color,
+    val waterDeep: Color,
 )
 
 val DarkNixColors = NixColors(
@@ -41,6 +44,8 @@ val DarkNixColors = NixColors(
     positive = Color(0xFF4CC38A),
     positiveSoft = Color(0xFF4CC38A).copy(alpha = 0.18f),
     danger = Color(0xFFFF6B6B),
+    water = Color(0xFF5BB6EC),
+    waterDeep = Color(0xFF2B64B0),
 )
 
 val LightNixColors = NixColors(
@@ -59,6 +64,8 @@ val LightNixColors = NixColors(
     positive = Color(0xFF2F9E6B),
     positiveSoft = Color(0xFF2F9E6B).copy(alpha = 0.16f),
     danger = Color(0xFFB3261E),
+    water = Color(0xFF7CC8F2),
+    waterDeep = Color(0xFF2E78C4),
 )
 
 val LocalNixColors = staticCompositionLocalOf { DarkNixColors }

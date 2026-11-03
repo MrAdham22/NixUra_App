@@ -1,7 +1,9 @@
 package com.example.reclaimapp.domain.widget
 
 import com.example.reclaimapp.domain.calculator.DayStatus
+import com.example.reclaimapp.domain.calculator.GoodHabitStatsCalculator
 import com.example.reclaimapp.domain.model.EventCategory
+import com.example.reclaimapp.domain.recognition.GoodHabitFillStyle
 
 /** The three Android home-screen widgets. */
 enum class WidgetKind { QUIT_COUNTER, GOOD_QUICK_LOG, EVENT }
@@ -110,10 +112,12 @@ sealed interface GoodWidgetState {
         val week: List<WidgetDay> = emptyList(),
         val currentStreakDays: Int = 0,
         val totalTimesDone: Int = 0,
+        /** Same fill as the in-app card: rising water for water habits, green otherwise. */
+        val fillStyle: GoodHabitFillStyle = GoodHabitFillStyle.PLAIN,
     ) : GoodWidgetState {
         val done: Boolean get() = count >= target
         val remaining: Int get() = (target - count).coerceAtLeast(0)
-        val progress: Float get() = (count.toFloat() / target.coerceAtLeast(1)).coerceIn(0f, 1f)
+        val progress: Float get() = GoodHabitStatsCalculator.fillLevel(count, target)
         val canDecrement: Boolean get() = count > 0
     }
 }
@@ -124,6 +128,8 @@ data class WidgetDay(
     val status: DayStatus,
     val enabled: Boolean,
     val isToday: Boolean,
+    /** Share of the target reached that day (0..1); the square is colored by it, like the in-app DaySquare. */
+    val ratio: Float = 0f,
 )
 
 /** What the events widget shows. A `null` binding means "nearest event". */

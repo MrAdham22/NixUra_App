@@ -242,3 +242,18 @@ From a real user's review plus owner notes. No AI features.
 
 **Known gaps:** home-screen widgets keep their flat card color, because `RemoteViews` needs separate drawing work; decide whether they should match. The second-device first-sync progress display from Agent 3 is still open.
 
+
+## Round 3, tasks 1-5 (2026-11-03)
+
+Owner brief: remove the Profile gear, legal links in one row, water fill, widget parity, long-press delete with undo, money saved, Notion/Google Calendar.
+
+**Built:**
+- **Profile:** the gear icon is gone; Settings is reached from the avatar's account sheet. This reverses Mission 1's gear, at the owner's request.
+- **Account:** Privacy Policy · Terms of Use sit in one centered row (`FlowRow`); at large font sizes the second link wraps instead of clipping.
+- **Water fill:** `GoodHabitFillStyleDetector` (`domain/recognition`) recognises water habits with the same matcher as the forms, so typos, synonyms and Arabic work. `GoodHabitStatsCalculator.fillLevel` gives the level (count / target, capped). The reusable `Modifier.liquidFill` (`components/LiquidFill.kt`) rises with a spring and a short splash, keeps a gentle wave while partly full, sweeps a light glint on reaching full and drains on minus or the daily reset. Animation is read only at draw time; with "remove animations" on, the level jumps. It is used on the Build card, the dashboard row and the detail card. Colors: `NixColors.water` / `waterDeep`.
+- **Widgets:** the quit widget paints the same diagonal gradient and corner glow as the in-app card. The good-habit widget uses `goodFillColors`, shared with the app, so text, buttons, week squares and streak follow the fill. Water habits get a still picture of the water level, redrawn on every count change (`WidgetCardPainter`). Widgets cannot animate, so the level changes in steps. Widget ↔ app updates already went through Room plus `ObserveWidgetDataChangesUseCase`.
+- **Long-press delete:** good habit, quit habit and event cards (lists and dashboard) open a sheet → confirmation naming the item → "“X” deleted · Undo" for 5 s (`PendingDeletions`, an app-wide singleton). The real delete runs only after the undo window (`DeleteItemUseCase`): a habit is marked deleted together with all its history rows (relapses / logged days), an event together with its reminders. Sync carries the delete to the account; reminders and widgets follow the data. If the app is killed inside the window, nothing is deleted.
+
+**Verification:** `:shared:testAndroidHostTest` passes (new `GoodHabitFillStyleTest`, `PendingDeletionsTest`); `:androidApp:assembleDebug` passes, with no new warnings in touched files. On the Pixel 9 emulator, seen working: water rising at 4/10 and full at 10/10; Build card and detail card; long-press → sheet → confirm → Undo bar; undo inside the window keeps the habit; the water widget at 5/8 and at 8/8 after tapping + on the widget.
+
+**Not changed, needs an owner decision:** the trash buttons on the detail screens still *archive* (the old "Remove"); only long-press deletes. The good-habit form's label reads "What do you want to stop?" (a quit-habit text). The widget picker preview images are static and still show the old flat style.

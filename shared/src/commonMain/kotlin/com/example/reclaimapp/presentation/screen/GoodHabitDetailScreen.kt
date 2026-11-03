@@ -77,9 +77,9 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
         }
 
         // Today
-        val look = rememberGoodFill(habit.todayCount, habit.dailyTarget)
+        val look = rememberGoodFill(habit.todayCount, habit.dailyTarget, habit.fillStyle)
         val pulse = rememberCompletionPulse(habit.doneToday)
-        NixCard(Modifier.graphicsLayer { scaleX = pulse.value; scaleY = pulse.value }, color = look.background) {
+        NixCard(Modifier.graphicsLayer { scaleX = pulse.value; scaleY = pulse.value }, paint = look.paint) {
             Text(s.todayLabel.uppercase(), style = NixType.Eyebrow, color = look.contentMuted)
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {

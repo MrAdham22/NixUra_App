@@ -1,5 +1,7 @@
 package com.example.reclaimapp.presentation.screen
 
+import com.example.reclaimapp.domain.usecase.DeletableItem
+import com.example.reclaimapp.presentation.deletion.rememberDeleteFlow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,6 +45,7 @@ fun BadHabitsScreen(navigator: Navigator) {
     val s = LocalStrings.current
     val c = Nix.colors
     var bestInfo by remember { mutableStateOf(false) }
+    val deleteFlow = rememberDeleteFlow()
 
     TabScreen {
         ScreenHeader(
@@ -89,7 +92,11 @@ fun BadHabitsScreen(navigator: Navigator) {
             }
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 state.habits.forEach { habit ->
-                    BadHabitCard(habit, onClick = { navigator.push(Route.BadHabitDetail(habit.habitId)) })
+                    BadHabitCard(
+                        habit,
+                        onClick = { navigator.push(Route.BadHabitDetail(habit.habitId)) },
+                        onLongClick = { deleteFlow.open(DeletableItem.BadHabit(habit.habitId), habit.name) },
+                    )
                 }
             }
         }

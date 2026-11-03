@@ -12,6 +12,9 @@ import com.example.reclaimapp.domain.usecase.EventReminderEditor
 import com.example.reclaimapp.domain.usecase.DeleteEventUseCase
 import com.example.reclaimapp.domain.usecase.ObserveEventsUseCase
 import com.example.reclaimapp.domain.usecase.SaveEventUseCase
+import com.example.reclaimapp.domain.usecase.DeletableItem
+import com.example.reclaimapp.presentation.deletion.PendingDeletions
+import com.example.reclaimapp.presentation.deletion.hides
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -38,12 +41,14 @@ class EventsViewModel(
     private val deleteEvent: DeleteEventUseCase,
     private val reminderEditor: EventReminderEditor,
     private val clock: Clock,
+    pendingDeletions: PendingDeletions,
 ) : ViewModel() {
 
     private val transient = MutableStateFlow(EventsUiState())
 
-    val uiState: StateFlow<EventsUiState> = combine(observeEvents(), transient) { events, extra ->
-        extra.copy(events = events.sortedBy { it.targetAtEpochMillis }, isLoading = false)
+    val uiState: StateFlow<EventsUiState> = combine(observeEvents(), transient, pendingDeletions.pending) { events, extra, pending ->
+        val shown = events.filterNot { pending.hides(DeletableItem.Event(it.id)) }
+        extra.copy(events = shown.sortedBy { it.targetAtEpochMillis }, isLoading = false)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

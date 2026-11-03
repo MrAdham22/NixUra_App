@@ -30,7 +30,6 @@ import com.example.reclaimapp.presentation.components.NixButton
 import com.example.reclaimapp.presentation.components.NixButtonStyle
 import com.example.reclaimapp.presentation.components.NixCard
 import com.example.reclaimapp.presentation.components.NixIcon
-import com.example.reclaimapp.presentation.components.NixIconButton
 import com.example.reclaimapp.presentation.components.NixProgressBar
 import com.example.reclaimapp.presentation.components.NixTextField
 import com.example.reclaimapp.presentation.components.SectionLabel
@@ -61,11 +60,7 @@ fun ProfileScreen(navigator: Navigator) {
     val stats = state.stats
     var scoreSheet by remember { mutableStateOf<ScoreKind?>(null) }
 
-    SubScreen(
-        title = s.profileTitle,
-        onBack = { navigator.back() },
-        actions = { NixIconButton(NixIcon.Gear, { navigator.push(Route.Settings) }) },
-    ) {
+    SubScreen(title = s.profileTitle, onBack = { navigator.back() }) {
         state.errorMessage?.let { ErrorBanner(it, vm::onDismissError) }
 
         NixCard {

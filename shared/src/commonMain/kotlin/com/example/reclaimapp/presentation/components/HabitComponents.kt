@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.foundation.layout.BoxWithConstraints
 import com.example.reclaimapp.presentation.appearance.CardGradient
+import com.example.reclaimapp.presentation.appearance.goodFillColors
 import com.example.reclaimapp.presentation.platform.rememberReducedMotion
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -60,6 +61,7 @@ import com.example.reclaimapp.domain.calculator.DayStatus
 import com.example.reclaimapp.domain.calculator.GoodHabitStatsCalculator
 import com.example.reclaimapp.domain.calculator.toCounterParts
 import com.example.reclaimapp.domain.coach.CoachEngine
+import com.example.reclaimapp.domain.recognition.GoodHabitFillStyle
 import com.example.reclaimapp.domain.model.Event
 import com.example.reclaimapp.domain.time.CivilCalendar
 import com.example.reclaimapp.presentation.appearance.ShadeRamp
@@ -183,20 +185,32 @@ fun Modifier.habitCardFill(gradient: CardGradient, shape: Shape): Modifier = thi
         }
     }
 
-/** How far today's target is reached, as colors: the card fills with green and is solid green once done. */
-data class GoodFill(val fill: Float, val background: Color, val content: Color, val contentMuted: Color, val doneSquare: Color)
+/**
+ * How far today's target is reached, as colors. Plain habits fill with green and are solid green once done; water
+ * habits fill with rising water ([paint]). [background] is the card's average tone, used to pick readable content.
+ */
+data class GoodFill(
+    val fill: Float,
+    val background: Color,
+    val content: Color,
+    val contentMuted: Color,
+    val doneSquare: Color,
+    val paint: Modifier,
+)
 
 @Composable
-fun rememberGoodFill(todayCount: Int, dailyTarget: Int): GoodFill {
+fun rememberGoodFill(todayCount: Int, dailyTarget: Int, style: GoodHabitFillStyle = GoodHabitFillStyle.PLAIN): GoodFill {
     val c = Nix.colors
-    val target = (todayCount.toFloat() / dailyTarget.coerceAtLeast(1)).coerceIn(0f, 1f)
+    val target = GoodHabitStatsCalculator.fillLevel(todayCount, dailyTarget)
     val fill by animateFloatAsState(target, spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessLow), label = "goodFill")
-    val background = lerp(c.surface, c.positive, fill)
-    val onDark = background.prefersLightContentOnCard()
-    val content = if (onDark) NixUraPalette.onDarkPrimary else NixUraPalette.onLightPrimary
-    // The brand's light-card muted tone is plum, which reads pink on green, so use dimmed ink instead
-    val muted = if (onDark) NixUraPalette.onDarkMuted else content.copy(alpha = 0.66f)
-    return GoodFill(fill, background, content, muted, if (fill >= 0.6f) content else c.positive)
+    val water = style == GoodHabitFillStyle.WATER
+    val colors = goodFillColors(fill, water, c)
+    val paint = if (water) {
+        Modifier.liquidFill(target, LiquidColors(empty = c.surface, surface = colors.liquidSurface, depth = colors.liquidDepth))
+    } else {
+        Modifier.background(colors.background)
+    }
+    return GoodFill(fill, colors.background, colors.content, colors.contentMuted, colors.doneSquare, paint)
 }
 
 @Composable
@@ -204,6 +218,7 @@ fun BadHabitCard(
     model: HabitCardUiModel,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val s = LocalStrings.current
     val engine = koinInject<CoachEngine>()
@@ -217,7 +232,7 @@ fun BadHabitCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .pressable(pressedScale = 0.98f, onClick = onClick)
+            .pressable(pressedScale = 0.98f, onLongClick = onLongClick, onClick = onClick)
             .habitCardFill(gradient, shape)
             .border(1.dp, if (lightOnCard) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.10f), shape)
             .padding(20.dp),
@@ -412,16 +427,18 @@ fun GoodHabitCard(
     onPlus: () -> Unit,
     onMinus: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val s = LocalStrings.current
     val c = Nix.colors
-    val look = rememberGoodFill(habit.todayCount, habit.dailyTarget)
+    val look = rememberGoodFill(habit.todayCount, habit.dailyTarget, habit.fillStyle)
     val pulse = rememberCompletionPulse(habit.doneToday)
     var streakInfo by remember { mutableStateOf(false) }
     NixCard(
         modifier.fillMaxWidth().graphicsLayer { scaleX = pulse.value; scaleY = pulse.value },
         onClick = onClick,
-        color = look.background,
+        onLongClick = onLongClick,
+        paint = look.paint,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             GlyphBadge(goodGlyphFor(habit.id), if (look.fill > 0f) look.content else c.accent, (if (look.fill > 0f) look.content else c.accent).copy(alpha = 0.14f))
@@ -496,13 +513,14 @@ fun EventCard(
     dateText: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val s = LocalStrings.current
     val c = Nix.colors
     val remaining = (event.targetAtEpochMillis - nowMillis).milliseconds
     val passed = remaining < Duration.ZERO
     val parts = (if (passed) -remaining else remaining).toCounterParts()
-    NixCard(modifier.fillMaxWidth(), onClick = onClick) {
+    NixCard(modifier.fillMaxWidth(), onClick = onClick, onLongClick = onLongClick) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(s.categoryLabel(event.category).uppercase(), style = NixType.Eyebrow, color = if (passed) c.textMuted else c.accent)

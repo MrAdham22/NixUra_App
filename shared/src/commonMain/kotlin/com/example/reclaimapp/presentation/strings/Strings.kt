@@ -533,6 +533,14 @@ open class Strings {
     open val guideAddFirst: String = "Add my first habit"
     open val guideExplore: String = "Look around first"
     open val guideReplay: String = "Replay the starter guide"
+
+    // Long-press delete with undo
+    open val deleteAction: String = "Delete"
+    open fun deleteItemTitle(name: String): String = "Delete “$name”?"
+    open val deleteBadHabitBody: String = "Its streak and every relapse you logged are removed. If you're signed in, it goes from your other devices too."
+    open val deleteGoodHabitBody: String = "Every day you logged is removed. If you're signed in, it goes from your other devices too."
+    open val deleteEventItemBody: String = "The countdown and its reminders are removed."
+    open fun deletedItem(name: String): String = "“$name” deleted"
 }
 
 data class AppLanguage(val code: String, val nativeName: String)

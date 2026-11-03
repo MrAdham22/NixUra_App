@@ -16,6 +16,7 @@ import com.example.reclaimapp.domain.coach.HabitKnowledgeBase
 import com.example.reclaimapp.domain.coach.RuleBasedCoachResponder
 import com.example.reclaimapp.domain.notification.NotificationPlanner
 import com.example.reclaimapp.domain.notification.NotificationSyncService
+import com.example.reclaimapp.domain.recognition.GoodHabitFillStyleDetector
 import com.example.reclaimapp.domain.recognition.HabitNameHandoff
 import com.example.reclaimapp.domain.recognition.HabitRecognizer
 import com.example.reclaimapp.domain.repository.CoachRepository
@@ -59,6 +60,11 @@ import com.example.reclaimapp.presentation.habits.HabitsViewModel
 import com.example.reclaimapp.presentation.navigation.Navigator
 import com.example.reclaimapp.presentation.profile.ProfileViewModel
 import com.example.reclaimapp.presentation.settings.SettingsViewModel
+import com.example.reclaimapp.domain.usecase.DeleteItemUseCase
+import com.example.reclaimapp.presentation.deletion.PendingDeletions
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
@@ -98,6 +104,7 @@ fun appModule() = module {
     single { HabitKnowledgeBase() }
     single { HabitRecognizer(get()) }
     single { HabitNameHandoff() }
+    single { GoodHabitFillStyleDetector(get()) }
     single { CoachEngine(get()) }
     single<CoachResponder> { RuleBasedCoachResponder(get(), get()) }
 
@@ -136,6 +143,9 @@ fun appModule() = module {
     factory { SaveProfileUseCase(get()) }
     factory { UpdateSettingsUseCase(get()) }
     factory { ClearAllDataUseCase(get(), get(), get()) }
+    factory { DeleteItemUseCase(get(), get(), get()) }
+    // Outlives screens: a delete still happens (or is undone) after the user leaves the screen it came from.
+    single { PendingDeletions(get(), CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)) }
 
     // View models
     viewModel {
@@ -146,10 +156,11 @@ fun appModule() = module {
             clock = get(),
             updateHabit = get(),
             archiveHabit = get(),
+            pendingDeletions = get(),
         )
     }
-    viewModel { GoodHabitsViewModel(get(), get(), get(), get(), get(), get(), get()) }
-    viewModel { EventsViewModel(get(), get(), get(), get(), get()) }
+    viewModel { GoodHabitsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { EventsViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { CoachViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { ProfileViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { SettingsViewModel(get(), get(), get()) }

@@ -1,5 +1,7 @@
 package com.example.reclaimapp.presentation.screen
 
+import com.example.reclaimapp.domain.usecase.DeletableItem
+import com.example.reclaimapp.presentation.deletion.rememberDeleteFlow
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -91,6 +93,7 @@ fun HomeScreen(navigator: Navigator) {
     val s = LocalStrings.current
     val c = Nix.colors
     var scoreSheet by remember { mutableStateOf<ScoreKind?>(null) }
+    val deleteFlow = rememberDeleteFlow()
 
     val hour = (days.millisOfDay(now) / 3_600_000L).toInt()
     val greeting = when {
@@ -127,6 +130,7 @@ fun HomeScreen(navigator: Navigator) {
                     TodayRow(
                         habit,
                         onOpen = { navigator.push(Route.GoodHabitDetail(habit.id)) },
+                        onLongClick = { deleteFlow.open(DeletableItem.GoodHabit(habit.id), habit.name) },
                         onPlus = { goodVm.onChangeToday(habit.id, +1) },
                     )
                 }
@@ -138,7 +142,9 @@ fun HomeScreen(navigator: Navigator) {
                 Text(s.seeAll, style = NixType.SmallStrong, color = c.accent, modifier = Modifier.pressable { navigator.selectTab(Route.BadHabits) })
             }
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                habits.habits.take(2).forEach { BadHabitCard(it, onClick = { navigator.push(Route.BadHabitDetail(it.habitId)) }) }
+                habits.habits.take(2).forEach {
+                    BadHabitCard(it, onClick = { navigator.push(Route.BadHabitDetail(it.habitId)) }, onLongClick = { deleteFlow.open(DeletableItem.BadHabit(it.habitId), it.name) })
+                }
             }
         }
 
@@ -146,7 +152,11 @@ fun HomeScreen(navigator: Navigator) {
             SectionLabel(s.nextEventSection) {
                 Text(s.seeAll, style = NixType.SmallStrong, color = c.accent, modifier = Modifier.pressable { navigator.selectTab(Route.Events) })
             }
-            EventCard(nextEvent, now, formatDateTime(nextEvent.targetAtEpochMillis, days, s), onClick = { navigator.push(Route.EventForm(nextEvent.id)) })
+            EventCard(
+                nextEvent, now, formatDateTime(nextEvent.targetAtEpochMillis, days, s),
+                onClick = { navigator.push(Route.EventForm(nextEvent.id)) },
+                onLongClick = { deleteFlow.open(DeletableItem.Event(nextEvent.id), nextEvent.title) },
+            )
         }
 
         coach.insight?.let { insight ->
@@ -291,14 +301,15 @@ private fun DrawScope.ring(color: Color, progress: Float, width: Float, inset: F
 
 /** One line per good habit: it fills with green as you tap +, like its full card. */
 @Composable
-private fun TodayRow(habit: GoodHabitUi, onOpen: () -> Unit, onPlus: () -> Unit) {
+private fun TodayRow(habit: GoodHabitUi, onOpen: () -> Unit, onPlus: () -> Unit, onLongClick: () -> Unit) {
     val s = LocalStrings.current
-    val look = rememberGoodFill(habit.todayCount, habit.dailyTarget)
+    val look = rememberGoodFill(habit.todayCount, habit.dailyTarget, habit.fillStyle)
     val pulse = rememberCompletionPulse(habit.doneToday)
     NixCard(
         Modifier.fillMaxWidth().graphicsLayer { scaleX = pulse.value; scaleY = pulse.value },
         onClick = onOpen,
-        color = look.background,
+        onLongClick = onLongClick,
+        paint = look.paint,
         padding = PaddingValues(start = 16.dp, end = 10.dp, top = 10.dp, bottom = 10.dp),
         shapeRadius = 18.dp,
     ) {

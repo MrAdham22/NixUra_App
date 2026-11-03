@@ -11,7 +11,6 @@ import android.view.View
 import android.widget.RemoteViews
 import androidx.compose.ui.graphics.toArgb
 import com.example.reclaimapp.R
-import com.example.reclaimapp.domain.calculator.DayStatus
 import com.example.reclaimapp.domain.time.DayCalculator
 import com.example.reclaimapp.domain.usecase.LoadWidgetStateUseCase
 import com.example.reclaimapp.domain.widget.EventWidgetState
@@ -23,8 +22,14 @@ import com.example.reclaimapp.domain.widget.WidgetKind
 import com.example.reclaimapp.domain.widget.WidgetLayoutPlan
 import com.example.reclaimapp.domain.widget.WidgetLayoutPlanner
 import com.example.reclaimapp.domain.widget.WidgetVariant
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.lerp
+import com.example.reclaimapp.domain.recognition.GoodHabitFillStyle
 import com.example.reclaimapp.presentation.appearance.StreakColorMapper
+import com.example.reclaimapp.presentation.appearance.goodFillColors
 import com.example.reclaimapp.presentation.appearance.prefersLightContentOnCard
+import com.example.reclaimapp.presentation.theme.DarkNixColors
+import com.example.reclaimapp.presentation.theme.LightNixColors
 import com.example.reclaimapp.presentation.components.NixIcon
 import com.example.reclaimapp.presentation.components.badGlyphFor
 import com.example.reclaimapp.presentation.components.goodGlyphFor
@@ -121,14 +126,15 @@ internal object WidgetRenderer {
         }
         val rv = RemoteViews(env.context.packageName, layout)
         val elapsed = st.elapsedMillis.milliseconds
-        val mapper = StreakColorMapper()
-        val card = mapper.cardBackground(elapsed, st.colorArgb)
-        val lightText = card.prefersLightContentOnCard()
+        // Same gradient and shade progression as the in-app card; text follows its middle color, as in BadHabitCard.
+        val gradient = StreakColorMapper().cardGradient(elapsed, st.colorArgb)
+        val lightText = gradient.middle.prefersLightContentOnCard()
         val primary = if (lightText) WidgetTheme.ON_DARK_CARD_PRIMARY else WidgetTheme.ON_LIGHT_CARD_PRIMARY
         val mutedBase = if (lightText) WidgetTheme.ON_DARK_CARD_MUTED else WidgetTheme.ON_LIGHT_CARD_MUTED
         val muted = WidgetTheme.withAlpha(mutedBase, if (lightText) WidgetTheme.MUTED_ON_DARK_ALPHA else WidgetTheme.MUTED_ON_LIGHT_ALPHA)
 
-        tint(rv, R.id.w_bg, card.toArgb())
+        val (bw, bh) = paintSizePx(env)
+        rv.setImageViewBitmap(R.id.w_bg, WidgetCardPainter.gradient(bw, bh, dpPx(env, 26f), gradient))
         tint(rv, R.id.w_border, if (lightText) 0xFFFFFFFF.toInt() else 0xFF000000.toInt(), if (lightText) 36 else 26)
         rv.setViewPadding(R.id.w_content, px(env, plan.paddingDp), px(env, plan.paddingDp), px(env, plan.paddingDp), px(env, plan.paddingDp))
 
@@ -172,16 +178,28 @@ internal object WidgetRenderer {
         val hasWeek = layout == R.layout.widget_good_full || layout == R.layout.widget_good_full_narrow // narrow is also used by SLIM when stacked; the plan then hides the strip
         val hasStreak = layout == R.layout.widget_good_full || layout == R.layout.widget_good_full_narrow || layout == R.layout.widget_good_row
         val rv = RemoteViews(env.context.packageName, layout)
-        val tone = if (st.done) c.positive else c.accent
+        // Same fill as GoodHabitCard (goodFillColors): the card turns green, or fills with water, as today's count grows.
+        val nix = if (env.darkTheme) DarkNixColors else LightNixColors
+        val water = st.fillStyle == GoodHabitFillStyle.WATER
+        val fill = goodFillColors(st.progress, water, nix)
+        val content = fill.content.toArgb()
+        val muted = fill.contentMuted.toArgb()
+        val cardTone = fill.background.toArgb()
+        val tone = if (st.progress > 0f) content else c.accent
 
-        tint(rv, R.id.w_bg, c.surface)
+        if (water) {
+            val (bw, bh) = paintSizePx(env)
+            rv.setImageViewBitmap(R.id.w_bg, WidgetCardPainter.liquid(bw, bh, dpPx(env, 22f), st.progress, nix.surface, fill.liquidSurface, fill.liquidDepth))
+        } else {
+            tint(rv, R.id.w_bg, cardTone)
+        }
         tint(rv, R.id.w_border, c.border, c.borderAlpha)
         val pad = px(env, plan.paddingDp)
         rv.setViewPadding(R.id.w_content, pad, pad, pad, pad)
 
-        text(rv, R.id.w_name, st.name, c.textPrimary)
+        text(rv, R.id.w_name, st.name, content)
         rv.setInt(R.id.w_name, "setMaxLines", plan.titleMaxLines)
-        val progressColor = if (st.done) c.positive else c.textSecondary
+        val progressColor = muted
         val progressText = env.s.todayProgress(st.count, st.target)
         val streakText = env.s.streakDays(st.currentStreakDays)
         // The day streak is always visible: in its own row when the plan has room for it, otherwise merged into the
@@ -189,7 +207,7 @@ internal object WidgetRenderer {
         val streakInRow = hasStreak && plan.showStreakRow
         text(rv, R.id.w_sub, if (streakInRow) progressText else if (stacked) streakText else "$streakText · $progressText", progressColor)
         if (stacked) {
-            text(rv, R.id.w_count, "${st.count}/${st.target}", if (st.done) c.positive else c.textPrimary)
+            text(rv, R.id.w_count, "${st.count}/${st.target}", content)
             rv.setTextViewTextSize(R.id.w_count, TypedValue.COMPLEX_UNIT_DIP, if (plan.variant == WidgetVariant.FULL) 24f else 20f)
             show(rv, R.id.w_sub, !streakInRow) // the count is on the button row; the sub line only carries the streak when there is no streak row
         }
@@ -197,14 +215,15 @@ internal object WidgetRenderer {
             badge(env, rv, plan, glyphRes(goodGlyphFor(st.habitId)), tone, 36)
         }
 
-        // buttons: minus (outlined circle) and plus (filled circle, tick when a once-a-day habit is done)
-        tint(rv, R.id.w_minus_bg, c.surface)
-        tint(rv, R.id.w_minus_bd, c.border, c.borderAlpha)
-        tint(rv, R.id.w_minus_icon, c.textSecondary)
+        // buttons as on the card: a soft minus in the content color, and plus in the accent (content-colored once done,
+        // with a tick when a once-a-day habit is done)
+        tint(rv, R.id.w_minus_bg, content, 26)
+        tint(rv, R.id.w_minus_bd, c.border, 0)
+        tint(rv, R.id.w_minus_icon, content)
         show(rv, R.id.w_minus, plan.showMinus)
-        tint(rv, R.id.w_plus_bg, tone)
+        tint(rv, R.id.w_plus_bg, if (st.done) content else c.accent)
         rv.setImageViewResource(R.id.w_plus_icon, if (st.done && st.target == 1) R.drawable.ic_w_tick else R.drawable.ic_w_plus)
-        tint(rv, R.id.w_plus_icon, c.onAccent)
+        tint(rv, R.id.w_plus_icon, if (st.done) cardTone else c.onAccent)
         rv.setContentDescription(R.id.w_plus, env.s.widgetAddOne)
         rv.setContentDescription(R.id.w_minus, env.s.widgetRemoveOne)
         rv.setOnClickPendingIntent(R.id.w_plus, WidgetIntents.adjust(env.context, env.widgetId, st.habitId, increment = true))
@@ -212,31 +231,28 @@ internal object WidgetRenderer {
 
         if (hasProgress) {
             show(rv, R.id.w_prog, plan.showProgress)
-            tint(rv, R.id.w_prog_track, c.surfaceRaised)
-            tint(rv, R.id.w_prog_fill, tone)
+            tint(rv, R.id.w_prog_track, content, 26)
+            tint(rv, R.id.w_prog_fill, if (st.progress > 0f) content else c.accent)
             rv.setInt(R.id.w_prog_fill, "setImageLevel", (st.progress * 10_000).toInt())
         }
         if (hasWeek) {
-            // week strip: same colors as DaySquare; today gets a real outline (dedicated drawable, not a tinted stroke)
-            val todayFrame = if (env.darkTheme) R.drawable.widget_square_today_on_dark else R.drawable.widget_square_today_on_light
+            // week strip: same colors as WeekStrip/DaySquare on the card (idle = content at 10%, colored by how much of
+            // the target was reached); today gets a real outline (dedicated drawable, tinted with the content color)
+            val onLightContent = !fill.background.prefersLightContentOnCard()
+            val todayFrame = if (onLightContent) R.drawable.widget_square_today_on_light else R.drawable.widget_square_today_on_dark
+            val idle = fill.content.copy(alpha = 0.10f).compositeOver(fill.background)
             val letters = env.s.weekdayLetters
             val sq = intArrayOf(R.id.w_wk_sq0, R.id.w_wk_sq1, R.id.w_wk_sq2, R.id.w_wk_sq3, R.id.w_wk_sq4, R.id.w_wk_sq5, R.id.w_wk_sq6)
             val bd = intArrayOf(R.id.w_wk_bd0, R.id.w_wk_bd1, R.id.w_wk_bd2, R.id.w_wk_bd3, R.id.w_wk_bd4, R.id.w_wk_bd5, R.id.w_wk_bd6)
             val lt = intArrayOf(R.id.w_wk_letter0, R.id.w_wk_letter1, R.id.w_wk_letter2, R.id.w_wk_letter3, R.id.w_wk_letter4, R.id.w_wk_letter5, R.id.w_wk_letter6)
             st.week.forEachIndexed { i, day ->
-                text(rv, lt[i], letters.getOrElse(day.isoWeekday - 1) { "" }, c.textMuted)
-                when {
-                    !day.enabled -> tint(rv, sq[i], c.surface, 0)
-                    day.status == DayStatus.DONE -> tint(rv, sq[i], c.positive)
-                    day.status == DayStatus.PARTIAL -> tint(rv, sq[i], c.positive, c.positiveSoftAlpha)
-                    else -> tint(rv, sq[i], c.surfaceRaised)
-                }
+                text(rv, lt[i], letters.getOrElse(day.isoWeekday - 1) { "" }, muted)
+                if (day.enabled) tint(rv, sq[i], lerp(idle, fill.doneSquare, day.ratio).toArgb()) else tint(rv, sq[i], c.surface, 0)
                 when {
                     day.isToday -> {
                         rv.setImageViewResource(bd[i], todayFrame)
                         rv.setViewVisibility(bd[i], View.VISIBLE)
                     }
-                    day.status == DayStatus.PARTIAL && day.enabled -> tint(rv, bd[i], c.positive, 140)
                     !day.enabled -> tint(rv, bd[i], c.border, c.borderAlpha / 2)
                     else -> tint(rv, bd[i], c.border, 0)
                 }
@@ -245,9 +261,9 @@ internal object WidgetRenderer {
         }
         if (hasStreak) {
             // streak row: "N day streak" + "N times in total"
-            tint(rv, R.id.w_flame, c.accentWarm)
-            text(rv, R.id.w_streak_text, streakText, c.textSecondary)
-            text(rv, R.id.w_total_text, env.s.timesDoneTotal(st.totalTimesDone), c.textMuted)
+            tint(rv, R.id.w_flame, if (st.progress >= 0.6f) content else c.accentWarm)
+            text(rv, R.id.w_streak_text, streakText, content)
+            text(rv, R.id.w_total_text, env.s.timesDoneTotal(st.totalTimesDone), muted)
             show(rv, R.id.w_total_text, env.widthDp >= 200) // on narrow widgets the streak keeps the whole row
             show(rv, R.id.w_streak_row, plan.showStreakRow)
         }
@@ -424,5 +440,14 @@ internal object WidgetRenderer {
     private fun show(rv: RemoteViews, id: Int, visible: Boolean) = rv.setViewVisibility(id, if (visible) View.VISIBLE else View.GONE)
 
     private fun px(env: Env, dp: Int): Int = (dp * env.context.resources.displayMetrics.density).toInt()
+
+    private fun dpPx(env: Env, dp: Float): Float = dp * env.context.resources.displayMetrics.density
+
+    /** Size of a painted background: the portrait size (min width, max height), the shape the launcher shows most. */
+    private fun paintSizePx(env: Env): Pair<Int, Int> {
+        val o = AppWidgetManager.getInstance(env.context).getAppWidgetOptions(env.widgetId)
+        val h = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0).takeIf { it > 0 } ?: env.heightDp
+        return px(env, env.widthDp) to px(env, h)
+    }
 
 }
