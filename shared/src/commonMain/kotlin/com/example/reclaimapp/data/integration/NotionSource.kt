@@ -109,7 +109,7 @@ internal class NotionCalendarSource(
         val lastFull = parts?.getOrNull(1)?.toLongOrNull() ?: 0
         val now = clock.nowEpochMillis()
         val full = newestSeen == null || now - lastFull > FULL_EVERY_MILLIS
-        val since = if (full || newestSeen == null) null else newestSeen - OVERLAP_MILLIS
+        val since = newestSeen?.takeIf { !full }?.minus(OVERLAP_MILLIS)
         return when (val r = client.query(NotionQueryRequest(database, titleProp, dateProp, since))) {
             is LinkReply.Ok -> {
                 val events = r.value.items.map(::toExternal)
