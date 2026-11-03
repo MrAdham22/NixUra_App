@@ -9,7 +9,11 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import com.example.reclaimapp.integrations.AndroidGoogleAuthorizer
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 import com.example.reclaimapp.presentation.navigation.Navigator
 import com.example.reclaimapp.widgets.WidgetDeepLink
 import com.example.reclaimapp.widgets.WidgetUpdater
@@ -22,6 +26,15 @@ class MainActivity : ComponentActivity() {
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* result handled by next isGranted() check */ }
 
     private val appNavigator: Navigator by inject()
+    private val googleAuthorizer: AndroidGoogleAuthorizer by inject()
+
+    // Google's consent screen for calendar access; the authorizer suspends until it closes.
+    private var consentResult: ((Intent?) -> Unit)? = null
+    private val googleConsentLauncher =
+        registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { r ->
+            consentResult?.invoke(if (r.resultCode == RESULT_OK) r.data else null)
+            consentResult = null
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Start with light bar icons, whatever the system theme: the app opens dark. SystemBarsEffect follows the app's theme after that.
@@ -34,6 +47,13 @@ class MainActivity : ComponentActivity() {
         // Opened from a home-screen widget? Only on a fresh start: after rotation / process restore the
         // navigator already holds (or deliberately reset) the stack and the extras were consumed.
         if (savedInstanceState == null) WidgetDeepLink.apply(intent, appNavigator)
+
+        googleAuthorizer.consent = { pending ->
+            suspendCancellableCoroutine { cont ->
+                consentResult = { data -> if (cont.isActive) cont.resume(data) }
+                googleConsentLauncher.launch(IntentSenderRequest.Builder(pending).build())
+            }
+        }
 
         (application as NixUraApplication).notificationPermission.launcher = {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -50,6 +70,11 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         WidgetDeepLink.apply(intent, appNavigator)
+    }
+
+    override fun onDestroy() {
+        googleAuthorizer.consent = null
+        super.onDestroy()
     }
 
     override fun onStart() {

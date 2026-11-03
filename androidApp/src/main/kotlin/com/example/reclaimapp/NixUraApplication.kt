@@ -8,6 +8,8 @@ import com.example.reclaimapp.notifications.AndroidNotificationScheduler
 import com.example.reclaimapp.notifications.ReminderReceiver
 import com.example.reclaimapp.domain.sync.BackgroundSyncScheduler
 import com.example.reclaimapp.domain.widget.WidgetPinner
+import com.example.reclaimapp.domain.integration.GoogleAuthorizer
+import com.example.reclaimapp.integrations.AndroidGoogleAuthorizer
 import com.example.reclaimapp.sync.AndroidBackgroundSync
 import com.example.reclaimapp.widgets.AndroidWidgetPinner
 import com.example.reclaimapp.widgets.WidgetUpdater
@@ -27,6 +29,8 @@ class NixUraApplication : Application() {
             module {
                 single { ApiConfig(BuildConfig.NIXURA_API_BASE_URL, allowCleartext = BuildConfig.DEBUG) }
                 single<BackgroundSyncScheduler> { AndroidBackgroundSync(applicationContext) }
+                single { AndroidGoogleAuthorizer(applicationContext) }
+                single<GoogleAuthorizer> { get<AndroidGoogleAuthorizer>() }
             },
         )
         // Home-screen widgets: keep them in sync with data/time changes while the process is alive.

@@ -25,6 +25,13 @@ const schema = z.object({
   OTP_RESEND_COOLDOWN_SECONDS: z.coerce.number().int().min(0).default(60),
   OTP_DAILY_CAP: z.coerce.number().int().min(1).default(5),
   SUPPORT_EMAIL: z.string().default('adhamelgendydev@gmail.com'),
+  // Notion public integration (optional: without these the Notion routes answer "not set up").
+  NOTION_CLIENT_ID: z.string().default(''),
+  NOTION_CLIENT_SECRET: z.string().default(''),
+  NOTION_REDIRECT_URI: z.string().default(''),
+  APP_RETURN_URL_NOTION: z.string().default('nixura://integrations/notion'),
+  /** 32 random bytes, base64. Encrypts linked-calendar tokens at rest. */
+  INTEGRATION_TOKEN_KEY: z.string().default(''),
 });
 
 export type Config = z.infer<typeof schema>;
@@ -45,4 +52,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     }
   }
   return cfg;
+}
+
+/** True when everything Notion needs is configured. */
+export function notionConfigured(cfg: Config): boolean {
+  return Boolean(cfg.NOTION_CLIENT_ID && cfg.NOTION_CLIENT_SECRET && cfg.NOTION_REDIRECT_URI && cfg.INTEGRATION_TOKEN_KEY);
 }

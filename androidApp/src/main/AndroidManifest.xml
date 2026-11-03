@@ -18,13 +18,23 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.NixUra">
+        <!-- singleTask: coming back from Notion's page in the browser reuses the open app instead of stacking a copy. -->
         <activity
             android:exported="true"
+            android:launchMode="singleTask"
             android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- nixura://integrations/notion?result=... (the server sends the browser here after Notion's consent).
+                 It carries no data the app trusts: the app only re-reads the link status from the server. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="nixura" android:host="integrations" />
             </intent-filter>
         </activity>
 

@@ -9,6 +9,9 @@ export type ErrorCode =
   | 'unauthorized'
   | 'session_revoked'
   | 'not_found'
+  | 'integration_unavailable'
+  | 'integration_not_connected'
+  | 'integration_failed'
   | 'internal';
 
 /** Typed, user-safe error. `message` is shown to clients, so it must never reveal whether an email exists. */

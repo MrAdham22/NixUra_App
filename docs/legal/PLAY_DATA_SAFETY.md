@@ -29,5 +29,8 @@ Not collected by this release: location, contacts, photos, files, financial info
 - Provide a test account for app review (create one verified account; share its credentials in Play Console > App access).
 
 <!-- AGENT-4: user-generated chat content processed by Google Gemini via our server. -->
-<!-- AGENT-5: calendar events and Notion content imported (Calendar, Files and docs). -->
+| Calendar | Calendar events (title, date/time) imported from Google Calendar or a shared Notion database | Yes, only when the user links a calendar (account required) | No | Optional | App functionality |
+| Files and docs | Notion database pages (title and date properties only) | Yes, only when Notion is linked | No | Optional | App functionality |
+
+Google Calendar access is read-only and its token is not stored; the Notion token is stored encrypted on the server. Google's OAuth verification for the sensitive `calendar.readonly` scope is needed before release (see README, "Linking calendars").
 <!-- AGENT-6: analytics (app interactions, crash logs, diagnostics), opt-in. -->

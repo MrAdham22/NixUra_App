@@ -22,7 +22,7 @@ The merged UI + features (good habits, events, profile, settings, coach, Android
 
 - Single module `:shared` with **domain**, **data**, **presentation** packages (+ `di`). Android-only code lives in `:androidApp` (Application, Activity, notifications, home-screen widgets); iOS-only code lives in `shared/src/iosMain` and `iosApp/` (Swift host, Xcode project).
 - **Domain:** pure Kotlin — models, use cases, calculators, coach engine, notification planner, repository **interfaces**. No Room, Compose, or network.
-- **Data:** Room (DB version 4 with `MIGRATION_1_2`, `MIGRATION_2_3`, `MIGRATION_3_4`), mappers, repository **implementations**.
+- **Data:** Room (DB version 5 with `MIGRATION_1_2` … `MIGRATION_4_5`), mappers, repository **implementations**, calendar imports in `data/integration` (Google Calendar on the device, Notion through `/backend`).
 - **Presentation:** **MVVM** — Compose UI, ViewModels, `Strings` (all UI text), `Navigator` (no nav library). No business rules in Composables.
 - **DI:** Koin (`di/AppModules.kt`; platform modules (Android and iOS) provide DB, `NotificationScheduler`, `NotificationPermissionGateway`; the Android module also registers the widget use cases).
 - **Scope:** offline-first. Optional accounts (sign-in, email OTP) exist as of Agent 2: `/backend`, `domain/auth`, `data/auth`, `presentation/auth` (see docs/agents/agent-2-handoff.md), and cloud sync as of Agent 3: `domain/sync`, `data/sync` (see docs/agents/agent-3-handoff.md). Guests make no network calls. The coach is offline rule-based behind `CoachResponder`; a real AI is deliberately the very last item in the project (owner decision, 2026-11-03: do not build it before then) and needs a consent toggle and a server-side key (see AI_COACH_UPGRADE.md).

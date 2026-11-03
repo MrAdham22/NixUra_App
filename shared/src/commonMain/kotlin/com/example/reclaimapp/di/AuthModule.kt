@@ -26,6 +26,21 @@ import com.example.reclaimapp.presentation.auth.LoginViewModel
 import com.example.reclaimapp.presentation.auth.RegisterViewModel
 import com.example.reclaimapp.presentation.auth.ResetPasswordViewModel
 import com.example.reclaimapp.presentation.auth.VerifyOtpViewModel
+import com.example.reclaimapp.data.integration.GoogleCalendarApi
+import com.example.reclaimapp.data.integration.GoogleCalendarSource
+import com.example.reclaimapp.data.integration.IntegrationRevokerImpl
+import com.example.reclaimapp.data.integration.NotionBackendClient
+import com.example.reclaimapp.data.integration.NotionCalendarSource
+import com.example.reclaimapp.data.integration.PreferenceIntegrationStateStore
+import com.example.reclaimapp.data.integration.RoomImportedEventStore
+import com.example.reclaimapp.domain.integration.DisconnectIntegrationUseCase
+import com.example.reclaimapp.domain.integration.GoogleCalendarCatalog
+import com.example.reclaimapp.domain.integration.ImportedEventStore
+import com.example.reclaimapp.domain.integration.IntegrationRevoker
+import com.example.reclaimapp.domain.integration.IntegrationStateStore
+import com.example.reclaimapp.domain.integration.NotionLink
+import com.example.reclaimapp.domain.integration.SyncIntegrationsUseCase
+import com.example.reclaimapp.presentation.integrations.IntegrationsViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
@@ -50,6 +65,19 @@ fun authModule() = module {
     factory { SignOutUseCase(get(), get(), get(), get()) }
     factory { DetachDataAfterAccountDeletionUseCase(get(), get(), get()) }
     factory { com.example.reclaimapp.domain.sync.StartFreshAsGuestUseCase(get(), get(), get()) }
+
+    // Calendar imports (Google Calendar, Notion). Platform modules provide GoogleAuthorizer.
+    single<IntegrationStateStore> { PreferenceIntegrationStateStore(get<NixUraDatabase>().preferenceDao()) }
+    single<ImportedEventStore> { RoomImportedEventStore(get<NixUraDatabase>().eventDao()) }
+    single { GoogleCalendarSource(get(), GoogleCalendarApi(KtorApiTransport.defaultClient()), get(), get()) }
+    single<GoogleCalendarCatalog> { get<GoogleCalendarSource>() }
+    single { NotionBackendClient(get()) }
+    single<NotionLink> { get<NotionBackendClient>() }
+    single { NotionCalendarSource(get(), get(), get()) }
+    single<IntegrationRevoker> { IntegrationRevokerImpl(get(), get()) }
+    single { SyncIntegrationsUseCase(listOf(get<GoogleCalendarSource>(), get<NotionCalendarSource>()), get(), get(), get(), get()) }
+    factory { DisconnectIntegrationUseCase(get(), get(), get(), get()) }
+    viewModel { IntegrationsViewModel(get(), get(), get(), get(), get(), get(), get()) }
 
     viewModel { RegisterViewModel(get()) }
     viewModel { LoginViewModel(get()) }

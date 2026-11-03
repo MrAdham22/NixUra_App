@@ -12,6 +12,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.example.reclaimapp.data.auth.SessionManagerImpl
+import com.example.reclaimapp.domain.integration.SyncIntegrationsUseCase
 import com.example.reclaimapp.domain.notification.NotificationSyncService
 import com.example.reclaimapp.domain.sync.BackgroundSyncScheduler
 import com.example.reclaimapp.domain.sync.SyncEngine
@@ -24,6 +25,10 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
     override suspend fun doWork(): Result {
         val koin = GlobalContext.get()
         koin.get<SessionManagerImpl>().restore()
+        // Linked calendars first, so the cloud sync below also carries what was just imported.
+        runCatching {
+            koin.get<SyncIntegrationsUseCase>().invoke(skipIfSyncedWithinMillis = SyncIntegrationsUseCase.AUTO_SYNC_EVERY_MILLIS)
+        }
         return when (koin.get<SyncEngine>().syncNow()) {
             SyncOutcome.Synced -> {
                 koin.get<NotificationSyncService>().syncOnce()

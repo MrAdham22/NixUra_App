@@ -63,6 +63,7 @@ import com.example.reclaimapp.domain.calculator.toCounterParts
 import com.example.reclaimapp.domain.coach.CoachEngine
 import com.example.reclaimapp.domain.recognition.GoodHabitFillStyle
 import com.example.reclaimapp.domain.money.Currencies
+import com.example.reclaimapp.domain.model.EventSource
 import com.example.reclaimapp.domain.model.Event
 import com.example.reclaimapp.domain.time.CivilCalendar
 import com.example.reclaimapp.presentation.appearance.ShadeRamp
@@ -538,6 +539,21 @@ fun EventCard(
                 Spacer(Modifier.height(4.dp))
                 Text(event.title, style = NixType.Heading, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(dateText, style = NixType.Small, color = c.textMuted)
+            }
+            // Where an imported event comes from (made-in-app events have no badge)
+            val sourceName = when (event.source) {
+                EventSource.GOOGLE -> s.sourceGoogle
+                EventSource.NOTION -> s.sourceNotion
+                EventSource.LOCAL -> null
+            }
+            if (sourceName != null) {
+                Text(
+                    sourceName,
+                    style = NixType.SmallStrong,
+                    color = c.textSecondary,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(c.surfaceRaised).padding(horizontal = 10.dp, vertical = 6.dp),
+                )
+                if (event.reminderLeadMillis.isNotEmpty()) Spacer(Modifier.width(6.dp))
             }
             if (event.reminderLeadMillis.isNotEmpty()) {
                 Row(

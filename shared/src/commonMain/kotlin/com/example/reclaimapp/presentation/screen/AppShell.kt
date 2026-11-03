@@ -54,6 +54,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import com.example.reclaimapp.presentation.deletion.UndoDeleteBar
+import com.example.reclaimapp.domain.integration.SyncIntegrationsUseCase
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -100,8 +101,12 @@ fun AppRoot() {
     val cloudSync = koinInject<SyncCoordinator>()
     val syncScope = rememberCoroutineScope()
     LaunchedEffect(Unit) { cloudSync.run() }
+    val calendarImport = koinInject<SyncIntegrationsUseCase>()
     LifecycleResumeEffect(Unit) {
-        syncScope.launch { cloudSync.onAppForeground() }
+        syncScope.launch {
+            runCatching { calendarImport(skipIfSyncedWithinMillis = SyncIntegrationsUseCase.AUTO_SYNC_EVERY_MILLIS) }
+            cloudSync.onAppForeground()
+        }
         onPauseOrDispose { }
     }
 
@@ -313,6 +318,7 @@ private fun RouteContent(route: Route, navigator: Navigator) {
         Route.CoachHistory -> CoachHistoryScreen(navigator)
         Route.Profile -> ProfileScreen(navigator)
         Route.Settings -> SettingsScreen(navigator)
+        Route.Integrations -> IntegrationsScreen(navigator)
         is Route.BadHabitDetail -> BadHabitDetailScreen(route.habitId, navigator)
         is Route.GoodHabitDetail -> GoodHabitDetailScreen(route.habitId, navigator)
         is Route.BadHabitForm -> BadHabitFormScreen(route.editId, navigator)

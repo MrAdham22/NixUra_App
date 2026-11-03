@@ -15,6 +15,8 @@ import com.example.reclaimapp.data.auth.IosDeviceInfo
 import com.example.reclaimapp.data.auth.KeychainSecureStore
 import com.example.reclaimapp.data.auth.SecureStore
 import com.example.reclaimapp.data.auth.iosApiConfig
+import com.example.reclaimapp.domain.integration.GoogleAuthResult
+import com.example.reclaimapp.domain.integration.GoogleAuthorizer
 import com.example.reclaimapp.domain.sync.BackgroundSyncScheduler
 import com.example.reclaimapp.domain.sync.NoOpBackgroundSyncScheduler
 import org.koin.dsl.module
@@ -38,4 +40,13 @@ fun platformModule() = module {
 
     // iOS syncs while the app is open; background sync (BGTaskScheduler) is not implemented yet.
     single<BackgroundSyncScheduler> { NoOpBackgroundSyncScheduler }
+
+    // Google Calendar on iOS needs Google's iOS sign-in (an iOS OAuth client + URL scheme): not built yet, so the
+    // Integrations screen says it is not available here. Notion works (it is done by the server).
+    single<GoogleAuthorizer> { NotAvailableGoogleAuthorizer }
+}
+
+private object NotAvailableGoogleAuthorizer : GoogleAuthorizer {
+    override suspend fun authorize(interactive: Boolean): GoogleAuthResult = GoogleAuthResult.NotAvailable
+    override suspend fun revoke() = Unit
 }

@@ -76,6 +76,20 @@ fun SettingsScreen(navigator: Navigator) {
             }
         }
 
+        SectionLabel(s.integrationsTitle)
+        NixCard(onClick = { navigator.push(Route.Integrations) }) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                NixIconView(NixIcon.Calendar, c.accent, size = 22.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(s.integrationsRow, style = NixType.BodyStrong, color = c.textPrimary)
+                    Text(s.integrationsRowHint, style = NixType.Small, color = c.textMuted)
+                }
+                Spacer(Modifier.width(8.dp))
+                NixIconView(NixIcon.Chevron, c.textMuted, size = 16.dp)
+            }
+        }
+
         SectionLabel(s.appearance)
         NixCard {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

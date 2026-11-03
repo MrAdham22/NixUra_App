@@ -24,6 +24,8 @@ dependencies {
 
     // Cloud sync while the app is closed.
     implementation(libs.androidx.work.runtime)
+    // Google Calendar import: Google Identity Authorization API (calendar.readonly), Android only.
+    implementation(libs.play.services.auth)
 
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)

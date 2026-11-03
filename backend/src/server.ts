@@ -1,4 +1,6 @@
-import { loadConfig } from './config.js';
+import { loadConfig, notionConfigured } from './config.js';
+import { NotionService } from './integrations/notionService.js';
+import { TokenCipher } from './integrations/tokenCipher.js';
 import { PgDb } from './db/pgDb.js';
 import { createArgon2Hasher } from './auth/crypto.js';
 import { createAccessTokenService } from './auth/tokens.js';
@@ -24,7 +26,15 @@ const auth = new AuthService({
   log: { error: (o, m) => holder.log?.error(o, m) },
 });
 
-const app = await buildApp({ cfg, auth, sync: new SyncService(db), ping: async () => void (await db.query('SELECT 1')) });
+const notion = new NotionService(
+  db,
+  notionConfigured(cfg)
+    ? { clientId: cfg.NOTION_CLIENT_ID, clientSecret: cfg.NOTION_CLIENT_SECRET, redirectUri: cfg.NOTION_REDIRECT_URI, appReturnUrl: cfg.APP_RETURN_URL_NOTION }
+    : null,
+  cfg.INTEGRATION_TOKEN_KEY ? new TokenCipher(cfg.INTEGRATION_TOKEN_KEY) : null,
+);
+
+const app = await buildApp({ cfg, auth, sync: new SyncService(db), notion, ping: async () => void (await db.query('SELECT 1')) });
 holder.log = app.log;
 
 const shutdown = async (signal: string) => {

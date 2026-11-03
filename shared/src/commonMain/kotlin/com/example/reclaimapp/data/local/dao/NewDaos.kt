@@ -59,6 +59,25 @@ interface EventDao {
     /** Deleting keeps a marked row, so the delete also reaches other devices. */
     @Query("UPDATE events SET deleted_at = :at, updated_at = :at, dirty = 1 WHERE id = :id")
     suspend fun markDeleted(id: Long, at: Long)
+
+    // ---- imported events (Google Calendar, Notion) ----
+
+    /** Deleted rows included: the importer must remember what the user deleted. */
+    @Query("SELECT * FROM events WHERE source = :source AND external_id IS NOT NULL")
+    suspend fun importedRows(source: String): List<EventEntity>
+
+    @Query("SELECT * FROM events WHERE source = :source AND external_id = :externalId LIMIT 1")
+    suspend fun importedRow(source: String, externalId: String): EventEntity?
+
+    /** Updates an imported event from its source; the user's reminders and category stay. Clears a local delete. */
+    @Query(
+        "UPDATE events SET title = :title, target_at = :targetAt, all_day = :allDay, external_updated_at = :externalUpdatedAt, " +
+            "deleted_at = NULL, updated_at = :now, dirty = 1 WHERE id = :id",
+    )
+    suspend fun updateImported(id: Long, title: String, targetAt: Long, allDay: Boolean, externalUpdatedAt: Long, now: Long)
+
+    @Query("UPDATE events SET deleted_at = :at, updated_at = :at, dirty = 1 WHERE source = :source AND deleted_at IS NULL")
+    suspend fun markAllFromSourceDeleted(source: String, at: Long)
 }
 
 /** A chat as the history list shows it. */

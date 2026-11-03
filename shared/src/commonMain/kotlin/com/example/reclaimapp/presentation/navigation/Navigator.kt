@@ -17,6 +17,9 @@ sealed interface Route {
     data object CoachHistory : Route
     data object Profile : Route
     data object Settings : Route
+
+    /** Settings → Integrations: Google Calendar and Notion. */
+    data object Integrations : Route
     data class BadHabitDetail(val habitId: Long) : Route
     data class GoodHabitDetail(val habitId: Long) : Route
 

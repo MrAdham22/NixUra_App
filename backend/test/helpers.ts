@@ -11,6 +11,8 @@ import { CapturingEmailSender } from '../src/email/senders.js';
 import { buildApp } from '../src/http/app.js';
 import { MemoryRateLimiter } from '../src/http/rateLimiter.js';
 import { SyncService } from '../src/sync/syncService.js';
+import { NotionService } from '../src/integrations/notionService.js';
+import { TokenCipher } from '../src/integrations/tokenCipher.js';
 
 /** Adapts PGlite (real Postgres compiled to WASM) to the app's [Db] port. */
 export class PgliteDb implements Db {
@@ -62,7 +64,14 @@ export interface Res {
   headers: Record<string, unknown>;
 }
 
-export async function makeCtx(env: Record<string, string> = {}, breachCheck?: (p: string) => Promise<boolean>): Promise<TestCtx> {
+/** 32 zero bytes, base64: a test-only token key. */
+export const TEST_TOKEN_KEY = Buffer.alloc(32, 7).toString('base64');
+
+export async function makeCtx(
+  env: Record<string, string> = {},
+  breachCheck?: (p: string) => Promise<boolean>,
+  notionFetch?: typeof fetch,
+): Promise<TestCtx> {
   const cfg = loadConfig({ ...testEnv, ...env });
   const pg = new PGlite();
   const db = new PgliteDb(pg);
@@ -71,7 +80,15 @@ export async function makeCtx(env: Record<string, string> = {}, breachCheck?: (p
   const clock = () => new Date(t);
   const mail = new CapturingEmailSender();
   const auth = new AuthService({ db, cfg, hasher: createArgon2Hasher(cfg), tokens: createAccessTokenService(cfg), email: mail, clock, breachCheck });
-  const app = await buildApp({ cfg, auth, sync: new SyncService(db, clock), limiter: new MemoryRateLimiter(() => t), ping: async () => void (await db.query('SELECT 1')) });
+  const notion = new NotionService(
+    db,
+    { clientId: 'cid', clientSecret: 'csecret', redirectUri: 'https://api.test/v1/integrations/notion/callback', appReturnUrl: 'nixura://integrations/notion' },
+    new TokenCipher(TEST_TOKEN_KEY),
+    notionFetch ?? (async () => new Response('{}', { status: 500 })),
+    clock,
+    async () => {},
+  );
+  const app = await buildApp({ cfg, auth, sync: new SyncService(db, clock), notion, limiter: new MemoryRateLimiter(() => t), ping: async () => void (await db.query('SELECT 1')) });
 
   const send = async (method: 'GET' | 'POST' | 'DELETE', url: string, body?: unknown, token?: string, ip = '10.0.0.1'): Promise<Res> => {
     const r = await app.inject({

@@ -1,6 +1,6 @@
 # NixUra — Development Status
 
-**Last updated:** 2026-10-23 (iOS approved as a full target; Android confirmed running)
+**Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
 ## One-paragraph summary
 
@@ -240,7 +240,7 @@ From a real user's review plus owner notes. No AI features.
   - Tests and build pass after these fixes, and they were seen fixed on the phone.
 - **Not yet seen on a screen:** the light theme, the "+ Write my own" pill, the new-chat button and chat delete.
 
-**Known gaps:** home-screen widgets keep their flat card color, because `RemoteViews` needs separate drawing work; decide whether they should match. The second-device first-sync progress display from Agent 3 is still open.
+**Known gaps:** (widgets now match the cards, see Round 3.) The second-device first-sync progress display from Agent 3 is still open.
 
 
 ## Round 3, tasks 1-5 (2026-11-03)
@@ -267,3 +267,23 @@ Owner brief: remove the Profile gear, legal links in one row, water fill, widget
 - **Fixed while testing:** the pack size was pre-filled with 1 instead of 20, because the habit was not recognised yet. The good-habit list now computes its rows off the main thread, and the habit catalog is warmed on a background thread at start (`warmUpInBackground`).
 - **Not seen yet:** the money line on the quit widget; the per-streak chart (needs a relapse); the light theme.
 - **Found, not changed (owner decision):** `tools/gen_widget_layouts.py` deletes resources it does not generate (`widget_counter_*`, `widget_good_compact/wide`, `widget_bg_round`, ...). I restored them after running it. Those 4 layouts look unused.
+
+## Round 3, task 6: Google Calendar and Notion import (2026-11-03)
+
+Agent 5's integration work, built from scratch (nothing existed in code before). Design and owner steps: README, "Linking calendars".
+
+- **Domain** (`domain/integration`): models, `ImportPlanner`, `SyncIntegrationsUseCase` (needs a signed-in session, one run at a time, automatic runs at most every 15 min), `DisconnectIntegrationUseCase`, and the ports `GoogleAuthorizer`, `GoogleCalendarCatalog`, `NotionLink`, `CalendarSource`, `ImportedEventStore` and `IntegrationStateStore`.
+  - The planner: one row per (`source`, `external_id`); an edit updates the row; a cancellation deletes it; a full read removes events missing at the source (inside the window only); a user's delete is respected unless the event is edited at the source afterwards; the window runs from yesterday to a year ahead.
+- **Data** (`data/integration`):
+  - Google Calendar v3 client (read-only): singleEvents, so recurring events are expanded; per-calendar sync tokens; a full re-sync on 410; all-day events become local midnight.
+  - Notion client: goes through the backend; incremental by `last_edited_time`, plus a full read every 3 days.
+  - Room store (imported text cleaned; reminders and category kept when an import updates the row) and a preference-backed link state (no tokens). `MaintenanceDao.clearAll` removes the link settings on sign-out.
+- **Android:** `AndroidGoogleAuthorizer` (play-services-auth **21.3.0**, new dependency, Authorization API, scope `calendar.readonly`, no client id in the code). `MainActivity` hosts Google's consent screen and is now `singleTask`, with the `nixura://integrations` link. `SyncWorker` imports before the cloud sync, and the app imports on resume.
+- **iOS:** Google is reported as not available (needs an iOS OAuth client and Google's iOS sign-in); Notion works through the server. **Unverified** (iOS is not built here).
+- **UI:** Settings → Integrations (status, last synced, clear errors, calendar picker, Notion database and property picker with a date-property guess, sync now, disconnect with confirmation). Events show a Google or Notion badge. Imported events show "Imported from ..." with their title and date locked.
+- **Backend:**
+  - `migrations/003_integrations.sql` (`integration_links`, `oauth_states`); `src/integrations/notionService.ts` (OAuth with a single-use state bound to the user, query mapping, time zones via Intl, 429 retry, 401 → link dropped); `tokenCipher.ts` (AES-256-GCM).
+  - Routes `/v1/integrations*`. New env vars are in `.env.example`. Migration applied to the local dev database.
+- **Verified:** app `ImportPlannerTest` (7) and `SyncIntegrationsUseCaseTest` (8: import, source deletes, guests, revoked access, the interval, disconnect, date parsing, text cleaning, property guess); all `:shared:testAndroidHostTest`; `assembleDebug`; backend `npm run typecheck` and `npm test` (61 pass, 6 new: OAuth round trip, encryption at rest, single-use state, per-user isolation, revoked access, Notion date and time-zone mapping, cipher tampering).
+- **Not verified (needs the owner):** a real Google sign-in and calendar fetch (needs the Google Cloud project and an Android OAuth client); a real Notion OAuth (needs the Notion public integration and an https redirect); the Integrations screen on a device (the emulator ran out of memory during the session, see below); background import in WorkManager.
+- **Emulator note:** the Pixel 9 emulator runs with `hw.gpu.mode=software` and was swapping (3.5 of 4 GB used), so cold starts took 15-40 s and caused ANR dialogs while taps were queued. A main-thread sampling showed normal startup code, not a hang in the app. An A/B against the pre-round build gave the same frame skips. I did not change the AVD settings.

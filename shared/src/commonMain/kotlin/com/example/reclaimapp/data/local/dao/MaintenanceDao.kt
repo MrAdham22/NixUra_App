@@ -28,8 +28,13 @@ abstract class MaintenanceDao {
     @Query("DELETE FROM coach_conversations")
     abstract suspend fun deleteCoachConversations()
 
+    /** Calendar links belong to the account that made them; a sign-out must not hand them to the next one. */
+    @Query("DELETE FROM preferences WHERE pref_key LIKE 'integration.%'")
+    abstract suspend fun deleteIntegrationLinks()
+
     @Transaction
     open suspend fun clearAll() {
+        deleteIntegrationLinks()
         deleteHabitEvents()
         deleteHabits()
         deleteGoodHabitLogs()

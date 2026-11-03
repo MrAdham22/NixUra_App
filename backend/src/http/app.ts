@@ -6,6 +6,7 @@ import type { Config } from '../config.js';
 import { AuthService, normalizeEmail, type DeviceInfo } from '../auth/authService.js';
 import { AppError } from '../errors.js';
 import { SYNC_ENTITY_TYPES, type SyncService } from '../sync/syncService.js';
+import type { NotionService } from '../integrations/notionService.js';
 import { MemoryRateLimiter, type RateLimiter } from './rateLimiter.js';
 import { openApiDocument } from './openapi.js';
 
@@ -13,6 +14,7 @@ export interface AppDeps {
   cfg: Config;
   auth: AuthService;
   sync: SyncService;
+  notion: NotionService;
   limiter?: RateLimiter;
   /** Used by /health to verify the database answers. */
   ping: () => Promise<void>;
@@ -193,6 +195,37 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     }).parse(req.query);
     guard('sync', user(req).userId, req.ip, 600, 300, 900);
     return deps.sync.pull(user(req).userId, q.cursor, q.limit);
+  });
+
+  // -------------------------------------------------------------- linked calendars (Notion)
+  app.get('/v1/integrations', { preHandler: requireAuth }, async (req) => ({ notion: await deps.notion.status(user(req).userId) }));
+  app.post('/v1/integrations/notion/start', { preHandler: requireAuth }, async (req) => {
+    guard('notion-start', user(req).userId, req.ip, 30, 10, 900);
+    return { url: await deps.notion.startUrl(user(req).userId) };
+  });
+  // Public: the browser arrives here from Notion. The one-time state identifies the user; the answer is a redirect into the app.
+  app.get('/v1/integrations/notion/callback', async (req, reply) => {
+    const q = z.object({ code: z.string().max(500).optional(), state: z.string().max(100).optional(), error: z.string().max(100).optional() }).parse(req.query);
+    guard('notion-callback', undefined, req.ip, 30, 0, 900);
+    return reply.redirect(await deps.notion.callback(q.code, q.state, q.error), 302);
+  });
+  app.delete('/v1/integrations/notion', { preHandler: requireAuth }, async (req, reply) => {
+    await deps.notion.disconnect(user(req).userId);
+    return reply.status(204).send();
+  });
+  app.get('/v1/integrations/notion/databases', { preHandler: requireAuth }, async (req) => {
+    guard('notion', user(req).userId, req.ip, 120, 60, 900);
+    return { databases: await deps.notion.databases(user(req).userId) };
+  });
+  app.post('/v1/integrations/notion/query', { preHandler: requireAuth }, async (req) => {
+    const b = z.object({
+      databaseId: z.string().min(1).max(100),
+      titleProperty: z.string().min(1).max(200),
+      dateProperty: z.string().min(1).max(200),
+      since: z.number().int().min(0).optional(),
+    }).parse(req.body);
+    guard('notion', user(req).userId, req.ip, 120, 60, 900);
+    return deps.notion.query(user(req).userId, b.databaseId, b.titleProperty, b.dateProperty, b.since);
   });
 
   return app;

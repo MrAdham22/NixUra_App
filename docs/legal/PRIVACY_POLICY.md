@@ -22,7 +22,10 @@ NixUra helps you quit bad habits, build good habits and count down to events. Th
 We do **not** sell your data and do not use it for advertising.
 
 <!-- AGENT-4 (AI coach): add chat content and habit context sent to our server and processed by Google (Gemini), consent, retention. -->
-<!-- AGENT-5 (integrations): add Google Calendar / Notion data, tokens stored encrypted, how to disconnect and what is deleted. -->
+**Linked calendars (optional, account required).** If you link Google Calendar or Notion in Settings > Integrations, NixUra reads the title, date/time and last-change time of the events you choose: the Google calendars you pick, or the pages of the one Notion database you share. They are stored as events in the app and, like your other events, synced to your account. NixUra never writes to, changes or deletes anything in Google Calendar or Notion.
+- **Google Calendar:** access is granted on your phone with Google's own screen, read-only (`calendar.readonly`). The short-lived access token is asked for at each sync and is not stored, on the phone or on our server. NixUra's use of data from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements.
+- **Notion:** you approve access on Notion's page. Our server receives a Notion access token and stores it encrypted (AES-256-GCM); it is never sent to your phone. Our server reads the chosen database on your behalf and passes only event data to the app.
+- **Disconnect** (Settings > Integrations) revokes Google access, deletes the stored Notion token and removes the imported events from your devices and account. You can also remove NixUra in your Google Account (Security > Third-party access) or in Notion (Settings > Connections). Signing out removes the links from that device; deleting your account deletes the Notion token.
 <!-- AGENT-6 (analytics, crash, support): add Firebase Analytics/Crashlytics (opt-in), diagnostics in support reports. -->
 
 ## 3. How we protect it

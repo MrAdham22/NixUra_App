@@ -2,6 +2,7 @@
 
 package com.example.reclaimapp.presentation.screen
 
+import com.example.reclaimapp.domain.model.EventSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
@@ -121,7 +122,20 @@ fun EventFormScreen(editId: Long?, navigator: Navigator) {
             state.reminderError?.let { ErrorBanner(s.reminderError(it), vm::onDismissError) }
             if (state.reminderSaveFailed) ErrorBanner(s.reminderSaveFailed, vm::onDismissError)
 
-            NixTextField(title, { title = it }, label = s.eventNameLabel, placeholder = s.eventNamePlaceholder, maxLength = 60)
+            // Imported events are edited in their calendar; here only the category and reminders can change.
+            val importedFrom = when (stored?.source) {
+                EventSource.GOOGLE -> s.googleCalendar
+                EventSource.NOTION -> s.notion
+                else -> null
+            }
+            if (importedFrom != null) {
+                NixCard(color = c.accent.copy(alpha = 0.10f), borderColor = c.accent.copy(alpha = 0.35f)) {
+                    Text(s.importedFrom(importedFrom), style = NixType.Body, color = c.textPrimary)
+                }
+                Text(title, style = NixType.Heading, color = c.textPrimary)
+            } else {
+                NixTextField(title, { title = it }, label = s.eventNameLabel, placeholder = s.eventNamePlaceholder, maxLength = 60)
+            }
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 SectionLabel(s.eventCategoryLabel)
@@ -134,15 +148,15 @@ fun EventFormScreen(editId: Long?, navigator: Navigator) {
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 SectionLabel(s.eventWhenLabel)
-                NixCard(onClick = { showPicker = true }) {
+                NixCard(onClick = if (importedFrom == null) ({ showPicker = true }) else null) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         NixIconView(NixIcon.Calendar, c.accent, size = 22.dp)
                         Spacer(Modifier.width(12.dp))
                         Text(formatDateTime(target, days, s), style = NixType.BodyStrong, color = c.textPrimary, modifier = Modifier.weight(1f))
-                        NixIconView(NixIcon.Chevron, c.textMuted, size = 18.dp)
+                        if (importedFrom == null) NixIconView(NixIcon.Chevron, c.textMuted, size = 18.dp)
                     }
                 }
-                if (target <= clock.nowEpochMillis()) {
+                if (target <= clock.nowEpochMillis() && importedFrom == null) {
                     Text(s.eventPastWarning, style = NixType.Small, color = c.accentWarm)
                 }
             }
