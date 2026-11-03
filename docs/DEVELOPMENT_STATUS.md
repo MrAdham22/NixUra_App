@@ -231,7 +231,14 @@ From a real user's review plus owner notes. No AI features.
 - Seen working on screen: Landing with "Continue as guest", the guest warning, the starter guide's first three steps on the phone, and the dashboard rings.
 - Fixed because of what that testing showed: a cut-off dialog button, dark status-bar icons on the dark theme (now forced at start and re-applied once the window is attached), the guide's dimming not covering the system bars, and the guide asking for a name it already had.
 - After reconnecting, the USB phone link came back by itself.
-- **Not yet seen on a screen:** the rest of the guide, account sheet, score sheets, good-habit fill, gradients up close, coach welcome and chat history, transitions, light theme.
+- Second phone pass (2026-11-03): the whole starter guide (8 steps, no name prompt when the name is known), the account sheet, all three score sheets, stat-tile info sheets, gradient quit cards and detail hero, green good-habit fill, push transitions, coach welcome, a coach reply and chat history all work.
+- Fixed from that pass:
+  - The habit detail's big counter cut off the seconds at 10+ days. `CounterBlocks` now shrinks the digits to fit.
+  - Secondary text on green good-habit cards was plum, so it read pink; it is now dimmed ink.
+  - Greetings used the full name and wrapped. The dashboard and the coach now use the first name.
+  - The guide's bottom-bar spotlight showed a strip of card; `DropletNavBar` now measures the visible pill.
+  - Tests and build pass after these fixes, and they were seen fixed on the phone.
+- **Not yet seen on a screen:** the light theme, the "+ Write my own" pill, the new-chat button and chat delete.
 
 **Known gaps:** home-screen widgets keep their flat card color, because `RemoteViews` needs separate drawing work; decide whether they should match. The second-device first-sync progress display from Agent 3 is still open.
 

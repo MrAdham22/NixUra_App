@@ -96,9 +96,10 @@ fun DropletNavBar(
     val shape = RoundedCornerShape(24.dp)
 
     Box(
-        modifier
+        Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 8.dp)
+            .then(modifier) // after the outer padding, so measuring the bar (starter guide) gets the visible pill
             .clip(shape)
             .background(c.surface)
             .border(1.dp, c.border, shape)

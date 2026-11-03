@@ -104,7 +104,8 @@ fun HomeScreen(navigator: Navigator) {
 
     TabScreen {
         Text(
-            if (profile.name.isBlank()) greeting else "$greeting, ${profile.name}",
+            // First name only: a full name wraps the title onto two lines
+            if (profile.name.isBlank()) greeting else "$greeting, ${profile.name.trim().substringBefore(' ')}",
             style = NixType.Title,
             color = c.textPrimary,
         )

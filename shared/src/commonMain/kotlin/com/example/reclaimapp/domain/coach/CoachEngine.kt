@@ -144,7 +144,7 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
     // ---------- Chat ----------
 
     fun greeting(snapshot: CoachSnapshot, seed: Long): String {
-        val name = snapshot.userName.trim()
+        val name = snapshot.userName.trim().substringBefore(' ') // first name keeps the greeting to one short line
         val hello = if (name.isEmpty()) "Hi there." else "Hi $name."
         val focus = snapshot.badHabits.maxByOrNull { it.elapsed }
         val status = when {

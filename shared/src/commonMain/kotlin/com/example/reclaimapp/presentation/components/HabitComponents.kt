@@ -19,6 +19,9 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.foundation.layout.BoxWithConstraints
 import com.example.reclaimapp.presentation.appearance.CardGradient
 import com.example.reclaimapp.presentation.platform.rememberReducedMotion
 import androidx.compose.foundation.horizontalScroll
@@ -93,7 +96,10 @@ fun unitLabel(unit: CounterUnit, s: Strings): String = when (unit) {
     CounterUnit.SECONDS -> s.unitSeconds
 }
 
-/** Days → hours → minutes → seconds blocks. Shows from the largest non-zero unit down to seconds. */
+/**
+ * Days → hours → minutes → seconds blocks. Shows from the largest non-zero unit down to seconds. The digits shrink
+ * when they would not fit the width (big counters, large system font), so the seconds are never cut off.
+ */
 @Composable
 fun CounterBlocks(
     parts: CounterParts,
@@ -104,13 +110,31 @@ fun CounterBlocks(
     gap: Dp = 16.dp,
 ) {
     val s = LocalStrings.current
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.Bottom) {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    BoxWithConstraints(modifier) {
+        // Measured with the widest digit, so the size stays steady while the seconds tick.
+        val sample = parts.visibleUnits.joinToString("") { unit ->
+            if (unit == CounterUnit.DAYS) "8".repeat(parts.valueOf(unit).toString().length) else "88"
+        }
+        val needed = measurer.measure(sample, NixType.counter(valueSize)).size.width +
+            with(density) { (gap * (parts.visibleUnits.size - 1)).toPx() }
+        val available = constraints.maxWidth.toFloat()
+        val fitted = if (constraints.hasBoundedWidth && needed > available) (valueSize * available / needed).toInt() else valueSize
+        CounterBlockRow(parts, color, mutedColor, fitted, gap, s)
+    }
+}
+
+@Composable
+private fun CounterBlockRow(parts: CounterParts, color: Color, mutedColor: Color, valueSize: Int, gap: Dp, s: Strings) {
+    Row(horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.Bottom) {
         parts.visibleUnits.forEach { unit ->
             Column {
                 val value = parts.valueOf(unit)
                 Text(
                     text = if (unit == CounterUnit.DAYS) value.toString() else value.toString().padStart(2, '0'),
                     style = NixType.counter(valueSize),
+                    softWrap = false,
                     color = color,
                     maxLines = 1,
                 )
@@ -170,7 +194,8 @@ fun rememberGoodFill(todayCount: Int, dailyTarget: Int): GoodFill {
     val background = lerp(c.surface, c.positive, fill)
     val onDark = background.prefersLightContentOnCard()
     val content = if (onDark) NixUraPalette.onDarkPrimary else NixUraPalette.onLightPrimary
-    val muted = if (onDark) NixUraPalette.onDarkMuted else NixUraPalette.onLightMuted
+    // The brand's light-card muted tone is plum, which reads pink on green, so use dimmed ink instead
+    val muted = if (onDark) NixUraPalette.onDarkMuted else content.copy(alpha = 0.66f)
     return GoodFill(fill, background, content, muted, if (fill >= 0.6f) content else c.positive)
 }
 
