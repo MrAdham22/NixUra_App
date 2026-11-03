@@ -206,3 +206,5 @@ The owner confirmed the landing and sign-in look on the phone (2026-11-03).
 
 **Windows note:** if `npm` prints nothing and exits 0, a 0-byte `C:\Windows\system32\npm` is shadowing it; call `C:\Program Files\nodejs\npm.cmd`.
 
+**USB phone link:** `tools/phone_link.ps1` re-runs `adb reverse` whenever a phone connects, using `PORT` from `backend/.env`. Tested by removing the link while the phone stayed plugged in (restored within 6 s); a physical unplug has not been tested yet. It must be running, and it does not start by itself after a laptop restart.
+

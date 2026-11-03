@@ -10,7 +10,7 @@ docker compose up --build       # Postgres + API on :8080; verification codes ar
 # or, without Docker (needs Postgres; dev and migrate read .env):
 npm install && npm run migrate && npm run dev
 ```
-Android emulator reaches the host at `http://10.0.2.2:8080`. A real phone over USB: run `adb reverse tcp:8080 tcp:8080` and build the app with `-PnixuraDebugApiBaseUrl=http://localhost:8080`.
+Android emulator reaches the host at `http://10.0.2.2:8080`. A real phone over USB: build the app with `-PnixuraDebugApiBaseUrl=http://localhost:8080` (use your `PORT`) and leave `powershell -ExecutionPolicy Bypass -File tools/phone_link.ps1` running. It reads `PORT` from `backend/.env` and re-runs `adb reverse` whenever a phone connects. Without it, run `adb reverse tcp:8080 tcp:8080` after every reconnect.
 
 ## Test
 ```bash

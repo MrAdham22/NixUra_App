@@ -113,6 +113,7 @@ Habbit_app/
 │   └── AI_COACH_UPGRADE.md        # how to make the coach a real AI (free options)
 ├── iosApp/                        # iOS app: Xcode project + SwiftUI host that embeds the shared Compose UI
 ├── tools/room_migration_check.py  # validates the migrations + DAO SQL against the entities (python3, no deps)
+├── tools/phone_link.ps1           # Windows dev helper: keeps USB phones linked to the local backend (adb reverse)
 ├── shared/src/{commonMain,androidMain,iosMain,commonTest}/kotlin/com/example/reclaimapp/
 └── .cursor/skills/                # workflow skills (onboarding, feature dev, verification, handoff)
 ```
