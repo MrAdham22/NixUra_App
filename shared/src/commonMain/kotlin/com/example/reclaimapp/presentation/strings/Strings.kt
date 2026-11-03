@@ -119,8 +119,6 @@ open class Strings {
     open val relapseHint: String = "A slip is not failure. Recording it keeps your progress honest and restarts the counter."
     open val relapseConfirmTitle: String = "Record a relapse?"
     open val relapseConfirmBody: String = "Your counter restarts from now. Your longest streak stays in your history."
-    open val removeHabitTitle: String = "Remove this habit?"
-    open val removeHabitBody: String = "It disappears from your lists. This can't be undone."
 
     // ---- Agent 1: smart recognition ----
     open val looksGoodBanner: String = "This looks like a good habit. Add it to Build instead?"
@@ -168,7 +166,6 @@ open class Strings {
     open val legendPartial: String = "Partly"
     open val legendMissed: String = "Missed"
     open val editPastHint: String = "Forgot to log a day? Adjust it here."
-    open val removeGoodHabitBody: String = "It disappears from your lists, along with its history. This can't be undone."
 
     // Events
     open val eventsEyebrow: String = "Look forward"
@@ -193,8 +190,6 @@ open class Strings {
     open val reminderHint: String = "Pick as many reminders as you like. They arrive as notifications on this device."
     open val addEvent: String = "Add event"
     open val deleteEvent: String = "Delete event"
-    open val deleteEventTitle: String = "Delete this event?"
-    open val deleteEventBody: String = "The countdown and its reminders will be removed."
     open val atEventTime: String = "At event time"
 
     // --- Event reminders: list, edit, remove, undo, permissions (Agent 1) ---

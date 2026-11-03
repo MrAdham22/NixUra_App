@@ -8,7 +8,6 @@ import com.example.reclaimapp.domain.model.GoodHabitWithLogs
 import com.example.reclaimapp.domain.recognition.GoodHabitFillStyle
 import com.example.reclaimapp.domain.recognition.GoodHabitFillStyleDetector
 import com.example.reclaimapp.domain.time.DayCalculator
-import com.example.reclaimapp.domain.usecase.ArchiveGoodHabitUseCase
 import com.example.reclaimapp.domain.usecase.CreateGoodHabitUseCase
 import com.example.reclaimapp.domain.usecase.ObserveGoodHabitsUseCase
 import com.example.reclaimapp.domain.usecase.SetGoodHabitCountUseCase
@@ -58,7 +57,6 @@ class GoodHabitsViewModel(
     observeGoodHabits: ObserveGoodHabitsUseCase,
     private val createGoodHabit: CreateGoodHabitUseCase,
     private val updateGoodHabit: UpdateGoodHabitUseCase,
-    private val archiveGoodHabit: ArchiveGoodHabitUseCase,
     private val setCount: SetGoodHabitCountUseCase,
     private val clock: Clock,
     private val dayCalculator: DayCalculator,
@@ -133,15 +131,6 @@ class GoodHabitsViewModel(
                 state.copy(isSaving = false, errorMessage = result.exceptionOrNull()?.message)
             }
             if (result.isSuccess) onSuccess()
-        }
-    }
-
-    fun onArchive(id: Long, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            archiveGoodHabit(id).fold(
-                onSuccess = { onSuccess() },
-                onFailure = { error -> transient.update { it.copy(errorMessage = error.message ?: "Could not remove habit") } },
-            )
         }
     }
 

@@ -9,7 +9,6 @@ import com.example.reclaimapp.domain.notification.ReminderError
 import com.example.reclaimapp.domain.notification.ReminderRules
 import com.example.reclaimapp.domain.notification.ReminderValidationException
 import com.example.reclaimapp.domain.usecase.EventReminderEditor
-import com.example.reclaimapp.domain.usecase.DeleteEventUseCase
 import com.example.reclaimapp.domain.usecase.ObserveEventsUseCase
 import com.example.reclaimapp.domain.usecase.SaveEventUseCase
 import com.example.reclaimapp.domain.usecase.DeletableItem
@@ -38,7 +37,6 @@ data class EventsUiState(
 class EventsViewModel(
     observeEvents: ObserveEventsUseCase,
     private val saveEvent: SaveEventUseCase,
-    private val deleteEvent: DeleteEventUseCase,
     private val reminderEditor: EventReminderEditor,
     private val clock: Clock,
     pendingDeletions: PendingDeletions,
@@ -68,15 +66,6 @@ class EventsViewModel(
             val result = saveEvent(id, title, category, targetAtEpochMillis, reminderLeadMillis)
             transient.update { it.copy(isSaving = false, errorMessage = result.exceptionOrNull()?.message) }
             if (result.isSuccess) onSuccess()
-        }
-    }
-
-    fun onDelete(id: Long, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            deleteEvent(id).fold(
-                onSuccess = { onSuccess() },
-                onFailure = { error -> transient.update { it.copy(errorMessage = error.message ?: "Could not delete event") } },
-            )
         }
     }
 

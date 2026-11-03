@@ -42,10 +42,6 @@ class SaveEventUseCase(private val repository: EventRepository) {
     }
 }
 
-class DeleteEventUseCase(private val repository: EventRepository) {
-    suspend operator fun invoke(id: Long): Result<Unit> = runCatching { repository.delete(id) }
-}
-
 /**
  * Edits one reminder of an existing event and saves immediately, so the notification sync service
  * (which replaces the whole OS schedule on every change) cancels the old alarm and arms the new one.

@@ -2,6 +2,8 @@
 
 package com.example.reclaimapp.presentation.screen
 
+import com.example.reclaimapp.domain.usecase.DeletableItem
+import com.example.reclaimapp.presentation.deletion.rememberDeleteFlow
 import com.example.reclaimapp.domain.model.EventSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -94,7 +96,7 @@ fun EventFormScreen(editId: Long?, navigator: Navigator) {
     var draftLeadsCsv by rememberSaveable { mutableStateOf("") }
     var loadedEdit by rememberSaveable { mutableStateOf(false) }
     var showPicker by remember { mutableStateOf(false) }
-    var confirmDelete by remember { mutableStateOf(false) }
+    val deleteFlow = rememberDeleteFlow(onDeleted = { navigator.back() })
     var resumeTick by remember { mutableIntStateOf(0) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { resumeTick++ } // re-read permissions after system settings
 
@@ -205,9 +207,10 @@ fun EventFormScreen(editId: Long?, navigator: Navigator) {
             )
             if (editing && editId != null) {
                 AddToHomeScreenButton(WidgetKind.EVENT, editId)
-            }
-            if (editing) {
-                NixButton(s.deleteEvent, { confirmDelete = true }, style = NixButtonStyle.Danger, icon = NixIcon.Trash, modifier = Modifier.fillMaxWidth())
+                NixButton(
+                    s.deleteEvent, { deleteFlow.confirm(DeletableItem.Event(editId), stored?.title ?: title) },
+                    style = NixButtonStyle.Danger, icon = NixIcon.Trash, modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(16.dp))
@@ -218,17 +221,6 @@ fun EventFormScreen(editId: Long?, navigator: Navigator) {
             initialEpochMillis = target,
             onConfirm = { target = it; showPicker = false },
             onDismiss = { showPicker = false },
-        )
-    }
-    if (confirmDelete && editId != null) {
-        ConfirmDialog(
-            title = s.deleteEventTitle,
-            message = s.deleteEventBody,
-            confirmText = s.delete,
-            cancelText = s.cancel,
-            danger = true,
-            onConfirm = { confirmDelete = false; vm.onDelete(editId) { navigator.back() } },
-            onDismiss = { confirmDelete = false },
         )
     }
 }

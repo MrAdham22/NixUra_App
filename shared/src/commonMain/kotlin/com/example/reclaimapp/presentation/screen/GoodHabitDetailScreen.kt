@@ -24,7 +24,8 @@ import com.example.reclaimapp.presentation.components.rememberGoodFill
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.reclaimapp.domain.time.CivilCalendar
-import com.example.reclaimapp.presentation.components.ConfirmDialog
+import com.example.reclaimapp.domain.usecase.DeletableItem
+import com.example.reclaimapp.presentation.deletion.rememberDeleteFlow
 import com.example.reclaimapp.presentation.components.ErrorBanner
 import com.example.reclaimapp.presentation.components.MonthCalendar
 import com.example.reclaimapp.presentation.components.NixCard
@@ -49,7 +50,7 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
     val s = LocalStrings.current
     val c = Nix.colors
     val habit = state.habits.firstOrNull { it.id == habitId }
-    var confirmArchive by remember { mutableStateOf(false) }
+    val deleteFlow = rememberDeleteFlow(onDeleted = { navigator.back() })
 
     val todayCivil = CivilCalendar.civilFromDayIndex(state.todayIndex)
     // months since year 0, so it survives rotation as a single Int
@@ -66,7 +67,7 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
             if (habit != null) {
                 NixIconButton(NixIcon.Pencil, { navigator.push(Route.GoodHabitForm(habitId)) }, size = 40.dp)
                 Spacer(Modifier.width(8.dp))
-                NixIconButton(NixIcon.Trash, { confirmArchive = true }, size = 40.dp, tint = c.danger)
+                NixIconButton(NixIcon.Trash, { deleteFlow.confirm(DeletableItem.GoodHabit(habit.id), habit.name) }, size = 40.dp, tint = c.danger)
             }
         },
     ) {
@@ -160,20 +161,5 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
                 Text(s.editPastHint, style = NixType.Small, color = c.textMuted)
             }
         }
-    }
-
-    if (confirmArchive && habit != null) {
-        ConfirmDialog(
-            title = s.removeHabitTitle,
-            message = s.removeGoodHabitBody,
-            confirmText = s.remove,
-            cancelText = s.cancel,
-            danger = true,
-            onConfirm = {
-                confirmArchive = false
-                vm.onArchive(habit.id) { navigator.back() }
-            },
-            onDismiss = { confirmArchive = false },
-        )
     }
 }

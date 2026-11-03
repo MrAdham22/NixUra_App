@@ -28,15 +28,12 @@ import com.example.reclaimapp.domain.repository.HabitTrackingRepository
 import com.example.reclaimapp.domain.repository.PreferencesRepository
 import com.example.reclaimapp.domain.time.DayCalculator
 import com.example.reclaimapp.domain.time.TimeZoneOffsetProvider
-import com.example.reclaimapp.domain.usecase.ArchiveGoodHabitUseCase
-import com.example.reclaimapp.domain.usecase.ArchiveHabitUseCase
 import com.example.reclaimapp.domain.usecase.BuildCoachSnapshotUseCase
 import com.example.reclaimapp.domain.usecase.ClearAllDataUseCase
 import com.example.reclaimapp.domain.usecase.DeleteCoachChatUseCase
 import com.example.reclaimapp.domain.usecase.ObserveCoachConversationsUseCase
 import com.example.reclaimapp.domain.usecase.CreateGoodHabitUseCase
 import com.example.reclaimapp.domain.usecase.CreateHabitAndStartTrackingUseCase
-import com.example.reclaimapp.domain.usecase.DeleteEventUseCase
 import com.example.reclaimapp.domain.usecase.EventReminderEditor
 import com.example.reclaimapp.domain.usecase.EnsureCoachGreetingUseCase
 import com.example.reclaimapp.domain.usecase.GetCoachContextUseCase
@@ -119,17 +116,14 @@ fun appModule() = module {
     factory { CreateHabitAndStartTrackingUseCase(get()) }
     factory { RecordRelapseUseCase(get()) }
     factory { UpdateHabitUseCase(get()) }
-    factory { ArchiveHabitUseCase(get(), get()) }
     // Use cases — good habits
     factory { ObserveGoodHabitsUseCase(get()) }
     factory { CreateGoodHabitUseCase(get()) }
     factory { UpdateGoodHabitUseCase(get()) }
-    factory { ArchiveGoodHabitUseCase(get()) }
     factory { SetGoodHabitCountUseCase(get()) }
     // Use cases — events
     factory { ObserveEventsUseCase(get()) }
     factory { SaveEventUseCase(get()) }
-    factory { DeleteEventUseCase(get()) }
     factory { EventReminderEditor(get(), get()) }
     // Use cases — coach
     factory { BuildCoachSnapshotUseCase(get(), get(), get(), get(), get(), get()) }
@@ -157,12 +151,11 @@ fun appModule() = module {
             recordRelapse = get(),
             clock = get(),
             updateHabit = get(),
-            archiveHabit = get(),
             pendingDeletions = get(),
         )
     }
-    viewModel { GoodHabitsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
-    viewModel { EventsViewModel(get(), get(), get(), get(), get(), get()) }
+    viewModel { GoodHabitsViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { EventsViewModel(get(), get(), get(), get(), get()) }
     viewModel { CoachViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { ProfileViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { SettingsViewModel(get(), get(), get()) }

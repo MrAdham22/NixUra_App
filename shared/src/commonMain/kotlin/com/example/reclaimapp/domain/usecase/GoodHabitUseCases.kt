@@ -29,13 +29,6 @@ class UpdateGoodHabitUseCase(private val repository: GoodHabitRepository) {
         }
 }
 
-class ArchiveGoodHabitUseCase(private val repository: GoodHabitRepository) {
-    suspend operator fun invoke(id: Long): Result<Unit> = runCatching {
-        require(id > 0) { "Invalid habit id" }
-        repository.archive(id)
-    }
-}
-
 class SetGoodHabitCountUseCase(private val repository: GoodHabitRepository) {
     suspend operator fun invoke(id: Long, dayIndex: Long, count: Int): Result<Unit> = runCatching {
         require(id > 0) { "Invalid habit id" }

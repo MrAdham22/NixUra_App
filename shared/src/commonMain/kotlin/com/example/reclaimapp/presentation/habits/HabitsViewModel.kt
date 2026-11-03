@@ -8,7 +8,6 @@ import com.example.reclaimapp.domain.model.HabitEventType
 import com.example.reclaimapp.domain.model.HabitTracking
 import com.example.reclaimapp.domain.money.HabitCost
 import com.example.reclaimapp.domain.money.MoneySavedCalculator
-import com.example.reclaimapp.domain.usecase.ArchiveHabitUseCase
 import com.example.reclaimapp.domain.usecase.CreateHabitAndStartTrackingUseCase
 import com.example.reclaimapp.domain.usecase.ObserveActiveHabitTrackingUseCase
 import com.example.reclaimapp.domain.usecase.RecordRelapseUseCase
@@ -35,7 +34,6 @@ class HabitsViewModel(
     private val recordRelapse: RecordRelapseUseCase,
     private val clock: Clock,
     private val updateHabit: UpdateHabitUseCase,
-    private val archiveHabit: ArchiveHabitUseCase,
     pendingDeletions: PendingDeletions,
 ) : ViewModel() {
 
@@ -137,15 +135,6 @@ class HabitsViewModel(
                 )
             }
             if (result.isSuccess) onSuccess()
-        }
-    }
-
-    fun onArchiveHabit(habitId: Long, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            archiveHabit(habitId).fold(
-                onSuccess = { onSuccess() },
-                onFailure = { error -> _uiState.update { it.copy(errorMessage = error.message ?: "Could not remove habit") } },
-            )
         }
     }
 

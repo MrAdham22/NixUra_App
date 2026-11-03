@@ -1,5 +1,7 @@
 package com.example.reclaimapp.presentation.screen
 
+import com.example.reclaimapp.domain.usecase.DeletableItem
+import com.example.reclaimapp.presentation.deletion.rememberDeleteFlow
 import com.example.reclaimapp.domain.money.CountableHabits
 import com.example.reclaimapp.presentation.util.rememberNowMillis
 import androidx.compose.foundation.background
@@ -79,7 +81,7 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
     val c = Nix.colors
     val model = state.habits.firstOrNull { it.habitId == habitId }
     var confirmRelapse by remember { mutableStateOf(false) }
-    var confirmArchive by remember { mutableStateOf(false) }
+    val deleteFlow = rememberDeleteFlow(onDeleted = { navigator.back() })
     var clearInfo by remember { mutableStateOf(false) }
 
     SubScreen(
@@ -89,7 +91,7 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
             if (model != null) {
                 NixIconButton(NixIcon.Pencil, { navigator.push(Route.BadHabitForm(habitId)) }, size = 40.dp)
                 Spacer(Modifier.width(8.dp))
-                NixIconButton(NixIcon.Trash, { confirmArchive = true }, size = 40.dp, tint = c.danger)
+                NixIconButton(NixIcon.Trash, { deleteFlow.confirm(DeletableItem.BadHabit(model.habitId), model.name) }, size = 40.dp, tint = c.danger)
             }
         },
     ) {
@@ -247,20 +249,6 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
                 confirmRelapse = false
             },
             onDismiss = { confirmRelapse = false },
-        )
-    }
-    if (confirmArchive && model != null) {
-        ConfirmDialog(
-            title = s.removeHabitTitle,
-            message = s.removeHabitBody,
-            confirmText = s.remove,
-            cancelText = s.cancel,
-            danger = true,
-            onConfirm = {
-                confirmArchive = false
-                vm.onArchiveHabit(model.habitId) { navigator.back() }
-            },
-            onDismiss = { confirmArchive = false },
         )
     }
 }
