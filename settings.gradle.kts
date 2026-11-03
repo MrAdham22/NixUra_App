@@ -1,4 +1,4 @@
-rootProject.name = "ReclaimApp"
+rootProject.name = "NixUra"
 
 pluginManagement {
     repositories {

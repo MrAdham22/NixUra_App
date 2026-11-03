@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ReclaimApp</string>
+    <string name="app_name">NixUra</string>
 
     <!-- Home-screen widget picker texts (the OS reads these; in-widget text comes from the shared Strings class). -->
     <string name="widget_quit_label">NixUra quit counter</string>

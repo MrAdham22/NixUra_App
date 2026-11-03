@@ -2,7 +2,7 @@
 
 **NixUra** (Android and iOS) helps people break bad habits, build good ones and look forward to important moments. It tracks the exact time (days, hours, minutes, seconds) since the last slip, shows progress with cards that lighten as a streak grows, tracks daily good habits on a calendar, counts down to life events with reminders, and includes an on-device AI-style coach.
 
-> **Naming:** the product is **NixUra**. The Gradle project is still `ReclaimApp`, the Kotlin package is `com.example.reclaimapp`, and the Android launcher label is still "ReclaimApp" until a deliberate rename is approved. Change `applicationId`/package before publishing to a store.
+> **Naming:** the app is **NixUra** everywhere: launcher label, Gradle project, iOS app name, docs. Only the technical ids keep their old value: the package / `applicationId` `com.example.reclaimapp` and the iOS bundle id. Changing them makes phones see a new app (existing data does not carry over), so it is done once, before publishing to a store.
 
 ## Status (read this first)
 
@@ -151,7 +151,7 @@ Then open `iosApp/iosApp.xcodeproj` in Xcode, pick a simulator or a connected iP
 `IllegalStateException: Room cannot verify the data integrity ... Expected identity hash: X, found: Y` means the
 database file already on the device/emulator was created by an earlier build whose v2 schema differed from the
 current one (the schema changed while the version stayed 2 during development). It is not a compile error.
-Fix: uninstall the app (or Settings > Apps > ReclaimApp > Storage > Clear data, or `adb uninstall com.example.reclaimapp`)
+Fix: uninstall the app (or Settings > Apps > NixUra > Storage > Clear data, or `adb uninstall com.example.reclaimapp`)
 and run again. Destructive fallback is deliberately **not** enabled, so release data is never wiped silently.
 Once the app ships, any schema change must bump the version and add a migration.
 

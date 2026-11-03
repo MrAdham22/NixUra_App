@@ -18,6 +18,7 @@ disable-model-invocation: true
 - Conventional Commits (e.g. `feat:`, `fix:`, `docs:`, `test:`).
 - Only verified, scoped changes.
 - Message explains **why** when non-obvious.
+- No AI or assistant names anywhere: no `Co-Authored-By` trailers, no "Generated with" lines in PRs, no AI credit in code or docs (owner rule).
 
 ## Push
 

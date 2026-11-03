@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		64268F01213688BC89FF2F03 /* ReclaimApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReclaimApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		64268F01213688BC89FF2F03 /* NixUra.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NixUra.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -59,7 +59,7 @@
 		5D3D8D2EF30ECA05B7AA4FE1 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				64268F01213688BC89FF2F03 /* ReclaimApp.app */,
+				64268F01213688BC89FF2F03 /* NixUra.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -87,7 +87,7 @@
 			packageProductDependencies = (
 			);
 			productName = iosApp;
-			productReference = 64268F01213688BC89FF2F03 /* ReclaimApp.app */;
+			productReference = 64268F01213688BC89FF2F03 /* NixUra.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */

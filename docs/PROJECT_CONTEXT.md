@@ -6,7 +6,7 @@ Canonical product and architecture reference. **Authoritative detail:** [PHASE2_
 
 **NixUra** (user-facing) — help users quit or reduce unwanted habits by tracking time since last occurrence, visualizing progress, and (later) AI coaching. Name evokes removing negative patterns and reclaiming control.
 
-**Technical identifiers (unchanged):** Gradle `ReclaimApp`, modules `:androidApp` / `:shared`, package `com.example.reclaimapp`.
+**Name:** NixUra everywhere (Gradle project `NixUra`, launcher label, iOS app name). **Technical identifiers kept:** modules `:androidApp` / `:shared`, package / applicationId `com.example.reclaimapp`, iOS bundle id (change only before publishing, with the owner's approval).
 
 ## 2. Problem & experience
 

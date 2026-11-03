@@ -1,6 +1,6 @@
 # NixUra — Agent Instructions
 
-NixUra is an offline-first habit app for **Android and iOS** (Kotlin Multiplatform, Compose Multiplatform): quit bad habits (live streak counters, cards that lighten over time), build good habits (daily counters + calendar), count down to events (with reminders), plus an offline rule-based coach. Product name: **NixUra**. Technical ids (Gradle `ReclaimApp`, package `com.example.reclaimapp`) stay unchanged unless explicitly approved.
+NixUra is an offline-first habit app for **Android and iOS** (Kotlin Multiplatform, Compose Multiplatform): quit bad habits (live streak counters, cards that lighten over time), build good habits (daily counters + calendar), count down to events (with reminders), plus an offline rule-based coach. Product name: **NixUra**, the official name everywhere (launcher label, Gradle project, iOS app name, docs; owner decision 2026-11-03). Only the technical ids stay: package / applicationId `com.example.reclaimapp` and the iOS bundle id. Changing them makes phones treat the app as a new one (data does not carry over), so do that only with the owner's approval, before publishing. Never put AI or assistant names in commits, PRs, code or docs (owner rule).
 
 ## Read these first
 
