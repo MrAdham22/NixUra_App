@@ -5,6 +5,9 @@ import com.example.reclaimapp.domain.model.HabitTracking
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
+/** One habit's share of a score, so the app can show how a percentage was reached. */
+data class HabitScoreLine(val name: String, val percent: Int)
+
 /** Derived 0..100 scores shown on Home and Profile. Nothing here is persisted. */
 object ScoreCalculator {
 
@@ -14,11 +17,15 @@ object ScoreCalculator {
     /** Average progress of all active bad habits toward [QUIT_HORIZON]. `null` when there are none. */
     fun quitScore(habits: List<HabitTracking>): Int? {
         if (habits.isEmpty()) return null
-        val avg = habits
-            .map { (it.tracking.activeElapsedMillis.toDouble() / QUIT_HORIZON.inWholeMilliseconds).coerceIn(0.0, 1.0) }
-            .average()
-        return (avg * 100).toInt()
+        return (habits.map(::quitProgress).average() * 100).toInt()
     }
+
+    /** What [quitScore] averages: each habit's own progress, best first. */
+    fun quitLines(habits: List<HabitTracking>): List<HabitScoreLine> =
+        habits.map { HabitScoreLine(it.habit.name, (quitProgress(it) * 100).toInt()) }.sortedByDescending { it.percent }
+
+    private fun quitProgress(habit: HabitTracking): Double =
+        (habit.tracking.activeElapsedMillis.toDouble() / QUIT_HORIZON.inWholeMilliseconds).coerceIn(0.0, 1.0)
 
     /** Average weighted completion of all good habits over the 7 days ending [endDay]. `null` when there are none. */
     fun disciplineScore(
@@ -27,26 +34,26 @@ object ScoreCalculator {
         createdDayIndexOf: (GoodHabitWithLogs) -> Long,
     ): Int? {
         if (habits.isEmpty()) return null
-        val avg = habits.map {
-            GoodHabitStatsCalculator.completion(
-                counts = GoodHabitStatsCalculator.countsByDay(it),
-                target = it.habit.dailyTarget,
-                endDay = endDay,
-                createdDayIndex = createdDayIndexOf(it),
-                windowDays = 7,
-            )
-        }.average()
-        return (avg * 100).toInt()
+        return (habits.map { weekCompletion(it, endDay, createdDayIndexOf) }.average() * 100).toInt()
     }
 
-    /** Completion across all good habits for a single day (0f..1f). */
-    fun dayCompletion(habits: List<GoodHabitWithLogs>, day: Long): Float {
-        if (habits.isEmpty()) return 0f
-        return habits.map {
-            val c = it.logs.firstOrNull { log -> log.dayIndex == day }?.count ?: 0
-            (c.toFloat() / it.habit.dailyTarget.coerceAtLeast(1)).coerceIn(0f, 1f)
-        }.average().toFloat()
-    }
+    /** What [disciplineScore] averages: each habit's own completion, best first. */
+    fun disciplineLines(
+        habits: List<GoodHabitWithLogs>,
+        endDay: Long,
+        createdDayIndexOf: (GoodHabitWithLogs) -> Long,
+    ): List<HabitScoreLine> =
+        habits.map { HabitScoreLine(it.habit.name, (weekCompletion(it, endDay, createdDayIndexOf) * 100).toInt()) }
+            .sortedByDescending { it.percent }
+
+    private fun weekCompletion(habit: GoodHabitWithLogs, endDay: Long, createdDayIndexOf: (GoodHabitWithLogs) -> Long): Float =
+        GoodHabitStatsCalculator.completion(
+            counts = GoodHabitStatsCalculator.countsByDay(habit),
+            target = habit.habit.dailyTarget,
+            endDay = endDay,
+            createdDayIndex = createdDayIndexOf(habit),
+            windowDays = 7,
+        )
 
     fun momentum(quit: Int?, discipline: Int?): Int? = when {
         quit != null && discipline != null -> (quit + discipline) / 2

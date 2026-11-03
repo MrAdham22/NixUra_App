@@ -30,7 +30,8 @@ import com.example.reclaimapp.domain.usecase.ArchiveGoodHabitUseCase
 import com.example.reclaimapp.domain.usecase.ArchiveHabitUseCase
 import com.example.reclaimapp.domain.usecase.BuildCoachSnapshotUseCase
 import com.example.reclaimapp.domain.usecase.ClearAllDataUseCase
-import com.example.reclaimapp.domain.usecase.ClearCoachChatUseCase
+import com.example.reclaimapp.domain.usecase.DeleteCoachChatUseCase
+import com.example.reclaimapp.domain.usecase.ObserveCoachConversationsUseCase
 import com.example.reclaimapp.domain.usecase.CreateGoodHabitUseCase
 import com.example.reclaimapp.domain.usecase.CreateHabitAndStartTrackingUseCase
 import com.example.reclaimapp.domain.usecase.DeleteEventUseCase
@@ -126,7 +127,8 @@ fun appModule() = module {
     factory { ObserveCoachMessagesUseCase(get()) }
     factory { EnsureCoachGreetingUseCase(get(), get(), get()) }
     factory { SendCoachMessageUseCase(get(), get(), get()) }
-    factory { ClearCoachChatUseCase(get()) }
+    factory { DeleteCoachChatUseCase(get()) }
+    factory { ObserveCoachConversationsUseCase(get()) }
     factory { GetCoachContextUseCase(get(), get(), get()) }
     // Use cases — profile & settings
     factory { ObserveProfileUseCase(get()) }
@@ -148,7 +150,7 @@ fun appModule() = module {
     }
     viewModel { GoodHabitsViewModel(get(), get(), get(), get(), get(), get(), get()) }
     viewModel { EventsViewModel(get(), get(), get(), get(), get()) }
-    viewModel { CoachViewModel(get(), get(), get(), get(), get()) }
+    viewModel { CoachViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { ProfileViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
-    viewModel { SettingsViewModel(get(), get(), get(), get()) }
+    viewModel { SettingsViewModel(get(), get(), get()) }
 }

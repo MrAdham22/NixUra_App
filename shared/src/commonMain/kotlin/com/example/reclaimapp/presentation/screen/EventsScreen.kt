@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import com.example.reclaimapp.presentation.guide.GuideTarget
+import com.example.reclaimapp.presentation.guide.guideTarget
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,6 +49,7 @@ fun EventsScreen(navigator: Navigator) {
                 NixIconButton(
                     NixIcon.Plus,
                     { navigator.push(Route.EventForm()) },
+                    modifier = Modifier.guideTarget(GuideTarget.AddEvent),
                     tint = c.onAccent,
                     background = c.accent,
                     bordered = false,

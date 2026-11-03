@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.reclaimapp.domain.model.AppSettings
 import com.example.reclaimapp.domain.usecase.ClearAllDataUseCase
 import com.example.reclaimapp.domain.usecase.ObserveSettingsUseCase
-import com.example.reclaimapp.domain.usecase.SaveProfileUseCase
 import com.example.reclaimapp.domain.usecase.UpdateSettingsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,7 +24,6 @@ data class SettingsUiState(
 class SettingsViewModel(
     observeSettings: ObserveSettingsUseCase,
     private val updateSettings: UpdateSettingsUseCase,
-    private val saveProfile: SaveProfileUseCase,
     private val clearAllData: ClearAllDataUseCase,
 ) : ViewModel() {
 
@@ -47,12 +45,9 @@ class SettingsViewModel(
 
     fun onLanguage(code: String) = update { it.copy(languageCode = code) }
 
-    fun onCompleteOnboarding(name: String) {
-        viewModelScope.launch {
-            if (name.isNotBlank()) saveProfile(name, "", null)
-            updateSettings { it.copy(onboardingCompleted = true) }
-        }
-    }
+    fun onGuideFinished() = update { it.copy(guideCompleted = true) }
+
+    fun onReplayGuide() = update { it.copy(guideCompleted = false) }
 
     fun onEraseAllData() {
         viewModelScope.launch {

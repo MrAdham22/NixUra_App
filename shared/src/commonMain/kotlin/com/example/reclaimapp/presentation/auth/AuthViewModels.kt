@@ -14,6 +14,7 @@ import com.example.reclaimapp.domain.auth.SessionState
 import com.example.reclaimapp.domain.sync.DetachDataAfterAccountDeletionUseCase
 import com.example.reclaimapp.domain.sync.SignOutResult
 import com.example.reclaimapp.domain.sync.SignOutUseCase
+import com.example.reclaimapp.domain.sync.StartFreshAsGuestUseCase
 import com.example.reclaimapp.domain.sync.SyncEngine
 import com.example.reclaimapp.domain.sync.SyncStatus
 import kotlinx.coroutines.Job
@@ -166,6 +167,35 @@ class DevicesViewModel(private val auth: AuthRepository, private val signOut: Si
     }
 
     fun dismissError() = _state.update { it.copy(error = null) }
+}
+
+enum class GuestDialog { OfflineWarning, LeftoverAccountData }
+
+/** "Continue as guest": warns about offline-only data, and never lets a guest walk into a previous account's data. */
+class GuestEntryViewModel(
+    private val sessions: SessionManager,
+    private val startFresh: StartFreshAsGuestUseCase,
+) : ViewModel() {
+    private val _dialog = MutableStateFlow<GuestDialog?>(null)
+    val dialog: StateFlow<GuestDialog?> = _dialog.asStateFlow()
+
+    fun onContinueAsGuest() {
+        viewModelScope.launch {
+            _dialog.value = if (sessions.hasLeftoverAccountData()) GuestDialog.LeftoverAccountData else GuestDialog.OfflineWarning
+        }
+    }
+
+    fun onStartFresh(onDone: () -> Unit) {
+        viewModelScope.launch {
+            startFresh()
+            _dialog.value = null
+            onDone()
+        }
+    }
+
+    fun onDismiss() {
+        _dialog.value = null
+    }
 }
 
 data class SignOutUiState(val inProgress: Boolean = false, val changesNotUploaded: Boolean = false)

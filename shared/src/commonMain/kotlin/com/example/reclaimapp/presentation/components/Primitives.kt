@@ -8,6 +8,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,10 +59,10 @@ fun NixCard(
     val shape = RoundedCornerShape(shapeRadius)
     Column(
         modifier = modifier
+            .then(if (onClick != null) Modifier.pressable(pressedScale = 0.98f, onClick = onClick) else Modifier)
             .clip(shape)
             .background(color, shape)
             .border(1.dp, borderColor, shape)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(padding),
         content = content,
     )
@@ -132,11 +134,11 @@ fun NixButton(
     val shape = RoundedCornerShape(16.dp)
     Row(
         modifier = modifier
+            .pressable(enabled = enabled && !loading, onClick = onClick)
             .height(50.dp)
             .clip(shape)
             .background(if (enabled) bg else bg.copy(alpha = bg.alpha * 0.45f), shape)
             .border(1.dp, border, shape)
-            .clickable(enabled = enabled && !loading, onClick = onClick)
             .padding(horizontal = 20.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
@@ -162,14 +164,15 @@ fun NixIconButton(
     background: Color = Nix.colors.surface,
     size: Dp = 42.dp,
     bordered: Boolean = true,
+    haptic: Boolean = false,
 ) {
     Box(
         modifier = modifier
+            .pressable(pressedScale = 0.9f, haptic = haptic, onClick = onClick)
             .size(size)
             .clip(CircleShape)
             .background(background, CircleShape)
-            .then(if (bordered) Modifier.border(1.dp, Nix.colors.border, CircleShape) else Modifier)
-            .clickable(onClick = onClick),
+            .then(if (bordered) Modifier.border(1.dp, Nix.colors.border, CircleShape) else Modifier),
         contentAlignment = Alignment.Center,
     ) {
         NixIconView(icon, tint, size = size * 0.5f)
@@ -190,10 +193,10 @@ fun NixChip(
     val fg = if (selected) c.onAccent else c.textSecondary
     Row(
         modifier = modifier
+            .pressable(pressedScale = 0.94f, onClick = onClick)
             .clip(shape)
             .background(bg, shape)
             .border(1.dp, if (selected) Color.Transparent else c.border, shape)
-            .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -215,6 +218,7 @@ fun NixTextField(
     singleLine: Boolean = true,
     keyboardType: KeyboardType = KeyboardType.Text,
     maxLength: Int = 200,
+    focusRequester: FocusRequester? = null,
 ) {
     val c = Nix.colors
     Column(modifier) {
@@ -223,7 +227,7 @@ fun NixTextField(
             Spacer(Modifier.height(6.dp))
         }
         BasicTextField(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier),
             value = value,
             onValueChange = { if (it.length <= maxLength) onValueChange(it) },
             singleLine = singleLine,
@@ -320,6 +324,7 @@ fun ConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     danger: Boolean = false,
+    onCancel: () -> Unit = onDismiss,
 ) {
     Dialog(onDismissRequest = onDismiss) {
         NixCard(color = Nix.colors.surface, padding = PaddingValues(22.dp)) {
@@ -328,7 +333,7 @@ fun ConfirmDialog(
             Text(message, style = NixType.Body, color = Nix.colors.textSecondary)
             Spacer(Modifier.height(20.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                NixButton(cancelText, onDismiss, Modifier.weight(1f), style = NixButtonStyle.Secondary)
+                NixButton(cancelText, onCancel, Modifier.weight(1f), style = NixButtonStyle.Secondary)
                 NixButton(
                     confirmText,
                     onConfirm,

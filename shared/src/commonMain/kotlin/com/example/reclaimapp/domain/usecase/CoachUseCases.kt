@@ -7,6 +7,7 @@ import com.example.reclaimapp.domain.coach.CoachResponder
 import com.example.reclaimapp.domain.coach.CoachSnapshot
 import com.example.reclaimapp.domain.coach.EventSnapshot
 import com.example.reclaimapp.domain.coach.GoodHabitSnapshot
+import com.example.reclaimapp.domain.model.CoachConversation
 import com.example.reclaimapp.domain.model.CoachMessage
 import com.example.reclaimapp.domain.model.CoachRole
 import com.example.reclaimapp.domain.model.HabitEventType
@@ -61,7 +62,11 @@ class BuildCoachSnapshotUseCase(
 }
 
 class ObserveCoachMessagesUseCase(private val repository: CoachRepository) {
-    operator fun invoke(): Flow<List<CoachMessage>> = repository.observeMessages()
+    operator fun invoke(conversationId: Long): Flow<List<CoachMessage>> = repository.observeMessages(conversationId)
+}
+
+class ObserveCoachConversationsUseCase(private val repository: CoachRepository) {
+    operator fun invoke(): Flow<List<CoachConversation>> = repository.observeConversations()
 }
 
 class EnsureCoachGreetingUseCase(
@@ -70,15 +75,27 @@ class EnsureCoachGreetingUseCase(
     private val buildSnapshot: BuildCoachSnapshotUseCase,
 ) {
     // The view model's init and the screen's LaunchedEffect can both call this at the same moment;
-    // the lock prevents two greetings from being inserted.
+    // the lock prevents two chats or two greetings from being created.
     private val lock = Mutex()
 
-    suspend operator fun invoke() {
-        lock.withLock {
-            if (repository.observeMessages().first().isEmpty()) {
-                repository.append(CoachRole.COACH, responder.greeting(buildSnapshot()))
-            }
-        }
+    /** The chat to show: [preferred] if it still exists, else the latest, else a new one. Always has a greeting. */
+    suspend operator fun invoke(preferred: Long? = null): Long = lock.withLock {
+        val id = preferred?.takeIf { repository.exists(it) }
+            ?: repository.latestConversationId()
+            ?: repository.createConversation()
+        greetIfEmpty(id)
+        id
+    }
+
+    /** "New chat": an unused chat if there is one, so empty chats never pile up. */
+    suspend fun newChat(): Long = lock.withLock {
+        val id = repository.unusedConversationId() ?: repository.createConversation()
+        greetIfEmpty(id)
+        id
+    }
+
+    private suspend fun greetIfEmpty(id: Long) {
+        if (!repository.hasMessages(id)) repository.append(id, CoachRole.COACH, responder.greeting(buildSnapshot()))
     }
 }
 
@@ -88,24 +105,24 @@ class SendCoachMessageUseCase(
     private val buildSnapshot: BuildCoachSnapshotUseCase,
 ) {
     /** Stores the user's message, waits [replyDelayMillis] (typing feel), then stores the coach's reply. */
-    suspend operator fun invoke(text: String, replyDelayMillis: Long = 0, focusHabitId: Long? = null): Result<Unit> = runCatching {
+    suspend operator fun invoke(conversationId: Long, text: String, replyDelayMillis: Long = 0, focusHabitId: Long? = null): Result<Unit> = runCatching {
         val clean = text.trim()
         require(clean.isNotEmpty()) { "Message is empty" }
         require(clean.length <= MAX_COACH_MESSAGE) { "Message is too long" }
         // The earlier things the user said, so the coach can handle follow-ups ("and after a week?").
-        val earlier = repository.observeMessages().first()
+        val earlier = repository.observeMessages(conversationId).first()
             .filter { it.role == CoachRole.USER }
             .takeLast(RECENT_USER_MESSAGES)
             .map { it.text }
-        repository.append(CoachRole.USER, clean)
+        repository.append(conversationId, CoachRole.USER, clean)
         if (replyDelayMillis > 0) delay(replyDelayMillis)
         val snapshot = buildSnapshot().copy(focusHabitId = focusHabitId, recentUserTexts = earlier)
-        repository.append(CoachRole.COACH, responder.respond(clean, snapshot))
+        repository.append(conversationId, CoachRole.COACH, responder.respond(clean, snapshot))
     }
 }
 
-class ClearCoachChatUseCase(private val repository: CoachRepository) {
-    suspend operator fun invoke(): Result<Unit> = runCatching { repository.clear() }
+class DeleteCoachChatUseCase(private val repository: CoachRepository) {
+    suspend operator fun invoke(conversationId: Long): Result<Unit> = runCatching { repository.delete(conversationId) }
 }
 
 data class CoachContext(

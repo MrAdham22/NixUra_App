@@ -49,7 +49,10 @@ import com.example.reclaimapp.presentation.components.NixProgressBar
 import com.example.reclaimapp.presentation.components.SectionLabel
 import com.example.reclaimapp.presentation.components.SubScreen
 import com.example.reclaimapp.presentation.components.badGlyphFor
-import com.example.reclaimapp.presentation.components.habitCardColor
+import com.example.reclaimapp.presentation.components.InfoSheet
+import com.example.reclaimapp.presentation.components.habitCardFill
+import com.example.reclaimapp.presentation.components.habitCardGradient
+import com.example.reclaimapp.presentation.components.pressable
 import com.example.reclaimapp.presentation.habits.HabitsViewModel
 import com.example.reclaimapp.presentation.navigation.Navigator
 import com.example.reclaimapp.presentation.navigation.Route
@@ -73,6 +76,7 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
     val model = state.habits.firstOrNull { it.habitId == habitId }
     var confirmRelapse by remember { mutableStateOf(false) }
     var confirmArchive by remember { mutableStateOf(false) }
+    var clearInfo by remember { mutableStateOf(false) }
 
     SubScreen(
         title = model?.name ?: "",
@@ -91,8 +95,8 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
             return@SubScreen
         }
 
-        val background = habitCardColor(model)
-        val lightOnCard = background.prefersLightContentOnCard()
+        val gradient = habitCardGradient(model)
+        val lightOnCard = gradient.middle.prefersLightContentOnCard()
         val primary = if (lightOnCard) NixUraPalette.onDarkPrimary else NixUraPalette.onLightPrimary
         val muted = if (lightOnCard) NixUraPalette.onDarkMuted else NixUraPalette.onLightMuted
         val category = remember(model.name) { engine.categoryFor(model.name) }
@@ -102,8 +106,8 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
-                .background(background)
+                .pressable(pressedScale = 0.98f, haptic = true) { clearInfo = true }
+                .habitCardFill(gradient, RoundedCornerShape(28.dp))
                 .border(1.dp, if (lightOnCard) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.10f), RoundedCornerShape(28.dp))
                 .padding(22.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
@@ -139,15 +143,16 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
 
         // Stats
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatTile(s.statCurrent, durationText(model.activeElapsed), Modifier.weight(1f))
-            StatTile(s.statBest, durationText(model.longestStreak), Modifier.weight(1f))
+            StatTile(s.statCurrent, durationText(model.activeElapsed), Modifier.weight(1f), info = s.infoClearFor)
+            StatTile(s.statBest, durationText(model.longestStreak), Modifier.weight(1f), info = s.infoBestQuit)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatTile(s.statRelapses, model.relapseCount.toString(), Modifier.weight(1f))
+            StatTile(s.statRelapses, model.relapseCount.toString(), Modifier.weight(1f), info = s.infoRelapses)
             StatTile(
                 s.statTrackingSince,
                 model.trackingStartEpochMillis?.let { formatDate(days.dayIndexOf(it), s) } ?: "—",
                 Modifier.weight(1f),
+                info = s.infoTrackingSince,
             )
         }
 
@@ -219,6 +224,9 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
         Text(s.relapseHint, style = NixType.Smaller, color = c.textMuted)
     }
 
+    if (clearInfo && model != null) {
+        InfoSheet(s.clearFor, durationText(model.activeElapsed), s.infoClearFor, onDismiss = { clearInfo = false })
+    }
     if (confirmRelapse && model != null) {
         ConfirmDialog(
             title = s.relapseConfirmTitle,
@@ -250,11 +258,13 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
 }
 
 @Composable
-fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
+fun StatTile(label: String, value: String, modifier: Modifier = Modifier, info: String? = null) {
     val c = Nix.colors
-    NixCard(modifier, padding = PaddingValues(16.dp)) {
+    var open by remember { mutableStateOf(false) }
+    NixCard(modifier, padding = PaddingValues(16.dp), onClick = if (info != null) ({ open = true }) else null) {
         Text(label.uppercase(), style = NixType.Eyebrow, color = c.textMuted, maxLines = 1)
         Spacer(Modifier.height(6.dp))
         Text(value, style = NixType.Heading, color = c.textPrimary, maxLines = 1)
     }
+    if (open && info != null) InfoSheet(label, value, info, onDismiss = { open = false })
 }

@@ -19,6 +19,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.reclaimapp.domain.recognition.HabitNameHandoff
@@ -54,6 +55,7 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
     var name by rememberSaveable { mutableStateOf("") }
     var target by rememberSaveable { mutableStateOf(1) }
     var loadedEdit by rememberSaveable { mutableStateOf(false) }
+    val nameFocus = remember { FocusRequester() }
 
     // A name carried over from the Quit form ("Add it to Build instead").
     LaunchedEffect(Unit) {
@@ -79,6 +81,7 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
             label = s.habitNameLabel,
             placeholder = s.goodNamePlaceholder,
             maxLength = 80,
+            focusRequester = nameFocus,
         )
 
         if (!editing && name.isNotBlank()) {
@@ -100,6 +103,14 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
         if (!editing) {
             SectionLabel(s.quickPicks)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                NixChip(
+                    s.customHabitPill,
+                    selected = name.isNotBlank() && s.goodSuggestions.none { it.first == name },
+                    onClick = {
+                        if (s.goodSuggestions.any { it.first == name }) name = ""
+                        nameFocus.requestFocus()
+                    },
+                )
                 s.goodSuggestions.forEach { (label, suggestedTarget) ->
                     NixChip(label, selected = name == label, onClick = { name = label; target = suggestedTarget })
                 }

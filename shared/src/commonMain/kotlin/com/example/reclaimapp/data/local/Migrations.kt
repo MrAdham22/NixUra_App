@@ -87,3 +87,24 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
         connection.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_events_sync_id` ON `events` (`sync_id`)")
     }
 }
+
+/**
+ * v3 → v4: separate coach chats, so there can be a history. Additive only: the one existing chat, if any, becomes the
+ * first conversation, titled with the user's first message. Written statement by statement for tools/room_migration_check.py.
+ */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            "CREATE TABLE IF NOT EXISTS `coach_conversations` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`title` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL)",
+        )
+        connection.execSQL("ALTER TABLE `coach_messages` ADD COLUMN `conversation_id` INTEGER NOT NULL DEFAULT 0")
+        connection.execSQL(
+            "INSERT INTO `coach_conversations` (`title`, `created_at`, `updated_at`) " +
+                "SELECT COALESCE((SELECT substr(u.`text`, 1, 60) FROM `coach_messages` u WHERE u.`role` = 'USER' ORDER BY u.`created_at`, u.`id` LIMIT 1), ''), " +
+                "MIN(`created_at`), MAX(`created_at`) FROM `coach_messages` HAVING COUNT(*) > 0",
+        )
+        connection.execSQL("UPDATE `coach_messages` SET `conversation_id` = (SELECT MAX(`id`) FROM `coach_conversations`)")
+        connection.execSQL("CREATE INDEX IF NOT EXISTS `index_coach_messages_conversation_id` ON `coach_messages` (`conversation_id`)")
+    }
+}

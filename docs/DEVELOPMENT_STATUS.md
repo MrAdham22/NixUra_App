@@ -202,9 +202,36 @@ The owner confirmed the landing and sign-in look on the phone (2026-11-03).
 
 **Verification:** backend 55/55, shared 369 tests, build and install pass, migration check passes, and the v2 to v3 migration ran on the owner's phone with real data (all rows kept). **Not yet tested on a device:** actual syncing, two devices, sign-out clearing, erase across devices. `RoomSyncLocalStore` has no automated test. Background sync not run. iOS not compiled.
 
-**Next:** the owner tests sync on the phone, then Agent 4 (Gemini coach).
+**Owner test (2026-11-03):** the owner reports sign-in, sync and the rest of the Agent 3 test list work on their phone. A second real device and background sync are still not confirmed.
+
+**Next:** the user-review work below. Real AI (Agent 4) moved to the very last item (owner decision, 2026-11-03).
 
 **Windows note:** if `npm` prints nothing and exits 0, a 0-byte `C:\Windows\system32\npm` is shadowing it; call `C:\Program Files\nodejs\npm.cmd`.
 
-**USB phone link:** `tools/phone_link.ps1` re-runs `adb reverse` whenever a phone connects, using `PORT` from `backend/.env`. Tested by removing the link while the phone stayed plugged in (restored within 6 s); a physical unplug has not been tested yet. It must be running, and it does not start by itself after a laptop restart.
+**USB phone link:** `tools/phone_link.ps1` re-runs `adb reverse` whenever a phone connects, using `PORT` from `backend/.env`. Tested by removing the link while the phone stayed plugged in (restored within 6 s) and after a real reconnect of the phone. It must be running, and it does not start by itself after a laptop restart.
+
+## User-review round (2026-11-03)
+
+From a real user's review plus owner notes. No AI features.
+
+**Built:**
+- **Sign-in and guest flow:** "Continue as guest" on Landing, sign-in and create-account. The bug where a guest saw the previous session came from a session ending without a clean sign-out, which leaves that account's data on the phone. The guest path now detects it and offers Sign in or Start empty (`SessionManager.hasLeftoverAccountData`, `StartFreshAsGuestUseCase`).
+- **Less friction:** the avatar opens an account sheet with one-tap sign-out, or sign-in for guests. Guests also get a banner on the dashboard.
+- **Explanations:** Breaking free, Discipline and Momentum open a sheet with the rule and each habit's share (`ScoreCalculator.quitLines`, `disciplineLines`). Streaks and stat tiles respond to taps and explain themselves.
+- **Visuals:** gradient habit cards (`StreakColorMapper.cardGradient`; still derived, thresholds unchanged, text color stays readable), green fill on good habits and calendar squares, completion bounce, iOS-style push and modal transitions, touch response everywhere, larger type scale, new dashboard.
+- **Custom habits:** a "+ Write my own" pill on the good-habit form.
+- **Coach:** one-line first message with highlighted numbers and a welcome card. Separate chats with a history (Room v4, `MIGRATION_3_4`), on the phone only (owner decision).
+- **Starter guide:** replaces the old first-launch onboarding, once per device, replay from Settings. Existing users see it once.
+- **Investor document:** [FEATURES.md](FEATURES.md).
+- **Removed as dead after this work:** `OnboardingScreen`, `MomentumBars`, `weekBars`, `dayCompletion`, and their strings.
+
+**Verification (2026-11-03):**
+- Passed: all `:shared:testAndroidHostTest` tests, including new score-line and card-gradient tests; `:androidApp:assembleDebug`; and `tools/room_migration_check.py`.
+- On the owner's phone, v3 to v4 kept every row (11 habits, 11 habit events, 5 good habits, 13 logs, 3 events), with no crash.
+- Seen working on screen: Landing with "Continue as guest", the guest warning, the starter guide's first three steps on the phone, and the dashboard rings.
+- Fixed because of what that testing showed: a cut-off dialog button, dark status-bar icons on the dark theme (now forced at start and re-applied once the window is attached), the guide's dimming not covering the system bars, and the guide asking for a name it already had.
+- After reconnecting, the USB phone link came back by itself.
+- **Not yet seen on a screen:** the rest of the guide, account sheet, score sheets, good-habit fill, gradients up close, coach welcome and chat history, transitions, light theme.
+
+**Known gaps:** home-screen widgets keep their flat card color, because `RemoteViews` needs separate drawing work; decide whether they should match. The second-device first-sync progress display from Agent 3 is still open.
 

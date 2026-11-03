@@ -111,7 +111,12 @@ class CoachEngineTest {
     fun shortGreetingWordsDoNotMatchInsideOtherWords() {
         val reply = engine.reply("this is history", snapshot(), 0)
         assertTrue(reply.contains("I can help with"))
-        assertTrue(engine.reply("hi", snapshot(), 0).contains("NixUra coach"))
+        assertTrue(engine.reply("hi", snapshot(), 0).contains("clear on **Late night scrolling**"))
+    }
+
+    @Test
+    fun greetingIsShort() {
+        assertTrue(engine.greeting(snapshot(), 0).length < 80)
     }
 
     @Test

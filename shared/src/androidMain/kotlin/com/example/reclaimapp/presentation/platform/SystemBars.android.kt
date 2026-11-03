@@ -14,9 +14,14 @@ actual fun SystemBarsEffect(darkTheme: Boolean) {
     if (view.isInEditMode) return
     SideEffect {
         val window = view.context.findActivity()?.window ?: return@SideEffect
-        val controller = WindowCompat.getInsetsController(window, view)
-        controller.isAppearanceLightStatusBars = !darkTheme
-        controller.isAppearanceLightNavigationBars = !darkTheme
+        val apply = {
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = !darkTheme
+            controller.isAppearanceLightNavigationBars = !darkTheme
+        }
+        apply()
+        // On first composition the window is not attached yet and the setting can be lost, so set it again once it is.
+        view.post { apply() }
     }
 }
 

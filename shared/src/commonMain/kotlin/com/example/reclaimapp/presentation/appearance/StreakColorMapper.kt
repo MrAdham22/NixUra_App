@@ -5,6 +5,9 @@ import androidx.compose.ui.graphics.lerp
 import com.example.reclaimapp.presentation.theme.NixUraPalette
 import kotlin.time.Duration
 
+/** Three colors of a habit card, top-left to bottom-right. On-card text follows [middle]. */
+data class CardGradient(val start: Color, val middle: Color, val end: Color)
+
 class StreakColorMapper(
     private val config: StreakColorProgressionConfig = StreakColorProgressionConfig.Default,
 ) {
@@ -31,6 +34,34 @@ class StreakColorMapper(
         val ramp = ShadeRamp.stops(customBaseArgb, config.stopCount)
         val argb = ShadeRamp.colorFor(ramp, StreakProgression.segmentFor(elapsed, config))
         return Color(argb.toInt())
+    }
+
+    /**
+     * The card as a color scheme instead of one flat color: it runs from where the streak has been, through
+     * [cardBackground], toward the shade it is growing into. All three stay readable with the same text color.
+     */
+    fun cardGradient(elapsed: Duration, customBaseArgb: Long?): CardGradient {
+        val colors = if (customBaseArgb == null) {
+            stops
+        } else {
+            ShadeRamp.stops(customBaseArgb, config.stopCount).map { Color(it.toInt()) }
+        }
+        val segment = StreakProgression.segmentFor(elapsed, config)
+        val middle = cardBackground(elapsed, customBaseArgb)
+        val behind = colors[(segment.fromStopIndex - 1).coerceIn(colors.indices)]
+        val ahead = colors[(segment.toStopIndex + 1).coerceIn(colors.indices)]
+        return CardGradient(mixKeepingText(middle, behind, 0.55f), middle, mixKeepingText(middle, ahead, 0.60f))
+    }
+
+    /** Moves [base] toward [target], but never so far that the on-card text color would have to change. */
+    private fun mixKeepingText(base: Color, target: Color, amount: Float): Color {
+        var t = amount
+        while (t > 0f) {
+            val mixed = lerp(base, target, t)
+            if (mixed.prefersLightContentOnCard() == base.prefersLightContentOnCard()) return mixed
+            t -= 0.1f
+        }
+        return base
     }
 
     fun stageIndexFor(elapsed: Duration): Int =

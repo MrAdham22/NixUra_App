@@ -14,6 +14,7 @@ sealed interface Route {
     data object Events : Tab
     data object Coach : Tab
 
+    data object CoachHistory : Route
     data object Profile : Route
     data object Settings : Route
     data class BadHabitDetail(val habitId: Long) : Route

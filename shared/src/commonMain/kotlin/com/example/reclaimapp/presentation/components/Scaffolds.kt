@@ -51,7 +51,7 @@ fun SubScreen(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            NixIconButton(NixIcon.Back, onBack)
+            NixIconButton(NixIcon.Back, onBack, background = Nix.colors.surface.copy(alpha = 0.6f), bordered = false)
             Spacer(Modifier.width(14.dp))
             Text(title, style = NixType.Heading, color = Nix.colors.textPrimary, modifier = Modifier.weight(1f), maxLines = 1)
             actions()

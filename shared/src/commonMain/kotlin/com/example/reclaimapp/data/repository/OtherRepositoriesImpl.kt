@@ -6,6 +6,7 @@ import com.example.reclaimapp.data.local.dao.GoodHabitDao
 import com.example.reclaimapp.data.local.dao.GoodHabitLogDao
 import com.example.reclaimapp.data.local.dao.MaintenanceDao
 import com.example.reclaimapp.data.local.dao.PreferenceDao
+import com.example.reclaimapp.data.local.entity.CoachConversationEntity
 import com.example.reclaimapp.data.local.entity.CoachMessageEntity
 import com.example.reclaimapp.data.local.entity.EventEntity
 import com.example.reclaimapp.data.local.entity.GoodHabitEntity
@@ -15,6 +16,7 @@ import com.example.reclaimapp.data.mapper.encodeReminders
 import com.example.reclaimapp.data.mapper.toDomain
 import com.example.reclaimapp.domain.clock.Clock
 import com.example.reclaimapp.domain.model.AppSettings
+import com.example.reclaimapp.domain.model.CoachConversation
 import com.example.reclaimapp.domain.model.CoachMessage
 import com.example.reclaimapp.domain.model.CoachRole
 import com.example.reclaimapp.domain.model.Event
@@ -111,12 +113,35 @@ class CoachRepositoryImpl(
     private val clock: Clock,
 ) : CoachRepository {
 
-    override fun observeMessages(): Flow<List<CoachMessage>> = dao.observeAll().map { list -> list.map { it.toDomain() } }
+    override fun observeMessages(conversationId: Long): Flow<List<CoachMessage>> =
+        dao.observeMessages(conversationId).map { list -> list.map { it.toDomain() } }
 
-    override suspend fun append(role: CoachRole, text: String): Long =
-        dao.insert(CoachMessageEntity(role = role.name, text = text, createdAtEpochMillis = clock.nowEpochMillis()))
+    override fun observeConversations(): Flow<List<CoachConversation>> =
+        dao.observeConversations().map { rows -> rows.map { CoachConversation(it.id, it.title, it.preview.orEmpty(), it.updatedAtEpochMillis) } }
 
-    override suspend fun clear() = dao.clear()
+    override suspend fun exists(conversationId: Long): Boolean = dao.conversationExists(conversationId)
+
+    override suspend fun latestConversationId(): Long? = dao.latestConversationId()
+
+    override suspend fun unusedConversationId(): Long? = dao.unusedConversationId()
+
+    override suspend fun hasMessages(conversationId: Long): Boolean = dao.messageCount(conversationId) > 0
+
+    override suspend fun createConversation(): Long {
+        val now = clock.nowEpochMillis()
+        return dao.insertConversation(CoachConversationEntity(title = "", createdAtEpochMillis = now, updatedAtEpochMillis = now))
+    }
+
+    override suspend fun append(conversationId: Long, role: CoachRole, text: String): Long = dao.append(
+        CoachMessageEntity(conversationId = conversationId, role = role.name, text = text, createdAtEpochMillis = clock.nowEpochMillis()),
+        titleIfNew = if (role == CoachRole.USER) text.take(MAX_CHAT_TITLE) else "",
+    )
+
+    override suspend fun delete(conversationId: Long) = dao.deleteConversation(conversationId)
+
+    private companion object {
+        const val MAX_CHAT_TITLE = 60
+    }
 }
 
 class PreferencesRepositoryImpl(
@@ -141,7 +166,7 @@ class PreferencesRepositoryImpl(
             languageCode = map[KEY_LANGUAGE] ?: defaults.languageCode,
             notificationsEnabled = map[KEY_NOTIFICATIONS]?.let { it == "1" } ?: defaults.notificationsEnabled,
             dailyCheckInMinutes = map[KEY_CHECKIN]?.toIntOrNull() ?: defaults.dailyCheckInMinutes,
-            onboardingCompleted = map[KEY_ONBOARDED]?.let { it == "1" } ?: defaults.onboardingCompleted,
+            guideCompleted = map[KEY_GUIDE_DONE]?.let { it == "1" } ?: defaults.guideCompleted,
         )
     }
 
@@ -164,14 +189,14 @@ class PreferencesRepositoryImpl(
             PreferenceEntity(KEY_NOTIFICATIONS, if (settings.notificationsEnabled) "1" else "0"),
             PreferenceEntity(KEY_CHECKIN, settings.dailyCheckInMinutes.toString()),
         )
-        // Onboarding is per device, so finishing it does not count as a settings change to upload.
+        // The starter guide is per device, so finishing it does not count as a settings change to upload.
         val changed = synced.any { before[it.key] != it.value }
         val marks = if (changed) {
             listOf(PreferenceEntity(KEY_SETTINGS_DIRTY, "1"), PreferenceEntity(KEY_SETTINGS_UPDATED, clock.nowEpochMillis().toString()))
         } else {
             emptyList()
         }
-        dao.upsertAll(synced + PreferenceEntity(KEY_ONBOARDED, if (settings.onboardingCompleted) "1" else "0") + marks)
+        dao.upsertAll(synced + PreferenceEntity(KEY_GUIDE_DONE, if (settings.guideCompleted) "1" else "0") + marks)
     }
 
     internal companion object {
@@ -184,7 +209,7 @@ class PreferencesRepositoryImpl(
         const val KEY_LANGUAGE = "settings.language"
         const val KEY_NOTIFICATIONS = "settings.notifications"
         const val KEY_CHECKIN = "settings.checkin_minutes"
-        const val KEY_ONBOARDED = "settings.onboarded"
+        const val KEY_GUIDE_DONE = "settings.guide_done"
     }
 }
 

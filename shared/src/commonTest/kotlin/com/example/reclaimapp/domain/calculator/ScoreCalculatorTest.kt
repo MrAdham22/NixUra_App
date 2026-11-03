@@ -38,6 +38,22 @@ class ScoreCalculatorTest {
     }
 
     @Test
+    fun quitLinesExplainTheScoreBestFirst() {
+        val lines = ScoreCalculator.quitLines(listOf(bad(10), bad(30)))
+        assertEquals(listOf(100, 33), lines.map { it.percent })
+        assertEquals(66, lines.map { it.percent }.average().toInt())
+    }
+
+    @Test
+    fun disciplineLinesMatchTheScore() {
+        val half = GoodHabitWithLogs(GoodHabit(1, "half", 2, null, 0), (4L..10L).map { GoodHabitLog(1, it, 1) })
+        val full = GoodHabitWithLogs(GoodHabit(2, "full", 1, null, 0), (4L..10L).map { GoodHabitLog(2, it, 1) })
+        val lines = ScoreCalculator.disciplineLines(listOf(half, full), 10) { 0L }
+        assertEquals(listOf("full" to 100, "half" to 50), lines.map { it.name to it.percent })
+        assertEquals(75, ScoreCalculator.disciplineScore(listOf(half, full), 10) { 0L })
+    }
+
+    @Test
     fun momentumCombinesAvailableScores() {
         assertEquals(60, ScoreCalculator.momentum(80, 40))
         assertEquals(80, ScoreCalculator.momentum(80, null))

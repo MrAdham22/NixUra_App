@@ -9,6 +9,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.example.reclaimapp.presentation.components.InfoSheet
+import com.example.reclaimapp.presentation.guide.GuideTarget
+import com.example.reclaimapp.presentation.guide.guideTarget
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -36,6 +42,7 @@ fun BadHabitsScreen(navigator: Navigator) {
     val state by vm.uiState.collectAsStateWithLifecycle()
     val s = LocalStrings.current
     val c = Nix.colors
+    var bestInfo by remember { mutableStateOf(false) }
 
     TabScreen {
         ScreenHeader(
@@ -46,6 +53,7 @@ fun BadHabitsScreen(navigator: Navigator) {
                 NixIconButton(
                     NixIcon.Plus,
                     { navigator.push(Route.BadHabitForm()) },
+                    modifier = Modifier.guideTarget(GuideTarget.AddQuit),
                     tint = c.onAccent,
                     background = c.accent,
                     bordered = false,
@@ -64,7 +72,7 @@ fun BadHabitsScreen(navigator: Navigator) {
             )
         } else if (state.habits.isNotEmpty()) {
             val best = state.habits.maxByOrNull { it.activeElapsed }
-            NixCard {
+            NixCard(onClick = { bestInfo = true }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(s.statHabitsQuitting.uppercase(), style = NixType.Eyebrow, color = c.textMuted)
@@ -85,5 +93,9 @@ fun BadHabitsScreen(navigator: Navigator) {
                 }
             }
         }
+    }
+    if (bestInfo) {
+        val best = state.habits.maxByOrNull { it.activeElapsed }
+        InfoSheet(s.statBestActive, best?.let { formatElapsed(it.activeElapsed) }, s.infoBestActive, onDismiss = { bestInfo = false })
     }
 }

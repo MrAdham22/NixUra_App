@@ -11,6 +11,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import com.example.reclaimapp.presentation.components.NixIconView
+import com.example.reclaimapp.presentation.components.ScoreKind
+import com.example.reclaimapp.presentation.components.ScoreSheet
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -55,6 +59,7 @@ fun ProfileScreen(navigator: Navigator) {
     var email by rememberSaveable { mutableStateOf("") }
     var age by rememberSaveable { mutableStateOf("") }
     val stats = state.stats
+    var scoreSheet by remember { mutableStateOf<ScoreKind?>(null) }
 
     SubScreen(
         title = s.profileTitle,
@@ -100,16 +105,16 @@ fun ProfileScreen(navigator: Navigator) {
         }
 
         SectionLabel(s.yourProgress)
-        ScoreCard(s.quitScoreTitle, s.quitScoreBody, stats.quitScore, c.accent, s.noBadHabitsYet)
-        ScoreCard(s.disciplineScoreTitle, s.disciplineScoreBody, stats.disciplineScore, c.positive, s.noGoodHabitsYet)
+        ScoreCard(s.quitScoreTitle, s.quitScoreBody, stats.quitScore, c.accent, s.noBadHabitsYet) { scoreSheet = ScoreKind.BreakingFree }
+        ScoreCard(s.disciplineScoreTitle, s.disciplineScoreBody, stats.disciplineScore, c.positive, s.noGoodHabitsYet) { scoreSheet = ScoreKind.Discipline }
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatTile(s.statClearDays, stats.totalClearDays.toString(), Modifier.weight(1f))
-            StatTile(s.statBestStreak, s.daysCount(stats.bestStreakDays.toInt()), Modifier.weight(1f))
+            StatTile(s.statClearDays, stats.totalClearDays.toString(), Modifier.weight(1f), info = s.infoClearDays)
+            StatTile(s.statBestStreak, s.daysCount(stats.bestStreakDays.toInt()), Modifier.weight(1f), info = s.infoBestAcross)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatTile(s.statCheckIns, stats.totalTimesDone.toString(), Modifier.weight(1f))
-            StatTile(s.statHabitsTracked, (stats.badHabitCount + stats.goodHabitCount).toString(), Modifier.weight(1f))
+            StatTile(s.statCheckIns, stats.totalTimesDone.toString(), Modifier.weight(1f), info = s.infoCheckIns)
+            StatTile(s.statHabitsTracked, (stats.badHabitCount + stats.goodHabitCount).toString(), Modifier.weight(1f), info = s.infoHabitsTracked)
         }
 
         SectionLabel(s.nearestEvent)
@@ -122,18 +127,23 @@ fun ProfileScreen(navigator: Navigator) {
             }
         }
     }
+    scoreSheet?.let { kind -> ScoreSheet(kind, stats, onDismiss = { scoreSheet = null }) }
 }
 
 @Composable
-private fun ScoreCard(title: String, body: String, score: Int?, color: androidx.compose.ui.graphics.Color, emptyText: String) {
+private fun ScoreCard(title: String, body: String, score: Int?, color: androidx.compose.ui.graphics.Color, emptyText: String, onClick: () -> Unit) {
     val c = Nix.colors
-    NixCard {
+    NixCard(onClick = if (score != null) onClick else null) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(title, style = NixType.Heading, color = c.textPrimary)
                 Text(if (score == null) emptyText else body, style = NixType.Small, color = c.textSecondary)
             }
             Text(score?.let { "$it%" } ?: "—", style = NixType.counter(30), color = if (score == null) c.textMuted else color)
+            if (score != null) {
+                Spacer(Modifier.width(6.dp))
+                NixIconView(NixIcon.Chevron, c.textMuted, size = 16.dp)
+            }
         }
         Spacer(Modifier.height(12.dp))
         NixProgressBar((score ?: 0) / 100f, color = color)

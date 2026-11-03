@@ -112,13 +112,13 @@ The owner approved expanding the app. Current scope:
 - **Quit habits** (original core) with user-chosen card colors (`ShadeRamp`), analysis screen, recovery timeline from an offline knowledge base, backdated start, edit/archive.
 - **Good habits:** daily target counters (`good_habits`, `good_habit_logs` keyed by local day index), streaks, 7/30-day completion, calendar with green done squares, past-day edits.
 - **Events:** countdown/count-up, categories, multiple reminder lead times (`events.reminders` = comma-separated millis), Android local notifications.
-- **Coach:** offline, rule-based (`CoachEngine`, `HabitKnowledgeBase`) behind `CoachResponder`; chat persisted in `coach_messages`; crisis messages answered locally with a support message; alcohol/gambling carry safety notes. No network.
-- **Profile & settings:** name/email/age stored locally in `preferences` (key/value); settings: dark/light, language (English only), notifications, daily check-in time, erase all data; first-run onboarding.
+- **Coach:** offline, rule-based (`CoachEngine`, `HabitKnowledgeBase`) behind `CoachResponder`; separate chats in `coach_conversations` and `coach_messages`, kept on the phone and not synced (owner decision); crisis messages answered locally with a support message; alcohol/gambling carry safety notes. No network.
+- **Profile & settings:** name/email/age stored locally in `preferences` (key/value); settings: dark/light, language (English only), notifications, daily check-in time, erase all data; an interactive starter guide once per device (`presentation/guide`), replayable from Settings.
 - **Scores (derived, not stored):** "Breaking free" = average progress of active quit habits toward 30 days; "Discipline" = weighted good-habit completion over 7 days; Momentum = average of available scores.
 
 Still **out of scope:** ads. Accounts and cloud sync now exist (see "Accounts and cloud sync" below); online AI and analytics are planned.
 
-Persistence: Room **v3** — tables `habits` (+`color_argb`), `habit_events`, `good_habits`, `good_habit_logs` (unique `good_habit_id`+`day_index`), `events`, `coach_messages`, `preferences`. The first five also have `sync_id`, `updated_at`, `deleted_at` and `dirty`. `MIGRATION_1_2` and `MIGRATION_2_3` are hand-written. No destructive fallback.
+Persistence: Room **v4** — tables `habits` (+`color_argb`), `habit_events`, `good_habits`, `good_habit_logs` (unique `good_habit_id`+`day_index`), `events`, `coach_conversations`, `coach_messages` (+`conversation_id`), `preferences`. The first five also have `sync_id`, `updated_at`, `deleted_at` and `dirty`. `MIGRATION_1_2`, `MIGRATION_2_3` and `MIGRATION_3_4` are hand-written. No destructive fallback.
 
 ## Accounts and cloud sync
 

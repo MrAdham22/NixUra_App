@@ -14,11 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -31,7 +27,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.reclaimapp.presentation.components.ConfirmDialog
 import com.example.reclaimapp.presentation.components.NixIcon
 import com.example.reclaimapp.presentation.navigation.Navigator
 import com.example.reclaimapp.presentation.navigation.Route
@@ -44,14 +39,13 @@ private val TaglineStyle = TextStyle(fontSize = 25.sp, lineHeight = 33.sp, fontW
 
 /**
  * The first screen when signed out: brand, the "Let's Nix the bad Aura" line whose last word blows away as ash, and
- * Get Started. [onSkip] is the guest path, which warns first because guest data never leaves the phone.
+ * Get Started. [onGuest] is the guest path; [AuthGate] handles its warnings.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun LandingScreen(navigator: Navigator, onSkip: (() -> Unit)?) {
+fun LandingScreen(navigator: Navigator, onGuest: (() -> Unit)?) {
     val s = LocalStrings.current
     val c = Nix.colors
-    var warnOffline by rememberSaveable { mutableStateOf(false) }
     val titleBrush = remember { Brush.horizontalGradient(listOf(NixUraPalette.Blush, NixUraPalette.Orange)) }
     val auraBrush = remember { Brush.horizontalGradient(listOf(NixUraPalette.Orange, NixUraPalette.Rose)) }
 
@@ -93,26 +87,15 @@ fun LandingScreen(navigator: Navigator, onSkip: (() -> Unit)?) {
                 Modifier.fillMaxWidth().riseIn(540),
                 trailingIcon = NixIcon.Chevron,
             )
-            if (onSkip != null) {
+            if (onGuest != null) {
                 Spacer(Modifier.height(6.dp))
                 AuthLink(
                     s.authContinueOffline,
-                    { warnOffline = true },
+                    onGuest,
                     Modifier.riseIn(660),
                     color = c.textSecondary,
                 )
             }
         }
-    }
-
-    if (warnOffline && onSkip != null) {
-        ConfirmDialog(
-            title = s.authOfflineWarnTitle,
-            message = s.authOfflineWarnBody,
-            confirmText = s.authOfflineWarnConfirm,
-            cancelText = s.cancel,
-            onConfirm = { warnOffline = false; onSkip() },
-            onDismiss = { warnOffline = false },
-        )
     }
 }

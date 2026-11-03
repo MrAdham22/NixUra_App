@@ -14,6 +14,7 @@ import com.example.reclaimapp.data.local.dao.HabitWriteDao
 import com.example.reclaimapp.data.local.dao.MaintenanceDao
 import com.example.reclaimapp.data.local.dao.PreferenceDao
 import com.example.reclaimapp.data.local.dao.SyncDao
+import com.example.reclaimapp.data.local.entity.CoachConversationEntity
 import com.example.reclaimapp.data.local.entity.CoachMessageEntity
 import com.example.reclaimapp.data.local.entity.EventEntity
 import com.example.reclaimapp.data.local.entity.GoodHabitEntity
@@ -29,10 +30,11 @@ import com.example.reclaimapp.data.local.entity.PreferenceEntity
         GoodHabitEntity::class,
         GoodHabitLogEntity::class,
         EventEntity::class,
+        CoachConversationEntity::class,
         CoachMessageEntity::class,
         PreferenceEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @ConstructedBy(NixUraDatabaseConstructor::class)

@@ -96,6 +96,21 @@ class SignOutUseCase(
     }
 }
 
+/**
+ * A session ended without a clean sign-out, so the last account's data is still on the phone, and the user chose to
+ * continue as a guest instead of signing back in. The guest starts empty and never sees that account's data.
+ */
+class StartFreshAsGuestUseCase(
+    private val engine: SyncEngine,
+    private val local: SyncLocalStore,
+    private val sessions: SessionManager,
+) {
+    suspend operator fun invoke() = engine.exclusive {
+        local.clearAccountData()
+        sessions.forgetLastUser()
+    }
+}
+
 /** After the account is deleted, the phone keeps the data as guest data, ready to upload if another account signs in. */
 class DetachDataAfterAccountDeletionUseCase(
     private val engine: SyncEngine,

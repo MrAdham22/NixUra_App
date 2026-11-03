@@ -3,6 +3,7 @@ package com.example.reclaimapp.presentation.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.reclaimapp.domain.calculator.GoodHabitStatsCalculator
+import com.example.reclaimapp.domain.calculator.HabitScoreLine
 import com.example.reclaimapp.domain.calculator.ScoreCalculator
 import com.example.reclaimapp.domain.calculator.TrackingStateCalculator
 import com.example.reclaimapp.domain.auth.AuthRepository
@@ -31,14 +32,15 @@ data class ProfileStats(
     val momentum: Int? = null,
     /** Points vs the previous 7 days; only when every good habit is at least a week old. */
     val disciplineDelta: Int? = null,
-    /** Completion (0..1) for each of the last 7 days, oldest first. Empty without good habits. */
-    val weekBars: List<Float> = emptyList(),
     val badHabitCount: Int = 0,
     val goodHabitCount: Int = 0,
     val totalClearDays: Long = 0,
     val bestStreakDays: Long = 0,
     val totalTimesDone: Int = 0,
     val nextEvent: Event? = null,
+    /** Each habit's share of [quitScore] and [disciplineScore], so the app can show how they were reached. */
+    val quitLines: List<HabitScoreLine> = emptyList(),
+    val disciplineLines: List<HabitScoreLine> = emptyList(),
 )
 
 data class ProfileUiState(
@@ -83,13 +85,14 @@ class ProfileViewModel(
             disciplineScore = discipline,
             momentum = ScoreCalculator.momentum(quit, discipline),
             disciplineDelta = if (oldEnough && discipline != null && previous != null) discipline - previous else null,
-            weekBars = if (good.isEmpty()) emptyList() else (today - 6..today).map { ScoreCalculator.dayCompletion(good, it) },
             badHabitCount = live.size,
             goodHabitCount = good.size,
             totalClearDays = live.sumOf { it.tracking.activeElapsedMillis / 86_400_000L },
             bestStreakDays = live.maxOfOrNull { it.tracking.longestStreakMillis / 86_400_000L } ?: 0L,
             totalTimesDone = good.sumOf { GoodHabitStatsCalculator.compute(it, today, createdDay(it)).totalTimesDone },
             nextEvent = events.filter { it.targetAtEpochMillis > now }.minByOrNull { it.targetAtEpochMillis },
+            quitLines = ScoreCalculator.quitLines(live),
+            disciplineLines = ScoreCalculator.disciplineLines(good, today, createdDay),
         )
     }
 

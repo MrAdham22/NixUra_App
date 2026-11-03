@@ -1,9 +1,12 @@
 package com.example.reclaimapp.data.local.dao
 
+import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
+import com.example.reclaimapp.data.local.entity.CoachConversationEntity
 import com.example.reclaimapp.data.local.entity.CoachMessageEntity
 import com.example.reclaimapp.data.local.entity.EventEntity
 import com.example.reclaimapp.data.local.entity.GoodHabitEntity
@@ -58,16 +61,74 @@ interface EventDao {
     suspend fun markDeleted(id: Long, at: Long)
 }
 
+/** A chat as the history list shows it. */
+data class CoachConversationRow(
+    val id: Long,
+    val title: String,
+    val preview: String?,
+    @ColumnInfo(name = "updated_at") val updatedAtEpochMillis: Long,
+)
+
 @Dao
-interface CoachMessageDao {
-    @Query("SELECT * FROM coach_messages ORDER BY created_at ASC, id ASC")
-    fun observeAll(): Flow<List<CoachMessageEntity>>
+abstract class CoachMessageDao {
+    @Query("SELECT * FROM coach_messages WHERE conversation_id = :conversationId ORDER BY created_at ASC, id ASC")
+    abstract fun observeMessages(conversationId: Long): Flow<List<CoachMessageEntity>>
+
+    /** Chats the user actually took part in, newest first. A chat that only holds the coach's greeting is not history. */
+    @Query(
+        "SELECT c.id, c.title, c.updated_at, " +
+            "(SELECT m.text FROM coach_messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC, m.id DESC LIMIT 1) AS preview " +
+            "FROM coach_conversations c " +
+            "WHERE EXISTS (SELECT 1 FROM coach_messages u WHERE u.conversation_id = c.id AND u.role = 'USER') " +
+            "ORDER BY c.updated_at DESC, c.id DESC",
+    )
+    abstract fun observeConversations(): Flow<List<CoachConversationRow>>
+
+    @Query("SELECT EXISTS (SELECT 1 FROM coach_conversations WHERE id = :conversationId)")
+    abstract suspend fun conversationExists(conversationId: Long): Boolean
+
+    @Query("SELECT id FROM coach_conversations ORDER BY updated_at DESC, id DESC LIMIT 1")
+    abstract suspend fun latestConversationId(): Long?
+
+    /** A chat with no message from the user yet; "New chat" reuses it instead of piling up empty ones. */
+    @Query(
+        "SELECT c.id FROM coach_conversations c " +
+            "WHERE NOT EXISTS (SELECT 1 FROM coach_messages u WHERE u.conversation_id = c.id AND u.role = 'USER') " +
+            "ORDER BY c.id DESC LIMIT 1",
+    )
+    abstract suspend fun unusedConversationId(): Long?
+
+    @Query("SELECT COUNT(*) FROM coach_messages WHERE conversation_id = :conversationId")
+    abstract suspend fun messageCount(conversationId: Long): Int
 
     @Insert
-    suspend fun insert(message: CoachMessageEntity): Long
+    abstract suspend fun insertConversation(conversation: CoachConversationEntity): Long
 
-    @Query("DELETE FROM coach_messages")
-    suspend fun clear()
+    @Insert
+    abstract suspend fun insert(message: CoachMessageEntity): Long
+
+    /** Bumps the chat to the top of the history; [titleIfNew] names it unless it already has a title. */
+    @Query("UPDATE coach_conversations SET updated_at = :at, title = CASE WHEN title = '' THEN :titleIfNew ELSE title END WHERE id = :conversationId")
+    abstract suspend fun touchConversation(conversationId: Long, at: Long, titleIfNew: String)
+
+    @Transaction
+    open suspend fun append(message: CoachMessageEntity, titleIfNew: String): Long {
+        val id = insert(message)
+        touchConversation(message.conversationId, message.createdAtEpochMillis, titleIfNew)
+        return id
+    }
+
+    @Query("DELETE FROM coach_messages WHERE conversation_id = :conversationId")
+    abstract suspend fun deleteMessages(conversationId: Long)
+
+    @Query("DELETE FROM coach_conversations WHERE id = :conversationId")
+    abstract suspend fun deleteConversationRow(conversationId: Long)
+
+    @Transaction
+    open suspend fun deleteConversation(conversationId: Long) {
+        deleteMessages(conversationId)
+        deleteConversationRow(conversationId)
+    }
 }
 
 @Dao

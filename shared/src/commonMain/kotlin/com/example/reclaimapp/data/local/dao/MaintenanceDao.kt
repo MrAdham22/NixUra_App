@@ -25,6 +25,9 @@ abstract class MaintenanceDao {
     @Query("DELETE FROM coach_messages")
     abstract suspend fun deleteCoachMessages()
 
+    @Query("DELETE FROM coach_conversations")
+    abstract suspend fun deleteCoachConversations()
+
     @Transaction
     open suspend fun clearAll() {
         deleteHabitEvents()
@@ -33,6 +36,7 @@ abstract class MaintenanceDao {
         deleteGoodHabits()
         deleteEvents()
         deleteCoachMessages()
+        deleteCoachConversations()
     }
 
     @Query("UPDATE habit_events SET deleted_at = :at, updated_at = :at, dirty = 1 WHERE deleted_at IS NULL")
@@ -59,6 +63,7 @@ abstract class MaintenanceDao {
         markGoodHabitsDeleted(at)
         markEventsDeleted(at)
         deleteCoachMessages()
+        deleteCoachConversations()
     }
 
     @Query("UPDATE habit_events SET dirty = 1")

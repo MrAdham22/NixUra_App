@@ -2,8 +2,10 @@ package com.example.reclaimapp
 
 import android.Manifest
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -22,7 +24,11 @@ class MainActivity : ComponentActivity() {
     private val appNavigator: Navigator by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        // Start with light bar icons, whatever the system theme: the app opens dark. SystemBarsEffect follows the app's theme after that.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+        )
         super.onCreate(savedInstanceState)
 
         // Opened from a home-screen widget? Only on a fresh start: after rotation / process restore the

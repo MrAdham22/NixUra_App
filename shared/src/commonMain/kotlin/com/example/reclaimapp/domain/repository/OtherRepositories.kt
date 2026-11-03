@@ -1,6 +1,7 @@
 package com.example.reclaimapp.domain.repository
 
 import com.example.reclaimapp.domain.model.AppSettings
+import com.example.reclaimapp.domain.model.CoachConversation
 import com.example.reclaimapp.domain.model.CoachMessage
 import com.example.reclaimapp.domain.model.CoachRole
 import com.example.reclaimapp.domain.model.Event
@@ -27,9 +28,19 @@ interface EventRepository {
 }
 
 interface CoachRepository {
-    fun observeMessages(): Flow<List<CoachMessage>>
-    suspend fun append(role: CoachRole, text: String): Long
-    suspend fun clear()
+    fun observeMessages(conversationId: Long): Flow<List<CoachMessage>>
+
+    /** Chats the user took part in, newest first. */
+    fun observeConversations(): Flow<List<CoachConversation>>
+    suspend fun exists(conversationId: Long): Boolean
+    suspend fun latestConversationId(): Long?
+
+    /** A chat the user has not written in yet, if any. */
+    suspend fun unusedConversationId(): Long?
+    suspend fun hasMessages(conversationId: Long): Boolean
+    suspend fun createConversation(): Long
+    suspend fun append(conversationId: Long, role: CoachRole, text: String): Long
+    suspend fun delete(conversationId: Long)
 }
 
 interface PreferencesRepository {

@@ -110,10 +110,18 @@ fun AccountScreen(navigator: Navigator) {
             }
         }
     }
+    SignOutDialogs(vm, confirmSignOut, onCloseConfirm = { confirmSignOut = false })
+}
+
+/** The sign-out confirmation and the "some changes aren't saved" warning, shared by the account sheet and screen. */
+@Composable
+fun SignOutDialogs(vm: AccountViewModel, confirmSignOut: Boolean, onCloseConfirm: () -> Unit) {
+    val s = LocalStrings.current
+    val signOutState by vm.signOutState.collectAsStateWithLifecycle()
     if (confirmSignOut) {
         ConfirmDialog(
             title = s.accountSignOutTitle, message = s.accountSignOutBody, confirmText = s.accountSignOut, cancelText = s.cancel,
-            onConfirm = { confirmSignOut = false; vm.signOut() }, onDismiss = { confirmSignOut = false },
+            onConfirm = { onCloseConfirm(); vm.signOut() }, onDismiss = onCloseConfirm,
         )
     }
     if (signOutState.changesNotUploaded) {
@@ -126,7 +134,7 @@ fun AccountScreen(navigator: Navigator) {
 }
 
 @Composable
-private fun syncStatusText(status: SyncStatus, nowEpochMillis: Long): String {
+internal fun syncStatusText(status: SyncStatus, nowEpochMillis: Long): String {
     val s = LocalStrings.current
     val last = status.lastSyncedAt
     val since = when {

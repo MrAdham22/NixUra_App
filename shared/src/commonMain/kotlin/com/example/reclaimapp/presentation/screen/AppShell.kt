@@ -1,13 +1,22 @@
 package com.example.reclaimapp.presentation.screen
 
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.example.reclaimapp.presentation.auth.AccountSheet
+import com.example.reclaimapp.presentation.auth.AuthGate
+import com.example.reclaimapp.presentation.components.pressable
+import com.example.reclaimapp.presentation.guide.GuideTarget
+import com.example.reclaimapp.presentation.guide.GuideTargets
+import com.example.reclaimapp.presentation.guide.LocalGuideTargets
+import com.example.reclaimapp.presentation.guide.StarterGuide
+import com.example.reclaimapp.presentation.guide.guideTarget
+import com.example.reclaimapp.presentation.navigation.NavEntry
+import com.example.reclaimapp.presentation.navigation.navTransition
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -123,26 +132,46 @@ fun AppRoot() {
     }
 
     // The landing and sign-in screens are always the dark brand look, whatever the app's theme setting is.
-    val inGate = state.loaded && state.settings.onboardingCompleted && session is SessionState.SignedOut && authPromptSeen == false
+    val inGate = state.loaded && session is SessionState.SignedOut && authPromptSeen == false
     val darkTheme = state.settings.darkTheme || inGate || navigator.current is Route.Auth
     NixUraTheme(darkTheme = darkTheme) {
         SystemBarsEffect(darkTheme)
         CompositionLocalProvider(LocalStrings provides stringsFor(state.settings.languageCode)) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(Nix.colors.background)
-                    .windowInsetsPadding(WindowInsets.safeDrawing), // status/nav bars, cutout, keyboard; NOT gesture insets (those caused wide side/bottom gaps)
-            ) {
-                when {
-                    !state.loaded -> Unit
-                    !state.settings.onboardingCompleted -> OnboardingScreen(settingsVm)
-                    session is SessionState.Loading || authPromptSeen == null -> Unit
-                    session is SessionState.SignedOut && authPromptSeen == false -> AuthHost(
+            // The starter guide runs once per device, over the real app. It covers the whole window, bars included.
+            val inMainApp = state.loaded && session !is SessionState.Loading && authPromptSeen != null && !inGate
+            val guideActive = inMainApp && !state.settings.guideCompleted
+            val guideTargets = remember { GuideTargets() }
+            Box(Modifier.fillMaxSize().background(Nix.colors.background)) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.safeDrawing), // status/nav bars, cutout, keyboard; NOT gesture insets (those caused wide side/bottom gaps)
+                ) {
+                    when {
+                        !state.loaded -> Unit
+                        session is SessionState.Loading || authPromptSeen == null -> Unit
+                        inGate -> AuthGate(
+                            navigator,
+                            onEnterAsGuest = {
+                                navigator.selectTab(Route.Home) // the guest link can be tapped from inside the sign-in screens
+                                scope.launch { sessionManager.markAuthPromptSeen(); authPromptSeen = true }
+                            },
+                        )
+                        else -> CompositionLocalProvider(LocalGuideTargets provides guideTargets.takeIf { guideActive }) {
+                            MainContent(navigator)
+                        }
+                    }
+                }
+                if (guideActive) {
+                    val profileVm: ProfileViewModel = koinViewModel()
+                    val profile by profileVm.uiState.collectAsStateWithLifecycle()
+                    StarterGuide(
                         navigator,
-                        onSkip = { scope.launch { sessionManager.markAuthPromptSeen(); authPromptSeen = true } },
+                        currentName = profile.name,
+                        targets = guideTargets,
+                        onSaveName = { profileVm.onSave(it, profile.email, profile.age?.toString().orEmpty()) {} },
+                        onFinish = settingsVm::onGuideFinished,
                     )
-                    else -> MainContent(navigator)
                 }
             }
         }
@@ -152,18 +181,23 @@ fun AppRoot() {
 @Composable
 private fun MainContent(navigator: Navigator) {
     val route = navigator.current
-    // All pager tabs share one cross-fade key, so swiping/tapping between them never cross-fades the whole
-    // screen; only entering/leaving the tab host (detail screens, Profile, Settings, the Coach) does.
-    // All pager tabs share one cross-fade state (Route.Home stands for "the tab host"), so swiping/tapping
-    // between them never cross-fades the whole screen; only entering/leaving the host (detail screens,
-    // Profile, Settings, the Coach) does.
+    val reducedMotion = rememberReducedMotion()
+    // All pager tabs share one state (Route.Home stands for "the tab host"), so swiping/tapping between them never
+    // animates the whole screen; only entering/leaving the host (detail screens, Profile, Settings, the Coach) does.
     val host: Route = if (MainTabs.isPagerTab(route)) Route.Home else route
-    Crossfade(targetState = host, animationSpec = tween(180), label = "route") { target ->
-        if (target == Route.Home) {
-            TabsHost(navigator, initialTab = if (MainTabs.isPagerTab(navigator.current)) navigator.current else Route.Home)
-        } else {
-            // The coach is full-screen: no top bar, no bottom nav (it has its own compact header with a back button).
-            RouteContent(target, navigator)
+    AnimatedContent(
+        targetState = NavEntry(host, navigator.stack.size),
+        contentKey = { it.route },
+        transitionSpec = { navTransition(reducedMotion) },
+        label = "route",
+    ) { entry ->
+        Box(Modifier.fillMaxSize().background(Nix.colors.background)) {
+            if (entry.route == Route.Home) {
+                TabsHost(navigator, initialTab = if (MainTabs.isPagerTab(navigator.current)) navigator.current else Route.Home)
+            } else {
+                // The coach is full-screen: no top bar, no bottom nav (it has its own compact header with a back button).
+                RouteContent(entry.route, navigator)
+            }
         }
     }
 }
@@ -248,6 +282,7 @@ private fun TabsHost(navigator: Navigator, initialTab: Route) {
         }
         DropletNavBar(
             items = items,
+            modifier = Modifier.guideTarget(GuideTarget.NavBar),
             position = { pagerState.currentPage + pagerState.currentPageOffsetFraction },
             reducedMotion = reducedMotion,
             onSelect = { index ->
@@ -270,6 +305,7 @@ private fun RouteContent(route: Route, navigator: Navigator) {
         Route.GoodHabits -> GoodHabitsScreen(navigator)
         Route.Events -> EventsScreen(navigator)
         Route.Coach -> CoachScreen(navigator)
+        Route.CoachHistory -> CoachHistoryScreen(navigator)
         Route.Profile -> ProfileScreen(navigator)
         Route.Settings -> SettingsScreen(navigator)
         is Route.BadHabitDetail -> BadHabitDetailScreen(route.habitId, navigator)
@@ -277,7 +313,7 @@ private fun RouteContent(route: Route, navigator: Navigator) {
         is Route.BadHabitForm -> BadHabitFormScreen(route.editId, navigator)
         is Route.GoodHabitForm -> GoodHabitFormScreen(route.editId, navigator)
         is Route.EventForm -> EventFormScreen(route.editId, navigator)
-        is Route.Auth -> AuthHost(navigator, onSkip = null)
+        is Route.Auth -> AuthHost(route, navigator, onGuest = null)
         Route.Account -> AccountScreen(navigator)
         Route.ChangePassword -> ChangePasswordScreen(navigator)
         Route.DeleteAccount -> DeleteAccountScreen(navigator)
@@ -291,6 +327,8 @@ private fun TopBar(navigator: Navigator) {
     val c = Nix.colors
     val profileVm: ProfileViewModel = koinViewModel()
     val profile by profileVm.uiState.collectAsStateWithLifecycle()
+    var accountSheetOpen by rememberSaveable { mutableStateOf(false) }
+    if (accountSheetOpen) AccountSheet(profile.name, navigator, onDismiss = { accountSheetOpen = false })
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -303,9 +341,9 @@ private fun TopBar(navigator: Navigator) {
         Text("NixUra", style = NixType.Heading, color = c.textPrimary)
         Spacer(Modifier.weight(1f))
         Avatar(
-            initial = profile.name.ifBlank { "N" },
+            initial = profile.name.ifBlank { profile.accountEmail ?: "N" },
             size = 40.dp,
-            modifier = Modifier.clickable(interactionSource = MutableInteractionSource(), indication = null) { navigator.push(Route.Profile) },
+            modifier = Modifier.guideTarget(GuideTarget.Avatar).pressable(pressedScale = 0.9f, haptic = true) { accountSheetOpen = true },
         )
     }
 }

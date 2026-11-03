@@ -62,13 +62,18 @@ fun SettingsScreen(navigator: Navigator) {
 
         SectionLabel(s.accountTitle)
         NixCard(onClick = { navigator.push(Route.Account) }) {
-            Text(
-                signedInEmail ?: s.settingsAccountRow,
-                style = NixType.BodyStrong,
-                color = c.textPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    signedInEmail ?: s.settingsAccountRow,
+                    style = NixType.BodyStrong,
+                    color = c.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(8.dp))
+                NixIconView(NixIcon.Chevron, c.textMuted, size = 16.dp)
+            }
         }
 
         SectionLabel(s.appearance)
@@ -129,6 +134,19 @@ fun SettingsScreen(navigator: Navigator) {
         }
 
         SectionLabel(s.about)
+        NixCard(
+            onClick = {
+                navigator.selectTab(Route.Home)
+                vm.onReplayGuide()
+            },
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                NixIconView(NixIcon.Sparkle, c.accentWarm, size = 20.dp)
+                Spacer(Modifier.width(12.dp))
+                Text(s.guideReplay, style = NixType.BodyStrong, color = c.textPrimary, modifier = Modifier.weight(1f))
+                NixIconView(NixIcon.Chevron, c.textMuted, size = 16.dp)
+            }
+        }
         NixCard {
             Text("NixUra", style = NixType.Heading, color = c.textPrimary)
             Text(s.versionLabel, style = NixType.Small, color = c.textMuted)

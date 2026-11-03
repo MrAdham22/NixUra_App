@@ -51,6 +51,9 @@ interface SessionManager {
     /** After a clean sign-out or account deletion, anything created next is guest data, not another account's. */
     suspend fun forgetLastUser()
 
+    /** True when nobody is signed in but this phone still holds the last account's data (its session ended without a clean sign-out). */
+    suspend fun hasLeftoverAccountData(): Boolean
+
     /** Clears the local session without calling the server (used when the server already ended it). */
     suspend fun signOutLocally()
 }

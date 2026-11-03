@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import com.example.reclaimapp.presentation.guide.GuideTarget
+import com.example.reclaimapp.presentation.guide.guideTarget
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -45,6 +47,7 @@ fun GoodHabitsScreen(navigator: Navigator) {
                 NixIconButton(
                     NixIcon.Plus,
                     { navigator.push(Route.GoodHabitForm()) },
+                    modifier = Modifier.guideTarget(GuideTarget.AddGood),
                     tint = c.onAccent,
                     background = c.accent,
                     bordered = false,

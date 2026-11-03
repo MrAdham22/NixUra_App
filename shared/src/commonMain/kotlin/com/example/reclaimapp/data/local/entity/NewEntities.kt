@@ -50,9 +50,19 @@ data class EventEntity(
     @ColumnInfo(name = "dirty", defaultValue = "1") val dirty: Boolean = true,
 )
 
-@Entity(tableName = "coach_messages")
+/** One coach chat. [title] is the user's first message, empty until they send one. Stays on this phone; not synced. */
+@Entity(tableName = "coach_conversations")
+data class CoachConversationEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val title: String,
+    @ColumnInfo(name = "created_at") val createdAtEpochMillis: Long,
+    @ColumnInfo(name = "updated_at") val updatedAtEpochMillis: Long,
+)
+
+@Entity(tableName = "coach_messages", indices = [Index(value = ["conversation_id"])])
 data class CoachMessageEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "conversation_id", defaultValue = "0") val conversationId: Long,
     val role: String,
     val text: String,
     @ColumnInfo(name = "created_at") val createdAtEpochMillis: Long,

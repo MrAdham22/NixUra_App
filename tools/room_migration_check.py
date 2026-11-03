@@ -54,11 +54,28 @@ while True:
     i=k
 print(len(stmts),"migration statements")
 v3_start=next(i for i,s in enumerate(stmts) if 'sync_id' in s)
+v4_start=next(i for i,s in enumerate(stmts) if 'coach_conversations' in s)
+V3_ROWS=[
+ "INSERT INTO coach_messages(role,text,created_at) VALUES('COACH','Hi',100)",
+ "INSERT INTO coach_messages(role,text,created_at) VALUES('USER','"+"x"*80+"',200)",
+ "INSERT INTO coach_messages(role,text,created_at) VALUES('COACH','Ok',300)",
+]
 for i,s in enumerate(stmts):
     if i==v3_start:
         for row in V2_ROWS: db.execute(row)
+    if i==v4_start:
+        for row in V3_ROWS: db.execute(row)
     db.execute(s)
 ok=True
+conv=db.execute('select id,length(title),created_at,updated_at from coach_conversations').fetchall()
+if conv!=[(1,60,100,300)]: print('V4 CONVERSATION WRONG',conv); ok=False
+if db.execute('select count(*) from coach_messages where conversation_id<>1').fetchone()[0]: print('V4 MESSAGES NOT MOVED'); ok=False
+print('v3->v4 existing chat checked')
+empty=sqlite3.connect(':memory:')
+empty.execute('CREATE TABLE coach_messages (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, role TEXT NOT NULL, text TEXT NOT NULL, created_at INTEGER NOT NULL)')
+for s in stmts[v4_start:]: empty.execute(s)
+if empty.execute('select count(*) from coach_conversations').fetchone()[0]: print('V4 INVENTED A CONVERSATION'); ok=False
+print('v3->v4 with no chat checked')
 for table in ['habits','habit_events','good_habits','good_habit_logs','events']:
     blank=db.execute(f"select count(*) from {table} where sync_id='' or updated_at=0 or dirty<>1").fetchone()[0]
     if blank: print('BACKFILL PROBLEM',table,blank); ok=False
@@ -83,7 +100,7 @@ for f in glob.glob('shared/src/commonMain/kotlin/**/dao/*.kt',recursive=True):
         try: db.execute('EXPLAIN '+re.sub(r':\w+','1',q))
         except Exception as e: print('SQL ERROR',q,e); ok=False
 print(n,'DAO queries validated')
-for tbl in ['habit_events','habits','good_habit_logs','good_habits','events','coach_messages']:
+for tbl in ['habit_events','habits','good_habit_logs','good_habits','events','coach_messages','coach_conversations']:
     db.execute(f'DELETE FROM {tbl}')
 print('clearAll order OK with foreign keys ON')
 # unique index behaviour for REPLACE upsert

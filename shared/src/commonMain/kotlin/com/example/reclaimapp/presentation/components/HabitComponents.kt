@@ -1,10 +1,26 @@
 package com.example.reclaimapp.presentation.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.example.reclaimapp.presentation.appearance.CardGradient
+import com.example.reclaimapp.presentation.platform.rememberReducedMotion
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -115,13 +131,47 @@ fun GlyphBadge(icon: NixIcon, tint: Color, background: Color, modifier: Modifier
 @Composable
 fun rememberStreakMapper(): StreakColorMapper = remember { StreakColorMapper() }
 
-/** Live card color for a bad habit: default brand progression or the user's chosen color ramp. */
+/** Live card colors for a bad habit: default brand progression or the user's chosen color ramp. */
 @Composable
-fun habitCardColor(model: HabitCardUiModel): Color {
+fun habitCardGradient(model: HabitCardUiModel): CardGradient {
     val mapper = rememberStreakMapper()
-    val target = mapper.cardBackground(model.activeElapsed, model.colorArgb)
-    val animated by animateColorAsState(target, tween(900))
-    return animated
+    val target = mapper.cardGradient(model.activeElapsed, model.colorArgb)
+    val start by animateColorAsState(target.start, tween(900))
+    val middle by animateColorAsState(target.middle, tween(900))
+    val end by animateColorAsState(target.end, tween(900))
+    return CardGradient(start, middle, end)
+}
+
+/** Paints a habit card: its diagonal gradient plus a soft light in the top corner, so it never reads as a flat block. */
+fun Modifier.habitCardFill(gradient: CardGradient, shape: Shape): Modifier = this
+    .clip(shape)
+    .drawWithCache {
+        val diagonal = Brush.linearGradient(listOf(gradient.start, gradient.middle, gradient.end), Offset.Zero, Offset(size.width, size.height))
+        val glowColor = if (gradient.middle.prefersLightContentOnCard()) Color.White.copy(alpha = 0.13f) else Color.White.copy(alpha = 0.28f)
+        val glow = Brush.radialGradient(
+            listOf(glowColor, Color.Transparent),
+            center = Offset(size.width * 0.9f, 0f),
+            radius = size.maxDimension * 0.75f,
+        )
+        onDrawBehind {
+            drawRect(diagonal)
+            drawRect(glow)
+        }
+    }
+
+/** How far today's target is reached, as colors: the card fills with green and is solid green once done. */
+data class GoodFill(val fill: Float, val background: Color, val content: Color, val contentMuted: Color, val doneSquare: Color)
+
+@Composable
+fun rememberGoodFill(todayCount: Int, dailyTarget: Int): GoodFill {
+    val c = Nix.colors
+    val target = (todayCount.toFloat() / dailyTarget.coerceAtLeast(1)).coerceIn(0f, 1f)
+    val fill by animateFloatAsState(target, spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessLow), label = "goodFill")
+    val background = lerp(c.surface, c.positive, fill)
+    val onDark = background.prefersLightContentOnCard()
+    val content = if (onDark) NixUraPalette.onDarkPrimary else NixUraPalette.onLightPrimary
+    val muted = if (onDark) NixUraPalette.onDarkMuted else NixUraPalette.onLightMuted
+    return GoodFill(fill, background, content, muted, if (fill >= 0.6f) content else c.positive)
 }
 
 @Composable
@@ -132,21 +182,19 @@ fun BadHabitCard(
 ) {
     val s = LocalStrings.current
     val engine = koinInject<CoachEngine>()
-    val background = habitCardColor(model)
-    val lightOnCard = background.prefersLightContentOnCard()
+    val gradient = habitCardGradient(model)
+    val lightOnCard = gradient.middle.prefersLightContentOnCard()
     val primary = if (lightOnCard) NixUraPalette.onDarkPrimary else NixUraPalette.onLightPrimary
     val muted = if (lightOnCard) NixUraPalette.onDarkMuted else NixUraPalette.onLightMuted
     val shape = RoundedCornerShape(26.dp)
-    val sheen = if (lightOnCard) Color.White.copy(alpha = 0.07f) else Color.Black.copy(alpha = 0.06f)
     val category = remember(model.name) { engine.categoryFor(model.name) }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(shape)
-            .background(Brush.linearGradient(listOf(background, lerp(background, sheen.copy(alpha = 1f), 0.10f))), shape)
+            .pressable(pressedScale = 0.98f, onClick = onClick)
+            .habitCardFill(gradient, shape)
             .border(1.dp, if (lightOnCard) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.10f), shape)
-            .clickable(onClick = onClick)
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -179,34 +227,35 @@ fun BadHabitCard(
 
 // ---------- Good habits: day squares, week strip, month calendar ----------
 
+/** One day. The more of the target was reached, the more colored the square is, up to solid when done. */
 @Composable
 fun DaySquare(
-    status: DayStatus,
+    count: Int,
+    target: Int,
     modifier: Modifier = Modifier,
     label: String? = null,
     isToday: Boolean = false,
     selected: Boolean = false,
     enabled: Boolean = true,
+    doneColor: Color = Nix.colors.positive,
+    idleColor: Color = Nix.colors.surfaceRaised,
+    todayBorder: Color = Nix.colors.textSecondary,
     onClick: (() -> Unit)? = null,
 ) {
     val c = Nix.colors
     val shape = RoundedCornerShape(9.dp)
-    val bg = when {
-        !enabled -> Color.Transparent
-        status == DayStatus.DONE -> c.positive
-        status == DayStatus.PARTIAL -> c.positiveSoft
-        else -> c.surfaceRaised
-    }
+    val status = GoodHabitStatsCalculator.statusOf(count, target)
+    val ratio = (count.toFloat() / target.coerceAtLeast(1)).coerceIn(0f, 1f)
+    val bg by animateColorAsState(if (enabled) lerp(idleColor, doneColor, ratio) else Color.Transparent, tween(350), label = "daySquare")
     val borderColor = when {
         selected -> c.accent
-        isToday -> c.textSecondary
-        status == DayStatus.PARTIAL && enabled -> c.positive.copy(alpha = 0.55f)
+        isToday -> todayBorder
         !enabled -> c.border.copy(alpha = 0.5f)
         else -> Color.Transparent
     }
     val textColor = when {
         !enabled -> c.textMuted.copy(alpha = 0.5f)
-        status == DayStatus.DONE -> Color(0xFF0E2A1D)
+        status == DayStatus.DONE || ratio >= 0.6f -> Color(0xFF0E2A1D)
         else -> c.textMuted
     }
     Box(
@@ -230,18 +279,26 @@ fun WeekStrip(
     todayIndex: Long,
     createdDayIndex: Long,
     modifier: Modifier = Modifier,
+    labelColor: Color = Nix.colors.textMuted,
+    doneColor: Color = Nix.colors.positive,
+    idleColor: Color = Nix.colors.surfaceRaised,
+    todayBorder: Color = Nix.colors.textSecondary,
 ) {
     val s = LocalStrings.current
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         for (offset in 6 downTo 0) {
             val day = todayIndex - offset
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text(s.weekdayLetters[CivilCalendar.isoWeekday(day) - 1], style = NixType.Small, color = Nix.colors.textMuted)
+                Text(s.weekdayLetters[CivilCalendar.isoWeekday(day) - 1], style = NixType.Small, color = labelColor)
                 DaySquare(
-                    status = GoodHabitStatsCalculator.statusOf(countsByDay[day] ?: 0, target),
+                    count = countsByDay[day] ?: 0,
+                    target = target,
                     modifier = Modifier.fillMaxWidth(),
                     isToday = offset == 0,
                     enabled = day >= createdDayIndex - 6,
+                    doneColor = doneColor,
+                    idleColor = idleColor,
+                    todayBorder = todayBorder,
                 )
             }
         }
@@ -292,7 +349,8 @@ fun MonthCalendar(
                         val day = firstDay + dayOfMonth - 1
                         val selectable = day <= todayIndex
                         DaySquare(
-                            status = GoodHabitStatsCalculator.statusOf(countsByDay[day] ?: 0, target),
+                            count = countsByDay[day] ?: 0,
+                            target = target,
                             modifier = Modifier.weight(1f),
                             label = dayOfMonth.toString(),
                             isToday = day == todayIndex,
@@ -332,42 +390,76 @@ fun GoodHabitCard(
 ) {
     val s = LocalStrings.current
     val c = Nix.colors
-    NixCard(modifier.fillMaxWidth(), onClick = onClick) {
+    val look = rememberGoodFill(habit.todayCount, habit.dailyTarget)
+    val pulse = rememberCompletionPulse(habit.doneToday)
+    var streakInfo by remember { mutableStateOf(false) }
+    NixCard(
+        modifier.fillMaxWidth().graphicsLayer { scaleX = pulse.value; scaleY = pulse.value },
+        onClick = onClick,
+        color = look.background,
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            GlyphBadge(goodGlyphFor(habit.id), if (habit.doneToday) c.positive else c.accent, (if (habit.doneToday) c.positive else c.accent).copy(alpha = 0.14f))
+            GlyphBadge(goodGlyphFor(habit.id), if (look.fill > 0f) look.content else c.accent, (if (look.fill > 0f) look.content else c.accent).copy(alpha = 0.14f))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(habit.name, style = NixType.Heading, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(s.todayProgress(habit.todayCount, habit.dailyTarget), style = NixType.Small, color = if (habit.doneToday) c.positive else c.textSecondary)
+                Text(habit.name, style = NixType.Heading, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(s.todayProgress(habit.todayCount, habit.dailyTarget), style = NixType.Small, color = look.contentMuted)
             }
-            NixIconButton(NixIcon.Minus, onMinus, size = 38.dp, tint = c.textSecondary)
+            NixIconButton(NixIcon.Minus, onMinus, size = 38.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), bordered = false)
             Spacer(Modifier.width(8.dp))
             NixIconButton(
                 if (habit.doneToday && habit.dailyTarget == 1) NixIcon.Tick else NixIcon.Plus,
                 onPlus,
                 size = 44.dp,
-                tint = c.onAccent,
-                background = if (habit.doneToday) c.positive else c.accent,
+                tint = if (habit.doneToday) look.background else c.onAccent,
+                background = if (habit.doneToday) look.content else c.accent,
                 bordered = false,
+                haptic = true,
             )
         }
         Spacer(Modifier.height(14.dp))
-        NixProgressBar(
-            progress = habit.todayCount.toFloat() / habit.dailyTarget.coerceAtLeast(1),
-            color = if (habit.doneToday) c.positive else c.accent,
-            height = 6.dp,
+        WeekStrip(
+            habit.countsByDay, habit.dailyTarget, todayIndex, habit.createdDayIndex,
+            labelColor = look.contentMuted,
+            doneColor = look.doneSquare,
+            idleColor = look.content.copy(alpha = 0.10f),
+            todayBorder = look.content.copy(alpha = 0.7f),
         )
-        Spacer(Modifier.height(14.dp))
-        WeekStrip(habit.countsByDay, habit.dailyTarget, todayIndex, habit.createdDayIndex)
-        Spacer(Modifier.height(12.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            NixIconView(NixIcon.Flame, c.accentWarm, size = 16.dp)
+        Spacer(Modifier.height(6.dp))
+        Row(
+            Modifier.fillMaxWidth().pressable(pressedScale = 0.96f, haptic = true) { streakInfo = true }.padding(vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            NixIconView(NixIcon.Flame, if (look.fill >= 0.6f) look.content else c.accentWarm, size = 16.dp)
             Spacer(Modifier.width(6.dp))
-            Text(s.streakDays(habit.currentStreak), style = NixType.SmallStrong, color = c.textSecondary)
+            Text(s.streakDays(habit.currentStreak), style = NixType.SmallStrong, color = look.content)
             Spacer(Modifier.weight(1f))
-            Text(s.timesDoneTotal(habit.totalTimesDone), style = NixType.Small, color = c.textMuted)
+            Text(s.timesDoneTotal(habit.totalTimesDone), style = NixType.Small, color = look.contentMuted)
         }
     }
+    if (streakInfo) {
+        InfoSheet(s.statCurrentStreak, s.daysCount(habit.currentStreak), s.infoCurrentStreak, onDismiss = { streakInfo = false })
+    }
+}
+
+/** A small celebratory bounce, with a firm tap, the moment a habit's target is reached. */
+@Composable
+fun rememberCompletionPulse(done: Boolean): Animatable<Float, AnimationVector1D> {
+    val scale = remember { Animatable(1f) }
+    val haptic = LocalHapticFeedback.current
+    val reducedMotion = rememberReducedMotion()
+    var wasDone by remember { mutableStateOf(done) }
+    LaunchedEffect(done) {
+        if (done && !wasDone) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            if (!reducedMotion) {
+                scale.animateTo(1.03f, tween(110))
+                scale.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = Spring.StiffnessMediumLow))
+            }
+        }
+        wasDone = done
+    }
+    return scale
 }
 
 // ---------- Events ----------
@@ -412,23 +504,6 @@ fun EventCard(
         )
         Spacer(Modifier.height(6.dp))
         CounterBlocks(parts, if (passed) c.textSecondary else c.textPrimary, c.textMuted, valueSize = 26)
-    }
-}
-
-@Composable
-fun MomentumBars(bars: List<Float>, modifier: Modifier = Modifier) {
-    val c = Nix.colors
-    Row(modifier.fillMaxWidth().height(56.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Bottom) {
-        bars.forEachIndexed { index, value ->
-            val isLast = index == bars.lastIndex
-            Box(
-                Modifier
-                    .weight(1f)
-                    .height((8 + 48 * value.coerceIn(0f, 1f)).dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(if (isLast) c.accent else c.accent.copy(alpha = 0.35f)),
-            )
-        }
     }
 }
 

@@ -39,7 +39,7 @@ private fun emailErrorText(email: String, s: Strings): String? = when (AuthValid
 }
 
 @Composable
-fun LoginScreen(navigator: Navigator) {
+fun LoginScreen(navigator: Navigator, onGuest: (() -> Unit)? = null) {
     val s = LocalStrings.current
     val vm: LoginViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
@@ -74,11 +74,14 @@ fun LoginScreen(navigator: Navigator) {
             Text(s.authNewHere, style = NixType.Body, color = Nix.colors.textSecondary)
             AuthLink(s.authCreateAccount, { navigator.push(Route.Auth.Register) })
         }
+        if (onGuest != null) {
+            AuthLink(s.authContinueOffline, onGuest, Modifier.align(Alignment.CenterHorizontally), color = Nix.colors.textSecondary)
+        }
     }
 }
 
 @Composable
-fun RegisterScreen(navigator: Navigator) {
+fun RegisterScreen(navigator: Navigator, onGuest: (() -> Unit)? = null) {
     val s = LocalStrings.current
     val vm: RegisterViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
@@ -122,6 +125,9 @@ fun RegisterScreen(navigator: Navigator) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(s.authHaveAccount, style = NixType.Body, color = Nix.colors.textSecondary)
             AuthLink(s.authSignIn, { navigator.push(Route.Auth.Login) })
+        }
+        if (onGuest != null) {
+            AuthLink(s.authContinueOffline, onGuest, Modifier.align(Alignment.CenterHorizontally), color = Nix.colors.textSecondary)
         }
     }
 }

@@ -23,7 +23,7 @@ Does **not** grant product approval — follow user authorization and [DEVELOPME
 
 ## Scope guards
 
-- Offline-first. Accounts, the backend and cloud sync are approved and built, and guests must stay completely offline. Online AI needs explicit owner approval.
+- Offline-first. Accounts, the backend and cloud sync are approved and built, and guests must stay completely offline. Online AI is the very last item in the project; do not build it before the owner says so.
 - New UI text goes in `presentation/strings/Strings.kt`.
 - Room entity changes need a new migration and a schema check; never use destructive fallback.
 - The merged UI/features build and run on Android (owner-confirmed 2026-10-23). **iOS is in scope and unrestricted**: you may implement and fix iOS code (`iosMain`, `iosApp/`, iOS notifications via `UNUserNotificationCenter`) like any other code, keeping Android/iOS parity via `expect`/`actual` or Koin platform modules. iOS only compiles on macOS; if you cannot run it, mark iOS work **unverified** and give the owner the Mac commands (see AGENTS.md).

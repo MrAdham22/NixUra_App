@@ -18,6 +18,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import com.example.reclaimapp.presentation.components.rememberCompletionPulse
+import com.example.reclaimapp.presentation.components.rememberGoodFill
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.reclaimapp.domain.time.CivilCalendar
@@ -74,32 +77,37 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
         }
 
         // Today
-        NixCard {
-            Text(s.todayLabel.uppercase(), style = NixType.Eyebrow, color = c.textMuted)
+        val look = rememberGoodFill(habit.todayCount, habit.dailyTarget)
+        val pulse = rememberCompletionPulse(habit.doneToday)
+        NixCard(Modifier.graphicsLayer { scaleX = pulse.value; scaleY = pulse.value }, color = look.background) {
+            Text(s.todayLabel.uppercase(), style = NixType.Eyebrow, color = look.contentMuted)
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("${habit.todayCount} / ${habit.dailyTarget}", style = NixType.counter(40), color = if (habit.doneToday) c.positive else c.textPrimary)
-                    Text(if (habit.doneToday) s.goalReached else s.timesToGo(habit.dailyTarget - habit.todayCount), style = NixType.Small, color = c.textSecondary)
+                    Text("${habit.todayCount} / ${habit.dailyTarget}", style = NixType.counter(40), color = look.content)
+                    Text(if (habit.doneToday) s.goalReached else s.timesToGo(habit.dailyTarget - habit.todayCount), style = NixType.Small, color = look.contentMuted)
                 }
-                NixIconButton(NixIcon.Minus, { vm.onChangeToday(habit.id, -1) }, size = 46.dp)
+                NixIconButton(NixIcon.Minus, { vm.onChangeToday(habit.id, -1) }, size = 46.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), bordered = false)
                 Spacer(Modifier.width(10.dp))
-                NixIconButton(NixIcon.Plus, { vm.onChangeToday(habit.id, +1) }, size = 52.dp, tint = c.onAccent, background = if (habit.doneToday) c.positive else c.accent, bordered = false)
+                NixIconButton(
+                    NixIcon.Plus, { vm.onChangeToday(habit.id, +1) }, size = 52.dp,
+                    tint = if (habit.doneToday) look.background else c.onAccent,
+                    background = if (habit.doneToday) look.content else c.accent,
+                    bordered = false, haptic = true,
+                )
             }
-            Spacer(Modifier.height(14.dp))
-            NixProgressBar(habit.todayCount.toFloat() / habit.dailyTarget, color = if (habit.doneToday) c.positive else c.accent)
         }
 
         AddToHomeScreenButton(WidgetKind.GOOD_QUICK_LOG, habit.id)
 
         // Stats
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatTile(s.statCurrentStreak, s.daysCount(habit.currentStreak), Modifier.weight(1f))
-            StatTile(s.statBestStreak, s.daysCount(habit.bestStreak), Modifier.weight(1f))
+            StatTile(s.statCurrentStreak, s.daysCount(habit.currentStreak), Modifier.weight(1f), info = s.infoCurrentStreak)
+            StatTile(s.statBestStreak, s.daysCount(habit.bestStreak), Modifier.weight(1f), info = s.infoBestStreak)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatTile(s.statTotalTimes, habit.totalTimesDone.toString(), Modifier.weight(1f))
-            StatTile(s.statDaysCompleted, habit.daysCompleted.toString(), Modifier.weight(1f))
+            StatTile(s.statTotalTimes, habit.totalTimesDone.toString(), Modifier.weight(1f), info = s.infoTotalTimes)
+            StatTile(s.statDaysCompleted, habit.daysCompleted.toString(), Modifier.weight(1f), info = s.infoDaysCompleted)
         }
         NixCard {
             Row {

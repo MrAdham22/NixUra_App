@@ -49,6 +49,7 @@ fun authModule() = module {
     single { SyncCoordinator(get(), get(), get(), get()) }
     factory { SignOutUseCase(get(), get(), get(), get()) }
     factory { DetachDataAfterAccountDeletionUseCase(get(), get(), get()) }
+    factory { com.example.reclaimapp.domain.sync.StartFreshAsGuestUseCase(get(), get(), get()) }
 
     viewModel { RegisterViewModel(get()) }
     viewModel { LoginViewModel(get()) }
@@ -59,4 +60,5 @@ fun authModule() = module {
     viewModel { DeleteAccountViewModel(get(), get()) }
     viewModel { DevicesViewModel(get(), get()) }
     viewModel { AccountViewModel(get(), get(), get()) }
+    viewModel { com.example.reclaimapp.presentation.auth.GuestEntryViewModel(get(), get()) }
 }

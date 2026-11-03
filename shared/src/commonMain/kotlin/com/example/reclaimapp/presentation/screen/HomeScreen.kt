@@ -1,54 +1,78 @@
 package com.example.reclaimapp.presentation.screen
 
-import androidx.compose.foundation.background
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.reclaimapp.domain.auth.SessionManager
+import com.example.reclaimapp.domain.auth.SessionState
 import com.example.reclaimapp.domain.time.DayCalculator
 import com.example.reclaimapp.presentation.coach.CoachViewModel
 import com.example.reclaimapp.presentation.components.BadHabitCard
-import com.example.reclaimapp.presentation.components.EmptyState
 import com.example.reclaimapp.presentation.components.EventCard
-import com.example.reclaimapp.presentation.components.GoodHabitCard
-import com.example.reclaimapp.presentation.components.MomentumBars
 import com.example.reclaimapp.presentation.components.NixButton
-import com.example.reclaimapp.presentation.components.NixButtonStyle
 import com.example.reclaimapp.presentation.components.NixCard
 import com.example.reclaimapp.presentation.components.NixIcon
+import com.example.reclaimapp.presentation.components.NixIconButton
 import com.example.reclaimapp.presentation.components.NixIconView
+import com.example.reclaimapp.presentation.components.ScoreKind
+import com.example.reclaimapp.presentation.components.ScoreSheet
 import com.example.reclaimapp.presentation.components.SectionLabel
 import com.example.reclaimapp.presentation.components.TabScreen
+import com.example.reclaimapp.presentation.components.pressable
+import com.example.reclaimapp.presentation.components.rememberCompletionPulse
+import com.example.reclaimapp.presentation.components.rememberGoodFill
 import com.example.reclaimapp.presentation.events.EventsViewModel
+import com.example.reclaimapp.presentation.goodhabits.GoodHabitUi
 import com.example.reclaimapp.presentation.goodhabits.GoodHabitsViewModel
+import com.example.reclaimapp.presentation.guide.GuideTarget
+import com.example.reclaimapp.presentation.guide.guideTarget
 import com.example.reclaimapp.presentation.habits.HabitsViewModel
 import com.example.reclaimapp.presentation.navigation.Navigator
 import com.example.reclaimapp.presentation.navigation.Route
+import com.example.reclaimapp.presentation.profile.ProfileStats
 import com.example.reclaimapp.presentation.profile.ProfileViewModel
 import com.example.reclaimapp.presentation.strings.LocalStrings
 import com.example.reclaimapp.presentation.theme.Nix
 import com.example.reclaimapp.presentation.theme.NixType
-import com.example.reclaimapp.presentation.theme.NixUraPalette
 import com.example.reclaimapp.presentation.util.formatDateTime
 import com.example.reclaimapp.presentation.util.rememberNowMillis
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
+private const val MAX_TODAY_ROWS = 4
+
+/** The dashboard: progress at a glance, today's check-ins in one tap, then what's running and what's next. */
 @Composable
 fun HomeScreen(navigator: Navigator) {
     val habitsVm: HabitsViewModel = koinViewModel()
@@ -61,10 +85,12 @@ fun HomeScreen(navigator: Navigator) {
     val events by eventsVm.uiState.collectAsStateWithLifecycle()
     val profile by profileVm.uiState.collectAsStateWithLifecycle()
     val coach by coachVm.uiState.collectAsStateWithLifecycle()
+    val session by koinInject<SessionManager>().state.collectAsStateWithLifecycle()
     val now by rememberNowMillis()
     val days = koinInject<DayCalculator>()
     val s = LocalStrings.current
     val c = Nix.colors
+    var scoreSheet by remember { mutableStateOf<ScoreKind?>(null) }
 
     val hour = (days.millisOfDay(now) / 3_600_000L).toInt()
     val greeting = when {
@@ -74,109 +100,222 @@ fun HomeScreen(navigator: Navigator) {
     }
     val nextEvent = events.events.firstOrNull { it.targetAtEpochMillis > now }
     val stats = profile.stats
+    val nothingYet = habits.habits.isEmpty() && good.habits.isEmpty() && nextEvent == null
 
     TabScreen {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(s.homeEyebrow.uppercase(), style = NixType.Eyebrow, color = c.accent)
-            Text(
-                if (profile.name.isBlank()) greeting else "$greeting, ${profile.name}",
-                style = NixType.Display,
-                color = c.textPrimary,
-            )
+        Text(
+            if (profile.name.isBlank()) greeting else "$greeting, ${profile.name}",
+            style = NixType.Title,
+            color = c.textPrimary,
+        )
+
+        if (session is SessionState.SignedOut) GuestBanner { navigator.push(Route.Auth.Login) }
+
+        if (nothingYet) {
+            StartCard(navigator)
+        } else {
+            ProgressCard(stats, onOpen = { scoreSheet = it })
         }
 
-        // Focus card (offline coach)
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(26.dp))
-                .background(Brush.linearGradient(listOf(NixUraPalette.Purple, NixUraPalette.Plum)))
-                .padding(22.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                NixIconView(NixIcon.Sparkle, NixUraPalette.Orange, size = 18.dp)
-                Spacer(Modifier.width(8.dp))
-                Text(s.todaysFocus.uppercase(), style = NixType.Eyebrow, color = NixUraPalette.Blush.copy(alpha = 0.85f))
+        if (good.habits.isNotEmpty()) {
+            SectionLabel(s.homeToday) {
+                Text(s.seeAll, style = NixType.SmallStrong, color = c.accent, modifier = Modifier.pressable { navigator.selectTab(Route.GoodHabits) })
             }
-            Text(
-                coach.insight?.body ?: s.focusEmpty,
-                style = NixType.Heading,
-                color = NixUraPalette.Blush,
-            )
-            NixButton(s.openCoach, { navigator.selectTab(Route.Coach) }, style = NixButtonStyle.Secondary, icon = NixIcon.Sparkle)
-        }
-
-        // Momentum
-        NixCard {
-            Row(verticalAlignment = Alignment.Top) {
-                Column(Modifier.weight(1f)) {
-                    Text(s.momentum.uppercase(), style = NixType.Eyebrow, color = c.textMuted)
-                    Spacer(Modifier.height(6.dp))
-                    Text(stats.momentum?.let { "$it%" } ?: "—", style = NixType.counter(40), color = c.textPrimary)
-                    Text(
-                        when {
-                            stats.momentum == null -> s.momentumEmpty
-                            stats.disciplineDelta != null -> s.momentumDelta(stats.disciplineDelta)
-                            else -> s.momentumAcross
-                        },
-                        style = NixType.Small,
-                        color = c.textSecondary,
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                good.habits.take(MAX_TODAY_ROWS).forEach { habit ->
+                    TodayRow(
+                        habit,
+                        onOpen = { navigator.push(Route.GoodHabitDetail(habit.id)) },
+                        onPlus = { goodVm.onChangeToday(habit.id, +1) },
                     )
                 }
-                if (stats.weekBars.isNotEmpty()) {
-                    MomentumBars(stats.weekBars, Modifier.width(150.dp))
-                }
             }
         }
 
-        // Quitting
-        SectionLabel(s.quittingSection) {
-            Text(s.seeAll, style = NixType.SmallStrong, color = c.accent, modifier = Modifier.clickableNoRipple { navigator.selectTab(Route.BadHabits) })
-        }
-        if (habits.habits.isEmpty()) {
-            EmptyState(NixIcon.Shield, s.badEmptyTitle, s.badEmptyBody, actionText = s.badAdd, onAction = { navigator.push(Route.BadHabitForm()) })
-        } else {
+        if (habits.habits.isNotEmpty()) {
+            SectionLabel(s.quittingSection) {
+                Text(s.seeAll, style = NixType.SmallStrong, color = c.accent, modifier = Modifier.pressable { navigator.selectTab(Route.BadHabits) })
+            }
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 habits.habits.take(2).forEach { BadHabitCard(it, onClick = { navigator.push(Route.BadHabitDetail(it.habitId)) }) }
             }
         }
 
-        // Building
-        SectionLabel(s.buildingSection) {
-            Text(s.seeAll, style = NixType.SmallStrong, color = c.accent, modifier = Modifier.clickableNoRipple { navigator.selectTab(Route.GoodHabits) })
+        if (nextEvent != null) {
+            SectionLabel(s.nextEventSection) {
+                Text(s.seeAll, style = NixType.SmallStrong, color = c.accent, modifier = Modifier.pressable { navigator.selectTab(Route.Events) })
+            }
+            EventCard(nextEvent, now, formatDateTime(nextEvent.targetAtEpochMillis, days, s), onClick = { navigator.push(Route.EventForm(nextEvent.id)) })
         }
-        if (good.habits.isEmpty()) {
-            EmptyState(NixIcon.CircleCheck, s.goodEmptyTitle, s.goodEmptyBody, actionText = s.goodAdd, onAction = { navigator.push(Route.GoodHabitForm()) })
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                good.habits.take(2).forEach { habit ->
-                    GoodHabitCard(
-                        habit, good.todayIndex,
-                        onClick = { navigator.push(Route.GoodHabitDetail(habit.id)) },
-                        onPlus = { goodVm.onChangeToday(habit.id, +1) },
-                        onMinus = { goodVm.onChangeToday(habit.id, -1) },
-                    )
+
+        coach.insight?.let { insight ->
+            NixCard(Modifier.fillMaxWidth(), onClick = { navigator.selectTab(Route.Coach) }) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    NixIconView(NixIcon.Sparkle, c.accentWarm, size = 20.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(s.homeThought.uppercase(), style = NixType.Eyebrow, color = c.textMuted)
+                        Spacer(Modifier.height(2.dp))
+                        Text(insight.body, style = NixType.Small, color = c.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    NixIconView(NixIcon.Chevron, c.textMuted, size = 16.dp)
                 }
             }
         }
+    }
 
-        // Next event
-        SectionLabel(s.nextEventSection) {
-            Text(s.seeAll, style = NixType.SmallStrong, color = c.accent, modifier = Modifier.clickableNoRipple { navigator.selectTab(Route.Events) })
-        }
-        if (nextEvent == null) {
-            EmptyState(NixIcon.Calendar, s.eventsEmptyTitle, s.eventsEmptyBody, actionText = s.eventsAdd, onAction = { navigator.push(Route.EventForm()) })
-        } else {
-            EventCard(nextEvent, now, formatDateTime(nextEvent.targetAtEpochMillis, days, s), onClick = { navigator.push(Route.EventForm(nextEvent.id)) })
+    scoreSheet?.let { kind -> ScoreSheet(kind, stats, onDismiss = { scoreSheet = null }) }
+}
+
+/** A clear way back to signing in for guests, and a reminder that their data is only on this phone. */
+@Composable
+private fun GuestBanner(onSignIn: () -> Unit) {
+    val s = LocalStrings.current
+    val c = Nix.colors
+    NixCard(
+        Modifier.fillMaxWidth(),
+        onClick = onSignIn,
+        color = c.accent.copy(alpha = 0.10f),
+        borderColor = c.accent.copy(alpha = 0.30f),
+        padding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(s.guestBannerTitle, style = NixType.SmallStrong, color = c.textPrimary)
+                Text(s.guestBannerBody, style = NixType.Small, color = c.textSecondary)
+            }
+            Spacer(Modifier.width(10.dp))
+            Text(s.authSignIn, style = NixType.SmallStrong, color = c.accent)
         }
     }
 }
 
-private fun Modifier.clickableNoRipple(onClick: () -> Unit): Modifier = this.then(
-    Modifier.clickable(
-        interactionSource = androidx.compose.foundation.interaction.MutableInteractionSource(),
-        indication = null,
-        onClick = onClick,
-    ),
-)
+/** Shown instead of empty sections when there is nothing yet: one calm place to begin. */
+@Composable
+private fun StartCard(navigator: Navigator) {
+    val s = LocalStrings.current
+    val c = Nix.colors
+    NixCard(Modifier.fillMaxWidth().guideTarget(GuideTarget.Progress)) {
+        Text(s.homeStartTitle, style = NixType.Heading, color = c.textPrimary)
+        Spacer(Modifier.height(10.dp))
+        StartRow(NixIcon.Shield, s.homeStartQuit, c.accent) { navigator.push(Route.BadHabitForm()) }
+        StartRow(NixIcon.CircleCheck, s.homeStartBuild, c.positive) { navigator.push(Route.GoodHabitForm()) }
+        StartRow(NixIcon.Calendar, s.homeStartEvent, c.accentWarm) { navigator.push(Route.EventForm()) }
+    }
+}
+
+@Composable
+private fun StartRow(icon: NixIcon, label: String, tint: Color, onClick: () -> Unit) {
+    val c = Nix.colors
+    Row(
+        Modifier.fillMaxWidth().pressable(pressedScale = 0.98f, onClick = onClick).padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        NixIconView(icon, tint, size = 22.dp)
+        Spacer(Modifier.width(14.dp))
+        Text(label, style = NixType.Body, color = c.textPrimary, modifier = Modifier.weight(1f))
+        NixIconView(NixIcon.Plus, c.textMuted, size = 18.dp)
+    }
+}
+
+/** Two rings with Momentum in the middle. Every part opens the explanation of its number. */
+@Composable
+private fun ProgressCard(stats: ProfileStats, onOpen: (ScoreKind) -> Unit) {
+    val s = LocalStrings.current
+    val c = Nix.colors
+    NixCard(Modifier.fillMaxWidth().guideTarget(GuideTarget.Progress)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(128.dp).pressable(pressedScale = 0.95f, haptic = true) { onOpen(ScoreKind.Momentum) },
+                contentAlignment = Alignment.Center,
+            ) {
+                ScoreRings(stats.quitScore, stats.disciplineScore, Modifier.size(128.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(stats.momentum?.let { "$it%" } ?: "—", style = NixType.counter(24), color = c.textPrimary)
+                    Text(s.momentum, style = NixType.Smaller, color = c.textMuted)
+                }
+            }
+            Spacer(Modifier.width(18.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                ScoreLegend(s.quitScoreTitle, stats.quitScore, c.accent) { onOpen(ScoreKind.BreakingFree) }
+                ScoreLegend(s.disciplineScoreTitle, stats.disciplineScore, c.positive) { onOpen(ScoreKind.Discipline) }
+                stats.disciplineDelta?.let {
+                    Text(s.momentumDelta(it), style = NixType.Small, color = c.textMuted, modifier = Modifier.padding(top = 4.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScoreLegend(label: String, score: Int?, color: Color, onClick: () -> Unit) {
+    val c = Nix.colors
+    Row(
+        Modifier.fillMaxWidth().pressable(pressedScale = 0.97f, haptic = true, onClick = onClick).padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(label, style = NixType.Small, color = c.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(score?.let { "$it%" } ?: "—", style = NixType.counter(22), color = if (score == null) c.textMuted else color)
+        }
+        NixIconView(NixIcon.Chevron, c.textMuted, size = 14.dp)
+    }
+}
+
+@Composable
+private fun ScoreRings(quit: Int?, discipline: Int?, modifier: Modifier = Modifier, stroke: Dp = 11.dp) {
+    val c = Nix.colors
+    val settle = spring<Float>(dampingRatio = 0.85f, stiffness = Spring.StiffnessVeryLow)
+    val outer by animateFloatAsState((quit ?: 0) / 100f, settle, label = "quitRing")
+    val inner by animateFloatAsState((discipline ?: 0) / 100f, settle, label = "disciplineRing")
+    val accent = c.accent
+    val positive = c.positive
+    Canvas(modifier) {
+        val width = stroke.toPx()
+        val gap = width + 3.dp.toPx()
+        ring(accent, outer, width, inset = width / 2)
+        ring(positive, inner, width, inset = width / 2 + gap)
+    }
+}
+
+private fun DrawScope.ring(color: Color, progress: Float, width: Float, inset: Float) {
+    val diameter = size.minDimension - inset * 2
+    val topLeft = Offset(inset, inset)
+    val arc = Size(diameter, diameter)
+    drawArc(color.copy(alpha = 0.16f), 0f, 360f, false, topLeft, arc, style = Stroke(width))
+    // A hint of the ring even at 0%, so a fresh start does not look broken.
+    drawArc(color, -90f, (360f * progress).coerceAtLeast(1f), false, topLeft, arc, style = Stroke(width, cap = StrokeCap.Round))
+}
+
+/** One line per good habit: it fills with green as you tap +, like its full card. */
+@Composable
+private fun TodayRow(habit: GoodHabitUi, onOpen: () -> Unit, onPlus: () -> Unit) {
+    val s = LocalStrings.current
+    val look = rememberGoodFill(habit.todayCount, habit.dailyTarget)
+    val pulse = rememberCompletionPulse(habit.doneToday)
+    NixCard(
+        Modifier.fillMaxWidth().graphicsLayer { scaleX = pulse.value; scaleY = pulse.value },
+        onClick = onOpen,
+        color = look.background,
+        padding = PaddingValues(start = 16.dp, end = 10.dp, top = 10.dp, bottom = 10.dp),
+        shapeRadius = 18.dp,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(habit.name, style = NixType.BodyStrong, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(s.todayProgress(habit.todayCount, habit.dailyTarget), style = NixType.Small, color = look.contentMuted, maxLines = 1)
+            }
+            Spacer(Modifier.width(10.dp))
+            NixIconButton(
+                if (habit.doneToday) NixIcon.Tick else NixIcon.Plus,
+                onPlus,
+                size = 40.dp,
+                tint = if (habit.doneToday) look.background else Nix.colors.onAccent,
+                background = if (habit.doneToday) look.content else Nix.colors.accent,
+                bordered = false,
+                haptic = true,
+            )
+        }
+    }
+}

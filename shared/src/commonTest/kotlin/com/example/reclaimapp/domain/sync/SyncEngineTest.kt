@@ -153,6 +153,8 @@ private class FakeSessions(signedIn: Boolean = true) : SessionManager {
         handoff = null
     }
 
+    override suspend fun hasLeftoverAccountData() = false
+
     override suspend fun signOutLocally() = Unit
 }
 

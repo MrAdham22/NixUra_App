@@ -148,11 +148,11 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
         val hello = if (name.isEmpty()) "Hi there." else "Hi $name."
         val focus = snapshot.badHabits.maxByOrNull { it.elapsed }
         val status = when {
-            focus != null -> " You are ${durationText(focus.elapsed)} clear on ${displayName(focus.name)}. ${motivation(focus.name, focus.elapsed, seed)}"
+            focus != null -> " You're **${durationText(focus.elapsed)}** clear on **${displayName(focus.name)}**."
             snapshot.goodHabits.isNotEmpty() -> " Your good habits are waiting for today's check-in."
-            else -> " Add a habit you want to leave behind and I will help you through it."
+            else -> " Add a habit you want to leave behind and I'll help you through it."
         }
-        return "$hello I'm your NixUra coach.$status What would help most right now?"
+        return "$hello$status"
     }
 
     fun suggestions(snapshot: CoachSnapshot): List<String> {
