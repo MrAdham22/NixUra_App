@@ -1,5 +1,6 @@
 package com.example.reclaimapp.presentation.strings
 
+import com.example.reclaimapp.domain.money.CostUnit
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.example.reclaimapp.domain.model.EventCategory
@@ -541,6 +542,57 @@ open class Strings {
     open val deleteGoodHabitBody: String = "Every day you logged is removed. If you're signed in, it goes from your other devices too."
     open val deleteEventItemBody: String = "The countdown and its reminders are removed."
     open fun deletedItem(name: String): String = "“$name” deleted"
+
+    // Money-saved tracker
+    open val moneyTitle: String = "Money saved"
+    open val moneyOptIn: String = "Track the money you save"
+    open val moneyOptInBody: String = "Optional. Tell us what it cost you and watch the savings grow while you stay clear."
+    open val moneyWhatExactly: String = "What exactly?"
+    open val moneyWhatCigarettes: String = "Brand, e.g. Cleopatra (optional)"
+    open val moneyWhatOther: String = "Which one, e.g. Pepsi (optional)"
+    open val moneyBoughtAs: String = "Bought as"
+    open val moneyCountBy: String = "Count per day in"
+    open val moneyPerDay: String = "How many a day, on average?"
+    open val moneyPacksPerDay: String = "Packs a day"
+    open val moneyPerPack: String = "How many in one pack?"
+    open val moneyPrice: String = "Price"
+    open val moneyCurrency: String = "Currency"
+    open val moneyRemove: String = "Stop tracking money"
+    open val moneyInvalid: String = "Enter how many a day and the price, or turn the tracker off."
+    open val moneySavedThisStreak: String = "Saved this streak"
+    open val moneyDailyCost: String = "A normal day cost"
+    open val moneyPerStreak: String = "Saved in each clean streak"
+    open val moneyNow: String = "Now"
+    open val moneyEdit: String = "Edit costs"
+    open val moneyAddCta: String = "Add what it cost you to see the money you save."
+    open fun moneyPricePer(unit: String): String = "Price per $unit"
+    open fun moneyDailyCostLine(amount: String, perDay: String): String = "$amount a day ($perDay)"
+    open fun moneyCardLine(amount: String, avoided: String): String = "$amount saved · $avoided"
+
+    open fun costUnitName(unit: CostUnit, plural: Boolean): String = when (unit) {
+        CostUnit.CIGARETTE -> if (plural) "cigarettes" else "cigarette"
+        CostUnit.POD -> if (plural) "pods" else "pod"
+        CostUnit.POUCH -> if (plural) "pouches" else "pouch"
+        CostUnit.SESSION -> if (plural) "sessions" else "session"
+        CostUnit.CUP -> if (plural) "cups" else "cup"
+        CostUnit.CAN -> if (plural) "cans" else "can"
+        CostUnit.BOTTLE -> if (plural) "bottles" else "bottle"
+        CostUnit.DRINK -> if (plural) "drinks" else "drink"
+        CostUnit.MEAL -> if (plural) "meals" else "meal"
+    }
+
+    /** "340 cigarettes not smoked", "21 cans not drunk". */
+    open fun unitsAvoided(count: Long, unit: CostUnit): String {
+        val verb = when (unit) {
+            CostUnit.CIGARETTE -> "not smoked"
+            CostUnit.CUP, CostUnit.CAN, CostUnit.BOTTLE, CostUnit.DRINK -> "not drunk"
+            CostUnit.MEAL -> "not eaten"
+            CostUnit.SESSION -> "skipped"
+            CostUnit.POD, CostUnit.POUCH -> "not used"
+        }
+        return "$count ${costUnitName(unit, count != 1L)} $verb"
+    }
+    open val packWord: String = "pack"
 }
 
 data class AppLanguage(val code: String, val nativeName: String)

@@ -22,4 +22,12 @@ data class HabitEntity(
     @ColumnInfo(name = "updated_at", defaultValue = "0") val updatedAtEpochMillis: Long = createdAtEpochMillis,
     @ColumnInfo(name = "deleted_at") val deletedAtEpochMillis: Long? = null,
     @ColumnInfo(name = "dirty", defaultValue = "1") val dirty: Boolean = true,
+    // Money-saved tracker (v5). All null = no tracker for this habit.
+    @ColumnInfo(name = "cost_item") val costItem: String? = null,
+    @ColumnInfo(name = "cost_unit") val costUnit: String? = null,
+    @ColumnInfo(name = "cost_units_per_day") val costUnitsPerDay: Double? = null,
+    @ColumnInfo(name = "cost_price_minor") val costPriceMinor: Long? = null,
+    @ColumnInfo(name = "cost_units_per_pack") val costUnitsPerPack: Int? = null,
+    @ColumnInfo(name = "cost_currency") val costCurrency: String? = null,
+    @ColumnInfo(name = "cost_per_day_in_packs") val costPerDayInPacks: Boolean? = null,
 )

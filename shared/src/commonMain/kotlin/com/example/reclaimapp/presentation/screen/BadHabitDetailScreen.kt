@@ -1,5 +1,7 @@
 package com.example.reclaimapp.presentation.screen
 
+import com.example.reclaimapp.domain.money.CountableHabits
+import com.example.reclaimapp.presentation.util.rememberNowMillis
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -71,6 +73,8 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
     val state by vm.uiState.collectAsStateWithLifecycle()
     val engine = koinInject<CoachEngine>()
     val days = koinInject<DayCalculator>()
+    val countable = koinInject<CountableHabits>()
+    val now by rememberNowMillis()
     val s = LocalStrings.current
     val c = Nix.colors
     val model = state.habits.firstOrNull { it.habitId == habitId }
@@ -156,8 +160,12 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
             )
         }
 
-        // Coach note
-
+        // Money saved (countable habits only)
+        if (model.cost != null) {
+            MoneySavedSection(model, now) { navigator.push(Route.BadHabitForm(habitId)) }
+        } else if (remember(model.name) { countable.profileFor(model.name) } != null) {
+            MoneySavedInvite { navigator.push(Route.BadHabitForm(habitId)) }
+        }
 
         // Body & mind timeline
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

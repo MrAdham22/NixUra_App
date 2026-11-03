@@ -7,6 +7,8 @@ import com.example.reclaimapp.data.local.entity.HabitEntity
 import com.example.reclaimapp.data.local.entity.HabitEventEntity
 import com.example.reclaimapp.data.mapper.toDomain
 import com.example.reclaimapp.data.mapper.toStorageValue
+import com.example.reclaimapp.data.mapper.withCost
+import com.example.reclaimapp.domain.money.HabitCost
 import com.example.reclaimapp.domain.calculator.TrackingStateCalculator
 import com.example.reclaimapp.domain.clock.Clock
 import com.example.reclaimapp.domain.model.HabitEventType
@@ -35,14 +37,14 @@ class HabitTrackingRepositoryImpl(
         }
     }
 
-    override suspend fun createHabitAndStartTracking(name: String, startAtEpochMillis: Long, colorArgb: Long?): Long {
+    override suspend fun createHabitAndStartTracking(name: String, startAtEpochMillis: Long, colorArgb: Long?, cost: HabitCost?): Long {
         val createdAt = clock.nowEpochMillis()
         return habitWriteDao.createHabitWithStartEvent(
             habit = HabitEntity(
                 name = name,
                 createdAtEpochMillis = createdAt,
                 colorArgb = colorArgb,
-            ),
+            ).withCost(cost),
             startEvent = HabitEventEntity(
                 habitId = 0,
                 eventType = HabitEventType.TRACKING_START.toStorageValue(),
@@ -73,6 +75,14 @@ class HabitTrackingRepositoryImpl(
     override suspend fun updateHabit(habitId: Long, name: String, colorArgb: Long?) {
         habitDao.getById(habitId) ?: throw IllegalArgumentException("Habit not found")
         habitDao.updateDetails(habitId, name, colorArgb, clock.nowEpochMillis())
+    }
+
+    override suspend fun updateCost(habitId: Long, cost: HabitCost?) {
+        val c = HabitEntity(name = "", createdAtEpochMillis = 0).withCost(cost)
+        habitDao.updateCost(
+            habitId, c.costItem, c.costUnit, c.costUnitsPerDay, c.costPriceMinor, c.costUnitsPerPack, c.costCurrency,
+            c.costPerDayInPacks, clock.nowEpochMillis(),
+        )
     }
 
     override suspend fun archiveHabit(habitId: Long, atEpochMillis: Long) {

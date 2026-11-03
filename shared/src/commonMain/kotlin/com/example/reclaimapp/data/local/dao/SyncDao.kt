@@ -80,6 +80,9 @@ abstract class SyncDao {
     @Query("SELECT * FROM events WHERE sync_id = :syncId LIMIT 1")
     abstract suspend fun eventBySyncId(syncId: String): EventEntity?
 
+    @Query("SELECT * FROM events WHERE source = :source AND external_id = :externalId LIMIT 1")
+    abstract suspend fun eventByExternal(source: String, externalId: String): EventEntity?
+
     // First sign-in with guest data: find the same thing under a different id.
     @Query("SELECT * FROM habits WHERE dirty = 1 AND archived_at IS NULL AND deleted_at IS NULL AND lower(trim(name)) = :name LIMIT 1")
     abstract suspend fun guestHabitNamed(name: String): HabitEntity?

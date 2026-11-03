@@ -34,7 +34,7 @@ import com.example.reclaimapp.data.local.entity.PreferenceEntity
         CoachMessageEntity::class,
         PreferenceEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @ConstructedBy(NixUraDatabaseConstructor::class)

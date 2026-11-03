@@ -6,6 +6,8 @@ import com.example.reclaimapp.domain.calculator.TrackingStateCalculator
 import com.example.reclaimapp.domain.clock.Clock
 import com.example.reclaimapp.domain.model.HabitEventType
 import com.example.reclaimapp.domain.model.HabitTracking
+import com.example.reclaimapp.domain.money.HabitCost
+import com.example.reclaimapp.domain.money.MoneySavedCalculator
 import com.example.reclaimapp.domain.usecase.ArchiveHabitUseCase
 import com.example.reclaimapp.domain.usecase.CreateHabitAndStartTrackingUseCase
 import com.example.reclaimapp.domain.usecase.ObserveActiveHabitTrackingUseCase
@@ -109,10 +111,10 @@ class HabitsViewModel(
     }
 
     /** Creates a habit from the full-screen form. [onSuccess] runs after it is saved (e.g. navigate back). */
-    fun onCreateHabit(name: String, colorArgb: Long?, startAtEpochMillis: Long, onSuccess: () -> Unit) {
+    fun onCreateHabit(name: String, colorArgb: Long?, startAtEpochMillis: Long, cost: HabitCost?, onSuccess: () -> Unit) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, errorMessage = null) }
-            val result = createHabitAndStartTracking(name, startAtEpochMillis, colorArgb)
+            val result = createHabitAndStartTracking(name, startAtEpochMillis, colorArgb, cost)
             _uiState.update { state ->
                 result.fold(
                     onSuccess = { state.copy(isSaving = false) },
@@ -123,10 +125,11 @@ class HabitsViewModel(
         }
     }
 
-    fun onUpdateHabit(habitId: Long, name: String, colorArgb: Long?, onSuccess: () -> Unit) {
+    /** [cost] is the tracker as the form now shows it (`null` = no tracker). */
+    fun onUpdateHabit(habitId: Long, name: String, colorArgb: Long?, cost: HabitCost?, onSuccess: () -> Unit) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, errorMessage = null) }
-            val result = updateHabit(habitId, name, colorArgb)
+            val result = updateHabit(habitId, name, colorArgb, cost)
             _uiState.update { state ->
                 result.fold(
                     onSuccess = { state.copy(isSaving = false) },
@@ -178,6 +181,9 @@ class HabitsViewModel(
             relapseTimestamps = events.filter { it.type == HabitEventType.RELAPSE }
                 .map { it.occurredAtEpochMillis }
                 .sortedDescending(),
+            cost = habit.cost,
+            // Follows the counter: the current clean streak, reset by a relapse.
+            moneySaved = habit.cost?.let { MoneySavedCalculator.saved(it, tracking.activeElapsedMillis) },
         )
     }
 }

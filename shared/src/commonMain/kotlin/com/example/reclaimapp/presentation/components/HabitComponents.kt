@@ -62,6 +62,7 @@ import com.example.reclaimapp.domain.calculator.GoodHabitStatsCalculator
 import com.example.reclaimapp.domain.calculator.toCounterParts
 import com.example.reclaimapp.domain.coach.CoachEngine
 import com.example.reclaimapp.domain.recognition.GoodHabitFillStyle
+import com.example.reclaimapp.domain.money.Currencies
 import com.example.reclaimapp.domain.model.Event
 import com.example.reclaimapp.domain.time.CivilCalendar
 import com.example.reclaimapp.presentation.appearance.ShadeRamp
@@ -259,6 +260,16 @@ fun BadHabitCard(
                 activeStageColor = primary,
                 inactiveStageColor = muted.copy(alpha = 0.45f),
                 modifier = Modifier.weight(1f),
+            )
+        }
+        model.moneySaved?.let { saved ->
+            val cost = model.cost ?: return@let
+            Text(
+                s.moneyCardLine(Currencies.format(saved.savedMinor, saved.currency), s.unitsAvoided(saved.unitsAvoided, cost.unit)),
+                style = NixType.SmallStrong,
+                color = primary,
+                maxLines = 2,
+                modifier = Modifier.padding(top = 0.dp),
             )
         }
         Text(s.longestLabel(model.longestStreakLabel), style = NixType.Small, color = muted)

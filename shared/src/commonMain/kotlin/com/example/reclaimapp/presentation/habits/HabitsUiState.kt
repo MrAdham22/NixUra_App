@@ -1,5 +1,7 @@
 package com.example.reclaimapp.presentation.habits
 
+import com.example.reclaimapp.domain.money.HabitCost
+import com.example.reclaimapp.domain.money.MoneySaved
 import kotlin.time.Duration
 
 data class HabitCardUiModel(
@@ -18,6 +20,10 @@ data class HabitCardUiModel(
     val trackingStartEpochMillis: Long? = null,
     /** Timestamps of recorded relapses, newest first. */
     val relapseTimestamps: List<Long> = emptyList(),
+    /** What the habit used to cost (`null` = no money tracker). */
+    val cost: HabitCost? = null,
+    /** Saved during the current streak, live; `null` without a tracker. */
+    val moneySaved: MoneySaved? = null,
 )
 
 data class HabitsUiState(

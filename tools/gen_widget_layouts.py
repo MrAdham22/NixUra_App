@@ -216,7 +216,8 @@ def bad_header(badge_size,icon,name_size,lines,end=12):
 wr('widget_bad_full',26,
    bad_header(40,22,20,2)+'\n'+
    tv('w_eyebrow',11,'medium caps',text='clear for',margin=m(marginTop=10))+'\n'+
-   counter(mt=6)+'\n'+tv('w_longest',12,'',text='Longest streak 12d',margin=m(marginTop=10)),
+   counter(mt=6)+'\n'+tv('w_saved',13,'medium',text='EGP 340.00 saved',margin=m(marginTop=10),extra='\n        android:visibility="gone"')+'\n'+
+   tv('w_longest',12,'',text='Longest streak 12d',margin=m(marginTop=10)),
    gravity='center')
 wr('widget_bad_row',26,
    badge(36,20)+'\n'+tv('w_name',18,'medium',w_='0dp',lines=2,extra=WEIGHT+CENTER_TXT)+'\n'+counter(0),orient='horizontal')

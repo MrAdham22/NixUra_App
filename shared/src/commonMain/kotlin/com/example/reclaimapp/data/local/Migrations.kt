@@ -108,3 +108,24 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
         connection.execSQL("CREATE INDEX IF NOT EXISTS `index_coach_messages_conversation_id` ON `coach_messages` (`conversation_id`)")
     }
 }
+
+/**
+ * v4 → v5, additive only: the money-saved tracker on quit habits (all columns null = no tracker) and the source of an
+ * event (LOCAL for existing ones, or an imported Google Calendar / Notion event with its id there).
+ */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `habits` ADD COLUMN `cost_item` TEXT")
+        connection.execSQL("ALTER TABLE `habits` ADD COLUMN `cost_unit` TEXT")
+        connection.execSQL("ALTER TABLE `habits` ADD COLUMN `cost_units_per_day` REAL")
+        connection.execSQL("ALTER TABLE `habits` ADD COLUMN `cost_price_minor` INTEGER")
+        connection.execSQL("ALTER TABLE `habits` ADD COLUMN `cost_units_per_pack` INTEGER")
+        connection.execSQL("ALTER TABLE `habits` ADD COLUMN `cost_currency` TEXT")
+        connection.execSQL("ALTER TABLE `habits` ADD COLUMN `cost_per_day_in_packs` INTEGER")
+        connection.execSQL("ALTER TABLE `events` ADD COLUMN `source` TEXT NOT NULL DEFAULT 'LOCAL'")
+        connection.execSQL("ALTER TABLE `events` ADD COLUMN `external_id` TEXT")
+        connection.execSQL("ALTER TABLE `events` ADD COLUMN `external_updated_at` INTEGER")
+        connection.execSQL("ALTER TABLE `events` ADD COLUMN `all_day` INTEGER NOT NULL DEFAULT 0")
+        connection.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_events_source_external_id` ON `events` (`source`, `external_id`)")
+    }
+}

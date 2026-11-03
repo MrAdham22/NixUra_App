@@ -35,7 +35,14 @@ data class GoodHabitLogEntity(
     @ColumnInfo(name = "dirty", defaultValue = "1") val dirty: Boolean = true,
 )
 
-@Entity(tableName = "events", indices = [Index(value = ["sync_id"], unique = true)])
+/**
+ * [source] is LOCAL for events made in the app, or GOOGLE / NOTION for imported ones; imported events are matched by
+ * (`source`, [externalId]) so a re-import updates the same row instead of adding a copy.
+ */
+@Entity(
+    tableName = "events",
+    indices = [Index(value = ["sync_id"], unique = true), Index(value = ["source", "external_id"], unique = true)],
+)
 data class EventEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
@@ -48,6 +55,11 @@ data class EventEntity(
     @ColumnInfo(name = "updated_at", defaultValue = "0") val updatedAtEpochMillis: Long = createdAtEpochMillis,
     @ColumnInfo(name = "deleted_at") val deletedAtEpochMillis: Long? = null,
     @ColumnInfo(name = "dirty", defaultValue = "1") val dirty: Boolean = true,
+    // Imported events (v5)
+    @ColumnInfo(name = "source", defaultValue = "LOCAL") val source: String = "LOCAL",
+    @ColumnInfo(name = "external_id") val externalId: String? = null,
+    @ColumnInfo(name = "external_updated_at") val externalUpdatedAtEpochMillis: Long? = null,
+    @ColumnInfo(name = "all_day", defaultValue = "0") val allDay: Boolean = false,
 )
 
 /** One coach chat. [title] is the user's first message, empty until they send one. Stays on this phone; not synced. */

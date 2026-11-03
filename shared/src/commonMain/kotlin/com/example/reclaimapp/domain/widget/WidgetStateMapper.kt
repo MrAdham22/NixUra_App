@@ -28,6 +28,8 @@ object WidgetStateMapper {
             periodStartEpochMillis = snapshot.activePeriodStartEpochMillis,
             colorArgb = item.habit.colorArgb,
             longestStreakMillis = snapshot.longestStreakMillis,
+            cost = item.habit.cost,
+            nowEpochMillis = nowEpochMillis,
         )
     }
 

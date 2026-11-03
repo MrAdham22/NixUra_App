@@ -4,6 +4,10 @@ import com.example.reclaimapp.domain.calculator.DayStatus
 import com.example.reclaimapp.domain.calculator.GoodHabitStatsCalculator
 import com.example.reclaimapp.domain.model.EventCategory
 import com.example.reclaimapp.domain.recognition.GoodHabitFillStyle
+import com.example.reclaimapp.domain.money.Currencies
+import com.example.reclaimapp.domain.money.HabitCost
+import com.example.reclaimapp.domain.money.MoneySaved
+import com.example.reclaimapp.domain.money.MoneySavedCalculator
 
 /** The three Android home-screen widgets. */
 enum class WidgetKind { QUIT_COUNTER, GOOD_QUICK_LOG, EVENT }
@@ -81,8 +85,29 @@ sealed interface QuitWidgetState {
         val periodStartEpochMillis: Long?,
         val colorArgb: Long?,
         val longestStreakMillis: Long = elapsedMillis,
+        /** What the habit used to cost; the widget shows the money saved this streak, like the card. */
+        val cost: HabitCost? = null,
+        val nowEpochMillis: Long = 0,
     ) : QuitWidgetState {
         val clock: WidgetClockSplit get() = WidgetClockSplit.ofElapsed(elapsedMillis)
+
+        val moneySaved: MoneySaved? get() = cost?.let { MoneySavedCalculator.saved(it, elapsedMillis) }
+
+        /**
+         * A widget cannot tick money by itself, so it shows whole currency units and is redrawn when the next one is
+         * reached, at most every 15 minutes (battery).
+         */
+        private val nextMoneyChangeAtEpochMillis: Long?
+            get() {
+                val c = cost ?: return null
+                val perMajor = Currencies.minorPerMajor(c.currency)
+                val perMilli = MoneySavedCalculator.dailyCostMinor(c) / MILLIS_PER_DAY
+                if (perMilli <= 0 || periodStartEpochMillis == null) return null
+                val saved = moneySaved?.savedMinor ?: 0
+                val next = (saved / perMajor + 1) * perMajor
+                val wait = ((next - saved) / perMilli).toLong().coerceAtLeast(MIN_MONEY_REFRESH)
+                return nowEpochMillis + wait
+            }
 
         /**
          * Instant at which what the widget prints must change, or `null` when there is no running period:
@@ -90,11 +115,17 @@ sealed interface QuitWidgetState {
          * hours, and the whole-day text changes every 24 h.
          */
         val nextChangeAtEpochMillis: Long?
-            get() = periodStartEpochMillis?.let { start ->
-                start + clock.days * MILLIS_PER_DAY + clock.nextCountUpOffsetMillis
+            get() {
+                val clockChange = periodStartEpochMillis?.let { start ->
+                    start + clock.days * MILLIS_PER_DAY + clock.nextCountUpOffsetMillis
+                }
+                val money = nextMoneyChangeAtEpochMillis
+                return listOfNotNull(clockChange, money).minOrNull()
             }
     }
 }
+
+private const val MIN_MONEY_REFRESH = 15 * 60_000L
 
 /** What the good-habit quick-log widget shows. */
 sealed interface GoodWidgetState {

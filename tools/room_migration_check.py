@@ -13,7 +13,7 @@ for f in glob.glob('shared/src/commonMain/kotlin/**/entity/*.kt',recursive=True)
             prop,typ=mm.groups()
             nm=re.search(r'@ColumnInfo\(name = "(\w+)"',line)
             name=nm.group(1) if nm else prop
-            sql={'Long':'INTEGER','Int':'INTEGER','Boolean':'INTEGER','String':'TEXT'}[typ.rstrip('?')]
+            sql={'Long':'INTEGER','Int':'INTEGER','Boolean':'INTEGER','String':'TEXT','Double':'REAL'}[typ.rstrip('?')]
             cols.append((name,sql,0 if typ.endswith('?') else 1,'@PrimaryKey' in line))
         ents[table]=cols
 db=sqlite3.connect(':memory:')
@@ -55,6 +55,7 @@ while True:
 print(len(stmts),"migration statements")
 v3_start=next(i for i,s in enumerate(stmts) if 'sync_id' in s)
 v4_start=next(i for i,s in enumerate(stmts) if 'coach_conversations' in s)
+v5_start=next(i for i,s in enumerate(stmts) if 'cost_item' in s)
 V3_ROWS=[
  "INSERT INTO coach_messages(role,text,created_at) VALUES('COACH','Hi',100)",
  "INSERT INTO coach_messages(role,text,created_at) VALUES('USER','"+"x"*80+"',200)",
@@ -73,7 +74,7 @@ if db.execute('select count(*) from coach_messages where conversation_id<>1').fe
 print('v3->v4 existing chat checked')
 empty=sqlite3.connect(':memory:')
 empty.execute('CREATE TABLE coach_messages (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, role TEXT NOT NULL, text TEXT NOT NULL, created_at INTEGER NOT NULL)')
-for s in stmts[v4_start:]: empty.execute(s)
+for s in stmts[v4_start:v5_start]: empty.execute(s)
 if empty.execute('select count(*) from coach_conversations').fetchone()[0]: print('V4 INVENTED A CONVERSATION'); ok=False
 print('v3->v4 with no chat checked')
 for table in ['habits','habit_events','good_habits','good_habit_logs','events']:
@@ -82,6 +83,16 @@ for table in ['habits','habit_events','good_habits','good_habit_logs','events']:
 if db.execute("select count(*) from good_habit_logs g join good_habits h on g.good_habit_id=h.id where g.sync_id<>h.sync_id||':'||g.day_index").fetchone()[0]:
     print('LOG SYNC IDS WRONG'); ok=False
 print('v2->v3 backfill checked')
+# v4 -> v5: existing events become LOCAL, habits get no money tracker; imported events stay unique per source
+if db.execute("select count(*) from events where source<>'LOCAL' or external_id is not null or all_day<>0").fetchone()[0]: print('V5 EVENT DEFAULTS WRONG'); ok=False
+if db.execute('select count(*) from habits where cost_unit is not null').fetchone()[0]: print('V5 INVENTED A COST'); ok=False
+db.execute("INSERT INTO events(title,category,target_at,reminders,created_at,sync_id,source) VALUES('A','OTHER',1,'',1,'l1','LOCAL')")
+db.execute("INSERT INTO events(title,category,target_at,reminders,created_at,sync_id,source,external_id) VALUES('G','OTHER',1,'',1,'g1','GOOGLE','ev1')")
+try:
+    db.execute("INSERT INTO events(title,category,target_at,reminders,created_at,sync_id,source,external_id) VALUES('G2','OTHER',1,'',1,'g2','GOOGLE','ev1')")
+    print('V5 DUPLICATE IMPORT ALLOWED'); ok=False
+except sqlite3.IntegrityError: pass
+print('v4->v5 defaults and import dedupe checked')
 for table,cols in ents.items():
     got={r[1]:(r[2],r[3],r[5]>0) for r in db.execute(f'PRAGMA table_info({table})')}
     exp={c[0]:(c[1],c[2],c[3]) for c in cols}

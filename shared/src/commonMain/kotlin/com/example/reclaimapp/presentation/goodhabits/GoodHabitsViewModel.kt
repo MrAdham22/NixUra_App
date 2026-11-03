@@ -16,7 +16,9 @@ import com.example.reclaimapp.domain.usecase.UpdateGoodHabitUseCase
 import com.example.reclaimapp.domain.usecase.DeletableItem
 import com.example.reclaimapp.presentation.deletion.PendingDeletions
 import com.example.reclaimapp.presentation.deletion.hides
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -65,6 +67,9 @@ class GoodHabitsViewModel(
 ) : ViewModel() {
 
     private val transient = MutableStateFlow(GoodHabitsUiState())
+
+    /** Habit name → fill style. Only touched inside the one uiState flow, which runs sequentially. */
+    private val styleCache = HashMap<String, GoodHabitFillStyle>()
     private val tick = MutableStateFlow(0L)
     private val initialState = GoodHabitsUiState(todayIndex = dayCalculator.dayIndexOf(clock.nowEpochMillis()))
 
@@ -76,7 +81,10 @@ class GoodHabitsViewModel(
                 todayIndex = today,
                 isLoading = false,
             )
-        }.stateIn(
+        }
+            // Stats and the habit-name matcher (its first use builds the catalog index) stay off the main thread.
+            .flowOn(Dispatchers.Default)
+            .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = initialState,
@@ -159,7 +167,7 @@ class GoodHabitsViewModel(
             completion30 = stats.completionLast30,
             countsByDay = GoodHabitStatsCalculator.countsByDay(this),
             createdDayIndex = createdDay,
-            fillStyle = fillStyles.styleFor(habit.name),
+            fillStyle = styleCache.getOrPut(habit.name) { fillStyles.styleFor(habit.name) },
         )
     }
 }

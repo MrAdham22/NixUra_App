@@ -1,5 +1,6 @@
 package com.example.reclaimapp.domain.usecase
 
+import com.example.reclaimapp.domain.money.HabitCost
 import com.example.reclaimapp.domain.model.AppSettings
 import com.example.reclaimapp.domain.model.HabitTracking
 import com.example.reclaimapp.domain.model.UserProfile
@@ -161,7 +162,8 @@ class WidgetUseCasesTest {
     // ---- LoadWidgetStateUseCase ----
     private class FakeHabits(val list: List<HabitTracking>) : HabitTrackingRepository {
         override fun observeActiveHabitTracking(): Flow<List<HabitTracking>> = flowOf(list)
-        override suspend fun createHabitAndStartTracking(name: String, startAtEpochMillis: Long, colorArgb: Long?): Long = error("unused")
+        override suspend fun createHabitAndStartTracking(name: String, startAtEpochMillis: Long, colorArgb: Long?, cost: HabitCost?): Long = error("unused")
+        override suspend fun updateCost(habitId: Long, cost: HabitCost?) = error("unused")
         override suspend fun recordRelapse(habitId: Long, atEpochMillis: Long) = error("unused")
         override suspend fun updateHabit(habitId: Long, name: String, colorArgb: Long?) = error("unused")
         override suspend fun archiveHabit(habitId: Long, atEpochMillis: Long) = error("unused")

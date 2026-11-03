@@ -23,7 +23,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.saveable.listSaver
 import com.example.reclaimapp.domain.clock.Clock
+import com.example.reclaimapp.domain.money.CostUnit
+import com.example.reclaimapp.domain.money.CountableHabits
+import com.example.reclaimapp.domain.money.CountableProfile
+import com.example.reclaimapp.domain.money.Currencies
+import com.example.reclaimapp.presentation.habits.CostInput
+import com.example.reclaimapp.presentation.platform.localeCurrencyCode
 import com.example.reclaimapp.domain.coach.CoachEngine
 import com.example.reclaimapp.domain.recognition.HabitNameHandoff
 import com.example.reclaimapp.domain.recognition.HabitPolarity
@@ -51,6 +58,17 @@ import org.koin.compose.viewmodel.koinViewModel
 
 private const val HOUR_MILLIS = 3_600_000L
 
+/** Keeps the money answers through rotation and process death. */
+private val CostInputSaver = listSaver<CostInput, String>(
+    save = { listOf(it.enabled.toString(), it.item, it.unit.name, it.perDay, it.inPacks.toString(), it.perPack, it.price, it.currency) },
+    restore = {
+        CostInput(
+            enabled = it[0].toBoolean(), item = it[1], unit = CostUnit.valueOf(it[2]), perDay = it[3],
+            inPacks = it[4].toBoolean(), perPack = it[5], price = it[6], currency = it[7],
+        )
+    },
+)
+
 @Composable
 fun BadHabitFormScreen(editId: Long?, navigator: Navigator) {
     val vm: HabitsViewModel = koinViewModel()
@@ -69,6 +87,15 @@ fun BadHabitFormScreen(editId: Long?, navigator: Navigator) {
     var customDays by rememberSaveable { mutableStateOf(0) }
     var customHours by rememberSaveable { mutableStateOf(0) }
     var loadedEdit by rememberSaveable { mutableStateOf(false) }
+    val countable = koinInject<CountableHabits>()
+    val defaultCurrency = remember { Currencies.defaultFor(localeCurrencyCode()) }
+    var cost by rememberSaveable(stateSaver = CostInputSaver) { mutableStateOf(CostInput.from(null, null, defaultCurrency)) }
+    var showCostErrors by remember { mutableStateOf(false) }
+    // Only habits that are bought and counted get the money questions.
+    val profile = remember(name) { name.takeIf { it.isNotBlank() }?.let(countable::profileFor) }
+    LaunchedEffect(profile) {
+        if (profile != null && !cost.enabled) cost = cost.adaptedTo(profile)
+    }
 
     // A name carried over from the Build form ("Track it as a quit habit instead").
     LaunchedEffect(Unit) {
@@ -80,6 +107,7 @@ fun BadHabitFormScreen(editId: Long?, navigator: Navigator) {
             state.habits.firstOrNull { it.habitId == editId }?.let {
                 name = it.name
                 color = it.colorArgb
+                cost = CostInput.from(it.cost, countable.profileFor(it.name), defaultCurrency)
                 loadedEdit = true
             }
         }
@@ -140,6 +168,15 @@ fun BadHabitFormScreen(editId: Long?, navigator: Navigator) {
             }
         }
 
+        // Kept visible after a rename if a tracker is already set, so it can still be edited or turned off.
+        val shownProfile = profile ?: cost.takeIf { it.enabled }?.let { CountableProfile("", listOf(it.unit), 1, packs = it.inPacks) }
+        if (shownProfile != null) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                SectionLabel(s.moneyTitle)
+                HabitCostSection(shownProfile, cost, showCostErrors, onChange = { cost = it })
+            }
+        }
+
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             SectionLabel(s.cardColor)
             ColorPickerRow(selected = color, onSelect = { color = it })
@@ -176,11 +213,13 @@ fun BadHabitFormScreen(editId: Long?, navigator: Navigator) {
         NixButton(
             text = if (editing) s.saveChanges else s.startTracking,
             onClick = {
-                if (editId != null) {
-                    vm.onUpdateHabit(editId, name, color) { navigator.back() }
+                if (cost.enabled && !cost.isComplete) {
+                    showCostErrors = true
+                } else if (editId != null) {
+                    vm.onUpdateHabit(editId, name, color, cost.toCost()) { navigator.back() }
                 } else {
                     val start = clock.nowEpochMillis() - hoursAgo * HOUR_MILLIS
-                    vm.onCreateHabit(name, color, start) { navigator.back() }
+                    vm.onCreateHabit(name, color, start, cost.toCost()) { navigator.back() }
                 }
             },
             enabled = name.isNotBlank(),

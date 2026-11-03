@@ -25,6 +25,7 @@ import com.example.reclaimapp.domain.widget.WidgetVariant
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import com.example.reclaimapp.domain.recognition.GoodHabitFillStyle
+import com.example.reclaimapp.domain.money.Currencies
 import com.example.reclaimapp.presentation.appearance.StreakColorMapper
 import com.example.reclaimapp.presentation.appearance.goodFillColors
 import com.example.reclaimapp.presentation.appearance.prefersLightContentOnCard
@@ -146,6 +147,13 @@ internal object WidgetRenderer {
             show(rv, R.id.w_eyebrow, plan.showCounterEyebrow)
             text(rv, R.id.w_longest, env.s.longestLabel(formatElapsed(st.longestStreakMillis.milliseconds)), muted)
             show(rv, R.id.w_longest, plan.showLongest)
+            // Money saved, as on the card (whole units: the widget cannot tick every second)
+            val saved = st.moneySaved
+            val cost = st.cost
+            if (saved != null && cost != null) {
+                text(rv, R.id.w_saved, env.s.moneyCardLine(Currencies.formatWhole(saved.savedMinor, saved.currency), env.s.unitsAvoided(saved.unitsAvoided, cost.unit)), primary)
+            }
+            show(rv, R.id.w_saved, saved != null && plan.showLongest)
         }
         counter(env, rv, plan, st.clock, countDown = false, valueColor = primary, labelColor = muted)
         rv.setOnClickPendingIntent(R.id.w_root, WidgetIntents.open(env.context, env.widgetId, WidgetIntents.TYPE_QUIT, st.habitId))

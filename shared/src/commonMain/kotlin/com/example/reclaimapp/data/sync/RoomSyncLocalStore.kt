@@ -9,6 +9,7 @@ import com.example.reclaimapp.data.local.entity.GoodHabitLogEntity
 import com.example.reclaimapp.data.local.entity.HabitEntity
 import com.example.reclaimapp.data.local.entity.HabitEventEntity
 import com.example.reclaimapp.data.local.entity.PreferenceEntity
+import com.example.reclaimapp.data.mapper.costOrNull
 import com.example.reclaimapp.data.repository.PreferencesRepositoryImpl
 import com.example.reclaimapp.domain.clock.Clock
 import com.example.reclaimapp.domain.sync.SyncLocalStore
@@ -22,7 +23,34 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal data class HabitPayload(val name: String, val createdAt: Long, val archivedAt: Long? = null, val colorArgb: Long? = null)
+internal data class HabitPayload(
+    val name: String,
+    val createdAt: Long,
+    val archivedAt: Long? = null,
+    val colorArgb: Long? = null,
+    /** Money-saved tracker; absent in records from older app versions (= no tracker). */
+    val cost: HabitCostPayload? = null,
+)
+
+@Serializable
+internal data class HabitCostPayload(
+    val item: String,
+    val unit: String,
+    val unitsPerDay: Double,
+    val priceMinor: Long,
+    val unitsPerPack: Int,
+    val currency: String,
+    val perDayInPacks: Boolean = false,
+)
+
+private fun HabitEntity.costPayload(): HabitCostPayload? = costOrNull()?.let {
+    HabitCostPayload(it.item, it.unit.name, it.unitsPerDay, it.pricePerPackMinor, it.unitsPerPack, it.currency, it.perDayInPacks)
+}
+
+private fun HabitEntity.withCostPayload(p: HabitCostPayload?): HabitEntity = copy(
+    costItem = p?.item, costUnit = p?.unit, costUnitsPerDay = p?.unitsPerDay, costPriceMinor = p?.priceMinor,
+    costUnitsPerPack = p?.unitsPerPack, costCurrency = p?.currency, costPerDayInPacks = p?.perDayInPacks,
+)
 
 @Serializable
 internal data class HabitEventPayload(val habitId: String, val type: String, val occurredAt: Long)
@@ -40,7 +68,18 @@ internal data class GoodHabitPayload(
 internal data class GoodHabitLogPayload(val goodHabitId: String, val dayIndex: Long, val count: Int)
 
 @Serializable
-internal data class EventPayload(val title: String, val category: String, val targetAt: Long, val reminders: String, val createdAt: Long)
+internal data class EventPayload(
+    val title: String,
+    val category: String,
+    val targetAt: Long,
+    val reminders: String,
+    val createdAt: Long,
+    /** Imported events: where from and their id there (absent from older app versions = a local event). */
+    val source: String = "LOCAL",
+    val externalId: String? = null,
+    val externalUpdatedAt: Long? = null,
+    val allDay: Boolean = false,
+)
 
 @Serializable
 internal data class SettingsPayload(
@@ -68,7 +107,7 @@ internal class RoomSyncLocalStore(
         val out = ArrayList<SyncRecord>()
         val room = { limit - out.size }
         dao.dirtyHabits(limit).forEach {
-            out += record(SyncType.Habit, it.syncId, it.updatedAtEpochMillis, it.deletedAtEpochMillis, HabitPayload.serializer(), HabitPayload(it.name, it.createdAtEpochMillis, it.archivedAtEpochMillis, it.colorArgb))
+            out += record(SyncType.Habit, it.syncId, it.updatedAtEpochMillis, it.deletedAtEpochMillis, HabitPayload.serializer(), HabitPayload(it.name, it.createdAtEpochMillis, it.archivedAtEpochMillis, it.colorArgb, it.costPayload()))
         }
         if (room() > 0) dao.dirtyGoodHabits(room()).forEach {
             out += record(SyncType.GoodHabit, it.syncId, it.updatedAtEpochMillis, it.deletedAtEpochMillis, GoodHabitPayload.serializer(), GoodHabitPayload(it.name, it.dailyTarget, it.colorArgb, it.createdAtEpochMillis, it.archivedAtEpochMillis))
@@ -90,7 +129,7 @@ internal class RoomSyncLocalStore(
             }
         }
         if (room() > 0) dao.dirtyEvents(room()).forEach {
-            out += record(SyncType.Event, it.syncId, it.updatedAtEpochMillis, it.deletedAtEpochMillis, EventPayload.serializer(), EventPayload(it.title, it.category, it.targetAtEpochMillis, it.reminders, it.createdAtEpochMillis))
+            out += record(SyncType.Event, it.syncId, it.updatedAtEpochMillis, it.deletedAtEpochMillis, EventPayload.serializer(), EventPayload(it.title, it.category, it.targetAtEpochMillis, it.reminders, it.createdAtEpochMillis, it.source, it.externalId, it.externalUpdatedAtEpochMillis, it.allDay))
         }
         if (room() > 0) settingsRecord()?.let { out += it }
         return out
@@ -181,11 +220,11 @@ internal class RoomSyncLocalStore(
             }?.copy(syncId = r.id)
         }
         if (existing == null) {
-            if (!r.deleted) dao.insertHabit(HabitEntity(name = p.name, createdAtEpochMillis = p.createdAt, archivedAtEpochMillis = p.archivedAt, colorArgb = p.colorArgb, syncId = r.id, updatedAtEpochMillis = r.updatedAt, dirty = false))
+            if (!r.deleted) dao.insertHabit(HabitEntity(name = p.name, createdAtEpochMillis = p.createdAt, archivedAtEpochMillis = p.archivedAt, colorArgb = p.colorArgb, syncId = r.id, updatedAtEpochMillis = r.updatedAt, dirty = false).withCostPayload(p.cost))
             return
         }
         if (!SyncRules.remoteWins(existing.dirty, existing.updatedAtEpochMillis, r.updatedAt)) return
-        val updated = existing.copy(name = p.name, createdAtEpochMillis = p.createdAt, archivedAtEpochMillis = p.archivedAt, colorArgb = p.colorArgb, updatedAtEpochMillis = r.updatedAt, deletedAtEpochMillis = deletedAt(r), dirty = false)
+        val updated = existing.copy(name = p.name, createdAtEpochMillis = p.createdAt, archivedAtEpochMillis = p.archivedAt, colorArgb = p.colorArgb, updatedAtEpochMillis = r.updatedAt, deletedAtEpochMillis = deletedAt(r), dirty = false).withCostPayload(p.cost)
         if (updated != existing) dao.updateHabit(updated)
     }
 
@@ -245,12 +284,16 @@ internal class RoomSyncLocalStore(
         if (existing == null && adopt && !r.deleted) {
             existing = dao.guestEventMatching(normalize(p.title), p.targetAt)?.also { dao.rekeyEvent(it.id, r.id) }?.copy(syncId = r.id)
         }
+        // The same calendar event imported on this device too: one row, keyed by the account's id.
+        if (existing == null && p.externalId != null) {
+            existing = dao.eventByExternal(p.source, p.externalId)?.also { dao.rekeyEvent(it.id, r.id) }?.copy(syncId = r.id)
+        }
         if (existing == null) {
-            if (!r.deleted) dao.insertEvent(EventEntity(title = p.title, category = p.category, targetAtEpochMillis = p.targetAt, reminders = p.reminders, createdAtEpochMillis = p.createdAt, syncId = r.id, updatedAtEpochMillis = r.updatedAt, dirty = false))
+            if (!r.deleted) dao.insertEvent(EventEntity(title = p.title, category = p.category, targetAtEpochMillis = p.targetAt, reminders = p.reminders, createdAtEpochMillis = p.createdAt, syncId = r.id, updatedAtEpochMillis = r.updatedAt, dirty = false, source = p.source, externalId = p.externalId, externalUpdatedAtEpochMillis = p.externalUpdatedAt, allDay = p.allDay))
             return
         }
         if (!SyncRules.remoteWins(existing.dirty, existing.updatedAtEpochMillis, r.updatedAt)) return
-        val updated = existing.copy(title = p.title, category = p.category, targetAtEpochMillis = p.targetAt, reminders = p.reminders, createdAtEpochMillis = p.createdAt, updatedAtEpochMillis = r.updatedAt, deletedAtEpochMillis = deletedAt(r), dirty = false)
+        val updated = existing.copy(title = p.title, category = p.category, targetAtEpochMillis = p.targetAt, reminders = p.reminders, createdAtEpochMillis = p.createdAt, updatedAtEpochMillis = r.updatedAt, deletedAtEpochMillis = deletedAt(r), dirty = false, source = p.source, externalId = p.externalId, externalUpdatedAtEpochMillis = p.externalUpdatedAt, allDay = p.allDay)
         if (updated != existing) dao.updateEvent(updated)
     }
 
