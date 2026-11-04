@@ -4,6 +4,22 @@ import com.example.reclaimapp.domain.usecase.DeletableItem
 import com.example.reclaimapp.presentation.deletion.rememberDeleteFlow
 import com.example.reclaimapp.domain.money.CountableHabits
 import com.example.reclaimapp.presentation.util.rememberNowMillis
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.unit.Dp
+import com.example.reclaimapp.domain.coach.BodyMilestone
+import androidx.compose.runtime.key
+import com.example.reclaimapp.presentation.platform.rememberReducedMotion
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -172,44 +188,8 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
         // Body & mind timeline
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             SectionLabel(s.timelineTitle)
-            NixCard {
-                category.milestones.forEachIndexed { index, milestone ->
-                    val achieved = milestone.after <= model.activeElapsed
-                    val isNext = insight.next == milestone
-                    Row(Modifier.padding(vertical = 8.dp)) {
-                        Box(
-                            Modifier
-                                .padding(top = 3.dp)
-                                .size(14.dp)
-                                .clip(CircleShape)
-                                .background(if (achieved) c.positive else if (isNext) c.accent.copy(alpha = 0.35f) else c.surfaceRaised)
-                                .border(1.dp, if (isNext) c.accent else c.border, CircleShape),
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Row {
-                                Text(
-                                    milestone.title,
-                                    style = NixType.BodyStrong,
-                                    color = if (achieved) c.textPrimary else c.textSecondary,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Text(
-                                    if (achieved) s.reached else durationText(milestone.after - model.activeElapsed),
-                                    style = NixType.SmallStrong,
-                                    color = if (achieved) c.positive else c.textMuted,
-                                )
-                            }
-                            Spacer(Modifier.height(2.dp))
-                            Text(milestone.detail, style = NixType.Small, color = c.textMuted)
-                            if (isNext) {
-                                Spacer(Modifier.height(8.dp))
-                                NixProgressBar(insight.progressToNext, height = 5.dp)
-                            }
-                        }
-                    }
-                    if (index != category.milestones.lastIndex) Spacer(Modifier.height(2.dp))
-                }
+            if (category.milestones.isNotEmpty()) {
+                RecoveryTimeline(category.milestones, model.activeElapsed, insight.next, insight.progressToNext)
             }
             Text(s.medicalDisclaimer, style = NixType.Smaller, color = c.textMuted)
         }
@@ -263,4 +243,203 @@ fun StatTile(label: String, value: String, modifier: Modifier = Modifier, info: 
         Text(value, style = NixType.Heading, color = c.textPrimary, maxLines = 1)
     }
     if (open && info != null) InfoSheet(label, value, info, onDismiss = { open = false })
+}
+
+/**
+ * The recovery milestones as a vertical timeline: reached ones are ticked on a green rail, the next one pulses and
+ * fills its stretch of the rail as time passes, later ones wait in grey.
+ */
+@Composable
+private fun RecoveryTimeline(milestones: List<BodyMilestone>, elapsed: Duration, next: BodyMilestone?, progressToNext: Float) {
+    val s = LocalStrings.current
+    val c = Nix.colors
+    val reached = milestones.count { it.after <= elapsed }
+    val overall by animateFloatAsState(if (milestones.isEmpty()) 0f else reached.toFloat() / milestones.size, tween(600), label = "overall")
+    NixCard {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(s.timelineMilestones.uppercase(), style = NixType.Eyebrow, color = c.textMuted, modifier = Modifier.weight(1f))
+            Text(s.timelineReachedCount(reached, milestones.size), style = NixType.Heading, color = c.textPrimary)
+        }
+        Spacer(Modifier.height(10.dp))
+        NixProgressBar(overall, color = c.positive, height = 6.dp)
+        Spacer(Modifier.height(18.dp))
+        // Long runs of reached steps fold away so the step being worked on stays in view.
+        var showEarlier by remember { mutableStateOf(false) }
+        val hidden = if (showEarlier) 0 else (reached - VISIBLE_REACHED).coerceAtLeast(0)
+        if (reached > VISIBLE_REACHED) {
+            EarlierStepsToggle(count = reached - VISIBLE_REACHED, expanded = showEarlier) { showEarlier = !showEarlier }
+        }
+        milestones.forEachIndexed { index, milestone ->
+            if (index < hidden) return@forEachIndexed
+            val state = when {
+                milestone.after <= elapsed -> StepState.Reached
+                milestone == next -> StepState.Next
+                else -> StepState.Later
+            }
+            // The stretch of rail below a step leads to the following step: green once that one is reached, filling
+            // up while it is the one being worked on.
+            val following = milestones.getOrNull(index + 1)
+            val railFill = when {
+                following == null -> null
+                following.after <= elapsed -> 1f
+                following == next && state == StepState.Reached -> progressToNext
+                else -> 0f
+            }
+            key(milestone) { TimelineStep(milestone, state, elapsed, railFill, progressToNext) }
+        }
+        if (next == null && milestones.isNotEmpty()) {
+            Spacer(Modifier.height(4.dp))
+            Text(s.timelineAllReached, style = NixType.SmallStrong, color = c.positive)
+        }
+    }
+}
+
+private enum class StepState { Reached, Next, Later }
+
+/** Reached steps shown before the fold; the rest open with [EarlierStepsToggle]. */
+private const val VISIBLE_REACHED = 2
+
+/** A "+7" node on the rail that shows or hides the earlier reached steps. */
+@Composable
+private fun EarlierStepsToggle(count: Int, expanded: Boolean, onClick: () -> Unit) {
+    val s = LocalStrings.current
+    val c = Nix.colors
+    val node = 28.dp
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+            .pressable(pressedScale = 0.98f, onClick = onClick),
+    ) {
+        Box(
+            Modifier
+                .width(node)
+                .fillMaxHeight()
+                .drawBehind {
+                    val x = size.width / 2
+                    drawLine(c.positive, Offset(x, node.toPx()), Offset(x, size.height), 2.dp.toPx(), StrokeCap.Round)
+                },
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            Box(
+                Modifier.size(node).clip(CircleShape).background(c.positiveSoft).border(1.dp, c.positive, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (expanded) NixIconView(NixIcon.Minus, c.positive, size = 14.dp, strokeWidth = 2.4f)
+                else Text(s.timelineEarlierCount(count), style = NixType.Smaller, color = c.positive)
+            }
+        }
+        Spacer(Modifier.width(14.dp))
+        Text(
+            if (expanded) s.timelineHideEarlier else s.timelineShowEarlier(count),
+            style = NixType.SmallStrong,
+            color = c.positive,
+            modifier = Modifier.weight(1f).padding(top = 5.dp, bottom = 18.dp),
+        )
+    }
+}
+
+@Composable
+private fun TimelineStep(milestone: BodyMilestone, state: StepState, elapsed: Duration, railFill: Float?, progressToNext: Float) {
+    val s = LocalStrings.current
+    val c = Nix.colors
+    val node = 28.dp
+    val fill by animateFloatAsState(railFill ?: 0f, tween(600), label = "rail")
+    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+        // Rail + node
+        Box(
+            Modifier
+                .width(node)
+                .fillMaxHeight()
+                .drawBehind {
+                    if (railFill == null) return@drawBehind
+                    val x = size.width / 2
+                    val top = node.toPx()
+                    val bottom = size.height
+                    val stroke = 2.dp.toPx()
+                    drawLine(c.border, Offset(x, top), Offset(x, bottom), stroke, StrokeCap.Round)
+                    if (fill > 0f) {
+                        val end = top + (bottom - top) * fill
+                        drawLine(
+                            Brush.verticalGradient(listOf(c.positive, if (fill < 1f) c.accent else c.positive), startY = top, endY = end),
+                            Offset(x, top), Offset(x, end), stroke, StrokeCap.Round,
+                        )
+                    }
+                },
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            TimelineNode(state, node)
+        }
+        Spacer(Modifier.width(14.dp))
+        val content = Modifier.weight(1f).padding(bottom = if (railFill == null) 0.dp else 18.dp)
+        if (state == StepState.Next) {
+            Column(
+                content
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(c.accent.copy(alpha = 0.10f))
+                    .border(1.dp, c.accent.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
+                    .padding(14.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(s.timelineUpNext.uppercase(), style = NixType.Eyebrow, color = c.accent, modifier = Modifier.weight(1f))
+                    Text(s.timelineIn(durationText(milestone.after - elapsed)), style = NixType.SmallStrong, color = c.accent)
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(milestone.title, style = NixType.Heading, color = c.textPrimary)
+                Spacer(Modifier.height(4.dp))
+                Text(milestone.detail, style = NixType.Small, color = c.textSecondary)
+                Spacer(Modifier.height(12.dp))
+                NixProgressBar(progressToNext, height = 6.dp)
+            }
+        } else {
+            val reached = state == StepState.Reached
+            Column(content.padding(top = 4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(s.timelineAfter(durationText(milestone.after)).uppercase(), style = NixType.Eyebrow, color = c.textMuted, modifier = Modifier.weight(1f))
+                    Text(
+                        if (reached) s.reached else s.timelineIn(durationText(milestone.after - elapsed)),
+                        style = NixType.SmallStrong,
+                        color = if (reached) c.positive else c.textMuted,
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(milestone.title, style = NixType.BodyStrong, color = if (reached) c.textPrimary else c.textSecondary)
+                Spacer(Modifier.height(2.dp))
+                Text(milestone.detail, style = NixType.Small, color = c.textMuted)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimelineNode(state: StepState, size: Dp) {
+    val c = Nix.colors
+    when (state) {
+        StepState.Reached -> Box(
+            Modifier.size(size).clip(CircleShape).background(c.positive),
+            contentAlignment = Alignment.Center,
+        ) { NixIconView(NixIcon.Tick, c.onAccent, size = 16.dp, strokeWidth = 2.4f) }
+        StepState.Next -> {
+            // A soft halo breathes around the step being worked on (a steady one when motion is reduced).
+            val still = rememberReducedMotion()
+            val pulse = rememberInfiniteTransition(label = "next")
+            val wave by pulse.animateFloat(0f, 1f, infiniteRepeatable(tween(1800), RepeatMode.Restart), label = "halo")
+            val t = if (still) 0.5f else wave
+            Box(
+                Modifier
+                    .size(size)
+                    .drawBehind {
+                        drawCircle(c.accent.copy(alpha = 0.35f * (1f - t)), radius = this.size.minDimension / 2 * (1f + 0.6f * t))
+                    }
+                    .clip(CircleShape)
+                    .background(c.surface)
+                    .border(2.dp, c.accent, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) { Box(Modifier.size(10.dp).clip(CircleShape).background(c.accent)) }
+        }
+        StepState.Later -> Box(
+            Modifier.size(size).clip(CircleShape).background(c.surfaceRaised).border(1.dp, c.border, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) { Box(Modifier.size(6.dp).clip(CircleShape).background(c.textMuted.copy(alpha = 0.6f))) }
+    }
 }

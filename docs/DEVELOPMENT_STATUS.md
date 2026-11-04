@@ -325,4 +325,12 @@ Owner report: Settings → Integrations → Google Calendar → Connect, pick an
 - **Not verified:** the Holiday category and Other-last order (built and unit-tested; the phone was unplugged before install); the cancel message; iOS (`IosDeviceRegion` and the `GoogleAuthorizer.forget` stub are not compiled here; on a Mac run `:shared:compileKotlinIosSimulatorArm64`); background import in WorkManager.
 - **Emulator note:** the Pixel_10_Pro AVD (Android 37, Play Store image) opened its window off screen, lost its adb link after a quick boot, and froze once on a cold boot with the host GPU. A cold boot with `-gpu swiftshader_indirect` worked; the test then moved to the owner's phone.
 
+## Recovery timeline redesign (2026-11-04)
+
+Owner request: make "How your body & mind recover" on the quit-habit detail screen a real timeline that is good to look at.
+
+- **What changed** (`BadHabitDetailScreen.kt`, private `RecoveryTimeline`, `TimelineStep`, `TimelineNode`, `EarlierStepsToggle`; 9 strings in `Strings`): summary row ("9 of 13 reached" + overall bar); a vertical rail drawn with `drawBehind` (green for reached, filling green→accent toward the next step as time passes, grey ahead); 28 dp nodes (ticked green, pulsing accent ring for the next step, grey for later); each step has an "AFTER 3 DAYS" eyebrow and "Reached" or "in 5 days"; the next step sits in a tinted "Up next" panel with its own progress bar; only the last 2 reached steps show, the rest fold behind a "+N" node. The pulse is still when the phone reduces motion (`rememberReducedMotion`). No shared component changed.
+- **Verified:** `:shared:testAndroidHostTest` (417 tests, 0 failures) and `:androidApp:assembleDebug`; on the emulator (Pixel_10_Pro, Android 37) with a smoking habit at 8 days: the rail, nodes, Up next panel and the fold open/close. An independent check of the change against its checklist passed all 8 lines; its 4 findings (reduced motion, `key()` per step, "+N" through `Strings`, no card when a habit has no milestones) are fixed.
+- **Not verified:** light theme, the owner's phone, iOS (not compiled here).
+
 **History cleanup (2026-11-03, owner request):** commits from `14810ff` onward were rewritten to remove assistant co-author lines and to carry the owner as author (Adham ELgendy). Code is byte-for-byte unchanged (same tree); commit IDs changed and the IDs above were updated. Force-pushed with lease to `master` and `agent-3/cloud-sync`. A local backup of the old history is kept as branch `backup/before-rewrite-2026-11-03`.

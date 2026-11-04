@@ -109,7 +109,7 @@ Unit tests for calculator and color progression; Room tests after Phase 4 gate. 
 
 The owner approved expanding the app. Current scope:
 
-- **Quit habits** (original core) with user-chosen card colors (`ShadeRamp`), analysis screen, recovery timeline from an offline knowledge base, backdated start, edit/archive.
+- **Quit habits** (original core) with user-chosen card colors (`ShadeRamp`), analysis screen, recovery timeline from an offline knowledge base (drawn as a vertical timeline: `RecoveryTimeline` in `BadHabitDetailScreen.kt`), backdated start, edit/archive.
 - **Good habits:** daily target counters (`good_habits`, `good_habit_logs` keyed by local day index), streaks, 7/30-day completion, calendar with green done squares, past-day edits.
 - **Events:** countdown/count-up, categories, multiple reminder lead times (`events.reminders` = comma-separated millis), Android local notifications.
 - **Coach:** offline, rule-based (`CoachEngine`, `HabitKnowledgeBase`) behind `CoachResponder`; separate chats in `coach_conversations` and `coach_messages`, kept on the phone and not synced (owner decision); crisis messages answered locally with a support message; alcohol/gambling carry safety notes. No network.
