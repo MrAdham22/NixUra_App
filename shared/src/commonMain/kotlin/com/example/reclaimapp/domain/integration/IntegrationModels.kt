@@ -1,5 +1,6 @@
 package com.example.reclaimapp.domain.integration
 
+import com.example.reclaimapp.domain.model.EventCategory
 import com.example.reclaimapp.domain.model.EventSource
 
 /** A calendar the user can link. Imported events carry the matching [EventSource]. */
@@ -10,7 +11,8 @@ enum class IntegrationProvider(val source: EventSource) {
 
 /**
  * One event as the source reports it. [externalId] is unique within the provider and stable across edits;
- * [cancelled] = deleted or cancelled at the source.
+ * [cancelled] = deleted or cancelled at the source. [category] = what the source says it is (a Google birthday or
+ * task); null = Other. It is set on import only: a category the user picked in NixUra is kept.
  */
 data class ExternalEvent(
     val externalId: String,
@@ -19,6 +21,7 @@ data class ExternalEvent(
     val allDay: Boolean,
     val updatedAtEpochMillis: Long,
     val cancelled: Boolean = false,
+    val category: EventCategory? = null,
 )
 
 /**
@@ -52,8 +55,8 @@ enum class IntegrationError { REVOKED, OFFLINE, NOT_CONFIGURED, FAILED }
  * What the app remembers about one link, on this device. Tokens are not in here: Google access tokens are asked for
  * each time and Notion's stays on the server.
  *
- * @property selection Google: the calendar ids to import; Notion: the database id.
- * @property mapping Notion only: property names for the title and the date.
+ * @property selection Google: the [GoogleFeed] keys to import; Notion: the database id.
+ * @property mapping Notion: property names for the title and the date; Google: the holiday calendar ([GoogleMapping]).
  */
 data class IntegrationState(
     val connected: Boolean = false,
@@ -70,13 +73,18 @@ interface IntegrationStateStore {
     suspend fun save(provider: IntegrationProvider, state: IntegrationState)
 }
 
-/** An event row already imported from a provider (deleted rows included, so a user's delete is remembered). */
+/**
+ * An event row already imported from a provider (deleted rows included, so a user's delete is remembered).
+ * [removedByImport] = NixUra removed it itself (gone at the source, its entry turned off, Disconnect), not the user:
+ * such a row comes back as soon as the source lists the event again.
+ */
 data class ImportedRow(
     val id: Long,
     val externalId: String,
     val externalUpdatedAt: Long?,
     val startEpochMillis: Long,
     val deletedAt: Long?,
+    val removedByImport: Boolean = false,
 )
 
 /** Writes imported events into the app's events table. */

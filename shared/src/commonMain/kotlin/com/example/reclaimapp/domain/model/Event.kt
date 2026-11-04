@@ -22,6 +22,18 @@ enum class EventCategory {
     HEALTH,
     CELEBRATION,
     OTHER,
+
+    // Added later, so saved ordinals and names keep their meaning. Imports from Google use these.
+    EVENT,
+    BIRTHDAY,
+    TASK,
+    HOLIDAY,
+    ;
+
+    companion object {
+        /** The order pickers show: Other last, whatever was added after it. */
+        val pickerOrder: List<EventCategory> = entries.filter { it != OTHER } + OTHER
+    }
 }
 
 enum class EventSource { LOCAL, GOOGLE, NOTION }

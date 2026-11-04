@@ -5,9 +5,10 @@ import androidx.lifecycle.viewModelScope
 
 import com.example.reclaimapp.domain.auth.SessionManager
 import com.example.reclaimapp.domain.auth.SessionState
-import com.example.reclaimapp.domain.integration.CalendarChoice
 import com.example.reclaimapp.domain.integration.DisconnectIntegrationUseCase
 import com.example.reclaimapp.domain.integration.GoogleCalendarCatalog
+import com.example.reclaimapp.domain.integration.GoogleFeed
+import com.example.reclaimapp.domain.integration.GoogleMapping
 import com.example.reclaimapp.domain.integration.LinkReply
 import com.example.reclaimapp.domain.integration.NotionDatabaseChoice
 import com.example.reclaimapp.domain.integration.NotionLink
@@ -26,20 +27,20 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Something the screen should tell the user once. */
-enum class IntegrationNotice { GOOGLE_NOT_AVAILABLE, GOOGLE_DENIED, OFFLINE, FAILED, NOTION_NOT_CONNECTED }
+enum class IntegrationNotice { GOOGLE_NOT_AVAILABLE, GOOGLE_CANCELLED, GOOGLE_DENIED, OFFLINE, FAILED, NOTION_NOT_CONNECTED }
 
 data class IntegrationsUiState(
     val signedIn: Boolean = false,
     val google: IntegrationState = IntegrationState(),
     val notion: IntegrationState = IntegrationState(),
-    val googleCalendars: List<CalendarChoice> = emptyList(),
     val notionDatabases: List<NotionDatabaseChoice> = emptyList(),
     val busy: IntegrationProvider? = null,
     val notice: IntegrationNotice? = null,
 )
 
 /**
- * Settings → Integrations. Google is authorised on the device (read-only, minimal scope) and the user picks calendars;
+ * Settings → Integrations. Google is authorised on the device (read-only scopes) and the user picks what to import
+ * (events, birthdays, tasks, holidays for their country);
  * Notion is authorised in the browser through NixUra's server, then the user picks a database and its title and
  * date properties (suggested automatically).
  */
@@ -81,30 +82,41 @@ class IntegrationsViewModel(
                 it.copy(signedIn = signedIn, google = states.get(IntegrationProvider.GOOGLE), notion = notionState)
             }
             if (signedIn && notionState.connected && _state.value.notionDatabases.isEmpty()) loadNotionDatabases()
-            if (signedIn && _state.value.google.connected && _state.value.googleCalendars.isEmpty()) loadGoogleCalendars()
         }
     }
 
     fun onConnectGoogle() = launchBusy(IntegrationProvider.GOOGLE) {
         when (val r = googleAuth.authorize(interactive = true)) {
             is GoogleAuthResult.Granted -> {
-                val calendars = google.calendars().orEmpty()
-                val primary = calendars.filter { it.primary }.map { it.id }.ifEmpty { calendars.take(1).map { it.id } }
-                val s = IntegrationState(connected = true, accountLabel = r.accountLabel, selection = primary)
+                // If Google cannot be asked now the link is not saved, so it never looks connected with nothing to pick.
+                val holidays = when (val h = google.holidayCalendar()) {
+                    is LinkReply.Ok -> h.value
+                    LinkReply.Offline -> return@launchBusy notice(IntegrationNotice.OFFLINE)
+                    else -> return@launchBusy notice(IntegrationNotice.FAILED)
+                }
+                val mapping = holidays?.let { mapOf(GoogleMapping.HOLIDAY_CALENDAR to it.id, GoogleMapping.HOLIDAY_NAME to it.name) }.orEmpty()
+                val s = IntegrationState(
+                    connected = true,
+                    accountLabel = r.accountLabel,
+                    selection = GoogleFeed.defaults.map { it.key },
+                    mapping = mapping,
+                )
                 states.save(IntegrationProvider.GOOGLE, s)
-                _state.update { it.copy(google = s, googleCalendars = calendars) }
+                _state.update { it.copy(google = s) }
                 sync(IntegrationProvider.GOOGLE)
             }
             GoogleAuthResult.NotAvailable -> notice(IntegrationNotice.GOOGLE_NOT_AVAILABLE)
             GoogleAuthResult.Offline -> notice(IntegrationNotice.OFFLINE)
+            GoogleAuthResult.Cancelled -> notice(IntegrationNotice.GOOGLE_CANCELLED)
             GoogleAuthResult.Denied, GoogleAuthResult.NeedsConsent -> notice(IntegrationNotice.GOOGLE_DENIED)
         }
     }
 
-    fun onToggleGoogleCalendar(id: String) = launchBusy(IntegrationProvider.GOOGLE) {
+    fun onToggleGoogleFeed(feed: GoogleFeed) = launchBusy(IntegrationProvider.GOOGLE) {
         val current = states.get(IntegrationProvider.GOOGLE)
+        val id = feed.key
         val selection = if (id in current.selection) current.selection - id else current.selection + id
-        // A different set of calendars starts over, so events of calendars no longer picked are removed.
+        // A different selection starts over, so events of what is no longer picked are removed.
         val s = current.copy(selection = selection, cursor = null)
         states.save(IntegrationProvider.GOOGLE, s)
         _state.update { it.copy(google = s) }
@@ -141,7 +153,7 @@ class IntegrationsViewModel(
         disconnect(provider)
         _state.update {
             when (provider) {
-                IntegrationProvider.GOOGLE -> it.copy(google = IntegrationState(), googleCalendars = emptyList())
+                IntegrationProvider.GOOGLE -> it.copy(google = IntegrationState())
                 IntegrationProvider.NOTION -> it.copy(notion = IntegrationState(), notionDatabases = emptyList())
             }
         }
@@ -153,11 +165,6 @@ class IntegrationsViewModel(
         val error = sync.invoke(provider)[provider]
         if (error == IntegrationError.OFFLINE) notice(IntegrationNotice.OFFLINE)
         _state.update { it.copy(google = states.get(IntegrationProvider.GOOGLE), notion = states.get(IntegrationProvider.NOTION)) }
-    }
-
-    private suspend fun loadGoogleCalendars() {
-        val calendars = google.calendars() ?: return
-        _state.update { it.copy(googleCalendars = calendars) }
     }
 
     private suspend fun loadNotionDatabases() {

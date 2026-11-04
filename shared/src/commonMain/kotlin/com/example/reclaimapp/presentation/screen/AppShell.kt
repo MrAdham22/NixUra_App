@@ -39,6 +39,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.example.reclaimapp.data.auth.SessionManagerImpl
 import com.example.reclaimapp.domain.auth.AccountProfileSync
@@ -103,11 +104,16 @@ fun AppRoot() {
     LaunchedEffect(Unit) { cloudSync.run() }
     val calendarImport = koinInject<SyncIntegrationsUseCase>()
     LifecycleResumeEffect(Unit) {
-        syncScope.launch {
-            runCatching { calendarImport(skipIfSyncedWithinMillis = SyncIntegrationsUseCase.AUTO_SYNC_EVERY_MILLIS) }
+        val job = syncScope.launch {
+            runCatching { calendarImport(skipIfSyncedWithinMillis = SyncIntegrationsUseCase.FOREGROUND_SYNC_EVERY_MILLIS) }
             cloudSync.onAppForeground()
+            // Linked calendars keep importing while the app is open (stops when it goes to the background).
+            while (true) {
+                delay(SyncIntegrationsUseCase.FOREGROUND_SYNC_EVERY_MILLIS)
+                runCatching { calendarImport(skipIfSyncedWithinMillis = SyncIntegrationsUseCase.FOREGROUND_SYNC_EVERY_MILLIS) }
+            }
         }
-        onPauseOrDispose { }
+        onPauseOrDispose { job.cancel() }
     }
 
     // Accounts: optional sign-in. The app stays fully usable offline without an account ("Continue without an account").

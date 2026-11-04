@@ -142,7 +142,7 @@ fun EventFormScreen(editId: Long?, navigator: Navigator) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 SectionLabel(s.eventCategoryLabel)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    EventCategory.entries.forEach {
+                    EventCategory.pickerOrder.forEach {
                         NixChip(s.categoryLabel(it), selected = it == category, onClick = { categoryOrdinal = it.ordinal })
                     }
                 }

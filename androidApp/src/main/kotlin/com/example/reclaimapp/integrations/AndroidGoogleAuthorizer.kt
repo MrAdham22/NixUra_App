@@ -1,10 +1,13 @@
 package com.example.reclaimapp.integrations
 
+import android.app.Activity
 import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
+import android.util.Log
+import androidx.activity.result.ActivityResult
 import com.example.reclaimapp.domain.integration.GoogleAuthResult
 import com.example.reclaimapp.domain.integration.GoogleAuthorizer
+import com.google.android.gms.auth.GoogleAuthUtil
 import com.google.android.gms.auth.api.identity.AuthorizationRequest
 import com.google.android.gms.auth.api.identity.AuthorizationResult
 import com.google.android.gms.auth.api.identity.Identity
@@ -22,21 +25,22 @@ import java.net.URLEncoder
 import kotlin.coroutines.resume
 
 /**
- * Google Calendar access through Google's Authorization API. Only the read-only calendar scope is asked for. The
+ * Google Calendar and Google Tasks access through Google's Authorization API. Only read-only scopes are asked for. The
  * access token lives for about an hour and is fetched again for every sync (silently once the user agreed), so nothing
  * secret is stored on the phone. No client id is in the code: Google matches the app by package name and signing
  * certificate (see README, "Google Calendar setup"); without that setup Google answers DEVELOPER_ERROR → NotAvailable.
  *
- * [consent] shows Google's consent screen; MainActivity sets it while it is alive.
+ * [consent] shows Google's consent screen; MainActivity sets it while it is alive. Failures are logged under [TAG]
+ * with Google's status code only (never the token or the account).
  */
 class AndroidGoogleAuthorizer(private val context: Context) : GoogleAuthorizer {
 
-    /** Launches Google's consent screen and returns its result intent, or null when the user backed out. */
+    /** Launches Google's consent screen and returns how it closed (result code and data). */
     @Volatile
-    var consent: (suspend (PendingIntent) -> Intent?)? = null
+    var consent: (suspend (PendingIntent) -> ActivityResult)? = null
 
     private val request: AuthorizationRequest =
-        AuthorizationRequest.builder().setRequestedScopes(listOf(Scope(CALENDAR_READONLY))).build()
+        AuthorizationRequest.builder().setRequestedScopes(listOf(Scope(CALENDAR_READONLY), Scope(TASKS_READONLY))).build()
 
     override suspend fun authorize(interactive: Boolean): GoogleAuthResult {
         val client = Identity.getAuthorizationClient(context)
@@ -45,22 +49,37 @@ class AndroidGoogleAuthorizer(private val context: Context) : GoogleAuthorizer {
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            return failure(e)
+            return failure("authorize", e)
         }
         val result = if (first.hasResolution()) {
             if (!interactive) return GoogleAuthResult.NeedsConsent
-            val show = consent ?: return GoogleAuthResult.NeedsConsent
-            val pending = first.pendingIntent ?: return GoogleAuthResult.Denied
-            val data = show(pending) ?: return GoogleAuthResult.Denied
+            val show = consent ?: run {
+                Log.w(TAG, "consent needed but no screen is open to show it")
+                return GoogleAuthResult.NeedsConsent
+            }
+            val pending = first.pendingIntent ?: run {
+                Log.w(TAG, "consent needed but Google gave no pending intent")
+                return GoogleAuthResult.Denied
+            }
+            val closed = show(pending)
+            val data = closed.data
+            if (data == null) {
+                Log.w(TAG, "consent screen closed with result code ${closed.resultCode} and no data")
+                return if (closed.resultCode == Activity.RESULT_CANCELED) GoogleAuthResult.Cancelled else GoogleAuthResult.Denied
+            }
+            // Also read the data when the screen did not return RESULT_OK: Google puts the failure status in it.
             try {
                 client.getAuthorizationResultFromIntent(data)
             } catch (e: Exception) {
-                return GoogleAuthResult.Denied
+                return failure("consent (result code ${closed.resultCode})", e)
             }
         } else {
             first
         }
-        val token = result.accessToken ?: return GoogleAuthResult.Denied
+        val token = result.accessToken ?: run {
+            Log.w(TAG, "authorization finished without an access token")
+            return GoogleAuthResult.Denied
+        }
         return GoogleAuthResult.Granted(token, result.toGoogleSignInAccount()?.email.orEmpty())
     }
 
@@ -79,12 +98,29 @@ class AndroidGoogleAuthorizer(private val context: Context) : GoogleAuthorizer {
                 c.disconnect()
             }
         }
+        // Google's services keep handing out the revoked token otherwise, and the next Connect gets 401s.
+        forget(token)
     }
 
-    private fun failure(e: Exception): GoogleAuthResult = when ((e as? ApiException)?.statusCode) {
-        CommonStatusCodes.NETWORK_ERROR -> GoogleAuthResult.Offline
-        CommonStatusCodes.DEVELOPER_ERROR, CommonStatusCodes.API_NOT_CONNECTED -> GoogleAuthResult.NotAvailable
-        else -> GoogleAuthResult.Denied
+    override suspend fun forget(accessToken: String) {
+        withContext(Dispatchers.IO) {
+            runCatching { GoogleAuthUtil.clearToken(context, accessToken) }
+                .onFailure { Log.w(TAG, "clearing a rejected token failed: ${it.javaClass.simpleName}") }
+        }
+    }
+
+    private fun failure(step: String, e: Exception): GoogleAuthResult {
+        val status = (e as? ApiException)?.statusCode
+        val name = status?.let { CommonStatusCodes.getStatusCodeString(it) } ?: e.javaClass.simpleName
+        Log.w(TAG, "$step failed: status=$status ($name) message=${e.message}")
+        // Google answers INTERNAL_ERROR (8) when no Android OAuth client matches the package + SHA-1; only the message names it.
+        if (e.message?.contains(UNREGISTERED) == true) return GoogleAuthResult.NotAvailable
+        return when (status) {
+            CommonStatusCodes.NETWORK_ERROR -> GoogleAuthResult.Offline
+            CommonStatusCodes.DEVELOPER_ERROR, CommonStatusCodes.API_NOT_CONNECTED -> GoogleAuthResult.NotAvailable
+            CommonStatusCodes.CANCELED -> GoogleAuthResult.Cancelled
+            else -> GoogleAuthResult.Denied
+        }
     }
 
     private suspend fun Task<AuthorizationResult>.awaitResult(): AuthorizationResult = suspendCancellableCoroutine { cont ->
@@ -93,6 +129,9 @@ class AndroidGoogleAuthorizer(private val context: Context) : GoogleAuthorizer {
     }
 
     private companion object {
+        const val TAG = "NixUraGoogleAuth"
+        const val UNREGISTERED = "UNREGISTERED_ON_API_CONSOLE"
         const val CALENDAR_READONLY = "https://www.googleapis.com/auth/calendar.readonly"
+        const val TASKS_READONLY = "https://www.googleapis.com/auth/tasks.readonly"
     }
 }

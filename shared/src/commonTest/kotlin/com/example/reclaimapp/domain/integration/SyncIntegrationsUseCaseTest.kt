@@ -43,7 +43,7 @@ class SyncIntegrationsUseCaseTest {
                 rows.removeAll { it.externalId == e.externalId }
                 rows += ImportedRow(nextId++, e.externalId, e.updatedAtEpochMillis, e.startEpochMillis, null)
             }
-            plan.deleteIds.forEach { id -> rows.replaceAll { if (it.id == id) it.copy(deletedAt = nowEpochMillis) else it } }
+            plan.deleteIds.forEach { id -> rows.replaceAll { if (it.id == id) it.copy(deletedAt = nowEpochMillis, removedByImport = true) else it } }
         }
         override suspend fun removeAll(provider: IntegrationProvider, nowEpochMillis: Long) = rows.clear()
     }

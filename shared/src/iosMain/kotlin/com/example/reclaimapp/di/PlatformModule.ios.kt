@@ -12,6 +12,8 @@ import com.example.reclaimapp.domain.notification.ReminderCapabilities
 import com.example.reclaimapp.data.auth.ApiConfig
 import com.example.reclaimapp.data.auth.DeviceInfoProvider
 import com.example.reclaimapp.data.auth.IosDeviceInfo
+import com.example.reclaimapp.data.integration.IosDeviceRegion
+import com.example.reclaimapp.domain.integration.DeviceRegion
 import com.example.reclaimapp.data.auth.KeychainSecureStore
 import com.example.reclaimapp.data.auth.SecureStore
 import com.example.reclaimapp.data.auth.iosApiConfig
@@ -36,6 +38,7 @@ fun platformModule() = module {
     // Accounts
     single<SecureStore> { KeychainSecureStore() }
     single<DeviceInfoProvider> { IosDeviceInfo() }
+    single<DeviceRegion> { IosDeviceRegion() }
     single<ApiConfig> { iosApiConfig() }
 
     // iOS syncs while the app is open; background sync (BGTaskScheduler) is not implemented yet.
@@ -49,4 +52,5 @@ fun platformModule() = module {
 private object NotAvailableGoogleAuthorizer : GoogleAuthorizer {
     override suspend fun authorize(interactive: Boolean): GoogleAuthResult = GoogleAuthResult.NotAvailable
     override suspend fun revoke() = Unit
+    override suspend fun forget(accessToken: String) = Unit
 }

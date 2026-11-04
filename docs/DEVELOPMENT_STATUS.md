@@ -73,6 +73,7 @@ Android is done and owner-tested. The owner's remaining work is items 1-4; the r
 - DST edge cases in `DayCalculator.startOfDayMillis` use a two-step offset guess.
 - Coach replies are keyword rules in English; health text is general information, not medical advice.
 - The sandbox that wrote the merge could not run Gradle; Android is owner-tested and working; every iOS path is still unverified.
+- Google's "app not registered" answer is recognised by the text `UNREGISTERED_ON_API_CONSOLE` in the exception message (Google gives it no status code of its own). If Google changes that text, the app falls back to "Google access wasn't granted"; the `NixUraGoogleAuth` log line still shows the reason.
 - iOS limits to remember: at most 64 pending local notifications; background alarms are not available like Android `AlarmManager`; a free Apple ID install expires after 7 days (TestFlight needs a paid developer account).
 
 ## Git
@@ -291,5 +292,37 @@ Agent 5's integration work, built from scratch (nothing existed in code before).
 **Round 3 commits:** `cbd9e4d` (tasks 1-5), `1594791` (task 7), `647b7b1` + `fb8ff51` (task 6). Pushed to `origin/agent-3/cloud-sync` on 2026-11-03 (first push of this branch; no force).
 
 **Phone check (2026-11-03, after round 3):** the owner's Android Studio checkout was still on `agent-2/accounts` (Room v3) while the phone held a v4 database from an earlier install, so the old build crashed with "A migration from 4 to 3 was required" (Room never downgrades). Not a code defect. Fix: fast-forwarded the owner's checkout to `agent-3/cloud-sync` (`ad107cf`) and installed it. On the phone the v4→v5 migration kept all data (user_version 5; 12 habits, 12 habit events, 5 good habits, 14 logs, 3 events) and the app starts. **Lesson:** after an agent installs a newer build, always build from the same branch in Android Studio.
+
+## Google Calendar "access wasn't granted" (2026-11-04)
+
+Owner report: Settings → Integrations → Google Calendar → Connect, pick an account, the picker closes and the app says "Google access wasn't granted."
+
+- **Root cause (observed on the owner's phone, OPPO CPH2531, Android 15, Play services 26.42.31):** Google's server refuses the token because no Android OAuth client matches the app. Logcat, both taps:
+  - `W Auth : [GetTokenResponseHandler] Server returned error: This android application is not registered to use OAuth2.0, please confirm the package name and SHA-1 certificate fingerprint match ...`
+  - `W Auth.Api.Credentials: [AuthorizationChimeraActivity] Activity finished with error ... [status=UNREGISTERED_ON_API_CONSOLE]`
+  - The first `authorize()` call succeeds and the consent screen opens, so the app never saw DEVELOPER_ERROR. The screen then closes with result code 0 and the old code turned that into Denied, discarding the reason. Test users and the scope were never reached.
+- **Not code, the owner must do it:** create (or fix) the Android OAuth client in Google Cloud Console, README "What you need to do: Google Calendar", step 4. Package `com.example.reclaimapp`, debug SHA-1 `9B:AA:D3:58:3F:F2:3A:E5:42:09:62:76:73:71:34:C8:FC:88:C3:F3` (checked with `apksigner` on the built APK and on the APK installed on the phone; same key as `~/.android/debug.keystore`).
+- **Code changes:**
+  - `AndroidGoogleAuthorizer` logs every failure as `Log.w` under the tag `NixUraGoogleAuth`: the step, Google's status code and name, the message and the consent screen's result code. Never the token or the account.
+  - On a result other than RESULT_OK the authorizer still reads the result intent, because Google puts the failure status there.
+  - New `GoogleAuthResult.Cancelled` (screen closed without data, or status CANCELED) with the notice `GOOGLE_CANCELLED` and the string `googleCancelled` ("Google Calendar wasn't connected. Tap Connect to try again."). Background syncs treat it like Denied.
+  - `UNREGISTERED_ON_API_CONSOLE` (Google sends it as status 8, INTERNAL_ERROR, with the name only in the message) now maps to NotAvailable, so the app says "Google Calendar isn't set up in this build yet" instead of "wasn't granted".
+  - `MainActivity` passes the whole `ActivityResult` (code and data) to the authorizer.
+- **Verified:** `:shared:testAndroidHostTest` (408 tests, 0 failures) and `:androidApp:assembleDebug`. On the phone with the logging build: `W NixUraGoogleAuth: consent (result code 0) failed: status=8 (INTERNAL_ERROR) message=8: [8] Unknown error [status=UNREGISTERED_ON_API_CONSOLE].`
+- **Then (same day):** the owner created the Google Cloud project and the Android client; Connect worked on the phone.
+
+**Follow-up on the phone, same day: what to import, reconnect, categories**
+
+- **Reconnect showed "Connected" with nothing to pick.** After Disconnect (which revokes the token), Google's services kept handing out the revoked cached token, the calendar list got 401 and the picker stayed empty without a message. Fix: `GoogleAuthorizer.forget(token)` (Android: `GoogleAuthUtil.clearToken`), called after revoke and on any 401; the list is asked for once more; if it still fails the link is not saved and the app says it could not sync.
+- **A later reconnect spun and stopped:** Google's own services timed out (`getToken() -> NETWORK_ERROR`, "Waited 30 seconds", twice); the app showed "You're offline". Network, not app code.
+- **Owner request: four entries instead of a calendar list** (`GoogleFeed`): Events (primary calendar, `eventTypes` default + fromGmail), Birthdays (primary, `eventTypes=birthday`), Tasks (new: Google Tasks API, scope `tasks.readonly`, tasks with a due date as all-day events, done or deleted tasks removed, read in full each sync; if the Tasks API is off the rest still imports) and Holidays for the user's country (`en.<cc>#holiday@group.v.calendar.google.com`, the country from the new `DeviceRegion` port: Android mobile network, then SIM, then region setting; iOS region setting; fallback: the holiday calendar the account follows; off by default). Other calendars are no longer listed.
+- **Bug: an entry turned off never came back.** The importer's own removals (entry off, Disconnect) were stored like user deletes, which are remembered. Fix: such rows carry `REMOVED_BY_IMPORT` (-1) in `external_updated_at` and come back when listed again; Disconnect marks every row from the source this way (a new link starts fresh). No schema change.
+- **Bug: the last entry turned off stayed.** With nothing picked the sync stopped as "not configured" and removed nothing. Now an empty selection is a full, empty read.
+- **New items only arrived on "Sync now".** The app now imports every 2 minutes while it is open (`FOREGROUND_SYNC_EVERY_MILLIS`); background stays at 15 minutes. Google Tasks has no push.
+- **Categories:** new `EventCategory.EVENT`, `BIRTHDAY`, `TASK`, `HOLIDAY` (added after `OTHER`, so stored values keep their meaning); imports set them per feed; a category the user picked is kept (the import only fills in rows still on Other). The event form lists Other last (`EventCategory.pickerOrder`). The chips got a hint: "Highlighted items are imported. Tap one to turn it on or off."
+- **Notion "You're offline":** setup, not code. Debug builds use `nixuraDebugApiBaseUrl=http://localhost:8081` (owner's `~/.gradle/gradle.properties`); no backend runs there, `backend/.env` does not exist, and a USB phone also needs `adb reverse tcp:8081 tcp:8081`.
+- **Verified:** `:shared:testAndroidHostTest` (417 tests, 0 failures; new `GoogleImportTest`, a planner test for rows the importer removed) and `:androidApp:assembleDebug`. On the owner's phone (owner-confirmed): the four entries import; turning entries off and on, and Disconnect + Connect, bring items back; turning all off removes everything; new tasks arrive without "Sync now"; Event, Birthday and Task categories.
+- **Not verified:** the Holiday category and Other-last order (built and unit-tested; the phone was unplugged before install); the cancel message; iOS (`IosDeviceRegion` and the `GoogleAuthorizer.forget` stub are not compiled here; on a Mac run `:shared:compileKotlinIosSimulatorArm64`); background import in WorkManager.
+- **Emulator note:** the Pixel_10_Pro AVD (Android 37, Play Store image) opened its window off screen, lost its adb link after a quick boot, and froze once on a cold boot with the host GPU. A cold boot with `-gpu swiftshader_indirect` worked; the test then moved to the owner's phone.
 
 **History cleanup (2026-11-03, owner request):** commits from `14810ff` onward were rewritten to remove assistant co-author lines and to carry the owner as author (Adham ELgendy). Code is byte-for-byte unchanged (same tree); commit IDs changed and the IDs above were updated. Force-pushed with lease to `master` and `agent-3/cloud-sync`. A local backup of the old history is kept as branch `backup/before-rewrite-2026-11-03`.

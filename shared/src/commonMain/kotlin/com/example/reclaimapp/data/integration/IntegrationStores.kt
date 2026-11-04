@@ -2,6 +2,7 @@ package com.example.reclaimapp.data.integration
 
 import com.example.reclaimapp.data.local.dao.EventDao
 import com.example.reclaimapp.data.local.dao.PreferenceDao
+import com.example.reclaimapp.data.local.dao.REMOVED_BY_IMPORT
 import com.example.reclaimapp.data.local.entity.EventEntity
 import com.example.reclaimapp.data.local.entity.PreferenceEntity
 import com.example.reclaimapp.domain.integration.ImportPlan
@@ -20,7 +21,10 @@ internal class RoomImportedEventStore(private val dao: EventDao) : ImportedEvent
 
     override suspend fun rows(provider: IntegrationProvider): List<ImportedRow> =
         dao.importedRows(provider.source.name).mapNotNull { e ->
-            e.externalId?.let { ImportedRow(e.id, it, e.externalUpdatedAtEpochMillis, e.targetAtEpochMillis, e.deletedAtEpochMillis) }
+            e.externalId?.let {
+                val removedByImport = e.externalUpdatedAtEpochMillis == REMOVED_BY_IMPORT
+                ImportedRow(e.id, it, e.externalUpdatedAtEpochMillis.takeUnless { removedByImport }, e.targetAtEpochMillis, e.deletedAtEpochMillis, removedByImport)
+            }
         }
 
     override suspend fun apply(provider: IntegrationProvider, plan: ImportPlan, nowEpochMillis: Long) {
@@ -32,7 +36,7 @@ internal class RoomImportedEventStore(private val dao: EventDao) : ImportedEvent
                 dao.insert(
                     EventEntity(
                         title = title,
-                        category = EventCategory.OTHER.name,
+                        category = (e.category ?: EventCategory.OTHER).name,
                         targetAtEpochMillis = e.startEpochMillis,
                         reminders = "",
                         createdAtEpochMillis = nowEpochMillis,
@@ -43,14 +47,15 @@ internal class RoomImportedEventStore(private val dao: EventDao) : ImportedEvent
                     ),
                 )
             } else {
-                dao.updateImported(existing.id, title, e.startEpochMillis, e.allDay, e.updatedAtEpochMillis, nowEpochMillis)
+                dao.updateImported(existing.id, title, e.startEpochMillis, e.allDay, e.updatedAtEpochMillis, e.category?.name, nowEpochMillis)
             }
         }
-        plan.deleteIds.forEach { dao.markDeleted(it, nowEpochMillis) }
+        plan.deleteIds.forEach { dao.markRemovedByImport(it, nowEpochMillis) }
     }
 
+    /** Disconnect also forgets what the user deleted: a new link starts fresh. */
     override suspend fun removeAll(provider: IntegrationProvider, nowEpochMillis: Long) =
-        dao.markAllFromSourceDeleted(provider.source.name, nowEpochMillis)
+        dao.markAllFromSourceRemovedByImport(provider.source.name, nowEpochMillis)
 }
 
 /** Text from another service is untrusted: keep it to one short line of printable characters. */

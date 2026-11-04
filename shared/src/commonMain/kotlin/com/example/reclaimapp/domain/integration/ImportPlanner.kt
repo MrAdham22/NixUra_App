@@ -12,6 +12,7 @@ data class ImportPlan(val upserts: List<ExternalEvent>, val deleteIds: List<Long
  * - cancelled or deleted at the source deletes the row;
  * - on a full fetch, imported events in the window that the source no longer has are deleted;
  * - an event the user deleted in NixUra stays deleted unless it was edited at the source afterwards;
+ * - an event NixUra removed itself (entry turned off, Disconnect, missing for a while) comes back when it is listed again;
  * - events outside the window (long past, far future) are not imported.
  */
 object ImportPlanner {
@@ -38,7 +39,7 @@ object ImportPlanner {
             }
             when {
                 row == null -> upserts += e
-                row.deletedAt != null -> if (e.updatedAtEpochMillis > row.deletedAt) upserts += e // edited after the user deleted it
+                row.deletedAt != null -> if (row.removedByImport || e.updatedAtEpochMillis > row.deletedAt) upserts += e // or edited after the user deleted it
                 (row.externalUpdatedAt ?: Long.MIN_VALUE) < e.updatedAtEpochMillis -> upserts += e
             }
         }

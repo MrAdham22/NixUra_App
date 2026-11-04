@@ -58,6 +58,16 @@ class ImportPlannerTest {
     }
 
     @Test
+    fun aRowNixUraRemovedComesBackWhenListedAgain() {
+        // Entry turned off (or Disconnect), then on again: the same unchanged event must be imported again.
+        val removed = row(1, "a", updated = 10, deletedAt = now - 5).copy(externalUpdatedAt = null, removedByImport = true)
+        assertEquals(listOf("a"), plan(listOf(removed), listOf(ev("a", updated = 10))).upserts.map { it.externalId })
+        // A delete by the user is still remembered.
+        val userDeleted = row(2, "b", updated = 10, deletedAt = now - 5)
+        assertTrue(plan(listOf(userDeleted), listOf(ev("b", updated = 10))).upserts.isEmpty())
+    }
+
+    @Test
     fun eventsOutsideTheWindowAreNotImported() {
         val p = plan(emptyList(), listOf(ev("past", start = now - 5 * day), ev("far", start = now + 400 * day)))
         assertTrue(p.isEmpty)

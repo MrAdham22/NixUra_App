@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.reclaimapp.domain.clock.Clock
+import com.example.reclaimapp.domain.integration.GoogleFeed
+import com.example.reclaimapp.domain.integration.GoogleMapping
 import com.example.reclaimapp.domain.integration.IntegrationError
 import com.example.reclaimapp.domain.integration.IntegrationProvider
 import com.example.reclaimapp.domain.integration.IntegrationState
@@ -91,12 +93,18 @@ fun IntegrationsScreen(navigator: Navigator) {
             onSync = { vm.onSyncNow(IntegrationProvider.GOOGLE) },
             onDisconnect = { confirmDisconnect = IntegrationProvider.GOOGLE },
         ) {
-            if (state.googleCalendars.isNotEmpty()) {
-                Text(s.googlePickCalendars, style = NixType.SmallStrong, color = c.textSecondary)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    state.googleCalendars.forEach { cal ->
-                        NixChip(cal.name.ifBlank { cal.id }, cal.id in state.google.selection, { vm.onToggleGoogleCalendar(cal.id) })
+            Text(s.googlePickCalendars, style = NixType.SmallStrong, color = c.textSecondary)
+            Text(s.googlePickHint, style = NixType.Small, color = c.textMuted)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                GoogleFeed.entries.forEach { feed ->
+                    // Holidays show under Google's own name for the country ("Holidays in Egypt"), only when one was found.
+                    val label = when (feed) {
+                        GoogleFeed.EVENTS -> s.googleFeedEvents
+                        GoogleFeed.BIRTHDAYS -> s.googleFeedBirthdays
+                        GoogleFeed.TASKS -> s.googleFeedTasks
+                        GoogleFeed.HOLIDAYS -> state.google.mapping[GoogleMapping.HOLIDAY_NAME]?.ifBlank { s.googleFeedHolidays } ?: return@forEach
                     }
+                    NixChip(label, feed.key in state.google.selection, { vm.onToggleGoogleFeed(feed) })
                 }
             }
         }
@@ -224,6 +232,7 @@ private fun errorText(e: IntegrationError, s: Strings): String = when (e) {
 
 private fun noticeText(n: IntegrationNotice, s: Strings): String = when (n) {
     IntegrationNotice.GOOGLE_NOT_AVAILABLE -> s.googleNotAvailable
+    IntegrationNotice.GOOGLE_CANCELLED -> s.googleCancelled
     IntegrationNotice.GOOGLE_DENIED -> s.googleDenied
     IntegrationNotice.OFFLINE -> s.integrationErrOffline
     IntegrationNotice.FAILED -> s.integrationErrFailed
