@@ -83,8 +83,14 @@ class SyncIntegrationsUseCase(
         const val WINDOW_PAST_MILLIS = 86_400_000L
         const val WINDOW_FUTURE_MILLIS = 366L * 86_400_000L
 
-        /** Automatic syncs are at most this often. */
+        /** Background syncs are at most this often. */
         const val AUTO_SYNC_EVERY_MILLIS = 15 * 60_000L
+
+        /**
+         * While the app is open it checks this often, so something added in Google shows up within minutes. Google
+         * Tasks has no push, and Calendar's push needs a server address, so this is polling.
+         */
+        const val FOREGROUND_SYNC_EVERY_MILLIS = 2 * 60_000L
     }
 }
 

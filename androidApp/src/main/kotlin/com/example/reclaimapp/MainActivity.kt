@@ -9,6 +9,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import com.example.reclaimapp.integrations.AndroidGoogleAuthorizer
@@ -29,10 +30,10 @@ class MainActivity : ComponentActivity() {
     private val googleAuthorizer: AndroidGoogleAuthorizer by inject()
 
     // Google's consent screen for calendar access; the authorizer suspends until it closes.
-    private var consentResult: ((Intent?) -> Unit)? = null
+    private var consentResult: ((ActivityResult) -> Unit)? = null
     private val googleConsentLauncher =
         registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { r ->
-            consentResult?.invoke(if (r.resultCode == RESULT_OK) r.data else null)
+            consentResult?.invoke(r)
             consentResult = null
         }
 

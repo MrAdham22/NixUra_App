@@ -15,7 +15,7 @@
 | Cloud sync | Built. Backend and engine tests pass; the owner tested syncing on one phone and reports it works. Two real devices and background sync are **not yet confirmed**. See [docs/agents/agent-3-handoff.md](docs/agents/agent-3-handoff.md). |
 | User-review redesign (dashboard, sign-in flow, gradients, explanations, chat history, starter guide) | Built and tested on the owner's phone (2026-11-03). |
 | Round 3: water fill, card-style widgets, long-press delete with undo, money-saved tracker | Built, tests pass, **seen working on the emulator** (details in DEVELOPMENT_STATUS). Not yet run on the owner's phone. |
-| Google Calendar and Notion import | Code, backend endpoints and tests are done (app 15 tests, backend 6 tests pass). **Not run against real Google or Notion yet**: that needs the owner's Google Cloud project and Notion integration (see [Linking calendars](#linking-calendars-google-calendar-and-notion)). Google Calendar on iOS is not built yet. |
+| Google Calendar and Notion import | Google works on the owner's Android phone (2026-11-04): Events, Birthdays, Tasks and Holidays for the user's country, each with its own category. Notion is **not run against real Notion yet**: it needs the Notion integration and a running backend (see [Linking calendars](#linking-calendars-google-calendar-and-notion)). Google Calendar on iOS is not built yet. |
 | AI coach | Offline rule-based coach ships and works. A **real AI agent is deliberately the very last item** (owner decision); guide in [docs/AI_COACH_UPGRADE.md](docs/AI_COACH_UPGRADE.md) |
 | Android home-screen widgets (quit counter, good-habit quick log, events) | **Logic confirmed on a device by the owner** (numbers, live clock, "+"/"-", choosing a habit/event). The **card-style redesign** (widgets mirror the in-app cards, size-aware layouts) and the **"Add to Home screen" buttons** are written and type-checked but **not yet run on a device**. 90 pure-logic tests (planner, state mapping, quick-log use cases) compiled with plain `kotlinc` outside Gradle and **passed**. iOS widgets are **not implemented** (planned; need macOS, WidgetKit and an App Group). |
 | iOS | **Approved target, not yet built or run.** Shared UI/logic is written for it (Compose host in `iosApp`, `iosMain` actuals). Reminders are a no-op placeholder until a `UNUserNotificationCenter` implementation is added. Needs macOS + Xcode to verify. |
@@ -163,32 +163,41 @@ The app crashes at launch with `Verifier rejected class ...presentation.strings.
 
 If screens show large gaps on all sides, the root layout is reserving system *gesture* insets. `AppRoot` (`presentation/screen/AppShell.kt`) must use `windowInsetsPadding(WindowInsets.safeDrawing)`, not `safeContentPadding()`.
 
+### Troubleshooting: Google Calendar Connect fails
+
+Read the reason with `adb logcat -s NixUraGoogleAuth Auth Auth.Api.Credentials` while you tap Connect. The app logs Google's status code there, never the token or the account.
+
+- `UNREGISTERED_ON_API_CONSOLE` or "This android application is not registered to use OAuth2.0": no Android OAuth client matches the package name and SHA-1 of the key that signed this build (the app says "isn't set up in this build yet"). Fix step 4 of [What you need to do: Google Calendar](#what-you-need-to-do-google-calendar). Check the SHA-1 of the installed build with `apksigner verify --print-certs app.apk`.
+- "Google Calendar wasn't connected": the consent screen was closed without choosing.
+- "You're offline" after a long spinner: Google's own services on the phone timed out (`getToken() -> NETWORK_ERROR`, 30 s). Try again on a stable connection.
+- "Google access wasn't granted": Google refused. The usual causes are an account that is not a test user while the app is in Testing, or `calendar.readonly` missing under Data access; the log line has the exact status.
+
 ## Linking calendars (Google Calendar and Notion)
 
-Settings → Integrations links a calendar. Imported events go into Events with a source badge, count down like any event, show on Profile ("nearest event") and on the events widget, and sync to your other devices. NixUra only **reads** them: edit or delete them at the source, and the next sync follows (also cancelled, deleted and recurring events; recurring events arrive as single occurrences; whole-day events are kept as whole days; time zones are converted). If you delete an imported event in NixUra, it stays deleted unless it is edited at the source again. Disconnect removes everything that was imported.
+Settings → Integrations links a calendar. For Google you pick what to import: **Events** (your main calendar), **Birthdays**, **Tasks** (Google Tasks with a due date; done or deleted tasks are removed) and **Holidays in your country** (Google's public holiday calendar for the country of the phone's mobile network, else the SIM, else the region setting; off by default). Highlighted chips are imported; tap one to turn it on or off. Each gets its own category (Event, Birthday, Task, Holiday); a category you change yourself is kept. Imported events go into Events with a source badge, count down like any event, show on Profile ("nearest event") and on the events widget, and sync to your other devices. NixUra only **reads** them: edit or delete them at the source, and the next sync follows (also cancelled, deleted and recurring events; recurring events arrive as single occurrences; whole-day events are kept as whole days; time zones are converted). If you delete an imported event in NixUra, it stays deleted unless it is edited at the source again. What NixUra removes itself (an entry turned off, Disconnect) comes back when you turn it on again or reconnect. Disconnect removes everything that was imported.
 
-Linking needs an account: guests make no network calls. Sync runs when you tap "Sync now", when the app comes to the front and in the background (WorkManager with the cloud sync, at most every 15 minutes, only on a network).
+Linking needs an account: guests make no network calls. Sync runs when you tap "Sync now", every 2 minutes while the app is open, and in the background (WorkManager with the cloud sync, at most every 15 minutes, only on a network). Google Tasks has no push, so this is polling.
 
 How the pieces work:
 
-- **Google Calendar:** authorized on the phone with Google's Authorization API, read-only scope `calendar.readonly` only. The access token is asked for at each sync and never stored. Incremental with Google sync tokens; an expired token (HTTP 410) starts that calendar over. Code: `androidApp/.../integrations/AndroidGoogleAuthorizer.kt`, `shared/.../data/integration/GoogleCalendarSource.kt`.
+- **Google Calendar and Tasks:** authorized on the phone with Google's Authorization API, read-only scopes `calendar.readonly` and `tasks.readonly` only. The access token is asked for at each sync and never stored; Disconnect revokes it and clears Google's cached copy on the phone. Events and Birthdays read the primary calendar with `eventTypes` (`default` + `fromGmail`, or `birthday`); calendar feeds are incremental with Google sync tokens (an expired token, HTTP 410, starts that feed over); tasks are read in full each time. If the Tasks API is off or not allowed, tasks are skipped and the rest still imports. Code: `androidApp/.../integrations/AndroidGoogleAuthorizer.kt`, `shared/.../data/integration/GoogleCalendarSource.kt`.
 - **Notion:** a public integration with OAuth through NixUra's server. The client secret and your Notion token stay on the server, the token encrypted with AES-256-GCM (`integration_links`). The app only receives event data. Pick one database, its title property and its date property (suggested automatically). Incremental with `last_edited_time`, plus a full read every 3 days that catches deleted pages; 429 answers are retried after Notion's `Retry-After`. Code: `backend/src/integrations/`, `shared/.../data/integration/NotionSource.kt`.
 - **Duplicates** are impossible by design: one row per (`source`, `external_id`), enforced by a unique index; the rules are in `domain/integration/ImportPlanner.kt` (unit-tested).
 
 ### What you need to do: Google Calendar
 
 1. Open [Google Cloud Console](https://console.cloud.google.com/) and create a project (for example "NixUra").
-2. **APIs & Services → Library**: enable **Google Calendar API**.
+2. **APIs & Services → Library**: enable **Google Calendar API** and **Google Tasks API**.
 3. **Google Auth Platform → Branding / Audience / Data access** (the OAuth consent screen):
    - User type: **External**. Fill in the app name, support email and developer email.
-   - Data access → **Add scope** → `https://www.googleapis.com/auth/calendar.readonly` (and nothing else).
+   - Data access → **Add scope** → `https://www.googleapis.com/auth/calendar.readonly` and `https://www.googleapis.com/auth/tasks.readonly` (and nothing else). A link made before the Tasks scope existed asks again: Disconnect, then Connect.
    - Audience: while the app is in **Testing**, add your own Google account (and testers) as **test users**.
 4. **Clients → Create client → Android**:
    - Package name: `com.example.reclaimapp`
    - SHA-1 of your debug key: `keytool -list -v -keystore "%USERPROFILE%\.android\debug.keystore" -alias androiddebugkey -storepass android -keypass android` (macOS/Linux: `~/.android/debug.keystore`).
    - Later add a second Android client with the SHA-1 of your **release** key, or of the **Play App Signing** key from Play Console → Setup → App integrity.
-   - Android clients have **no secret**, and nothing goes into the app's code: Google recognises the app by its package name and signature. Until this client exists the app says "Google Calendar isn't set up in this build yet".
-5. Before a public release: `calendar.readonly` is a **sensitive scope**, so Google must verify the app (privacy policy URL, home page on a verified domain, a short video of the consent flow). Until then only test users can link, and Google may ask them to agree again after about a week.
+   - Android clients have **no secret**, and nothing goes into the app's code: Google recognises the app by its package name and signature. Until this client exists the app says "Google Calendar isn't set up in this build yet" (Google's log says `UNREGISTERED_ON_API_CONSOLE`; see [Troubleshooting: Google Calendar Connect fails](#troubleshooting-google-calendar-connect-fails)).
+5. Before a public release: `calendar.readonly` (and `tasks.readonly`) are **sensitive scopes**, so Google must verify the app (privacy policy URL, home page on a verified domain, a short video of the consent flow). Until then only test users can link, and Google may ask them to agree again after about a week.
 
 ### What you need to do: Notion
 

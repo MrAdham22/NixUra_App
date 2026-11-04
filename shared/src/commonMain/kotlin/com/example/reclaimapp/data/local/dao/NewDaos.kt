@@ -45,6 +45,13 @@ interface GoodHabitLogDao {
     suspend fun markDeleted(goodHabitId: Long, dayIndex: Long, at: Long)
 }
 
+/**
+ * Stored in events.external_updated_at when the importer removed a row itself (not the user), so it can come back.
+ * Real values are Google or Notion update times, which are never negative.
+ */
+const val REMOVED_BY_IMPORT: Long = -1L
+private const val REMOVED_BY_IMPORT_SQL = "-1"
+
 @Dao
 interface EventDao {
     @Query("SELECT * FROM events WHERE deleted_at IS NULL ORDER BY target_at ASC, id ASC")
@@ -72,12 +79,22 @@ interface EventDao {
     /** Updates an imported event from its source; the user's reminders and category stay. Clears a local delete. */
     @Query(
         "UPDATE events SET title = :title, target_at = :targetAt, all_day = :allDay, external_updated_at = :externalUpdatedAt, " +
+            "category = CASE WHEN category = 'OTHER' AND :category IS NOT NULL THEN :category ELSE category END, " +
             "deleted_at = NULL, updated_at = :now, dirty = 1 WHERE id = :id",
     )
-    suspend fun updateImported(id: Long, title: String, targetAt: Long, allDay: Boolean, externalUpdatedAt: Long, now: Long)
+    /** [category] fills in a row still on Other; a category the user picked is kept. */
+    suspend fun updateImported(id: Long, title: String, targetAt: Long, allDay: Boolean, externalUpdatedAt: Long, category: String?, now: Long)
 
-    @Query("UPDATE events SET deleted_at = :at, updated_at = :at, dirty = 1 WHERE source = :source AND deleted_at IS NULL")
-    suspend fun markAllFromSourceDeleted(source: String, at: Long)
+    /** The importer's own delete: [REMOVED_BY_IMPORT] in external_updated_at tells it apart from the user's. */
+    @Query("UPDATE events SET deleted_at = :at, external_updated_at = $REMOVED_BY_IMPORT_SQL, updated_at = :at, dirty = 1 WHERE id = :id")
+    suspend fun markRemovedByImport(id: Long, at: Long)
+
+    /** Disconnect: every row from [source] goes, and rows the user deleted are no longer remembered as such. */
+    @Query(
+        "UPDATE events SET deleted_at = COALESCE(deleted_at, :at), external_updated_at = $REMOVED_BY_IMPORT_SQL, " +
+            "updated_at = :at, dirty = 1 WHERE source = :source AND external_id IS NOT NULL",
+    )
+    suspend fun markAllFromSourceRemovedByImport(source: String, at: Long)
 }
 
 /** A chat as the history list shows it. */

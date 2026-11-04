@@ -69,7 +69,7 @@ fun authModule() = module {
     // Calendar imports (Google Calendar, Notion). Platform modules provide GoogleAuthorizer.
     single<IntegrationStateStore> { PreferenceIntegrationStateStore(get<NixUraDatabase>().preferenceDao()) }
     single<ImportedEventStore> { RoomImportedEventStore(get<NixUraDatabase>().eventDao()) }
-    single { GoogleCalendarSource(get(), GoogleCalendarApi(KtorApiTransport.defaultClient()), get(), get()) }
+    single { GoogleCalendarSource(get(), GoogleCalendarApi(KtorApiTransport.defaultClient()), get(), get(), get()) }
     single<GoogleCalendarCatalog> { get<GoogleCalendarSource>() }
     single { NotionBackendClient(get()) }
     single<NotionLink> { get<NotionBackendClient>() }

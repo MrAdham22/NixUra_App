@@ -231,6 +231,10 @@ open class Strings {
             EventCategory.HEALTH -> "Health"
             EventCategory.CELEBRATION -> "Celebration"
             EventCategory.OTHER -> "Other"
+            EventCategory.EVENT -> "Event"
+            EventCategory.BIRTHDAY -> "Birthday"
+            EventCategory.TASK -> "Task"
+            EventCategory.HOLIDAY -> "Holiday"
         }
     }
 
@@ -610,9 +614,15 @@ open class Strings {
     open val integrationErrNotConfigured: String = "Pick what to import below."
     open val integrationErrFailed: String = "Couldn't sync this time. NixUra will try again later."
     open val googleNotAvailable: String = "Google Calendar isn't set up in this build yet."
+    open val googleCancelled: String = "Google Calendar wasn't connected. Tap Connect to try again."
     open val googleDenied: String = "Google access wasn't granted."
     open val notionNotConnected: String = "Finish connecting Notion in your browser, then come back."
-    open val googlePickCalendars: String = "Calendars to import"
+    open val googlePickCalendars: String = "What to import"
+    open val googlePickHint: String = "Highlighted items are imported. Tap one to turn it on or off."
+    open val googleFeedEvents: String = "Events"
+    open val googleFeedBirthdays: String = "Birthdays"
+    open val googleFeedTasks: String = "Tasks"
+    open val googleFeedHolidays: String = "Holidays"
     open val notionPickDatabase: String = "Database to import"
     open val notionNoDatabases: String = "No databases shared yet. In Notion's connect page, share the database that holds your events."
     open val notionTitleProperty: String = "Event name from"
