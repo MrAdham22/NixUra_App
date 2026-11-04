@@ -2,7 +2,7 @@
 
 **NixUra** (Android and iOS) helps people break bad habits, build good ones and look forward to important moments. It tracks the exact time (days, hours, minutes, seconds) since the last slip, shows progress with cards that lighten as a streak grows, tracks daily good habits on a calendar, counts down to life events with reminders, and includes an on-device AI-style coach.
 
-> **Naming:** the app is **NixUra** everywhere: launcher label, Gradle project, iOS app name, docs. Only the technical ids keep their old value: the package / `applicationId` `com.example.reclaimapp` and the iOS bundle id. Changing them makes phones see a new app (existing data does not carry over), so it is done once, before publishing to a store.
+> **Naming:** the app is **NixUra** everywhere: launcher label, Gradle project, iOS app name, docs. The app id is `com.adhamelgendy.nixura` (Android `applicationId`, Kotlin packages, iOS bundle id). It replaced the placeholder `com.example.reclaimapp` on 2026-11-05; an install of the old id is a different app to the phone, so uninstall it. The id must never change after publishing to a store.
 
 ## Status (read this first)
 
@@ -118,7 +118,7 @@ Habbit_app/
 ├── iosApp/                        # iOS app: Xcode project + SwiftUI host that embeds the shared Compose UI
 ├── tools/room_migration_check.py  # validates the migrations + DAO SQL against the entities (python3, no deps)
 ├── tools/phone_link.ps1           # Windows dev helper: keeps USB phones linked to the local backend (adb reverse)
-├── shared/src/{commonMain,androidMain,iosMain,commonTest}/kotlin/com/example/reclaimapp/
+├── shared/src/{commonMain,androidMain,iosMain,commonTest}/kotlin/com/adhamelgendy/nixura/
 └── .cursor/skills/                # workflow skills (onboarding, feature dev, verification, handoff)
 ```
 
@@ -151,7 +151,7 @@ Then open `iosApp/iosApp.xcodeproj` in Xcode, pick a simulator or a connected iP
 `IllegalStateException: Room cannot verify the data integrity ... Expected identity hash: X, found: Y` means the
 database file already on the device/emulator was created by an earlier build whose v2 schema differed from the
 current one (the schema changed while the version stayed 2 during development). It is not a compile error.
-Fix: uninstall the app (or Settings > Apps > NixUra > Storage > Clear data, or `adb uninstall com.example.reclaimapp`)
+Fix: uninstall the app (or Settings > Apps > NixUra > Storage > Clear data, or `adb uninstall com.adhamelgendy.nixura`)
 and run again. Destructive fallback is deliberately **not** enabled, so release data is never wiped silently.
 Once the app ships, any schema change must bump the version and add a migration.
 
@@ -193,7 +193,7 @@ How the pieces work:
    - Data access → **Add scope** → `https://www.googleapis.com/auth/calendar.readonly` and `https://www.googleapis.com/auth/tasks.readonly` (and nothing else). A link made before the Tasks scope existed asks again: Disconnect, then Connect.
    - Audience: while the app is in **Testing**, add your own Google account (and testers) as **test users**.
 4. **Clients → Create client → Android**:
-   - Package name: `com.example.reclaimapp`
+   - Package name: `com.adhamelgendy.nixura`
    - SHA-1 of your debug key: `keytool -list -v -keystore "%USERPROFILE%\.android\debug.keystore" -alias androiddebugkey -storepass android -keypass android` (macOS/Linux: `~/.android/debug.keystore`).
    - Later add a second Android client with the SHA-1 of your **release** key, or of the **Play App Signing** key from Play Console → Setup → App integrity.
    - Android clients have **no secret**, and nothing goes into the app's code: Google recognises the app by its package name and signature. Until this client exists the app says "Google Calendar isn't set up in this build yet" (Google's log says `UNREGISTERED_ON_API_CONSOLE`; see [Troubleshooting: Google Calendar Connect fails](#troubleshooting-google-calendar-connect-fails)).

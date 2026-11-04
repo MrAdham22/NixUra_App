@@ -33,7 +33,7 @@ V2_ROWS=[
  "INSERT INTO good_habit_logs(good_habit_id,day_index,count) VALUES(99,11,1)",
  "INSERT INTO events(title,category,target_at,reminders,created_at) VALUES('Trip','OTHER',9000,'',3000)",
 ]
-src=open('shared/src/commonMain/kotlin/com/example/reclaimapp/data/local/Migrations.kt').read()
+src=open('shared/src/commonMain/kotlin/com/adhamelgendy/nixura/data/local/Migrations.kt').read()
 stmts=[];i=0
 while True:
     i=src.find('connection.execSQL(',i)

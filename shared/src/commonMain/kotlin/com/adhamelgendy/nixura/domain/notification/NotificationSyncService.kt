@@ -1,0 +1,43 @@
+package com.adhamelgendy.nixura.domain.notification
+
+import com.adhamelgendy.nixura.domain.clock.Clock
+import com.adhamelgendy.nixura.domain.repository.EventRepository
+import com.adhamelgendy.nixura.domain.repository.GoodHabitRepository
+import com.adhamelgendy.nixura.domain.repository.HabitTrackingRepository
+import com.adhamelgendy.nixura.domain.repository.PreferencesRepository
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+
+/**
+ * Keeps the OS-level scheduled notifications in sync with app data.
+ * Runs while the app UI is open; the OS then fires the notifications on its own (also after reboot).
+ */
+class NotificationSyncService(
+    private val tracking: HabitTrackingRepository,
+    private val goodHabits: GoodHabitRepository,
+    private val events: EventRepository,
+    private val preferences: PreferencesRepository,
+    private val planner: NotificationPlanner,
+    private val scheduler: NotificationScheduler,
+    private val clock: Clock,
+) {
+    suspend fun run() {
+        plans().distinctUntilChanged().collect { scheduler.replaceAll(it) }
+    }
+
+    /** Re-arms once, for background work that changed data while no screen is open (alarms are per device). */
+    suspend fun syncOnce() {
+        scheduler.replaceAll(plans().first())
+    }
+
+    private fun plans() = combine(
+        tracking.observeActiveHabitTracking(),
+        goodHabits.observeGoodHabits(),
+        events.observeEvents(),
+        preferences.observeSettings(),
+        preferences.observeProfile(),
+    ) { bad, good, upcoming, settings, profile ->
+        planner.plan(clock.nowEpochMillis(), settings, profile.name, bad, good, upcoming)
+    }
+}

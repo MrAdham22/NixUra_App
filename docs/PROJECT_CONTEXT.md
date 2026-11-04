@@ -6,7 +6,7 @@ Canonical product and architecture reference. **Authoritative detail:** [PHASE2_
 
 **NixUra** (user-facing) — help users quit or reduce unwanted habits by tracking time since last occurrence, visualizing progress, and (later) AI coaching. Name evokes removing negative patterns and reclaiming control.
 
-**Name:** NixUra everywhere (Gradle project `NixUra`, launcher label, iOS app name). **Technical identifiers kept:** modules `:androidApp` / `:shared`, package / applicationId `com.example.reclaimapp`, iOS bundle id (change only before publishing, with the owner's approval).
+**Name:** NixUra everywhere (Gradle project `NixUra`, launcher label, iOS app name). **App id:** `com.adhamelgendy.nixura` for the Android applicationId, the Kotlin packages and the iOS bundle id (owner decision 2026-11-05, replacing `com.example.reclaimapp`). It must not change after publishing. Modules stay `:androidApp` / `:shared`.
 
 ## 2. Problem & experience
 

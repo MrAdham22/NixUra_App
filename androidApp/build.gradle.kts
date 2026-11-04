@@ -32,11 +32,11 @@ dependencies {
 }
 
 android {
-    namespace = "com.example.reclaimapp"
+    namespace = "com.adhamelgendy.nixura"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.example.reclaimapp"
+        applicationId = "com.adhamelgendy.nixura"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
