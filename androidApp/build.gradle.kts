@@ -3,6 +3,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeCompiler)
+    // Reads androidApp/google-services.json (Firebase project config; not in git).
+    alias(libs.plugins.googleServices)
 }
 
 kotlin {
@@ -26,6 +28,13 @@ dependencies {
     implementation(libs.androidx.work.runtime)
     // Google Calendar import: Google Identity Authorization API (calendar.readonly), Android only.
     implementation(libs.play.services.auth)
+    // Accounts: Firebase Analytics (off until the user opts in), Google sign-in through Credential Manager, Facebook Login.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.playServices)
+    implementation(libs.googleid)
+    implementation(libs.facebook.login)
 
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)
@@ -43,6 +52,13 @@ android {
         versionName = "1.0"
         // Backend base URL. Override with -PnixuraApiBaseUrl=https://api.yourdomain.com (release must be https).
         buildConfigField("String", "NIXURA_API_BASE_URL", "\"${(project.findProperty("nixuraApiBaseUrl") as String?) ?: "https://api.nixura.example"}\"")
+        // Facebook Login. The app id is public; the client token goes in ~/.gradle/gradle.properties as
+        // nixuraFacebookClientToken=... (Meta app > App settings > Advanced). Without it the Facebook button is hidden.
+        val facebookAppId = (project.findProperty("nixuraFacebookAppId") as String?) ?: "4746669972267896"
+        val facebookClientToken = (project.findProperty("nixuraFacebookClientToken") as String?).orEmpty()
+        manifestPlaceholders["facebookAppId"] = facebookAppId
+        manifestPlaceholders["facebookClientToken"] = facebookClientToken
+        buildConfigField("boolean", "FACEBOOK_ENABLED", facebookClientToken.isNotBlank().toString())
     }
     packaging {
         resources {

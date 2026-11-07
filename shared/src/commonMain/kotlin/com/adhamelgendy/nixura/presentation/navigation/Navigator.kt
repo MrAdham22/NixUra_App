@@ -33,15 +33,13 @@ sealed interface Route {
         data object Welcome : Auth
         data object Login : Auth
         data object Register : Auth
-        data class VerifyOtp(val email: String) : Auth
+        data class VerifyEmail(val email: String) : Auth
         data object ForgotPassword : Auth
-        data class ResetPassword(val email: String) : Auth
     }
 
     data object Account : Route
     data object ChangePassword : Route
     data object DeleteAccount : Route
-    data object Devices : Route
     data class Legal(val document: com.adhamelgendy.nixura.presentation.legal.LegalDocument) : Route
 }
 

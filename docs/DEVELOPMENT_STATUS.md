@@ -56,10 +56,11 @@ Bugs already found by the owner's first build: `Pickers.kt` had a stray broken f
 
 ## What is left (priority order)
 
-Android is done and owner-tested. The owner's remaining work is items 1-4; the rest is backlog.
+Android is done and owner-tested. The owner's remaining work is items 0-4; the rest is backlog.
 
+0. **Move to Firebase + Cloudflare (owner decision 2026-11-05), in order:** (a) Firebase sign-in, done on `feat/firebase-auth`, needs a phone test; (b) Firestore sync, designed (see "Firestore sync design"), not built, sync is paused until then; (c) Notion through a Cloudflare Worker; (d) the AI coach Worker (item 2); (e) payments for more than about 20 coach messages a day.
 1. **Fine-tune the UI** (spacing, typography, animations, small screens, light theme, contrast).
-2. **Real AI agent** behind `CoachResponder` (see `docs/AI_COACH_UPGRADE.md`): consent toggle, offline fallback to the rule-based coach, server-side key, no accounts.
+2. **Real AI agent** behind `CoachResponder` (see `docs/AI_COACH_UPGRADE.md`): a Cloudflare Worker with Workers AI, signed-in users only, about 20 messages a day; consent toggle, offline fallback to the rule-based coach, server-side key.
 3. **Bad-habit knowledge + free-text understanding:** extend `HabitKnowledgeBase` with curated info for many more habits (effects, withdrawal, recovery timeline, triggers, tips) and make habit recognition robust to however the user typed the name (normalisation, synonyms, typos/fuzzy match, multi-word and multi-language input; fall back to a generic profile and, once the AI exists, to the AI). Use it to personalise the card, analysis screen, coach and milestones. Add unit tests for the matcher.
 4. **iOS (approved, unrestricted):** (a) on a Mac run `:shared:linkDebugFrameworkIosSimulatorArm64` and build/run `iosApp` in Xcode, fix errors; (b) implement `NotificationScheduler` + `NotificationPermissionGateway` with `UNUserNotificationCenter` in `iosMain` (cap at 64 pending requests); (c) check status-bar style (`SystemBars.ios.kt`), safe areas and keyboard on a real iPhone; (d) run `:shared:iosSimulatorArm64Test`; (d2) iOS widgets (WidgetKit + App Group; none exist yet, Android widgets are Android-only); (e) before TestFlight: bundle id, signing team, app icon, `Info.plist` strings.
 
@@ -341,5 +342,30 @@ Owner decision: before registering the app with Firebase, replace the placeholde
 - **Verified:** clean `:androidApp:assembleDebug` and `:shared:testAndroidHostTest` (417 tests, 0 failures).
 - **Not verified:** iOS (not compiled here). On a Mac run `./gradlew :shared:compileKotlinIosSimulatorArm64 :shared:iosSimulatorArm64Test`, then build `iosApp/iosApp.xcodeproj` in Xcode.
 - **Owner must do:** phones see a new app, so uninstall the old `com.example.reclaimapp` build (its local data does not carry over). In Google Cloud Console create a new Android OAuth client for package `com.adhamelgendy.nixura` with the same debug SHA-1, or Google Calendar connect fails with `UNREGISTERED_ON_API_CONSOLE`; the old client can then be deleted. Register the Firebase Android app with the new package.
+
+## Firebase accounts (2026-11-08, branch `feat/firebase-auth`)
+
+Owner decision (2026-11-05): accounts move from the Node backend to Firebase Authentication (project `nixura`, Spark plan); sync moves to Firestore next; Notion and the AI coach move to Cloudflare Workers.
+
+- **What changed:** `data/auth` calls Firebase Authentication's REST API from shared code (`FirebaseAuthApi`, `FirebaseSession` for the 1-hour ID token with single-flight refresh, `FirebaseAuthRepository`). Email + password: sign-up mails a **verification link**, and the account is only signed in once it was tapped (the "Check your email" screen checks every 4 s and on "I've confirmed it"); "Forgot password?" mails a **reset link** to Firebase's page. Google sign-in (Credential Manager) and Facebook Login on Android through the new `SocialSignIn` port; iOS offers email + password only. Removed: 6-digit codes, the Reset-password screen, Settings > Account > Devices and "sign out everywhere" (Firebase has no device list; changing the password still ends other sessions). Accounts without a password hide Change password and delete without one. Settings > Privacy has "Share anonymous usage stats" (Firebase Analytics, off by default via the manifest, per device, not synced). Facebook's auto events and advertising id are off; its SDK only starts when a client token is set. `google-services.json` is in `.gitignore`.
+- **Cloud sync is paused** (`PausedSyncRemote` reports offline): the old server cannot check Firebase sign-ins. Changes stay queued; signing out warns that they were not uploaded. The Notion link still calls the old server and will fail until it moves to a Worker.
+- **Verified:** `:androidApp:assembleDebug` and `:shared:testAndroidHostTest` (428 tests, 0 failures; 21 new for the Firebase flows, token refresh and error mapping). On the emulator (Pixel_10_Pro): the app starts, Login and Create account show "Continue with Google" under an "or" divider, and a reset request for a made-up address reached the Firebase project and showed "Check your email". An independent check of the screens found double error messages, both sign-in paths running at once, a carried-over social error, stale "code" wording, dead OTP UI and a divider read aloud as "or"; all fixed.
+- **Not verified:** creating a real account and tapping the verification link, password reset end to end, Google and Facebook sign-in (need the owner's phone and accounts), Analytics events arriving, iOS (not compiled here: run `./gradlew :shared:compileKotlinIosSimulatorArm64 :shared:iosSimulatorArm64Test` on a Mac, add `GoogleService-Info.plist`).
+- **Owner must do:** add `nixuraFacebookClientToken=...` to `~/.gradle/gradle.properties` (Meta > App settings > Advanced > Client token); add Facebook testers under App roles while the Meta app is unpublished; register a release SHA-1 (Firebase) and key hash (Meta) before publishing.
+- **Known gaps:** NixButton drops its label while loading and NixSwitch has no toggle role for screen readers (older, app-wide). `DeviceInfoProvider` and `HttpSyncRemote` are unused until the Firestore step replaces them.
+
+## Firestore sync design (agreed 2026-11-08, not built)
+
+Owner answers: servers (the AI coach Worker, a future dashboard) will read the data, so it is stored as readable fields; 500 to 1,000 daily users, stay on Spark as long as possible without lowering quality.
+
+- **Layout:** `users/{uid}/sync/{type~id}` with `type`, `updatedAt` (device edit time, decides the winner), `serverTime` (set by Firestore, the pull cursor with the document name as tie-break), `deleted`, and `data` (the item's fields). One query per pull, so an idle sync costs 1 read.
+- **Good-habit days are grouped by month** (`goodlog~{habitId}~yyyy-MM`, one field per day with its own timestamp): 12 documents a year per habit instead of 365. This keeps storage near 0.2 MB per user per year (one document per day would fill Spark's 1 GiB in under a year at 1,000 users).
+- **Security rules:** a user reaches only `users/{uid}`; an older `updatedAt` cannot overwrite a newer one; timestamps far in the future are refused; `serverTime` must equal the request time; items are capped at 8 KB.
+- **Writes** use non-atomic `batchWrite`, so a refused stale item does not block the rest (the same as the old server's per-item "applied").
+- **Indexes:** `data` is exempt from indexing; only `type` and `serverTime` are indexed.
+- **Deletes** keep a small marker with the content removed. Deleting an account deletes its documents first, then the account; leftovers can be swept later by the Worker.
+- **Quota exhausted:** Firestore refuses until midnight Pacific; the app treats it as offline and keeps every change.
+- **Budget at 1,000 daily users:** about 30k reads and 15k writes a day (limits 50k / 20k).
+- **Rollback:** the remote sits behind `SyncRemote`; switching back to `PausedSyncRemote` is one line, and rules keep a version history in the console.
 
 **History cleanup (2026-11-03, owner request):** commits from `14810ff` onward were rewritten to remove assistant co-author lines and to carry the owner as author (Adham ELgendy). Code is byte-for-byte unchanged (same tree); commit IDs changed and the IDs above were updated. Force-pushed with lease to `master` and `agent-3/cloud-sync`. A local backup of the old history is kept as branch `backup/before-rewrite-2026-11-03`.

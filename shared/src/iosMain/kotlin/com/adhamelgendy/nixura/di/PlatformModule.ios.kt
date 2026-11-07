@@ -17,6 +17,13 @@ import com.adhamelgendy.nixura.domain.integration.DeviceRegion
 import com.adhamelgendy.nixura.data.auth.KeychainSecureStore
 import com.adhamelgendy.nixura.data.auth.SecureStore
 import com.adhamelgendy.nixura.data.auth.iosApiConfig
+import com.adhamelgendy.nixura.data.auth.FirebaseConfig
+import com.adhamelgendy.nixura.data.auth.iosFirebaseConfig
+import com.adhamelgendy.nixura.domain.analytics.NoUsageStats
+import com.adhamelgendy.nixura.domain.analytics.UsageStats
+import com.adhamelgendy.nixura.domain.auth.SocialProvider
+import com.adhamelgendy.nixura.domain.auth.SocialSignIn
+import com.adhamelgendy.nixura.domain.auth.SocialToken
 import com.adhamelgendy.nixura.domain.integration.GoogleAuthResult
 import com.adhamelgendy.nixura.domain.integration.GoogleAuthorizer
 import com.adhamelgendy.nixura.domain.sync.BackgroundSyncScheduler
@@ -40,6 +47,12 @@ fun platformModule() = module {
     single<DeviceInfoProvider> { IosDeviceInfo() }
     single<DeviceRegion> { IosDeviceRegion() }
     single<ApiConfig> { iosApiConfig() }
+    single<FirebaseConfig> { iosFirebaseConfig() }
+    // Google / Facebook sign-in on iOS need their iOS SDKs (Swift packages + URL schemes): not built yet, so only
+    // email + password is offered here.
+    single<SocialSignIn> { NotAvailableSocialSignIn }
+    // Usage stats need the Firebase iOS SDK (Swift package): not added yet, so iOS collects nothing.
+    single<UsageStats> { NoUsageStats }
 
     // iOS syncs while the app is open; background sync (BGTaskScheduler) is not implemented yet.
     single<BackgroundSyncScheduler> { NoOpBackgroundSyncScheduler }
@@ -47,6 +60,11 @@ fun platformModule() = module {
     // Google Calendar on iOS needs Google's iOS sign-in (an iOS OAuth client + URL scheme): not built yet, so the
     // Integrations screen says it is not available here. Notion works (it is done by the server).
     single<GoogleAuthorizer> { NotAvailableGoogleAuthorizer }
+}
+
+private object NotAvailableSocialSignIn : SocialSignIn {
+    override fun isAvailable(provider: SocialProvider): Boolean = false
+    override suspend fun token(provider: SocialProvider): SocialToken = SocialToken.NotAvailable
 }
 
 private object NotAvailableGoogleAuthorizer : GoogleAuthorizer {

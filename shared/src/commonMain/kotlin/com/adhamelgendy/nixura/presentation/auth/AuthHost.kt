@@ -24,9 +24,8 @@ fun AuthHost(route: Route, navigator: Navigator, onGuest: (() -> Unit)?) {
     when (route) {
         Route.Auth.Login -> LoginScreen(navigator, onGuest)
         Route.Auth.Register -> RegisterScreen(navigator, onGuest)
-        is Route.Auth.VerifyOtp -> VerifyOtpScreen(route.email, navigator)
+        is Route.Auth.VerifyEmail -> VerifyEmailScreen(route.email, navigator)
         Route.Auth.ForgotPassword -> ForgotPasswordScreen(navigator)
-        is Route.Auth.ResetPassword -> ResetPasswordScreen(route.email, navigator)
         is Route.Legal -> LegalScreen(route.document, navigator)
         else -> LandingScreen(navigator, onGuest)
     }

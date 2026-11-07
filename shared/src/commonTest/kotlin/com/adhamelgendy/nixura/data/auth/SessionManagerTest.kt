@@ -76,9 +76,9 @@ class SessionManagerTest {
     @Test fun replaceTokensIgnoresAnotherSession() = runTest {
         val m = SessionManagerImpl(InMemorySecureStore())
         m.signIn(storedSession())
-        m.replaceTokens("other-session", "x", "y")
+        m.replaceTokens("other-session", "x", "y", 0L)
         assertEquals("old", m.current()?.accessToken)
-        m.replaceTokens("s1", "a", "b")
+        m.replaceTokens("s1", "a", "b", 0L)
         assertEquals("a", m.current()?.accessToken)
     }
 }

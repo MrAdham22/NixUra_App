@@ -48,7 +48,6 @@ import com.adhamelgendy.nixura.presentation.auth.AccountScreen
 import com.adhamelgendy.nixura.presentation.auth.AuthHost
 import com.adhamelgendy.nixura.presentation.auth.ChangePasswordScreen
 import com.adhamelgendy.nixura.presentation.auth.DeleteAccountScreen
-import com.adhamelgendy.nixura.presentation.auth.DevicesScreen
 import com.adhamelgendy.nixura.presentation.auth.LegalScreen
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
@@ -334,7 +333,6 @@ private fun RouteContent(route: Route, navigator: Navigator) {
         Route.Account -> AccountScreen(navigator)
         Route.ChangePassword -> ChangePasswordScreen(navigator)
         Route.DeleteAccount -> DeleteAccountScreen(navigator)
-        Route.Devices -> DevicesScreen(navigator)
         is Route.Legal -> LegalScreen(route.document, navigator)
     }
 }

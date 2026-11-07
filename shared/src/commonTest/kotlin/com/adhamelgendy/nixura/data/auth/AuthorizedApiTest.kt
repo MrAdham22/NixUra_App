@@ -1,91 +1,65 @@
 package com.adhamelgendy.nixura.data.auth
 
-import com.adhamelgendy.nixura.domain.auth.SessionState
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
 
 class AuthorizedApiTest {
 
-    private suspend fun signedIn(store: InMemorySecureStore = InMemorySecureStore()): SessionManagerImpl =
-        SessionManagerImpl(store).also { it.signIn(storedSession()) }
+    private val clock = FixedClock()
 
-    @Test fun successfulCallDoesNotRefresh() = runTest {
-        val sessions = signedIn()
-        val t = FakeTransport { _, _, _ -> TransportResponse(200, "{}") }
-        assertEquals(200, AuthorizedApi(t, sessions).call("GET", "/v1/me").status)
-        assertEquals(0, t.count("/v1/auth/refresh"))
+    private suspend fun setup(firebase: FakeFirebase, expiresAt: Long = clock.now + 3_600_000): SessionManagerImpl =
+        SessionManagerImpl(InMemorySecureStore()).also { it.signIn(storedSession(expiresAt = expiresAt)) }
+
+    private fun api(t: ApiTransport, sessions: SessionManagerImpl, firebase: FakeFirebase) =
+        AuthorizedApi(t, FirebaseSession(FirebaseAuthApi(FirebaseConfig("k"), firebase), sessions, clock))
+
+    @Test fun sendsTheCurrentIdToken() = runTest {
+        val firebase = FakeFirebase { _, _ -> error("no refresh expected") }
+        val sessions = setup(firebase)
+        val t = FakeTransport { _, _, bearer -> TransportResponse(if (bearer == "old") 200 else 401) }
+        assertEquals(200, api(t, sessions, firebase).call("GET", "/v1/me").status)
     }
 
-    @Test fun expiredTokenIsRefreshedOnceAndRequestRetried() = runTest {
-        val sessions = signedIn()
-        val t = FakeTransport { _, path, bearer ->
-            when {
-                path == "/v1/auth/refresh" -> TransportResponse(200, REFRESH_OK)
-                bearer == "old" -> TransportResponse(401, UNAUTHORIZED)
-                else -> TransportResponse(200, "{}")
-            }
-        }
-        val r = AuthorizedApi(t, sessions).call("GET", "/v1/me")
-        assertEquals(200, r.status)
+    @Test fun expiredTokenIsRenewedBeforeTheCall() = runTest {
+        val firebase = FakeFirebase { m, _ -> if (m == "token") TransportResponse(200, REFRESH_OK) else error(m) }
+        val sessions = setup(firebase, expiresAt = clock.now - 1)
+        val t = FakeTransport { _, _, bearer -> TransportResponse(if (bearer == "new") 200 else 401) }
+        assertEquals(200, api(t, sessions, firebase).call("GET", "/v1/me").status)
         assertEquals("new", sessions.current()?.accessToken)
         assertEquals("r2", sessions.current()?.refreshToken)
     }
 
-    @Test fun concurrentExpiredRequestsShareOneRefresh() = runTest {
-        val sessions = signedIn()
-        val t = FakeTransport { _, path, bearer ->
-            when {
-                path == "/v1/auth/refresh" -> { delay(50); TransportResponse(200, REFRESH_OK) }
-                bearer == "old" -> TransportResponse(401, UNAUTHORIZED)
-                else -> TransportResponse(200, "{}")
-            }
-        }
-        val api = AuthorizedApi(t, sessions)
-        val results = (1..5).map { async { api.call("GET", "/v1/me") } }.awaitAll()
-        assertTrue(results.all { it.status == 200 })
-        assertEquals(1, t.count("/v1/auth/refresh"), "refresh tokens rotate: parallel refreshes would trigger reuse detection")
+    @Test fun a401IsRetriedOnceWithARenewedTokenButNeverSignsOut() = runTest {
+        val firebase = FakeFirebase { m, _ -> if (m == "token") TransportResponse(200, REFRESH_OK) else error(m) }
+        val sessions = setup(firebase)
+        val t = FakeTransport { _, _, _ -> TransportResponse(401) }
+        assertEquals(401, api(t, sessions, firebase).call("GET", "/v1/me").status)
+        assertEquals(2, t.calls.size)
+        assertIs<StoredSession>(sessions.current())
     }
 
-    @Test fun wrongPasswordUnauthorizedDoesNotTriggerRefresh() = runTest {
-        val sessions = signedIn()
-        val t = FakeTransport { _, _, _ -> TransportResponse(401, """{"error":{"code":"invalid_credentials","message":"x"}}""") }
-        assertEquals(401, AuthorizedApi(t, sessions).call("POST", "/v1/auth/change-password", "{}").status)
-        assertEquals(0, t.count("/v1/auth/refresh"))
-        assertIs<SessionState.SignedIn>(sessions.state.value)
+    @Test fun offlineRefreshKeepsTheSession() = runTest {
+        val firebase = FakeFirebase { _, _ -> TransportResponse(0) }
+        val sessions = setup(firebase, expiresAt = 0)
+        val t = FakeTransport { _, _, _ -> error("must not call the server without a token") }
+        assertEquals(0, api(t, sessions, firebase).call("GET", "/v1/me").status)
+        assertIs<StoredSession>(sessions.current())
     }
 
-    @Test fun refreshRejectedSignsOutCleanly() = runTest {
-        val sessions = signedIn()
-        val t = FakeTransport { _, path, _ ->
-            if (path == "/v1/auth/refresh") TransportResponse(401, UNAUTHORIZED) else TransportResponse(401, UNAUTHORIZED)
-        }
-        val r = AuthorizedApi(t, sessions).call("GET", "/v1/me")
-        assertEquals(401, r.status)
-        assertEquals(SessionState.SignedOut, sessions.state.value)
+    @Test fun revokedRefreshTokenSignsOutLocally() = runTest {
+        val firebase = FakeFirebase { _, _ -> fbError("INVALID_REFRESH_TOKEN") }
+        val sessions = setup(firebase, expiresAt = 0)
+        val t = FakeTransport { _, _, _ -> error("must not call the server") }
+        assertEquals(401, api(t, sessions, firebase).call("GET", "/v1/me").status)
         assertEquals(null, sessions.current())
     }
 
-    @Test fun networkFailureDuringRefreshKeepsTheSession() = runTest {
-        val sessions = signedIn()
-        val t = FakeTransport { _, path, _ ->
-            if (path == "/v1/auth/refresh") TransportResponse(0) else TransportResponse(401, UNAUTHORIZED)
-        }
-        val r = AuthorizedApi(t, sessions).call("GET", "/v1/me")
-        assertTrue(r.isNetworkFailure)
-        assertIs<SessionState.SignedIn>(sessions.state.value)
-        assertEquals("old", sessions.current()?.accessToken)
-    }
-
-    @Test fun noSessionMeansUnauthorizedWithoutNetwork() = runTest {
+    @Test fun signedOutReturns401WithoutAnyCall() = runTest {
+        val firebase = FakeFirebase { _, _ -> error("no call") }
         val sessions = SessionManagerImpl(InMemorySecureStore())
-        val t = FakeTransport { _, _, _ -> TransportResponse(200) }
-        assertEquals(401, AuthorizedApi(t, sessions).call("GET", "/v1/me").status)
-        assertTrue(t.calls.isEmpty())
+        val t = FakeTransport { _, _, _ -> error("no call") }
+        assertEquals(401, api(t, sessions, firebase).call("GET", "/v1/me").status)
     }
 }

@@ -1,21 +1,14 @@
 package com.adhamelgendy.nixura.domain.auth
 
-/** The signed-in account as the server knows it. Never contains a password or token. */
+/** The signed-in account. Never contains a password or token. */
 data class AuthUser(
     val id: String,
     val email: String,
     val name: String,
     val age: Int?,
     val emailVerified: Boolean,
-)
-
-/** One signed-in device, as listed in Settings > Account > Devices. */
-data class DeviceSession(
-    val id: String,
-    val deviceName: String,
-    val platform: String,
-    val lastUsedAtIso: String,
-    val isCurrent: Boolean,
+    /** False for accounts that only sign in with Google or Facebook (no password to change or confirm with). */
+    val hasPassword: Boolean = true,
 )
 
 sealed interface SessionState {
@@ -24,6 +17,9 @@ sealed interface SessionState {
     data object SignedOut : SessionState
     data class SignedIn(val user: AuthUser) : SessionState
 }
+
+/** Sign-in methods other than email + password. */
+enum class SocialProvider { Google, Facebook }
 
 enum class AuthErrorKind {
     InvalidCredentials,
@@ -40,6 +36,18 @@ enum class AuthErrorKind {
 
     /** The session ended (revoked, expired, token reuse). The user has been signed out locally. */
     SessionExpired,
+
+    /** The user closed the Google / Facebook sign-in sheet. Not shown as an error. */
+    Cancelled,
+
+    /** This sign-in method is not set up on this phone or build. */
+    NotAvailable,
+
+    /** The email already has an account that signs in another way (for example with a password). */
+    AccountExistsWithOtherMethod,
+
+    /** Deleting the account or changing the password needs a fresh sign-in first. */
+    RecentLoginRequired,
     Unknown,
 }
 
@@ -47,7 +55,7 @@ data class AuthError(
     val kind: AuthErrorKind,
     /** Seconds to wait before retrying, when the server said so (lockout, rate limit). */
     val retryAfterSeconds: Int? = null,
-    /** Server-side password problems (same ids as [PasswordProblem]) for [AuthErrorKind.WeakPassword]. */
+    /** Password problems (same ids as [PasswordProblem]) for [AuthErrorKind.WeakPassword]. */
     val passwordProblems: List<String> = emptyList(),
 )
 

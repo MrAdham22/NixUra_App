@@ -167,6 +167,7 @@ class PreferencesRepositoryImpl(
             notificationsEnabled = map[KEY_NOTIFICATIONS]?.let { it == "1" } ?: defaults.notificationsEnabled,
             dailyCheckInMinutes = map[KEY_CHECKIN]?.toIntOrNull() ?: defaults.dailyCheckInMinutes,
             guideCompleted = map[KEY_GUIDE_DONE]?.let { it == "1" } ?: defaults.guideCompleted,
+            usageStatsEnabled = map[KEY_USAGE_STATS]?.let { it == "1" } ?: defaults.usageStatsEnabled,
         )
     }
 
@@ -189,14 +190,18 @@ class PreferencesRepositoryImpl(
             PreferenceEntity(KEY_NOTIFICATIONS, if (settings.notificationsEnabled) "1" else "0"),
             PreferenceEntity(KEY_CHECKIN, settings.dailyCheckInMinutes.toString()),
         )
-        // The starter guide is per device, so finishing it does not count as a settings change to upload.
+        // The starter guide and the usage-stats choice are per device, so they do not count as a settings change to upload.
         val changed = synced.any { before[it.key] != it.value }
         val marks = if (changed) {
             listOf(PreferenceEntity(KEY_SETTINGS_DIRTY, "1"), PreferenceEntity(KEY_SETTINGS_UPDATED, clock.nowEpochMillis().toString()))
         } else {
             emptyList()
         }
-        dao.upsertAll(synced + PreferenceEntity(KEY_GUIDE_DONE, if (settings.guideCompleted) "1" else "0") + marks)
+        val local = listOf(
+            PreferenceEntity(KEY_GUIDE_DONE, if (settings.guideCompleted) "1" else "0"),
+            PreferenceEntity(KEY_USAGE_STATS, if (settings.usageStatsEnabled) "1" else "0"),
+        )
+        dao.upsertAll(synced + local + marks)
     }
 
     internal companion object {
@@ -210,6 +215,7 @@ class PreferencesRepositoryImpl(
         const val KEY_NOTIFICATIONS = "settings.notifications"
         const val KEY_CHECKIN = "settings.checkin_minutes"
         const val KEY_GUIDE_DONE = "settings.guide_done"
+        const val KEY_USAGE_STATS = "settings.usage_stats"
     }
 }
 

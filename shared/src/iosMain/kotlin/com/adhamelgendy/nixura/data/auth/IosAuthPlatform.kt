@@ -15,6 +15,8 @@ import platform.Foundation.CFBridgingRelease
 import platform.Foundation.CFBridgingRetain
 import platform.Foundation.NSBundle
 import platform.Foundation.NSData
+import platform.Foundation.NSDictionary
+import platform.Foundation.dictionaryWithContentsOfFile
 import platform.Foundation.NSString
 import platform.Foundation.NSUTF8StringEncoding
 import platform.Foundation.create
@@ -85,6 +87,21 @@ class KeychainSecureStore : SecureStore {
 class IosDeviceInfo : DeviceInfoProvider {
     override fun deviceName(): String = UIDevice.currentDevice.model.ifBlank { "iPhone" } // model, not the user-chosen device name
     override fun platform(): String = "ios"
+}
+
+/**
+ * Firebase project settings from `GoogleService-Info.plist` (downloaded from the Firebase console when the iOS app is
+ * registered; not in git). Without it the key is empty and sign-in reports "not available".
+ */
+fun iosFirebaseConfig(): FirebaseConfig {
+    val path = NSBundle.mainBundle.pathForResource("GoogleService-Info", "plist")
+    val values = path?.let { NSDictionary.dictionaryWithContentsOfFile(it) }
+    val apiKey = values?.objectForKey("API_KEY") as? String
+    val bundleId = NSBundle.mainBundle.bundleIdentifier
+    return FirebaseConfig(
+        apiKey = apiKey.orEmpty(),
+        platformHeaders = if (bundleId != null) mapOf("X-Ios-Bundle-Identifier" to bundleId) else emptyMap(),
+    )
 }
 
 /** Base URL comes from Info.plist (`NixUraApiBaseUrl`); iOS App Transport Security already blocks cleartext. */

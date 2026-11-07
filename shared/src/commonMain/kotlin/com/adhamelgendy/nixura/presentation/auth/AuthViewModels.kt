@@ -8,9 +8,9 @@ import com.adhamelgendy.nixura.domain.auth.AuthRepository
 import com.adhamelgendy.nixura.domain.auth.AuthResult
 import com.adhamelgendy.nixura.domain.auth.AuthValidation
 import com.adhamelgendy.nixura.domain.auth.AuthUser
-import com.adhamelgendy.nixura.domain.auth.DeviceSession
 import com.adhamelgendy.nixura.domain.auth.SessionManager
 import com.adhamelgendy.nixura.domain.auth.SessionState
+import com.adhamelgendy.nixura.domain.auth.SocialProvider
 import com.adhamelgendy.nixura.domain.sync.DetachDataAfterAccountDeletionUseCase
 import com.adhamelgendy.nixura.domain.sync.SignOutResult
 import com.adhamelgendy.nixura.domain.sync.SignOutUseCase
@@ -45,18 +45,44 @@ class LoginViewModel(private val auth: AuthRepository) : FormViewModel() {
     }
 }
 
-class VerifyOtpViewModel(private val auth: AuthRepository) : FormViewModel() {
+/**
+ * "Check your email": the account is created and a link was mailed. Every few seconds (and on "I've confirmed") it
+ * asks whether the link was tapped; then the session becomes SignedIn and the root gate swaps the UI.
+ */
+class VerifyEmailViewModel(private val auth: AuthRepository) : FormViewModel() {
     private val _resendSeconds = MutableStateFlow(RESEND_COOLDOWN_SECONDS)
     val resendSeconds: StateFlow<Int> = _resendSeconds.asStateFlow()
     private val _resent = MutableStateFlow(false)
     val resentNotice: StateFlow<Boolean> = _resent.asStateFlow()
     private var timer: Job? = null
+    private var watcher: Job? = null
 
     init { startTimer() }
 
-    fun verify(email: String, code: String) {
-        if (!AuthValidation.isCompleteOtp(code)) return fail(AuthError(AuthErrorKind.InvalidCode))
-        submit({ auth.verifyEmail(AuthValidation.normalizeEmail(email), code) })
+    /** "I've confirmed it": checks now and shows "not confirmed yet" if the link was not tapped. */
+    fun check(email: String) {
+        submit({ auth.checkEmailVerified(AuthValidation.normalizeEmail(email)) })
+    }
+
+    /** Quiet background checks while the screen is visible; errors are not shown (the button does that). */
+    fun watch(email: String) {
+        if (watcher?.isActive == true) return
+        watcher = viewModelScope.launch {
+            while (true) {
+                delay(WATCH_EVERY_MILLIS)
+                if (state.value.loading) continue
+                val r = auth.checkEmailVerified(AuthValidation.normalizeEmail(email))
+                if (r is AuthResult.Success) break
+                if (r is AuthResult.Failure && r.error.kind == AuthErrorKind.SessionExpired) {
+                    fail(r.error)
+                    break
+                }
+            }
+        }
+    }
+
+    fun stopWatching() {
+        watcher?.cancel()
     }
 
     fun resend(email: String) {
@@ -64,7 +90,7 @@ class VerifyOtpViewModel(private val auth: AuthRepository) : FormViewModel() {
         _resent.value = false
         startTimer()
         viewModelScope.launch {
-            when (val r = auth.resendCode(AuthValidation.normalizeEmail(email))) {
+            when (val r = auth.resendVerification(AuthValidation.normalizeEmail(email))) {
                 is AuthResult.Success -> _resent.value = true
                 is AuthResult.Failure -> fail(r.error)
             }
@@ -82,7 +108,10 @@ class VerifyOtpViewModel(private val auth: AuthRepository) : FormViewModel() {
         }
     }
 
-    private companion object { const val RESEND_COOLDOWN_SECONDS = 60 }
+    private companion object {
+        const val RESEND_COOLDOWN_SECONDS = 60
+        const val WATCH_EVERY_MILLIS = 4_000L
+    }
 }
 
 class ForgotPasswordViewModel(private val auth: AuthRepository) : FormViewModel() {
@@ -92,15 +121,17 @@ class ForgotPasswordViewModel(private val auth: AuthRepository) : FormViewModel(
     }
 }
 
-class ResetPasswordViewModel(private val auth: AuthRepository) : FormViewModel() {
-    fun reset(email: String, code: String, newPassword: String) {
-        if (!AuthValidation.isCompleteOtp(code)) return fail(AuthError(AuthErrorKind.InvalidCode))
-        if (AuthValidation.passwordProblems(newPassword, email).isNotEmpty()) return fail(invalid())
-        submit({ auth.resetPassword(AuthValidation.normalizeEmail(email), code, newPassword) })
-    }
+/** "Continue with Google / Facebook". Closing the provider's sheet is not an error. */
+class SocialSignInViewModel(private val auth: AuthRepository) : FormViewModel() {
+    val providers: List<SocialProvider> = SocialProvider.entries.filter { auth.isAvailable(it) }
 
-    fun resend(email: String) {
-        viewModelScope.launch { auth.forgotPassword(AuthValidation.normalizeEmail(email)) }
+    fun signIn(provider: SocialProvider) {
+        submit({
+            when (val r = auth.signInWith(provider)) {
+                is AuthResult.Failure -> if (r.error.kind == AuthErrorKind.Cancelled) AuthResult.Success(null) else r
+                is AuthResult.Success -> r
+            }
+        })
     }
 }
 
@@ -116,57 +147,15 @@ class DeleteAccountViewModel(
     private val auth: AuthRepository,
     private val detachData: DetachDataAfterAccountDeletionUseCase,
 ) : FormViewModel() {
-    /** After success the session is gone and the root gate leaves the account screens. */
-    fun delete(password: String) {
-        if (password.isEmpty()) return fail(invalid())
+    /** After success the session is gone and the root gate leaves the account screens. [password] is null for accounts without one. */
+    fun delete(password: String?) {
+        if (password != null && password.isEmpty()) return fail(invalid())
         submit({
             val result = auth.deleteAccount(password)
             if (result is AuthResult.Success) detachData()
             result
         })
     }
-}
-
-data class DevicesUiState(
-    val loading: Boolean = true,
-    val devices: List<DeviceSession> = emptyList(),
-    val error: AuthError? = null,
-)
-
-class DevicesViewModel(private val auth: AuthRepository, private val signOut: SignOutUseCase) : ViewModel() {
-    private val _state = MutableStateFlow(DevicesUiState())
-    val state: StateFlow<DevicesUiState> = _state.asStateFlow()
-
-    init { refresh() }
-
-    fun refresh() {
-        _state.update { it.copy(loading = true, error = null) }
-        viewModelScope.launch {
-            when (val r = auth.listDevices()) {
-                is AuthResult.Success -> _state.value = DevicesUiState(loading = false, devices = r.value)
-                is AuthResult.Failure -> _state.update { it.copy(loading = false, error = r.error) }
-            }
-        }
-    }
-
-    fun revoke(id: String) {
-        viewModelScope.launch {
-            when (val r = auth.revokeDevice(id)) {
-                is AuthResult.Success -> refresh()
-                is AuthResult.Failure -> _state.update { it.copy(error = r.error) }
-            }
-        }
-    }
-
-    /** Signs out everywhere including this device; the root gate reacts to the session change. */
-    fun logoutAll() {
-        viewModelScope.launch {
-            val r = signOut.everywhere()
-            if (r is AuthResult.Failure) _state.update { it.copy(error = r.error) }
-        }
-    }
-
-    fun dismissError() = _state.update { it.copy(error = null) }
 }
 
 enum class GuestDialog { OfflineWarning, LeftoverAccountData }

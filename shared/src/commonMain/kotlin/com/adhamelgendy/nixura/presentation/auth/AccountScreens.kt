@@ -27,7 +27,6 @@ import com.adhamelgendy.nixura.domain.clock.Clock
 import com.adhamelgendy.nixura.domain.sync.SyncStatus
 import com.adhamelgendy.nixura.presentation.components.Avatar
 import com.adhamelgendy.nixura.presentation.components.ConfirmDialog
-import com.adhamelgendy.nixura.presentation.components.ErrorBanner
 import com.adhamelgendy.nixura.presentation.components.NixButton
 import com.adhamelgendy.nixura.presentation.components.NixButtonStyle
 import com.adhamelgendy.nixura.presentation.components.NixCard
@@ -45,7 +44,7 @@ import com.adhamelgendy.nixura.presentation.theme.NixType
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
-/** Settings > Account: who is signed in, sign in / out, password, devices, deletion, legal links. */
+/** Settings > Account: who is signed in, sign in / out, password, deletion, legal links. */
 @Composable
 fun AccountScreen(navigator: Navigator) {
     val s = LocalStrings.current
@@ -96,8 +95,9 @@ fun AccountScreen(navigator: Navigator) {
             }
             NixCard {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    NixButton(s.accountChangePassword, { navigator.push(Route.ChangePassword) }, Modifier.fillMaxWidth(), style = NixButtonStyle.Secondary)
-                    NixButton(s.accountDevices, { navigator.push(Route.Devices) }, Modifier.fillMaxWidth(), style = NixButtonStyle.Secondary)
+                    if (u.hasPassword) {
+                        NixButton(s.accountChangePassword, { navigator.push(Route.ChangePassword) }, Modifier.fillMaxWidth(), style = NixButtonStyle.Secondary)
+                    }
                     NixButton(s.accountSignOut, { confirmSignOut = true }, Modifier.fillMaxWidth(), style = NixButtonStyle.Secondary, loading = signOutState.inProgress)
                 }
             }
@@ -201,7 +201,11 @@ fun ChangePasswordScreen(navigator: Navigator) {
 fun DeleteAccountScreen(navigator: Navigator) {
     val s = LocalStrings.current
     val vm: DeleteAccountViewModel = koinViewModel()
+    val account: AccountViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
+    val user by account.user.collectAsStateWithLifecycle()
+    // Accounts that only sign in with Google or Facebook have no password to confirm with.
+    val needsPassword = user?.hasPassword != false
     var password by remember { mutableStateOf("") }
     var confirm by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { vm.dismissError() }
@@ -210,57 +214,21 @@ fun DeleteAccountScreen(navigator: Navigator) {
         NixCard {
             Text(s.delWarn, style = NixType.Body, color = Nix.colors.textSecondary)
         }
-        AuthTextField(password, { password = it }, s.delPasswordLabel, isPassword = true, autofill = AutofillKind.Password)
+        if (needsPassword) {
+            AuthTextField(password, { password = it }, s.delPasswordLabel, isPassword = true, autofill = AutofillKind.Password)
+        } else {
+            Text(s.delNoPasswordHint, style = NixType.Small, color = Nix.colors.textMuted)
+        }
         AuthErrorText(state.error)
         NixButton(
             s.delButton, { confirm = true }, Modifier.fillMaxWidth(),
-            style = NixButtonStyle.Danger, icon = NixIcon.Trash, enabled = password.isNotEmpty(), loading = state.loading,
+            style = NixButtonStyle.Danger, icon = NixIcon.Trash, enabled = !needsPassword || password.isNotEmpty(), loading = state.loading,
         )
     }
     if (confirm) {
         ConfirmDialog(
             title = s.delConfirmTitle, message = s.delConfirmBody, confirmText = s.delButton, cancelText = s.cancel, danger = true,
-            onConfirm = { confirm = false; vm.delete(password) }, onDismiss = { confirm = false },
-        )
-    }
-}
-
-@Composable
-fun DevicesScreen(navigator: Navigator) {
-    val s = LocalStrings.current
-    val c = Nix.colors
-    val vm: DevicesViewModel = koinViewModel()
-    val state by vm.state.collectAsStateWithLifecycle()
-    var confirmAll by remember { mutableStateOf(false) }
-
-    SubScreen(title = s.devTitle, onBack = { navigator.back() }) {
-        state.error?.let { ErrorBanner(authErrorText(it, s), vm::dismissError) }
-        when {
-            state.loading -> CircularProgressIndicator(color = c.accent, strokeWidth = 2.dp)
-            state.devices.isEmpty() -> Text(s.devEmpty, style = NixType.Body, color = c.textMuted)
-            else -> state.devices.forEach { d ->
-                NixCard {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(d.deviceName.ifBlank { d.platform.ifBlank { "?" } }, style = NixType.BodyStrong, color = c.textPrimary)
-                            Text(
-                                if (d.isCurrent) s.devThisDevice else s.devLastActive(d.lastUsedAtIso.take(10)),
-                                style = NixType.Small, color = if (d.isCurrent) c.positive else c.textMuted,
-                            )
-                        }
-                        if (!d.isCurrent) NixButton(s.devSignOut, { vm.revoke(d.id) }, style = NixButtonStyle.Secondary)
-                    }
-                }
-            }
-        }
-        if (state.devices.isNotEmpty()) {
-            NixButton(s.devSignOutAll, { confirmAll = true }, Modifier.fillMaxWidth(), style = NixButtonStyle.Danger)
-        }
-    }
-    if (confirmAll) {
-        ConfirmDialog(
-            title = s.devSignOutAllTitle, message = s.devSignOutAllBody, confirmText = s.devSignOutAll, cancelText = s.cancel, danger = true,
-            onConfirm = { confirmAll = false; vm.logoutAll() }, onDismiss = { confirmAll = false },
+            onConfirm = { confirm = false; vm.delete(if (needsPassword) password else null) }, onDismiss = { confirm = false },
         )
     }
 }

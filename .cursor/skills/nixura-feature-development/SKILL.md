@@ -23,7 +23,7 @@ Does **not** grant product approval — follow user authorization and [DEVELOPME
 
 ## Scope guards
 
-- Offline-first. Accounts, the backend and cloud sync are approved and built, and guests must stay completely offline. Online AI is the very last item in the project; do not build it before the owner says so.
+- Offline-first. Accounts are on Firebase Authentication; cloud sync is paused until it moves to Firestore. Guests must stay completely offline (the only exception is opt-in anonymous usage stats). The real AI coach (Cloudflare Worker + Workers AI, signed-in users only, about 20 messages a day) comes after Firestore sync and Notion (owner decision 2026-11-05); do not start it before those land.
 - New UI text goes in `presentation/strings/Strings.kt`.
 - Room entity changes need a new migration and a schema check; never use destructive fallback.
 - The merged UI/features build and run on Android (owner-confirmed 2026-10-23). **iOS is in scope and unrestricted**: you may implement and fix iOS code (`iosMain`, `iosApp/`, iOS notifications via `UNUserNotificationCenter`) like any other code, keeping Android/iOS parity via `expect`/`actual` or Koin platform modules. iOS only compiles on macOS; if you cannot run it, mark iOS work **unverified** and give the owner the Mac commands (see AGENTS.md).

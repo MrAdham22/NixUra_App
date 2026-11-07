@@ -1,7 +1,6 @@
 package com.adhamelgendy.nixura.domain.sync
 
 import com.adhamelgendy.nixura.domain.auth.AuthRepository
-import com.adhamelgendy.nixura.domain.auth.AuthResult
 import com.adhamelgendy.nixura.domain.auth.SessionManager
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
@@ -80,19 +79,6 @@ class SignOutUseCase(
             auth.logout()
         }
         return SignOutResult.Done
-    }
-
-    /** Devices > sign out everywhere: same clean-up, once the server has agreed. */
-    suspend fun everywhere(): AuthResult<Unit> {
-        engine.syncNow()
-        return engine.exclusive {
-            val result = auth.logoutAllDevices()
-            if (result is AuthResult.Success) {
-                local.clearAccountData()
-                sessions.forgetLastUser()
-            }
-            result
-        }
     }
 }
 

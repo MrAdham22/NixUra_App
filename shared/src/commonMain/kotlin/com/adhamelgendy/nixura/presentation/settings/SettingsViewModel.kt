@@ -2,6 +2,7 @@ package com.adhamelgendy.nixura.presentation.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.adhamelgendy.nixura.domain.analytics.UsageStats
 import com.adhamelgendy.nixura.domain.model.AppSettings
 import com.adhamelgendy.nixura.domain.usecase.ClearAllDataUseCase
 import com.adhamelgendy.nixura.domain.usecase.ObserveSettingsUseCase
@@ -25,6 +26,7 @@ class SettingsViewModel(
     observeSettings: ObserveSettingsUseCase,
     private val updateSettings: UpdateSettingsUseCase,
     private val clearAllData: ClearAllDataUseCase,
+    private val usageStats: UsageStats,
 ) : ViewModel() {
 
     private val transient = MutableStateFlow<String?>(null)
@@ -40,6 +42,11 @@ class SettingsViewModel(
     fun onDarkTheme(enabled: Boolean) = update { it.copy(darkTheme = enabled) }
 
     fun onNotifications(enabled: Boolean) = update { it.copy(notificationsEnabled = enabled) }
+
+    fun onUsageStats(enabled: Boolean) {
+        usageStats.setCollectionEnabled(enabled)
+        update { it.copy(usageStatsEnabled = enabled) }
+    }
 
     fun onCheckInMinutes(minutes: Int) = update { it.copy(dailyCheckInMinutes = minutes) }
 

@@ -14,6 +14,8 @@ data class AppSettings(
     val dailyCheckInMinutes: Int = 8 * 60 + 30,
     /** The starter guide runs once per device; Settings can replay it. Not synced. */
     val guideCompleted: Boolean = false,
+    /** Anonymous usage stats (Firebase Analytics). Off until the user turns it on; per device, never synced. */
+    val usageStatsEnabled: Boolean = false,
 )
 
 enum class CoachRole { USER, COACH }

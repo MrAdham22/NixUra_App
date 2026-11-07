@@ -12,6 +12,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import com.adhamelgendy.nixura.auth.AndroidSocialSignIn
 import com.adhamelgendy.nixura.integrations.AndroidGoogleAuthorizer
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
@@ -28,6 +29,7 @@ class MainActivity : ComponentActivity() {
 
     private val appNavigator: Navigator by inject()
     private val googleAuthorizer: AndroidGoogleAuthorizer by inject()
+    private val socialSignIn: AndroidSocialSignIn by inject()
 
     // Google's consent screen for calendar access; the authorizer suspends until it closes.
     private var consentResult: ((ActivityResult) -> Unit)? = null
@@ -56,6 +58,8 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        socialSignIn.activity = this
+
         (application as NixUraApplication).notificationPermission.launcher = {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
@@ -75,6 +79,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         googleAuthorizer.consent = null
+        if (socialSignIn.activity === this) socialSignIn.activity = null
         super.onDestroy()
     }
 

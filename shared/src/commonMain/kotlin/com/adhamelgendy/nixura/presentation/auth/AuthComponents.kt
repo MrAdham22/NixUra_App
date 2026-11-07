@@ -87,7 +87,10 @@ fun authErrorText(error: AuthError, s: Strings): String = when (error.kind) {
     AuthErrorKind.Network -> s.errNetwork
     AuthErrorKind.Server -> s.errServer
     AuthErrorKind.SessionExpired -> s.errSessionExpired
-    AuthErrorKind.Unknown -> s.errUnknown
+    AuthErrorKind.NotAvailable -> s.errNotAvailable
+    AuthErrorKind.AccountExistsWithOtherMethod -> s.errAccountExistsOther
+    AuthErrorKind.RecentLoginRequired -> s.errRecentLogin
+    AuthErrorKind.Cancelled, AuthErrorKind.Unknown -> s.errUnknown
 }
 
 /** Maps a server problem id ("too_common") to text. */
@@ -311,70 +314,6 @@ fun PasswordStrengthBar(password: String, email: String, modifier: Modifier = Mo
         Spacer(Modifier.height(4.dp))
         Text(label, style = NixType.Small, color = color)
     }
-}
-
-/**
- * Six visual boxes over one hidden text field. Typing advances automatically, anything pasted or suggested by the
- * keyboard (clipboard chip, "123 456") is reduced to digits, and the code is submitted via [onComplete] when full.
- */
-@Composable
-fun OtpInput(
-    code: String,
-    onCodeChange: (String) -> Unit,
-    onComplete: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    hasError: Boolean = false,
-) {
-    val c = Nix.colors
-    val s = LocalStrings.current
-    val focus = remember { FocusRequester() }
-    val keyboard = LocalSoftwareKeyboardController.current
-    LaunchedEffect(Unit) { focus.requestFocus() }
-    BasicTextField(
-        value = code,
-        onValueChange = {
-            val clean = AuthValidation.sanitizeOtp(it)
-            onCodeChange(clean)
-            if (clean.length == AuthValidation.OTP_LENGTH) onComplete()
-        },
-        enabled = enabled,
-        singleLine = true,
-        cursorBrush = SolidColor(Color.Transparent),
-        textStyle = NixType.Body.copy(color = Color.Transparent),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { if (AuthValidation.isCompleteOtp(code)) onComplete() }),
-        modifier = modifier.fillMaxWidth().focusRequester(focus).autofill(AutofillKind.OneTimeCode)
-            .semantics { contentDescription = s.authCodeBoxesDescription },
-        decorationBox = { inner ->
-            Box {
-                Row(
-                    Modifier.fillMaxWidth().clickable(interactionSource = MutableInteractionSource(), indication = null) {
-                        focus.requestFocus()
-                        keyboard?.show()
-                    },
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    for (i in 0 until AuthValidation.OTP_LENGTH) {
-                        val active = i == code.length
-                        val border = when {
-                            hasError -> c.danger
-                            active -> c.accent
-                            else -> c.border
-                        }
-                        Box(
-                            Modifier.weight(1f).heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp))
-                                .background(c.surfaceRaised).border(if (active) 2.dp else 1.dp, border, RoundedCornerShape(14.dp)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(code.getOrNull(i)?.toString().orEmpty(), style = NixType.Title, color = c.textPrimary, textAlign = TextAlign.Center)
-                        }
-                    }
-                }
-                Box(Modifier.size(1.dp)) { inner() } // the real (invisible) field that receives the keyboard input
-            }
-        },
-    )
 }
 
 /** A tappable text link with a 48dp touch target. */

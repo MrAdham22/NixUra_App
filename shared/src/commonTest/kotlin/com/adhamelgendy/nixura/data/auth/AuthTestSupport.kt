@@ -17,8 +17,23 @@ class FakeTransport(private val handler: suspend (method: String, path: String, 
     fun count(path: String) = calls.count { it.second == path }
 }
 
-internal fun storedSession(access: String = "old", refresh: String = "r1", userId: String = "u1") =
-    StoredSession(access, refresh, "s1", StoredUser(userId, "ann@example.com", "Ann"))
+internal fun storedSession(access: String = "old", refresh: String = "r1", userId: String = "u1", expiresAt: Long = 0) =
+    StoredSession(access, refresh, "s1", StoredUser(userId, "ann@example.com", "Ann"), expiresAt)
 
-const val UNAUTHORIZED = """{"error":{"code":"unauthorized","message":"x"}}"""
-const val REFRESH_OK = """{"accessToken":"new","accessTokenExpiresInSeconds":900,"refreshToken":"r2","sessionId":"s1"}"""
+/** Scriptable Firebase REST endpoint: [handler] gets the method name ("accounts:signUp", "token") and the body. */
+internal class FakeFirebase(private val handler: (method: String, body: String) -> TransportResponse) : FirebaseTransport {
+    val calls = mutableListOf<Pair<String, String>>()
+    override suspend fun post(url: String, body: String, form: Boolean): TransportResponse {
+        val method = url.substringAfterLast('/').substringBefore('?')
+        calls += method to body
+        return handler(method, body)
+    }
+    fun count(method: String) = calls.count { it.first == method }
+}
+
+internal class FixedClock(var now: Long = 1_000_000L) : com.adhamelgendy.nixura.domain.clock.Clock {
+    override fun nowEpochMillis(): Long = now
+}
+
+internal fun fbError(message: String, status: Int = 400) = TransportResponse(status, """{"error":{"code":$status,"message":"$message"}}""")
+internal const val REFRESH_OK = """{"id_token":"new","refresh_token":"r2","expires_in":"3600","user_id":"u1"}"""

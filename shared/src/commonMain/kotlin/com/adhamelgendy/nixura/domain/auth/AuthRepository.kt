@@ -8,27 +8,57 @@ import kotlinx.coroutines.flow.StateFlow
  * Every call returns a typed [AuthResult]; nothing throws for expected failures.
  */
 interface AuthRepository {
-    /** Creates the account (or restarts a pending registration) and emails a 6-digit code. Same outcome for existing emails. */
+    /**
+     * Creates the account and emails a verification link. The user is signed in only after tapping it
+     * ([checkEmailVerified]). An email that already has an account gets the same answer, so nobody can probe addresses.
+     */
     suspend fun register(email: String, password: String, name: String?): AuthResult<Unit>
 
-    /** Verifies the code and signs the user in on this device. */
-    suspend fun verifyEmail(email: String, code: String): AuthResult<AuthUser>
-    suspend fun resendCode(email: String): AuthResult<Unit>
+    /** Signs the user in once the link from the verification email was tapped; [AuthErrorKind.EmailNotVerified] until then. */
+    suspend fun checkEmailVerified(email: String): AuthResult<AuthUser>
+
+    /** Sends the verification link again. */
+    suspend fun resendVerification(email: String): AuthResult<Unit>
+
+    /** Fails with [AuthErrorKind.EmailNotVerified] (and mails a fresh link) when the email was never confirmed. */
     suspend fun login(email: String, password: String): AuthResult<AuthUser>
+
+    /** Emails a link that opens a page to choose a new password. Same answer for unknown emails. */
     suspend fun forgotPassword(email: String): AuthResult<Unit>
-    suspend fun resetPassword(email: String, code: String, newPassword: String): AuthResult<Unit>
     suspend fun changePassword(currentPassword: String, newPassword: String): AuthResult<Unit>
 
-    /** Deletes the account and its server data, then signs out locally. */
-    suspend fun deleteAccount(password: String): AuthResult<Unit>
+    /** Whether [provider] can be offered on this phone and build. */
+    fun isAvailable(provider: SocialProvider): Boolean
+    suspend fun signInWith(provider: SocialProvider): AuthResult<AuthUser>
+
+    /**
+     * Deletes the account, then signs out locally. [password] confirms it for password accounts; accounts without
+     * one pass null and may get [AuthErrorKind.RecentLoginRequired] if they signed in too long ago.
+     */
+    suspend fun deleteAccount(password: String?): AuthResult<Unit>
 
     /** Ends this device's session. Always signs out locally, even when offline. */
     suspend fun logout()
-    suspend fun logoutAllDevices(): AuthResult<Unit>
-    suspend fun listDevices(): AuthResult<List<DeviceSession>>
-    suspend fun revokeDevice(sessionId: String): AuthResult<Unit>
     suspend fun fetchProfile(): AuthResult<AuthUser>
     suspend fun updateProfile(name: String?, age: Int?): AuthResult<AuthUser>
+}
+
+/**
+ * The phone's own Google / Facebook sign-in sheet. Returns the provider's token, which is exchanged for a NixUra
+ * session. Implemented per platform; a platform without a provider reports it as unavailable.
+ */
+interface SocialSignIn {
+    fun isAvailable(provider: SocialProvider): Boolean
+    suspend fun token(provider: SocialProvider): SocialToken
+}
+
+sealed interface SocialToken {
+    /** Google: an ID token. Facebook: an access token. */
+    data class Ok(val value: String) : SocialToken
+    data object Cancelled : SocialToken
+    data object NotAvailable : SocialToken
+    data object Offline : SocialToken
+    data object Failed : SocialToken
 }
 
 /**

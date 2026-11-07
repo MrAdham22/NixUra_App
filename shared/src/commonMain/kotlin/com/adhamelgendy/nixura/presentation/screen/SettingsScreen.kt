@@ -140,6 +140,17 @@ fun SettingsScreen(navigator: Navigator) {
             }
         }
 
+        SectionLabel(s.privacySection)
+        NixCard {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(s.usageStatsToggle, style = NixType.BodyStrong, color = c.textPrimary)
+                    Text(s.usageStatsHint, style = NixType.Small, color = c.textMuted)
+                }
+                NixSwitch(settings.usageStatsEnabled, vm::onUsageStats)
+            }
+        }
+
         SectionLabel(s.dataTitle)
         NixCard {
             Text(s.dataBody, style = NixType.Small, color = c.textSecondary)

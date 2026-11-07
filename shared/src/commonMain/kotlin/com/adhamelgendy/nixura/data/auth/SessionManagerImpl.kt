@@ -41,15 +41,16 @@ class SessionManagerImpl internal constructor(private val store: SecureStore) : 
     }
 
     /** Swaps tokens after a refresh, only if the stored session is still the same one. */
-    internal suspend fun replaceTokens(sessionId: String, accessToken: String, refreshToken: String) = mutex.withLock {
+    internal suspend fun replaceTokens(sessionId: String, accessToken: String, refreshToken: String, expiresAt: Long) = mutex.withLock {
         val s = read() ?: return@withLock
         if (s.sessionId != sessionId) return@withLock
-        store.put(KEY_SESSION, AuthJson.encodeToString(StoredSession.serializer(), s.copy(accessToken = accessToken, refreshToken = refreshToken)))
+        val renewed = s.copy(accessToken = accessToken, refreshToken = refreshToken, expiresAt = expiresAt)
+        store.put(KEY_SESSION, AuthJson.encodeToString(StoredSession.serializer(), renewed))
     }
 
     internal suspend fun updateUser(user: AuthUser) = mutex.withLock {
         val s = read() ?: return@withLock
-        val stored = StoredUser(user.id, user.email, user.name, user.age, user.emailVerified)
+        val stored = StoredUser(user.id, user.email, user.name, user.age, user.emailVerified, user.hasPassword)
         store.put(KEY_SESSION, AuthJson.encodeToString(StoredSession.serializer(), s.copy(user = stored)))
         _state.value = SessionState.SignedIn(user)
     }
@@ -84,7 +85,7 @@ class SessionManagerImpl internal constructor(private val store: SecureStore) : 
         return runCatching { AuthJson.decodeFromString(StoredSession.serializer(), raw) }.getOrNull()
     }
 
-    private fun StoredUser.toAuthUser() = AuthUser(id, email, name, age, emailVerified)
+    private fun StoredUser.toAuthUser() = AuthUser(id, email, name, age, emailVerified, hasPassword)
 
     private companion object {
         const val KEY_SESSION = "session"
