@@ -89,6 +89,7 @@ fun authErrorText(error: AuthError, s: Strings): String = when (error.kind) {
     AuthErrorKind.SessionExpired -> s.errSessionExpired
     AuthErrorKind.NotAvailable -> s.errNotAvailable
     AuthErrorKind.AccountExistsWithOtherMethod -> s.errAccountExistsOther
+    AuthErrorKind.EmailInUse -> s.errEmailInUse
     AuthErrorKind.RecentLoginRequired -> s.errRecentLogin
     AuthErrorKind.Cancelled, AuthErrorKind.Unknown -> s.errUnknown
 }

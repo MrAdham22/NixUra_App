@@ -69,9 +69,10 @@ class FirebaseAuthRepositoryTest {
         assertIs<SessionState.SignedIn>(f.sessions.state.value)
     }
 
-    @Test fun registeringAnExistingEmailLooksTheSameAsANewOne() = runTest {
+    @Test fun registeringAnExistingEmailSaysSoAndSendsNothing() = runTest {
         val f = fixture { m, _ -> if (m == "accounts:signUp") fbError("EMAIL_EXISTS") else error(m) }
-        assertIs<AuthResult.Success<Unit>>(f.repo.register("ann@example.com", "a good password 1", null))
+        val r = f.repo.register("ann@example.com", "a good password 1", null) as AuthResult.Failure
+        assertEquals(AuthErrorKind.EmailInUse, r.error.kind)
         assertEquals(0, f.firebase.count("accounts:sendOobCode"))
     }
 

@@ -20,7 +20,8 @@ internal object FirebaseErrorMapper {
         "INVALID_EMAIL", "MISSING_PASSWORD", "MISSING_EMAIL" -> AuthError(AuthErrorKind.InvalidInput)
         "CREDENTIAL_TOO_OLD_LOGIN_AGAIN" -> AuthError(AuthErrorKind.RecentLoginRequired)
         "INVALID_ID_TOKEN", "TOKEN_EXPIRED", "USER_NOT_FOUND", "INVALID_REFRESH_TOKEN" -> AuthError(AuthErrorKind.SessionExpired)
-        "FEDERATED_USER_ID_ALREADY_LINKED", "EMAIL_EXISTS" -> AuthError(AuthErrorKind.AccountExistsWithOtherMethod)
+        "FEDERATED_USER_ID_ALREADY_LINKED" -> AuthError(AuthErrorKind.AccountExistsWithOtherMethod)
+        "EMAIL_EXISTS" -> AuthError(AuthErrorKind.EmailInUse)
         // The provider is switched off in the Firebase console, or this build's key is not allowed to use it.
         "OPERATION_NOT_ALLOWED", "INVALID_IDP_RESPONSE", "API_KEY_INVALID" -> AuthError(AuthErrorKind.NotAvailable)
         else -> if (code.startsWith("HTTP_5")) AuthError(AuthErrorKind.Server) else AuthError(AuthErrorKind.Unknown)

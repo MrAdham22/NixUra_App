@@ -46,6 +46,9 @@ enum class AuthErrorKind {
     /** The email already has an account that signs in another way (for example with a password). */
     AccountExistsWithOtherMethod,
 
+    /** Creating an account for an email that already has one (password, Google or Facebook). */
+    EmailInUse,
+
     /** Deleting the account or changing the password needs a fresh sign-in first. */
     RecentLoginRequired,
     Unknown,

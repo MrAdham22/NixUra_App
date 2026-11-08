@@ -10,7 +10,8 @@ import kotlinx.coroutines.flow.StateFlow
 interface AuthRepository {
     /**
      * Creates the account and emails a verification link. The user is signed in only after tapping it
-     * ([checkEmailVerified]). An email that already has an account gets the same answer, so nobody can probe addresses.
+     * ([checkEmailVerified]). An email that already has an account fails with [AuthErrorKind.EmailInUse]: Firebase's own
+     * sign-up already tells anyone that, so hiding it would only confuse the user.
      */
     suspend fun register(email: String, password: String, name: String?): AuthResult<Unit>
 

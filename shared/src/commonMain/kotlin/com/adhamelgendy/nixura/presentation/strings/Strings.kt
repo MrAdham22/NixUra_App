@@ -421,6 +421,7 @@ open class Strings {
     open val errInvalidCode: String = "That link is wrong or has expired. Request a new one."
     open val errNotAvailable: String = "This way of signing in isn't available on this phone yet."
     open val errAccountExistsOther: String = "This email already has a NixUra account that signs in another way. Sign in that way instead."
+    open val errEmailInUse: String = "This email already has a NixUra account. Sign in instead, with your password or with Google or Facebook if you used one."
     open val errRecentLogin: String = "For your safety, sign out, sign back in, then try again."
     open val privacySection: String = "Privacy"
     open val usageStatsToggle: String = "Share anonymous usage stats"

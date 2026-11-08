@@ -44,8 +44,7 @@ class FirebaseAuthRepository internal constructor(
                 pendingLock.withLock { pending = Pending(email, reply, display) }
                 sendVerification(reply.idToken)
             }
-            // Same answer as a new account, so the form cannot be used to find out who has one.
-            is FbResult.Err -> if (r.code == "EMAIL_EXISTS") AuthResult.Success(Unit) else failure(r)
+            is FbResult.Err -> if (r.code == "EMAIL_EXISTS") AuthResult.Failure(AuthError(AuthErrorKind.EmailInUse)) else failure(r)
             FbResult.Offline -> failure(r)
         }
 
