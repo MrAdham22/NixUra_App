@@ -58,23 +58,23 @@ internal sealed interface FbResult<out T> {
 internal class FirebaseAuthApi(private val config: FirebaseConfig, private val transport: FirebaseTransport) {
 
     suspend fun signUp(email: String, password: String) =
-        call("accounts:signUp", AuthJson.encodeToString(FbPasswordRequest.serializer(), FbPasswordRequest(email, password)), FbSignInReply.serializer())
+        call("accounts:signUp", FirebaseRequestJson.encodeToString(FbPasswordRequest.serializer(), FbPasswordRequest(email, password)), FbSignInReply.serializer())
 
     suspend fun signInWithPassword(email: String, password: String) =
-        call("accounts:signInWithPassword", AuthJson.encodeToString(FbPasswordRequest.serializer(), FbPasswordRequest(email, password)), FbSignInReply.serializer())
+        call("accounts:signInWithPassword", FirebaseRequestJson.encodeToString(FbPasswordRequest.serializer(), FbPasswordRequest(email, password)), FbSignInReply.serializer())
 
     /** [postBody] is `id_token=…&providerId=google.com` or `access_token=…&providerId=facebook.com`. */
     suspend fun signInWithIdp(postBody: String) =
-        call("accounts:signInWithIdp", AuthJson.encodeToString(FbIdpRequest.serializer(), FbIdpRequest(postBody)), FbSignInReply.serializer())
+        call("accounts:signInWithIdp", FirebaseRequestJson.encodeToString(FbIdpRequest.serializer(), FbIdpRequest(postBody)), FbSignInReply.serializer())
 
     suspend fun sendVerificationEmail(idToken: String) =
-        call("accounts:sendOobCode", AuthJson.encodeToString(FbOobRequest.serializer(), FbOobRequest("VERIFY_EMAIL", idToken = idToken)))
+        call("accounts:sendOobCode", FirebaseRequestJson.encodeToString(FbOobRequest.serializer(), FbOobRequest("VERIFY_EMAIL", idToken = idToken)))
 
     suspend fun sendPasswordReset(email: String) =
-        call("accounts:sendOobCode", AuthJson.encodeToString(FbOobRequest.serializer(), FbOobRequest("PASSWORD_RESET", email = email)))
+        call("accounts:sendOobCode", FirebaseRequestJson.encodeToString(FbOobRequest.serializer(), FbOobRequest("PASSWORD_RESET", email = email)))
 
     suspend fun lookup(idToken: String): FbResult<FbUser> =
-        when (val r = call("accounts:lookup", AuthJson.encodeToString(FbIdTokenRequest.serializer(), FbIdTokenRequest(idToken)), FbLookupReply.serializer())) {
+        when (val r = call("accounts:lookup", FirebaseRequestJson.encodeToString(FbIdTokenRequest.serializer(), FbIdTokenRequest(idToken)), FbLookupReply.serializer())) {
             is FbResult.Ok -> r.value.users.firstOrNull()?.let { FbResult.Ok(it) } ?: FbResult.Err("USER_NOT_FOUND")
             is FbResult.Err -> r
             FbResult.Offline -> FbResult.Offline
@@ -82,18 +82,18 @@ internal class FirebaseAuthApi(private val config: FirebaseConfig, private val t
 
     /** Changing the password returns new tokens and ends every other session of the account. */
     suspend fun update(idToken: String, displayName: String? = null, password: String? = null) =
-        call("accounts:update", AuthJson.encodeToString(FbUpdateRequest.serializer(), FbUpdateRequest(idToken, displayName, password)), FbSignInReply.serializer())
+        call("accounts:update", FirebaseRequestJson.encodeToString(FbUpdateRequest.serializer(), FbUpdateRequest(idToken, displayName, password)), FbSignInReply.serializer())
 
     suspend fun delete(idToken: String) =
-        call("accounts:delete", AuthJson.encodeToString(FbIdTokenRequest.serializer(), FbIdTokenRequest(idToken)))
+        call("accounts:delete", FirebaseRequestJson.encodeToString(FbIdTokenRequest.serializer(), FbIdTokenRequest(idToken)))
 
     suspend fun refresh(refreshToken: String): FbResult<FbRefreshReply> {
         val body = "grant_type=refresh_token&refresh_token=" + refreshToken.encodeURLParameter()
-        return parse(transport.post("$TOKEN_URL?key=${config.apiKey}", body, form = true), FbRefreshReply.serializer())
+        return parse(transport.post("$TOKEN_URL?key=${config.apiKey}", body, form = true), FbRefreshReply.serializer()).also { log("token", it) }
     }
 
     private suspend fun <T> call(method: String, body: String, reply: KSerializer<T>): FbResult<T> =
-        parse(transport.post("$IDENTITY_URL/$method?key=${config.apiKey}", body), reply)
+        parse(transport.post("$IDENTITY_URL/$method?key=${config.apiKey}", body), reply).also { log(method, it) }
 
     /** For calls whose reply body does not matter. */
     private suspend fun call(method: String, body: String): FbResult<Unit> {
@@ -102,6 +102,15 @@ internal class FirebaseAuthApi(private val config: FirebaseConfig, private val t
             res.isNetworkFailure -> FbResult.Offline
             res.status !in 200..299 -> FbResult.Err(errorCode(res))
             else -> FbResult.Ok(Unit)
+        }.also { log(method, it) }
+    }
+
+    /** Firebase's error code only (e.g. "INVALID_IDP_RESPONSE"): never the request, the reply or a token. */
+    private fun log(method: String, result: FbResult<*>) {
+        when (result) {
+            is FbResult.Err -> logAuthDiagnostic("$method failed: ${result.code}")
+            FbResult.Offline -> logAuthDiagnostic("$method failed: no network")
+            is FbResult.Ok -> Unit
         }
     }
 
@@ -118,7 +127,11 @@ internal class FirebaseAuthApi(private val config: FirebaseConfig, private val t
         /** "WEAK_PASSWORD : Password should be at least 6 characters" -> "WEAK_PASSWORD". */
         fun errorCode(res: TransportResponse): String {
             val message = runCatching { AuthJson.decodeFromString(FbErrorEnvelope.serializer(), res.body).error?.message }.getOrNull().orEmpty()
-            return message.substringBefore(" ").substringBefore(":").trim().ifEmpty { "HTTP_${res.status}" }
+            val code = message.substringBefore(" ").substringBefore(":").trim()
+            // Firebase codes look like "EMAIL_EXISTS"; anything else (a Google API key or quota message) keeps its
+            // status and a short, email-free excerpt so the log says what happened.
+            return if (code.isNotEmpty() && code.all { it.isUpperCase() || it == '_' || it.isDigit() }) code
+            else "HTTP_${res.status} " + message.filterNot { it == '@' }.take(120)
         }
     }
 }

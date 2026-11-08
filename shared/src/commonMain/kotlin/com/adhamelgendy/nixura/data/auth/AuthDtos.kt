@@ -13,6 +13,13 @@ internal val AuthJson = Json {
     encodeDefaults = false
 }
 
+/** For Firebase requests: fields such as `returnSecureToken` and `requestUri` must be sent even at their default. */
+internal val FirebaseRequestJson = Json {
+    ignoreUnknownKeys = true
+    explicitNulls = false
+    encodeDefaults = true
+}
+
 // ---------------------------------------------------------------- Firebase Auth REST (Identity Toolkit v1)
 
 @Serializable internal data class FbPasswordRequest(val email: String, val password: String, val returnSecureToken: Boolean = true)

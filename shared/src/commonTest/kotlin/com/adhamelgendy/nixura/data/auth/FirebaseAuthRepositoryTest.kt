@@ -192,6 +192,16 @@ class FirebaseAuthRepositoryTest {
         assertEquals(1, f.firebase.count("token"))
     }
 
+    @Test fun requestsCarryTheFieldsFirebaseRequires() = runTest {
+        val f = fixture { m, _ -> if (m == "accounts:signInWithIdp") signInReply(verified = true) else lookup(verified = true) }
+        f.repo.signInWith(SocialProvider.Google)
+        val idp = f.firebase.calls.first { it.first == "accounts:signInWithIdp" }.second
+        assertTrue(idp.contains("\"requestUri\":\"http://localhost\""), idp)
+        assertTrue(idp.contains("\"returnSecureToken\":true"), idp)
+        f.repo.login("ann@example.com", "pw")
+        assertTrue(f.firebase.calls.first { it.first == "accounts:signInWithPassword" }.second.contains("\"returnSecureToken\":true"))
+    }
+
     @Test fun firebaseErrorCodesMapToKinds() {
         assertEquals(AuthErrorKind.WeakPassword, FirebaseErrorMapper.map("WEAK_PASSWORD").kind)
         assertEquals(AuthErrorKind.RateLimited, FirebaseErrorMapper.map("TOO_MANY_ATTEMPTS_TRY_LATER").kind)
