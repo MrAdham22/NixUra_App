@@ -1,0 +1,69 @@
+package com.adhamelgendy.nixura.domain.usecase
+
+import com.adhamelgendy.nixura.domain.auth.SessionManager
+import com.adhamelgendy.nixura.domain.auth.SessionState
+import com.adhamelgendy.nixura.domain.clock.Clock
+import com.adhamelgendy.nixura.domain.model.AppSettings
+import com.adhamelgendy.nixura.domain.model.UserProfile
+import com.adhamelgendy.nixura.domain.repository.DataMaintenanceRepository
+import com.adhamelgendy.nixura.domain.repository.PreferencesRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
+class ObserveProfileUseCase(private val repository: PreferencesRepository) {
+    operator fun invoke(): Flow<UserProfile> = repository.observeProfile()
+}
+
+class ObserveSettingsUseCase(private val repository: PreferencesRepository) {
+    operator fun invoke(): Flow<AppSettings> = repository.observeSettings()
+}
+
+class SaveProfileUseCase(private val repository: PreferencesRepository) {
+    suspend operator fun invoke(name: String, email: String, age: Int?): Result<Unit> = runCatching {
+        val cleanName = name.trim()
+        val cleanEmail = email.trim()
+        require(cleanName.length <= 40) { "Name is too long" }
+        require(cleanEmail.isEmpty() || isPlausibleEmail(cleanEmail)) { "Enter a valid email address" }
+        require(age == null || age in 5..120) { "Enter a valid age" }
+        repository.saveProfile(UserProfile(cleanName, cleanEmail, age))
+    }
+
+    companion object {
+        fun isPlausibleEmail(value: String): Boolean {
+            val at = value.indexOf('@')
+            if (at <= 0 || at != value.lastIndexOf('@')) return false
+            val domain = value.substring(at + 1)
+            return domain.length >= 3 && domain.contains('.') && !domain.startsWith('.') && !domain.endsWith('.') && !value.contains(' ')
+        }
+    }
+}
+
+class UpdateSettingsUseCase(private val repository: PreferencesRepository) {
+    // Read-modify-write: serialize so quick consecutive toggles cannot overwrite each other.
+    private val lock = Mutex()
+
+    suspend operator fun invoke(transform: (AppSettings) -> AppSettings): Result<Unit> = runCatching {
+        lock.withLock {
+            val updated = transform(repository.observeSettings().first())
+            require(updated.dailyCheckInMinutes in 0 until 24 * 60) { "Invalid time" }
+            repository.saveSettings(updated)
+        }
+    }
+}
+
+/** Settings > Erase all data. Signed in, the erase also reaches the account and other devices; as a guest it is local. */
+class ClearAllDataUseCase(
+    private val repository: DataMaintenanceRepository,
+    private val sessions: SessionManager,
+    private val clock: Clock,
+) {
+    suspend operator fun invoke(): Result<Unit> = runCatching {
+        if (sessions.state.value is SessionState.SignedIn) {
+            repository.markAllDataDeleted(clock.nowEpochMillis())
+        } else {
+            repository.clearAllData()
+        }
+    }
+}

@@ -6,7 +6,7 @@ Canonical product and architecture reference. **Authoritative detail:** [PHASE2_
 
 **NixUra** (user-facing) — help users quit or reduce unwanted habits by tracking time since last occurrence, visualizing progress, and (later) AI coaching. Name evokes removing negative patterns and reclaiming control.
 
-**Name:** NixUra everywhere (Gradle project `NixUra`, launcher label, iOS app name). **Technical identifiers kept:** modules `:androidApp` / `:shared`, package / applicationId `com.example.reclaimapp`, iOS bundle id (change only before publishing, with the owner's approval).
+**Name:** NixUra everywhere (Gradle project `NixUra`, launcher label, iOS app name). **App id:** `com.adhamelgendy.nixura` for the Android applicationId, the Kotlin packages and the iOS bundle id (owner decision 2026-11-05, replacing `com.example.reclaimapp`). It must not change after publishing. Modules stay `:androidApp` / `:shared`.
 
 ## 2. Problem & experience
 
@@ -109,7 +109,7 @@ Unit tests for calculator and color progression; Room tests after Phase 4 gate. 
 
 The owner approved expanding the app. Current scope:
 
-- **Quit habits** (original core) with user-chosen card colors (`ShadeRamp`), analysis screen, recovery timeline from an offline knowledge base, backdated start, edit/archive.
+- **Quit habits** (original core) with user-chosen card colors (`ShadeRamp`), analysis screen, recovery timeline from an offline knowledge base (drawn as a vertical timeline: `RecoveryTimeline` in `BadHabitDetailScreen.kt`), backdated start, edit/archive.
 - **Good habits:** daily target counters (`good_habits`, `good_habit_logs` keyed by local day index), streaks, 7/30-day completion, calendar with green done squares, past-day edits.
 - **Events:** countdown/count-up, categories, multiple reminder lead times (`events.reminders` = comma-separated millis), Android local notifications.
 - **Coach:** offline, rule-based (`CoachEngine`, `HabitKnowledgeBase`) behind `CoachResponder`; separate chats in `coach_conversations` and `coach_messages`, kept on the phone and not synced (owner decision); crisis messages answered locally with a support message; alcohol/gambling carry safety notes. No network.
@@ -122,7 +122,7 @@ Persistence: Room **v5** — tables `habits` (+`color_argb`, + the money tracker
 
 ## Accounts and cloud sync
 
-Accounts are optional. Signed out, the app shows `LandingScreen` ("Let's Nix the bad Aura"); Get Started opens sign-in. "Continue without an account" warns first, and guests make no network calls. Signed in, `SyncEngine` keeps Room and the server in step: newest edit per item wins, deletes are soft, and local `Long` ids stay while `sync_id` identifies a row across devices. Sign-out uploads, then clears the phone. Erase all data removes habits, events and chats, also from the account when signed in, and keeps profile and settings. See `docs/agents/agent-2-handoff.md` and `docs/agents/agent-3-handoff.md`.
+Accounts are optional and live on **Firebase Authentication** (project `nixura`, Spark plan; owner decision 2026-11-05, replacing the Node backend's accounts). Ways in: email + password with a verification link (the account is only signed in after the link is tapped) and a reset link, Google and Facebook (Android; iOS email only for now). The app calls Firebase's REST API from shared code; tokens stay in `SecureStore`. Signed out, the app shows `LandingScreen` ("Let's Nix the bad Aura"); Get Started opens sign-in. "Continue without an account" warns first, and guests make no network calls, except anonymous usage stats if they turn them on in Settings > Privacy (Firebase Analytics, off by default, Android only). **Cloud sync is paused** (`PausedSyncRemote`) until it moves to Firestore; the agreed layout is in `docs/DEVELOPMENT_STATUS.md` ("Firestore sync design"). Signed in, `SyncEngine` keeps Room and the server in step: newest edit per item wins, deletes are soft, and local `Long` ids stay while `sync_id` identifies a row across devices. Sign-out uploads, then clears the phone. Erase all data removes habits, events and chats, also from the account when signed in, and keeps profile and settings. See `docs/agents/agent-2-handoff.md` and `docs/agents/agent-3-handoff.md`.
 
 Time: local "day index" = days since 1970-01-01 in the device time zone (`DayCalculator`, offset from the platform: `java.util.TimeZone` on Android, `NSTimeZone` on iOS).
 

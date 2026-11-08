@@ -24,8 +24,8 @@
 -dontnote kotlinx.serialization.AnnotationsKt
 -keepclassmembers class kotlinx.serialization.json.** { *** Companion; }
 -keepclasseswithmembers class kotlinx.serialization.json.** { kotlinx.serialization.KSerializer serializer(...); }
--keep,includedescriptorclasses class com.example.reclaimapp.**$$serializer { *; }
--keepclassmembers class com.example.reclaimapp.** { *** Companion; }
--keepclasseswithmembers class com.example.reclaimapp.** { kotlinx.serialization.KSerializer serializer(...); }
+-keep,includedescriptorclasses class com.adhamelgendy.nixura.**$$serializer { *; }
+-keepclassmembers class com.adhamelgendy.nixura.** { *** Companion; }
+-keepclasseswithmembers class com.adhamelgendy.nixura.** { kotlinx.serialization.KSerializer serializer(...); }
 -dontwarn org.slf4j.**
 -dontwarn io.ktor.**

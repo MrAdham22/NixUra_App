@@ -33,6 +33,8 @@ bill. So the key must live on a server (or be managed by Firebase with App Check
 
 ## Recommended architecture
 
+**Owner decision (2026-11-05):** the proxy is a **Cloudflare Worker** using **Workers AI** (free tier to start). The app sends the user's Firebase ID token; the Worker verifies it, refuses guests, and counts about **20 messages per user per day** (D1, not KV: KV's free write limit is too low). More messages need a paid plan bought through Google Play Billing / StoreKit and checked by the Worker. The Worker may read the user's Firestore data with a read-only service account. It is built after Firestore sync and the Notion Worker. The diagram below is the general shape.
+
 ```
 App (AiCoachResponder) --HTTPS--> your proxy (holds the key, rate-limits) --> Gemini API
                                    └─ or Firebase AI Logic + App Check (no proxy needed)

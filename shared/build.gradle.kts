@@ -22,7 +22,7 @@ kotlin {
     }
     
     android {
-       namespace = "com.example.reclaimapp.shared"
+       namespace = "com.adhamelgendy.nixura.shared"
        compileSdk = libs.versions.android.compileSdk.get().toInt()
        minSdk = libs.versions.android.minSdk.get().toInt()
     
