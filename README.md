@@ -119,6 +119,8 @@ Habbit_app/
 │   ├── agents/agent-3-handoff.md  # cloud sync: rules, verification state, known limitations
 │   ├── PHASE2_ARCHITECTURE.md     # original architecture (see addendum at the end)
 │   └── AI_COACH_UPGRADE.md        # how to make the coach a real AI (free options)
+├── firebase.json, .firebaserc     # Firebase Hosting config (project nixura)
+├── hosting/public/                # nixura.web.app: the branded email-link page (auth/action), home and 404 pages
 ├── iosApp/                        # iOS app: Xcode project + SwiftUI host that embeds the shared Compose UI
 ├── tools/room_migration_check.py  # validates the migrations + DAO SQL against the entities (python3, no deps)
 ├── tools/phone_link.ps1           # Windows dev helper: keeps USB phones linked to the local backend (adb reverse)
@@ -191,6 +193,19 @@ Accounts live in the Firebase project **`nixura`** (Spark plan). The app talks t
 ### Troubleshooting: sign-in
 
 Read `adb logcat -s NixUraSignIn` while you tap a button (Google / Facebook errors; tokens and emails are never logged). "This way of signing in isn't available on this phone yet" means the method is switched off in the Firebase console, `google-services.json` is missing its web client (download it again after enabling Google), or on iOS that Google / Facebook are not built yet.
+
+### Email link page (Firebase Hosting)
+
+The links in the verification and password-reset emails open a NixUra-styled page instead of Firebase's plain one: `hosting/public/auth/action.html` with `hosting/public/assets/auth-action.js`. It confirms the email, undoes an email change, or shows a form for the new password (same rules as the app: `AuthValidation.kt`), all through the Identity Toolkit REST API. It stores nothing, removes the one-time code from the address bar, ignores `continueUrl` (no redirects) and is served with a strict Content-Security-Policy (`firebase.json`).
+
+```bash
+# preview on your computer (http://localhost:5055)
+firebase serve --only hosting --port 5055
+# publish to https://nixura.web.app
+firebase deploy --only hosting
+```
+
+Then in Firebase → Authentication → Templates → **Customize action URL**, enter `https://nixura.web.app/auth/action` (one setting for all templates). To undo, clear that field: the emails go back to Firebase's page.
 
 ## Linking calendars (Google Calendar and Notion)
 
