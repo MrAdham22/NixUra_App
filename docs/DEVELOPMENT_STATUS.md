@@ -59,7 +59,7 @@ Bugs already found by the owner's first build: `Pickers.kt` had a stray broken f
 Android is done and owner-tested. The owner's remaining work is items 0-4; the rest is backlog.
 
 0. **Move to Firebase + Cloudflare (owner decision 2026-11-05), in order:** (a) Firebase sign-in, done on `feat/firebase-auth`, needs a phone test; (b) Firestore sync, designed (see "Firestore sync design"), not built, sync is paused until then; (c) Notion through a Cloudflare Worker; (d) the AI coach Worker (item 2); (e) payments for more than about 20 coach messages a day.
-0b. **Owner's next UI requests (2026-11-08):** (1) show Google and Facebook as their real logo icons side by side on Login / Create account instead of two text buttons; (2) **bug:** switching Create account / Sign in back and forth stacks the same screens, so Back walks through every copy (the auth links should replace the current screen, not push); (3) reorganise and polish the Profile screen; (4) improve how Settings looks; (5) make the verification and reset emails look trustworthy: in Firebase > Authentication > Templates set the sender name (NixUra), subject and reply-to, and later a custom domain (SPF/DKIM) and an action-link page on Firebase Hosting so the link is not `nixura.firebaseapp.com/__/auth/action?...`.
+0b. **Owner's UI requests (2026-11-08):** items 1-4 (logo buttons, the stacked sign-in screens bug, Profile, Settings) are done on `feat/ui-polish`, see "UI polish". Left: (5) make the verification and reset emails look trustworthy: in Firebase > Authentication > Templates set the sender name (NixUra), subject and reply-to, and later a custom domain (SPF/DKIM) and an action-link page on Firebase Hosting so the link is not `nixura.firebaseapp.com/__/auth/action?...`.
 1. **Fine-tune the UI** (spacing, typography, animations, small screens, light theme, contrast).
 2. **Real AI agent** behind `CoachResponder` (see `docs/AI_COACH_UPGRADE.md`): a Cloudflare Worker with Workers AI, signed-in users only, about 20 messages a day; consent toggle, offline fallback to the rule-based coach, server-side key.
 3. **Bad-habit knowledge + free-text understanding:** extend `HabitKnowledgeBase` with curated info for many more habits (effects, withdrawal, recovery timeline, triggers, tips) and make habit recognition robust to however the user typed the name (normalisation, synonyms, typos/fuzzy match, multi-word and multi-language input; fall back to a generic profile and, once the AI exists, to the AI). Use it to personalise the card, analysis screen, coach and milestones. Add unit tests for the matcher.
@@ -370,5 +370,17 @@ Owner answers: servers (the AI coach Worker, a future dashboard) will read the d
 - **Quota exhausted:** Firestore refuses until midnight Pacific; the app treats it as offline and keeps every change.
 - **Budget at 1,000 daily users:** about 30k reads and 15k writes a day (limits 50k / 20k).
 - **Rollback:** the remote sits behind `SyncRemote`; switching back to `PausedSyncRemote` is one line, and rules keep a version history in the console.
+
+## UI polish (2026-11-10, branch `feat/ui-polish`)
+
+Owner requests after the Firebase sign-in test.
+
+- **Stacked sign-in screens (bug):** the "Create account" / "Sign in" links pushed a new screen each time, so Back walked through every copy. `Navigator.switchTo` returns to the screen if it is already open and only pushes otherwise (2 tests in `NavigatorTest`).
+- **Google and Facebook logo buttons:** two buttons side by side with the providers' own marks (`auth/SocialLogos.kt`, drawn from their published outlines and colours), shaped like the secondary button; the label is kept for screen readers.
+- **Profile:** centered identity card, the two scores as tiles side by side, a "Totals" label over the four stat tiles, full-width empty-event card.
+- **Settings:** five sections instead of eight (Account, Appearance, Notifications, Privacy and data, About); every row has an accent icon, a title and a muted hint.
+- **Verified:** `:androidApp:assembleDebug` and `:shared:testAndroidHostTest` (431 tests, 0 failures); on the emulator (Pixel_10_Pro, dark theme, guest): the Login screen's logo buttons, Settings top to bottom, Profile with no data. An independent check of the screens passed tokens, the logo button, the Settings rows, Profile and `switchTo`; its 5 findings are fixed (the leftover-data dialog's "Sign in" still pushed; the disabled logo button did not dim like the secondary button; a score title could truncate; the Language and Replay rows had no hint; the Account row repeated its section label).
+- **Not verified:** the owner's phone, light theme, Profile with real data and a long name, iOS (not compiled here).
+- **Still open from the same list:** the look of the verification and reset emails (Firebase > Authentication > Templates: sender name, subject, reply-to; later a custom domain and an action page on Firebase Hosting).
 
 **History cleanup (2026-11-03, owner request):** commits from `14810ff` onward were rewritten to remove assistant co-author lines and to carry the owner as author (Adham ELgendy). Code is byte-for-byte unchanged (same tree); commit IDs changed and the IDs above were updated. Force-pushed with lease to `master` and `agent-3/cloud-sync`. A local backup of the old history is kept as branch `backup/before-rewrite-2026-11-03`.

@@ -282,6 +282,10 @@ open class Strings {
     open val ageLabel: String = "Age"
     open val ageYears: (Int) -> String = { "$it years old" }
     open val yourProgress: String = "Your progress"
+    open val profileTotals: String = "Totals"
+    open val languageHint: String = "More languages are on the way."
+    open val guideReplayHint: String = "A 30-second tour of the app."
+    open val privacyAndData: String = "Privacy and data"
     open val quitScoreTitle: String = "Breaking free"
     open val quitScoreBody: String = "How far you are toward 30 days clear, on average"
     open val disciplineScoreTitle: String = "Discipline"
@@ -423,7 +427,6 @@ open class Strings {
     open val errAccountExistsOther: String = "This email already has a NixUra account that signs in another way. Sign in that way instead."
     open val errEmailInUse: String = "This email already has a NixUra account. Sign in instead, with your password or with Google or Facebook if you used one."
     open val errRecentLogin: String = "For your safety, sign out, sign back in, then try again."
-    open val privacySection: String = "Privacy"
     open val usageStatsToggle: String = "Share anonymous usage stats"
     open val usageStatsHint: String = "Things like how often the app is opened, to help improve NixUra. Never your habits, notes or chats. Off unless you turn it on."
     open fun errLocked(seconds: Int?): String =

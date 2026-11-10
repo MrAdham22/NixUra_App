@@ -61,6 +61,15 @@ class Navigator {
         if (route != current) stack = stack + route
     }
 
+    /**
+     * Goes to [route] without stacking copies: if it is already open further down, everything above it is closed
+     * (so "Sign in" on Create account returns to the Login screen it came from); otherwise it is pushed.
+     */
+    fun switchTo(route: Route) {
+        val at = stack.lastIndexOf(route)
+        stack = if (at >= 0) stack.take(at + 1) else stack + route
+    }
+
     /** Returns true if the back press was consumed. */
     fun back(): Boolean = when {
         stack.size > 1 -> {
