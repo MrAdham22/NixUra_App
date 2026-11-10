@@ -53,8 +53,25 @@ class Navigator {
     /** True when the system back button should be handled by the app instead of leaving it. */
     val canGoBack: Boolean get() = stack.size > 1 || current != Route.Home
 
+    /** True while a screen opened from the account sheet is on top: going Back to the tabs opens the sheet again. */
+    private var returnToAccountSheet = false
+
     fun selectTab(tab: Route.Tab) {
+        returnToAccountSheet = false
         stack = listOf(tab)
+    }
+
+    /** Opens [route] from the account sheet (Profile, Settings) and remembers to show the sheet again on the way back. */
+    fun pushFromAccountSheet(route: Route) {
+        push(route)
+        returnToAccountSheet = true
+    }
+
+    /** Asked by the tabs' top bar: true once, when the user has come back from a screen the account sheet opened. */
+    fun takeAccountSheetReturn(): Boolean {
+        if (!returnToAccountSheet || current !is Route.Tab) return false
+        returnToAccountSheet = false
+        return true
     }
 
     fun push(route: Route) {
@@ -86,6 +103,7 @@ class Navigator {
     /** Pops to the last tab screen, e.g. after deleting the item whose detail screen is open. */
     fun popToTab() {
         val lastTab = stack.lastOrNull { it is Route.Tab } ?: Route.Home
+        returnToAccountSheet = false
         stack = listOf(lastTab)
     }
 }
