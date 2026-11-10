@@ -67,7 +67,7 @@ fun AuthGate(navigator: Navigator, onEnterAsGuest: () -> Unit) {
             danger = true,
             onConfirm = { vm.onStartFresh(onEnterAsGuest) },
             onDismiss = vm::onDismiss,
-            onCancel = { vm.onDismiss(); navigator.push(Route.Auth.Login) },
+            onCancel = { vm.onDismiss(); navigator.switchTo(Route.Auth.Login) },
         )
         null -> Unit
     }

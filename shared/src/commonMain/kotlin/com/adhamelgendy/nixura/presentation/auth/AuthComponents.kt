@@ -55,7 +55,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -151,14 +150,15 @@ fun AuthGradientButton(
             .clip(shape)
             .background(Brush.horizontalGradient(listOf(NixUraPalette.Rose, NixUraPalette.Orange)), shape)
             .clickable(interactionSource = interaction, indication = null, enabled = active, role = Role.Button, onClick = onClick)
-            .padding(horizontal = 22.dp),
+            .padding(horizontal = 22.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (loading) {
             CircularProgressIndicator(color = NixUraPalette.Navy, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
         } else {
-            Text(text, style = NixType.Button.copy(fontSize = 16.sp), color = NixUraPalette.Navy, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // A label too long for one line wraps and the button grows; it is never cut short.
+            Text(text, style = NixType.Button.copy(fontSize = 16.sp), color = NixUraPalette.Navy, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
             if (trailingIcon != null) {
                 Spacer(Modifier.width(8.dp))
                 NixIconView(trailingIcon, NixUraPalette.Navy, size = 18.dp, strokeWidth = 2.4f)

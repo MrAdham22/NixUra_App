@@ -343,6 +343,8 @@ private fun TopBar(navigator: Navigator) {
     val profileVm: ProfileViewModel = koinViewModel()
     val profile by profileVm.uiState.collectAsStateWithLifecycle()
     var accountSheetOpen by rememberSaveable { mutableStateOf(false) }
+    // Back from Profile or Settings (opened from the sheet) lands on the sheet again, not on the bare tab.
+    LaunchedEffect(navigator.current) { if (navigator.takeAccountSheetReturn()) accountSheetOpen = true }
     if (accountSheetOpen) AccountSheet(profile.name, navigator, onDismiss = { accountSheetOpen = false })
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp),

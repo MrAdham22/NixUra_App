@@ -2,6 +2,9 @@ package com.adhamelgendy.nixura.presentation.screen
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +23,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.adhamelgendy.nixura.domain.time.DayCalculator
@@ -64,14 +69,18 @@ fun ProfileScreen(navigator: Navigator) {
         state.errorMessage?.let { ErrorBanner(it, vm::onDismissError) }
 
         NixCard {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Avatar(state.name.ifBlank { "N" }, size = 64.dp)
-                Spacer(Modifier.width(16.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(state.name.ifBlank { s.profileNoName }, style = NixType.Title, color = c.textPrimary)
-                    if (state.email.isNotBlank()) Text(state.email, style = NixType.Body, color = c.textSecondary)
-                    state.age?.let { Text(s.ageYears(it), style = NixType.Small, color = c.textMuted) }
+            // Who this is, centered: picture, name, then the quieter details.
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                Avatar(state.name.ifBlank { "N" }, size = 72.dp)
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    state.name.ifBlank { s.profileNoName },
+                    style = NixType.Title, color = c.textPrimary, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                )
+                if (state.email.isNotBlank()) {
+                    Text(state.email, style = NixType.Body, color = c.textSecondary, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
+                state.age?.let { Text(s.ageYears(it), style = NixType.Small, color = c.textMuted) }
             }
             Spacer(Modifier.height(16.dp))
             if (!editing) {
@@ -100,9 +109,12 @@ fun ProfileScreen(navigator: Navigator) {
         }
 
         SectionLabel(s.yourProgress)
-        ScoreCard(s.quitScoreTitle, s.quitScoreBody, stats.quitScore, c.accent, s.noBadHabitsYet) { scoreSheet = ScoreKind.BreakingFree }
-        ScoreCard(s.disciplineScoreTitle, s.disciplineScoreBody, stats.disciplineScore, c.positive, s.noGoodHabitsYet) { scoreSheet = ScoreKind.Discipline }
+        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            ScoreCard(s.quitScoreTitle, s.quitScoreBody, stats.quitScore, c.accent, s.noBadHabitsYet, Modifier.weight(1f).fillMaxHeight()) { scoreSheet = ScoreKind.BreakingFree }
+            ScoreCard(s.disciplineScoreTitle, s.disciplineScoreBody, stats.disciplineScore, c.positive, s.noGoodHabitsYet, Modifier.weight(1f).fillMaxHeight()) { scoreSheet = ScoreKind.Discipline }
+        }
 
+        SectionLabel(s.profileTotals)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatTile(s.statClearDays, stats.totalClearDays.toString(), Modifier.weight(1f), info = s.infoClearDays)
             StatTile(s.statBestStreak, s.daysCount(stats.bestStreakDays.toInt()), Modifier.weight(1f), info = s.infoBestAcross)
@@ -117,7 +129,7 @@ fun ProfileScreen(navigator: Navigator) {
         if (next != null) {
             EventCard(next, now, formatDateTime(next.targetAtEpochMillis, days, s), onClick = { navigator.push(Route.EventForm(next.id)) })
         } else {
-            NixCard(onClick = { navigator.push(Route.EventForm()) }) {
+            NixCard(Modifier.fillMaxWidth(), onClick = { navigator.push(Route.EventForm()) }) {
                 Text(s.noUpcomingEvents, style = NixType.Body, color = c.textSecondary)
             }
         }
@@ -125,22 +137,31 @@ fun ProfileScreen(navigator: Navigator) {
     scoreSheet?.let { kind -> ScoreSheet(kind, stats, onDismiss = { scoreSheet = null }) }
 }
 
+/** One score as a tile: its name, the number, its bar, then one line of what it means. Tap for how it was worked out. */
 @Composable
-private fun ScoreCard(title: String, body: String, score: Int?, color: androidx.compose.ui.graphics.Color, emptyText: String, onClick: () -> Unit) {
+private fun ScoreCard(
+    title: String,
+    body: String,
+    score: Int?,
+    color: androidx.compose.ui.graphics.Color,
+    emptyText: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
     val c = Nix.colors
-    NixCard(onClick = if (score != null) onClick else null) {
+    NixCard(modifier, padding = PaddingValues(16.dp), onClick = if (score != null) onClick else null) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(title, style = NixType.Heading, color = c.textPrimary)
-                Text(if (score == null) emptyText else body, style = NixType.Small, color = c.textSecondary)
-            }
-            Text(score?.let { "$it%" } ?: "—", style = NixType.counter(30), color = if (score == null) c.textMuted else color)
+            Text(title, style = NixType.BodyStrong, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             if (score != null) {
                 Spacer(Modifier.width(6.dp))
                 NixIconView(NixIcon.Chevron, c.textMuted, size = 16.dp)
             }
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(6.dp))
+        Text(score?.let { "$it%" } ?: "—", style = NixType.counter(30), color = if (score == null) c.textMuted else color)
+        Spacer(Modifier.height(10.dp))
         NixProgressBar((score ?: 0) / 100f, color = color)
+        Spacer(Modifier.height(10.dp))
+        Text(if (score == null) emptyText else body, style = NixType.Small, color = c.textSecondary)
     }
 }

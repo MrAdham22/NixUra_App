@@ -2,7 +2,6 @@ package com.adhamelgendy.nixura.presentation.auth
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.adhamelgendy.nixura.domain.auth.AuthValidation
@@ -31,6 +31,7 @@ import com.adhamelgendy.nixura.presentation.components.NixButton
 import com.adhamelgendy.nixura.presentation.components.NixButtonStyle
 import com.adhamelgendy.nixura.presentation.components.NixCard
 import com.adhamelgendy.nixura.presentation.components.NixIcon
+import com.adhamelgendy.nixura.presentation.components.NixIconView
 import com.adhamelgendy.nixura.presentation.components.SectionLabel
 import com.adhamelgendy.nixura.presentation.components.SubScreen
 import com.adhamelgendy.nixura.presentation.legal.LegalBlockStyle
@@ -60,7 +61,14 @@ fun AccountScreen(navigator: Navigator) {
         val u = user
         if (u == null) {
             NixCard {
-                Text(s.accountSignedOutBody, style = NixType.Body, color = c.textSecondary)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    NixIconView(NixIcon.User, c.accent, size = 22.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(s.accountGuestName, style = NixType.BodyStrong, color = c.textPrimary)
+                        Text(s.accountSignedOutBody, style = NixType.Small, color = c.textMuted)
+                    }
+                }
                 Spacer(Modifier.height(14.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     NixButton(s.authCreateAccount, { navigator.push(Route.Auth.Register) }, Modifier.fillMaxWidth())
@@ -68,24 +76,29 @@ fun AccountScreen(navigator: Navigator) {
                 }
             }
         } else {
+            // Who is signed in.
             NixCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Avatar(u.name.ifBlank { u.email }.take(1).uppercase(), size = 48.dp)
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
                         Text(s.accountSignedInAs, style = NixType.Small, color = c.textMuted)
-                        Text(u.email, style = NixType.BodyStrong, color = c.textPrimary)
+                        Text(u.email, style = NixType.BodyStrong, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
+
+            SectionLabel(s.syncTitle)
             NixCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    NixIconView(NixIcon.Reset, c.accent, size = 22.dp)
+                    Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(s.syncTitle, style = NixType.BodyStrong, color = c.textPrimary)
                         val failed = syncStatus is SyncStatus.Failed
                         Text(syncStatusText(syncStatus, clock.nowEpochMillis()), style = NixType.Small, color = if (failed) c.danger else c.textMuted)
                     }
-                    Spacer(Modifier.width(10.dp))
+                    Spacer(Modifier.width(8.dp))
                     if (syncStatus is SyncStatus.Syncing) {
                         CircularProgressIndicator(color = c.accent, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
                     } else {
@@ -93,26 +106,80 @@ fun AccountScreen(navigator: Navigator) {
                     }
                 }
             }
-            NixCard {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    if (u.hasPassword) {
-                        NixButton(s.accountChangePassword, { navigator.push(Route.ChangePassword) }, Modifier.fillMaxWidth(), style = NixButtonStyle.Secondary)
+
+            SectionLabel(s.accountSecurity)
+            if (u.hasPassword) {
+                NixCard(onClick = { navigator.push(Route.ChangePassword) }) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        NixIconView(NixIcon.Lock, c.accent, size = 22.dp)
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(s.accountChangePassword, style = NixType.BodyStrong, color = c.textPrimary)
+                            Text(s.accountChangePasswordHint, style = NixType.Small, color = c.textMuted)
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        NixIconView(NixIcon.Chevron, c.textMuted, size = 16.dp)
                     }
-                    NixButton(s.accountSignOut, { confirmSignOut = true }, Modifier.fillMaxWidth(), style = NixButtonStyle.Secondary, loading = signOutState.inProgress)
                 }
             }
-            NixButton(s.accountDelete, { navigator.push(Route.DeleteAccount) }, Modifier.fillMaxWidth(), style = NixButtonStyle.Danger, icon = NixIcon.Trash)
+            NixCard(onClick = if (signOutState.inProgress) null else ({ confirmSignOut = true })) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    NixIconView(NixIcon.Back, c.accent, size = 22.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(s.accountSignOut, style = NixType.BodyStrong, color = c.textPrimary)
+                        Text(s.accountSignOutHint, style = NixType.Small, color = c.textMuted)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    if (signOutState.inProgress) {
+                        CircularProgressIndicator(color = c.accent, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                    } else {
+                        NixIconView(NixIcon.Chevron, c.textMuted, size = 16.dp)
+                    }
+                }
+            }
         }
-        SectionLabel(s.authPrivacyLink)
-        NixCard {
-            // One centered row; at large font scales the second link wraps under the first instead of clipping
-            FlowRow(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-            ) {
-                AuthLink(s.legalPrivacyTitle, { navigator.push(Route.Legal(LegalDocument.Privacy)) }, Modifier.align(Alignment.CenterVertically))
-                Text("·", style = NixType.BodyStrong, color = c.textMuted, modifier = Modifier.align(Alignment.CenterVertically))
-                AuthLink(s.legalTermsTitle, { navigator.push(Route.Legal(LegalDocument.Terms)) }, Modifier.align(Alignment.CenterVertically))
+
+        SectionLabel(s.accountLegal)
+        NixCard(onClick = { navigator.push(Route.Legal(LegalDocument.Privacy)) }) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                NixIconView(NixIcon.Shield, c.accent, size = 22.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(s.legalPrivacyTitle, style = NixType.BodyStrong, color = c.textPrimary)
+                    Text(s.legalPrivacyHint, style = NixType.Small, color = c.textMuted)
+                }
+                Spacer(Modifier.width(8.dp))
+                NixIconView(NixIcon.Chevron, c.textMuted, size = 16.dp)
+            }
+        }
+        NixCard(onClick = { navigator.push(Route.Legal(LegalDocument.Terms)) }) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                NixIconView(NixIcon.Info, c.accent, size = 22.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(s.legalTermsTitle, style = NixType.BodyStrong, color = c.textPrimary)
+                    Text(s.legalTermsHint, style = NixType.Small, color = c.textMuted)
+                }
+                Spacer(Modifier.width(8.dp))
+                NixIconView(NixIcon.Chevron, c.textMuted, size = 16.dp)
+            }
+        }
+
+        if (user != null) {
+            // Last and in the danger colour: the one action here that cannot be undone.
+            SectionLabel(s.accountDangerZone)
+            NixCard(onClick = { navigator.push(Route.DeleteAccount) }) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    NixIconView(NixIcon.Trash, c.danger, size = 22.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(s.accountDelete, style = NixType.BodyStrong, color = c.danger)
+                        Text(s.accountDeleteHint, style = NixType.Small, color = c.textMuted)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    NixIconView(NixIcon.Chevron, c.textMuted, size = 16.dp)
+                }
             }
         }
     }

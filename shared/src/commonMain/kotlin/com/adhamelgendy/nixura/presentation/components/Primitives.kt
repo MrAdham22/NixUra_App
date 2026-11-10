@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -39,7 +40,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -138,11 +138,12 @@ fun NixButton(
     Row(
         modifier = modifier
             .pressable(enabled = enabled && !loading, onClick = onClick)
-            .height(50.dp)
+            // At least the usual height; a label too long for one line wraps and the button grows, never "Sign out a…".
+            .heightIn(min = 50.dp)
             .clip(shape)
             .background(if (enabled) bg else bg.copy(alpha = bg.alpha * 0.45f), shape)
             .border(1.dp, border, shape)
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -153,7 +154,7 @@ fun NixButton(
                 NixIconView(icon, fg, size = 18.dp)
                 Spacer(Modifier.width(8.dp))
             }
-            Text(text, style = NixType.Button, color = if (enabled) fg else fg.copy(alpha = 0.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(text, style = NixType.Button, color = if (enabled) fg else fg.copy(alpha = 0.5f), textAlign = TextAlign.Center)
         }
     }
 }
@@ -318,6 +319,9 @@ fun ErrorBanner(message: String, onDismiss: () -> Unit, modifier: Modifier = Mod
     }
 }
 
+/** Two dialog buttons sit side by side only while their labels together are this short (about what fits at 320 dp). */
+private const val SIDE_BY_SIDE_LABEL_CHARS = 15
+
 @Composable
 fun ConfirmDialog(
     title: String,
@@ -335,14 +339,18 @@ fun ConfirmDialog(
             Spacer(Modifier.height(8.dp))
             Text(message, style = NixType.Body, color = Nix.colors.textSecondary)
             Spacer(Modifier.height(20.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                NixButton(cancelText, onCancel, Modifier.weight(1f), style = NixButtonStyle.Secondary)
-                NixButton(
-                    confirmText,
-                    onConfirm,
-                    Modifier.weight(1f),
-                    style = if (danger) NixButtonStyle.Danger else NixButtonStyle.Primary,
-                )
+            val confirmStyle = if (danger) NixButtonStyle.Danger else NixButtonStyle.Primary
+            if (confirmText.length + cancelText.length > SIDE_BY_SIDE_LABEL_CHARS) {
+                // Long labels get a full-width button each, so both read on one line.
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    NixButton(confirmText, onConfirm, Modifier.fillMaxWidth(), style = confirmStyle)
+                    NixButton(cancelText, onCancel, Modifier.fillMaxWidth(), style = NixButtonStyle.Secondary)
+                }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    NixButton(cancelText, onCancel, Modifier.weight(1f), style = NixButtonStyle.Secondary)
+                    NixButton(confirmText, onConfirm, Modifier.weight(1f), style = confirmStyle)
+                }
             }
         }
     }

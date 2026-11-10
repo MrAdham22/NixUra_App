@@ -84,10 +84,10 @@ fun AccountSheet(displayName: String, navigator: Navigator, onDismiss: () -> Uni
             }
             Spacer(Modifier.height(14.dp))
         }
-        SheetRow(NixIcon.Leaf, s.profileTitle) { open(Route.Profile) }
-        SheetRow(NixIcon.Gear, s.settingsTitle) { open(Route.Settings) }
+        // Profile and Settings come back here: pressing Back on them shows this sheet again. Account lives in Settings.
+        SheetRow(NixIcon.Leaf, s.profileTitle) { onDismiss(); navigator.pushFromAccountSheet(Route.Profile) }
+        SheetRow(NixIcon.Gear, s.settingsTitle) { onDismiss(); navigator.pushFromAccountSheet(Route.Settings) }
         if (u != null) {
-            SheetRow(NixIcon.Shield, s.accountTitle) { open(Route.Account) }
             SheetRow(NixIcon.Back, s.accountSignOut, color = c.danger) { confirmSignOut = true }
         }
     }

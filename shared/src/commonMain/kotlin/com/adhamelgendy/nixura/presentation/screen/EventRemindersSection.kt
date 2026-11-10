@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -217,9 +219,10 @@ private fun ReminderEditorDialog(
                 color = if (error != null) c.danger else c.textSecondary,
             )
             Spacer(Modifier.height(18.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                NixButton(s.cancel, onDismiss, Modifier.weight(1f), style = NixButtonStyle.Secondary)
-                NixButton(s.reminderDialogSave, { onConfirm(lead) }, Modifier.weight(1f), enabled = error == null)
+            // Equal heights even when one label wraps at a large font size.
+            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                NixButton(s.cancel, onDismiss, Modifier.weight(1f).fillMaxHeight(), style = NixButtonStyle.Secondary)
+                NixButton(s.reminderDialogSave, { onConfirm(lead) }, Modifier.weight(1f).fillMaxHeight(), enabled = error == null)
             }
         }
     }

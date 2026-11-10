@@ -1,6 +1,16 @@
 package com.adhamelgendy.nixura.presentation.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import com.adhamelgendy.nixura.presentation.components.pressable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,8 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.adhamelgendy.nixura.domain.auth.AuthErrorKind
 import com.adhamelgendy.nixura.domain.auth.SocialProvider
-import com.adhamelgendy.nixura.presentation.components.NixButton
-import com.adhamelgendy.nixura.presentation.components.NixButtonStyle
 import com.adhamelgendy.nixura.domain.auth.AuthValidation
 import com.adhamelgendy.nixura.domain.auth.EmailProblem
 import com.adhamelgendy.nixura.presentation.legal.LegalDocument
@@ -81,7 +89,7 @@ fun LoginScreen(navigator: Navigator, onGuest: (() -> Unit)? = null) {
         SocialSignInButtons(social, formBusy = state.loading, onStart = vm::dismissError)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
             Text(s.authNewHere, style = NixType.Body, color = Nix.colors.textSecondary)
-            AuthLink(s.authCreateAccount, { navigator.push(Route.Auth.Register) })
+            AuthLink(s.authCreateAccount, { navigator.switchTo(Route.Auth.Register) })
         }
         if (onGuest != null) {
             AuthLink(s.authContinueOffline, onGuest, Modifier.align(Alignment.CenterHorizontally), color = Nix.colors.textSecondary)
@@ -137,7 +145,7 @@ fun RegisterScreen(navigator: Navigator, onGuest: (() -> Unit)? = null) {
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(s.authHaveAccount, style = NixType.Body, color = Nix.colors.textSecondary)
-            AuthLink(s.authSignIn, { navigator.push(Route.Auth.Login) })
+            AuthLink(s.authSignIn, { navigator.switchTo(Route.Auth.Login) })
         }
         if (onGuest != null) {
             AuthLink(s.authContinueOffline, onGuest, Modifier.align(Alignment.CenterHorizontally), color = Nix.colors.textSecondary)
@@ -225,17 +233,52 @@ private fun SocialSignInButtons(vm: SocialSignInViewModel, formBusy: Boolean, on
         Box(Modifier.weight(1f).height(1.dp).background(Nix.colors.border))
     }
     AuthErrorText(state.error)
-    vm.providers.forEach { provider ->
-        NixButton(
-            text = when (provider) {
-                SocialProvider.Google -> s.authContinueWithGoogle
-                SocialProvider.Facebook -> s.authContinueWithFacebook
-            },
-            onClick = { running = provider; onStart(); vm.signIn(provider) },
-            modifier = Modifier.fillMaxWidth(),
-            style = NixButtonStyle.Secondary,
-            loading = state.loading && running == provider,
-            enabled = !state.loading && !formBusy,
-        )
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        vm.providers.forEach { provider ->
+            SocialLogoButton(
+                provider = provider,
+                label = when (provider) {
+                    SocialProvider.Google -> s.authContinueWithGoogle
+                    SocialProvider.Facebook -> s.authContinueWithFacebook
+                },
+                onClick = { running = provider; onStart(); vm.signIn(provider) },
+                modifier = Modifier.weight(1f),
+                loading = state.loading && running == provider,
+                enabled = !state.loading && !formBusy,
+            )
+        }
+    }
+}
+
+/**
+ * One provider's logo on a button shaped like the app's secondary button (same height, corners, surface and border).
+ * [label] ("Continue with Google") is what screen readers say, since the button shows no text.
+ */
+@Composable
+private fun SocialLogoButton(
+    provider: SocialProvider,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    loading: Boolean = false,
+    enabled: Boolean = true,
+) {
+    val c = Nix.colors
+    val shape = RoundedCornerShape(16.dp)
+    Box(
+        modifier
+            .pressable(enabled = enabled && !loading, onClick = onClick)
+            .height(50.dp)
+            .clip(shape)
+            .background(if (enabled) c.surfaceRaised else c.surfaceRaised.copy(alpha = c.surfaceRaised.alpha * 0.45f), shape)
+            .border(1.dp, c.border, shape)
+            .clearAndSetSemantics { contentDescription = label; role = Role.Button },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (loading) {
+            CircularProgressIndicator(color = c.textPrimary, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
+        } else {
+            SocialLogo(provider, Modifier.alpha(if (enabled) 1f else 0.5f))
+        }
     }
 }

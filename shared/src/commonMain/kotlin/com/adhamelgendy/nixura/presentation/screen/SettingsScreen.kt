@@ -60,23 +60,20 @@ fun SettingsScreen(navigator: Navigator) {
     SubScreen(title = s.settingsTitle, onBack = { navigator.back() }) {
         state.errorMessage?.let { ErrorBanner(it, vm::onDismissError) }
 
+        // Every row reads the same way: an accent icon, a title with a muted line under it, then what you can do.
         SectionLabel(s.accountTitle)
         NixCard(onClick = { navigator.push(Route.Account) }) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    signedInEmail ?: s.settingsAccountRow,
-                    style = NixType.BodyStrong,
-                    color = c.textPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
+                NixIconView(NixIcon.User, c.accent, size = 22.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(signedInEmail ?: s.accountGuestName, style = NixType.BodyStrong, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(s.settingsAccountRow, style = NixType.Small, color = c.textMuted)
+                }
                 Spacer(Modifier.width(8.dp))
                 NixIconView(NixIcon.Chevron, c.textMuted, size = 16.dp)
             }
         }
-
-        SectionLabel(s.integrationsTitle)
         NixCard(onClick = { navigator.push(Route.Integrations) }) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 NixIconView(NixIcon.Calendar, c.accent, size = 22.dp)
@@ -97,13 +94,16 @@ fun SettingsScreen(navigator: Navigator) {
                 ThemeOption(s.lightMode, NixIcon.Sun, !settings.darkTheme, Modifier.weight(1f)) { vm.onDarkTheme(false) }
             }
         }
-
-        SectionLabel(s.language)
         NixCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 NixIconView(NixIcon.Globe, c.accent, size = 22.dp)
                 Spacer(Modifier.width(12.dp))
-                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text(s.language, style = NixType.BodyStrong, color = c.textPrimary)
+                    Text(s.languageHint, style = NixType.Small, color = c.textMuted)
+                }
+                Spacer(Modifier.width(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     availableLanguages.forEach { lang ->
                         NixChip(lang.nativeName, selected = settings.languageCode == lang.code, onClick = { vm.onLanguage(lang.code) })
                     }
@@ -114,10 +114,13 @@ fun SettingsScreen(navigator: Navigator) {
         SectionLabel(s.notifications)
         NixCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                NixIconView(NixIcon.Bell, c.accent, size = 22.dp)
+                Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(s.notificationsToggle, style = NixType.BodyStrong, color = c.textPrimary)
                     Text(s.notificationsHint, style = NixType.Small, color = c.textMuted)
                 }
+                Spacer(Modifier.width(8.dp))
                 NixSwitch(settings.notificationsEnabled, { enabled ->
                     if (enabled && !permission.isGranted()) permission.request()
                     vm.onNotifications(enabled)
@@ -129,32 +132,41 @@ fun SettingsScreen(navigator: Navigator) {
                     Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    NixIconView(NixIcon.Clock, c.accentWarm, size = 20.dp)
+                    NixIconView(NixIcon.Clock, c.accent, size = 22.dp)
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(s.dailyCheckIn, style = NixType.BodyStrong, color = c.textPrimary)
                         Text(s.dailyCheckInHint, style = NixType.Small, color = c.textMuted)
                     }
+                    Spacer(Modifier.width(8.dp))
                     NixButton(formatClockMinutes(settings.dailyCheckInMinutes, s), { showTime = true }, style = NixButtonStyle.Secondary)
                 }
             }
         }
 
-        SectionLabel(s.privacySection)
+        SectionLabel(s.privacyAndData)
         NixCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                NixIconView(NixIcon.Shield, c.accent, size = 22.dp)
+                Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(s.usageStatsToggle, style = NixType.BodyStrong, color = c.textPrimary)
                     Text(s.usageStatsHint, style = NixType.Small, color = c.textMuted)
                 }
+                Spacer(Modifier.width(8.dp))
                 NixSwitch(settings.usageStatsEnabled, vm::onUsageStats)
             }
         }
-
-        SectionLabel(s.dataTitle)
         NixCard {
-            Text(s.dataBody, style = NixType.Small, color = c.textSecondary)
-            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                NixIconView(NixIcon.Archive, c.accent, size = 22.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(s.dataTitle, style = NixType.BodyStrong, color = c.textPrimary)
+                    Text(s.dataBody, style = NixType.Small, color = c.textMuted)
+                }
+            }
+            Spacer(Modifier.height(14.dp))
             NixButton(s.eraseData, { confirmErase = true }, style = NixButtonStyle.Danger, icon = NixIcon.Trash, modifier = Modifier.fillMaxWidth())
         }
 
@@ -166,16 +178,26 @@ fun SettingsScreen(navigator: Navigator) {
             },
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                NixIconView(NixIcon.Sparkle, c.accentWarm, size = 20.dp)
+                NixIconView(NixIcon.Sparkle, c.accent, size = 22.dp)
                 Spacer(Modifier.width(12.dp))
-                Text(s.guideReplay, style = NixType.BodyStrong, color = c.textPrimary, modifier = Modifier.weight(1f))
+                Column(Modifier.weight(1f)) {
+                    Text(s.guideReplay, style = NixType.BodyStrong, color = c.textPrimary)
+                    Text(s.guideReplayHint, style = NixType.Small, color = c.textMuted)
+                }
+                Spacer(Modifier.width(8.dp))
                 NixIconView(NixIcon.Chevron, c.textMuted, size = 16.dp)
             }
         }
         NixCard {
-            Text("NixUra", style = NixType.Heading, color = c.textPrimary)
-            Text(s.versionLabel, style = NixType.Small, color = c.textMuted)
-            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                NixIconView(NixIcon.Leaf, c.accent, size = 22.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("NixUra", style = NixType.BodyStrong, color = c.textPrimary)
+                    Text(s.versionLabel, style = NixType.Small, color = c.textMuted)
+                }
+            }
+            Spacer(Modifier.height(10.dp))
             Text(s.aboutBody, style = NixType.Small, color = c.textSecondary)
         }
     }
