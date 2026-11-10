@@ -390,7 +390,8 @@ Owner request: the email links should open a NixUra page, not Firebase's grey on
 
 - **What changed:** Firebase Hosting config (`firebase.json`, `.firebaserc`, project `nixura`) and `hosting/public/`: `auth/action.html` + `assets/auth-action.js` handle `verifyEmail`, `verifyAndChangeEmail`, `recoverEmail` and `resetPassword` with the Identity Toolkit REST API (password rules mirror `AuthValidation.kt`); a small home page, a 404 page, a favicon, and `assets/nixura.css` with the app's dark palette. No storage, no analytics, the one-time code is removed from the address bar, `continueUrl` is ignored, strict CSP and `Referrer-Policy: no-referrer`.
 - **Verified:** served locally with `firebase serve`; every screen checked in a browser with faked Firebase answers (confirmed, expired link, no connection, password form: empty, too short, saving, saved; phone width; 404). The project's API key accepts calls from a web page (Firebase answered `INVALID_OOB_CODE` for a made-up code, not a key error).
-- **Not verified:** a real email link end to end (needs the deploy and the console setting below).
-- **Owner must do:** `firebase deploy --only hosting`, then Authentication > Templates > Customize action URL = `https://nixura.web.app/auth/action`.
+- **Deployed (2026-11-11):** live at `https://nixura.web.app/auth/action`; the live page returns its CSP, `no-store` and `no-referrer` headers, and its request reaches the Identity Toolkit (not blocked by the CSP).
+- **Not verified:** a real email link end to end (needs the console setting below).
+- **Owner must do:** Authentication > Templates > Customize action URL = `https://nixura.web.app/auth/action`.
 
 **History cleanup (2026-11-03, owner request):** commits from `14810ff` onward were rewritten to remove assistant co-author lines and to carry the owner as author (Adham ELgendy). Code is byte-for-byte unchanged (same tree); commit IDs changed and the IDs above were updated. Force-pushed with lease to `master` and `agent-3/cloud-sync`. A local backup of the old history is kept as branch `backup/before-rewrite-2026-11-03`.
