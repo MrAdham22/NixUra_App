@@ -58,7 +58,7 @@ fun authModule() = module {
     single { FirebaseAuthApi(get(), KtorFirebaseTransport(get<FirebaseConfig>())) }
     // One shared instance: its single-flight token refresh only works if every signed-in call goes through it.
     single { FirebaseSession(get(), get(), get()) }
-    single<AuthRepository> { FirebaseAuthRepository(get(), get(), get(), get()) }
+    single<AuthRepository> { FirebaseAuthRepository(get(), get(), get(), get(), eraseServerData = { get<NotionBackendClient>().disconnect() }) }
     single<ApiTransport> { KtorApiTransport(get()) }
     single { AuthorizedApi(get(), get()) }
     factory { AccountProfileSync(get(), get()) }

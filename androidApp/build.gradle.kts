@@ -1,5 +1,8 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
+// Public address of the Notion Worker (workers/notion). Not a secret.
+val NIXURA_WORKER_URL = "https://nixura-notion.nixura-notion-worker.workers.dev"
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeCompiler)
@@ -50,8 +53,9 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
-        // Backend base URL. Override with -PnixuraApiBaseUrl=https://api.yourdomain.com (release must be https).
-        buildConfigField("String", "NIXURA_API_BASE_URL", "\"${(project.findProperty("nixuraApiBaseUrl") as String?) ?: "https://api.nixura.example"}\"")
+        // NixUra's server: the Cloudflare Worker in workers/notion (the Notion link). Debug and release use the same
+        // one; a local server can still be tried with -PnixuraApiBaseUrl=http://... (cleartext works in debug builds only).
+        buildConfigField("String", "NIXURA_API_BASE_URL", "\"${(project.findProperty("nixuraApiBaseUrl") as String?) ?: NIXURA_WORKER_URL}\"")
         // Facebook Login. The app id is public; the client token goes in ~/.gradle/gradle.properties as
         // nixuraFacebookClientToken=... (Meta app > App settings > Advanced). Without it the Facebook button is hidden.
         val facebookAppId = (project.findProperty("nixuraFacebookAppId") as String?) ?: "4746669972267896"
@@ -66,10 +70,6 @@ android {
         }
     }
     buildTypes {
-        debug {
-            // Emulator reaches the host machine at 10.0.2.2 (cleartext is allowed in debug builds only).
-            buildConfigField("String", "NIXURA_API_BASE_URL", "\"${(project.findProperty("nixuraDebugApiBaseUrl") as String?) ?: "http://10.0.2.2:8080"}\"")
-        }
         release {
             isMinifyEnabled = false
             proguardFiles(
