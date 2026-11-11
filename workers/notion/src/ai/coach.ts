@@ -18,7 +18,7 @@ export interface Remaining {
 
 const CHAT_BUDGET_MS = 20_000;
 const VOICE_BUDGET_MS = 36_000;
-const CHAT_CALL_MS = 9_000;
+const CHAT_CALL_MS = 11_000;
 const VOICE_CALL_MS = 16_000;
 
 /**
@@ -73,7 +73,8 @@ export class CoachService {
         if (value !== null) return { value, provider: p.name };
         this.note(p.name, 422); // answered, but not in a usable shape
       } catch (e) {
-        this.note(p.name, e instanceof ProviderError ? e.status : 599);
+        // 408 = it took too long; 599 = the call itself failed.
+        this.note(p.name, e instanceof ProviderError ? e.status : (e as Error)?.name === 'TimeoutError' ? 408 : 599);
       }
     }
     return null;

@@ -19,7 +19,7 @@
     // Per signed-in user, per UTC day.
     "AI_CHAT_PER_DAY": "10",
     "AI_VOICE_PER_DAY": "2",
-    "GEMINI_MODEL": "gemini-flash-latest",
+    "GEMINI_MODEL": "gemini-flash-lite-latest",
     "GROQ_MODEL": "openai/gpt-oss-120b",
     "GROQ_WHISPER_MODEL": "whisper-large-v3-turbo",
     "CF_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",

@@ -445,7 +445,7 @@ Owner decisions this round: start the AI now (before Firestore sync); a chain of
   - Voice: Gemini hears the clip directly; otherwise Groq or Cloudflare Whisper turns it into text and any chat model picks out the items.
   - Daily limits in D1 `ai_usage` (migration `0002`), reserved in one statement and refunded when no AI answered.
   - Every model answer is cleaned: unknown action types dropped, names cut, dates and times checked, at most 8 items.
-  - **Keys set: none yet.** Only Cloudflare Workers AI (no key) is active until the owner adds keys (README, "What you need to do: AI keys").
+  - Keys set on 2026-11-11: `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`. Not set: `MISTRAL_API_KEY`.
 - **App:**
   - Real AI in the coach chat with offline fallback and a notice; consent sheet; "AI coach" switch in Settings.
   - Animated progress cards in the chat (also from the offline coach).
@@ -459,9 +459,10 @@ Owner decisions this round: start the AI now (before Firestore sync); a chain of
   - `tools/room_migration_check.py`: only its two known `REMOVED_BY_IMPORT` complaints.
   - Emulator (Pixel_10_Pro), installed over a v6 app: the app opens (v6 → v7 ran); the Home mic card; the voice sheet's "needs an account" view; the coach's mic button and guest subtitle; an animated good-habit card under an offline reply.
   - Live Worker: deployed, `ai_usage` exists, the coach routes answer 401 without a sign-in.
-- **Not verified** (needs a signed-in phone, and the owner's own consent tap):
-  - A real AI reply, the fallback between real services, and the daily limit against the live Worker.
-  - Recording on a real device, the microphone permission flow, and a voice note turned into items.
+- **Verified on the owner's phone (2026-11-11, owner-reported "both worked"):** AI chat and a voice note, signed in, with the Gemini, Groq and OpenRouter keys set (Mistral's console would not create a key; skipped). The Worker's log and `ai_usage` showed 4 chats and 1 voice note answered.
+- **Found in that log and changed:** Gemini (`gemini-flash-latest`) failed every time (call errors and 503 "overloaded"), so the default is now `gemini-flash-lite-latest`; Groq answered 400 on some calls in JSON mode, so JSON mode is off for Groq (answers are parsed leniently anyway); the per-call chat timeout went from 9 to 11 seconds, and timeouts are now logged as 408. **Not re-tested after these changes.**
+- **Not verified:**
+  - Which service answers after the changes above (Gemini has not answered once yet), and the daily limit being reached.
   - The model names in `wrangler.jsonc` (`gemini-flash-latest`, `openai/gpt-oss-120b`, `mistral-small-latest`, `openrouter/free`, the two `@cf/...` models) against each provider: a wrong one just makes that service fail over to the next.
   - Arabic voice notes. iOS (shared code not compiled here; the recorder is a placeholder).
 - **Risks:**

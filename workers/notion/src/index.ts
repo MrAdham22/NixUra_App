@@ -41,7 +41,7 @@ export interface Env {
 export function buildProviders(env: Env): Provider[] {
   const make: Record<string, () => Provider | null> = {
     gemini: () => (env.GEMINI_API_KEY ? gemini(env.GEMINI_API_KEY, env.GEMINI_MODEL) : null),
-    groq: () => (env.GROQ_API_KEY ? openAiCompatible('groq', 'https://api.groq.com/openai/v1', env.GROQ_API_KEY, env.GROQ_MODEL, { whisperModel: env.GROQ_WHISPER_MODEL }) : null),
+    groq: () => (env.GROQ_API_KEY ? openAiCompatible('groq', 'https://api.groq.com/openai/v1', env.GROQ_API_KEY, env.GROQ_MODEL, { whisperModel: env.GROQ_WHISPER_MODEL, jsonMode: false }) : null),
     cloudflare: () => (env.AI ? workersAi(env.AI, env.CF_MODEL, env.CF_WHISPER_MODEL) : null),
     mistral: () => (env.MISTRAL_API_KEY ? openAiCompatible('mistral', 'https://api.mistral.ai/v1', env.MISTRAL_API_KEY, env.MISTRAL_MODEL) : null),
     openrouter: () => (env.OPENROUTER_API_KEY ? openAiCompatible('openrouter', 'https://openrouter.ai/api/v1', env.OPENROUTER_API_KEY, env.OPENROUTER_MODEL, { jsonMode: false }) : null),
