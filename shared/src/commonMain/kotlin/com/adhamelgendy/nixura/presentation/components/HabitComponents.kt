@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import com.adhamelgendy.nixura.domain.recognition.PrayerHabitDetector
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
@@ -205,6 +206,10 @@ fun rememberGoodFill(todayCount: Int, dailyTarget: Int, style: GoodHabitFillStyl
     val c = Nix.colors
     val target = GoodHabitStatsCalculator.fillLevel(todayCount, dailyTarget)
     val fill by animateFloatAsState(target, spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessLow), label = "goodFill")
+    if (style == GoodHabitFillStyle.PRAYER) {
+        val art = rememberPrayerArt(fill, todayCount)
+        return GoodFill(fill, art.background, art.content, art.contentMuted, art.doneSquare, art.modifier)
+    }
     val water = style == GoodHabitFillStyle.WATER
     val colors = goodFillColors(fill, water, c)
     val paint = if (water) {
@@ -464,17 +469,22 @@ fun GoodHabitCard(
                 Text(habit.name, style = NixType.Heading, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted)
             }
-            NixIconButton(NixIcon.Minus, onMinus, size = 38.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), bordered = false)
+            val prayer = habit.fillStyle == GoodHabitFillStyle.PRAYER
+            GoodHabitButton(prayer, look, NixIcon.Minus, onMinus, size = 38.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), secondary = true)
             Spacer(Modifier.width(8.dp))
-            NixIconButton(
+            GoodHabitButton(
+                prayer, look,
                 if (habit.doneToday && (habit.dailyTarget == 1 || habit.isWeekly)) NixIcon.Tick else NixIcon.Plus,
                 onPlus,
                 size = 44.dp,
                 tint = if (habit.doneToday) look.background else c.onAccent,
                 background = if (habit.doneToday) look.content else c.accent,
-                bordered = false,
                 haptic = true,
             )
+        }
+        if (habit.fillStyle == GoodHabitFillStyle.PRAYER && !habit.isWeekly && habit.dailyTarget in 2..MAX_PRAYER_BEADS) {
+            Spacer(Modifier.height(12.dp))
+            PrayerBeads(habit.todayCount, habit.dailyTarget, look, if (habit.dailyTarget == PrayerHabitDetector.DAILY_PRAYERS) s.prayerNames else emptyList())
         }
         Spacer(Modifier.height(14.dp))
         WeekStrip(
@@ -505,6 +515,9 @@ fun GoodHabitCard(
         }
     }
 }
+
+/** Most stars a prayer card shows one by one; above this it relies on the counter alone. */
+const val MAX_PRAYER_BEADS = 8
 
 /** "3 / 8 today" for a daily habit, "2 / 3 days this week" for a weekly one. */
 fun goodProgressText(habit: GoodHabitUi, s: Strings): String =

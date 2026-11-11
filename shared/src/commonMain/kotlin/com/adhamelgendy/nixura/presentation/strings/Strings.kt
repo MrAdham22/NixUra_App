@@ -154,7 +154,11 @@ open class Strings {
         "Read 10 pages" to 1,
         "Meditate" to 1,
         "Sleep before midnight" to 1,
+        "Pray" to 5,
     )
+    /** Shown on the stars of a five-a-day prayer habit. */
+    open val prayerNames: List<String> = listOf("Fajr", "Dhuhr", "Asr", "Maghrib", "Isha")
+    open val prayerHint: String = "Set to the five daily prayers. Change the number whenever you like."
     open val dailyTarget: String = "Daily target"
     open val dailyTargetHint: String = "How many times counts as done for the day"
     open val addHabit: String = "Add habit"

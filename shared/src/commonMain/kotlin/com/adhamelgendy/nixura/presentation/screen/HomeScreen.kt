@@ -1,5 +1,10 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyle
+import com.adhamelgendy.nixura.domain.recognition.PrayerHabitDetector
+import com.adhamelgendy.nixura.presentation.components.GoodHabitButton
+import com.adhamelgendy.nixura.presentation.components.PrayerBeads
+import com.adhamelgendy.nixura.presentation.components.MAX_PRAYER_BEADS
 import com.adhamelgendy.nixura.domain.usecase.DeletableItem
 import com.adhamelgendy.nixura.presentation.deletion.rememberDeleteFlow
 import androidx.compose.animation.core.Spring
@@ -323,13 +328,13 @@ private fun TodayRow(habit: GoodHabitUi, onOpen: () -> Unit, onPlus: () -> Unit,
                 Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted, maxLines = 1)
             }
             Spacer(Modifier.width(10.dp))
-            NixIconButton(
+            GoodHabitButton(
+                habit.fillStyle == GoodHabitFillStyle.PRAYER, look,
                 if (habit.doneToday) NixIcon.Tick else NixIcon.Plus,
                 onPlus,
                 size = 40.dp,
                 tint = if (habit.doneToday) look.background else Nix.colors.onAccent,
                 background = if (habit.doneToday) look.content else Nix.colors.accent,
-                bordered = false,
                 haptic = true,
             )
         }

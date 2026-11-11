@@ -1,5 +1,10 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyle
+import com.adhamelgendy.nixura.domain.recognition.PrayerHabitDetector
+import com.adhamelgendy.nixura.presentation.components.GoodHabitButton
+import com.adhamelgendy.nixura.presentation.components.PrayerBeads
+import com.adhamelgendy.nixura.presentation.components.MAX_PRAYER_BEADS
 import com.adhamelgendy.nixura.domain.widget.WidgetKind
 import com.adhamelgendy.nixura.presentation.components.AddToHomeScreenButton
 import androidx.compose.foundation.layout.Arrangement
@@ -96,14 +101,20 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
                     }
                     Text(note, style = NixType.Small, color = look.contentMuted)
                 }
-                NixIconButton(NixIcon.Minus, { vm.onChangeToday(habit.id, -1) }, size = 46.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), bordered = false)
+                val prayer = habit.fillStyle == GoodHabitFillStyle.PRAYER
+                GoodHabitButton(prayer, look, NixIcon.Minus, { vm.onChangeToday(habit.id, -1) }, size = 46.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), secondary = true)
                 Spacer(Modifier.width(10.dp))
-                NixIconButton(
+                GoodHabitButton(
+                    prayer, look,
                     if (weekly && habit.doneToday) NixIcon.Tick else NixIcon.Plus, { vm.onChangeToday(habit.id, +1) }, size = 52.dp,
                     tint = if (habit.doneToday) look.background else c.onAccent,
                     background = if (habit.doneToday) look.content else c.accent,
-                    bordered = false, haptic = true,
+                    haptic = true,
                 )
+            }
+            if (habit.fillStyle == GoodHabitFillStyle.PRAYER && !weekly && habit.dailyTarget in 2..MAX_PRAYER_BEADS) {
+                Spacer(Modifier.height(14.dp))
+                PrayerBeads(habit.todayCount, habit.dailyTarget, look, if (habit.dailyTarget == PrayerHabitDetector.DAILY_PRAYERS) s.prayerNames else emptyList())
             }
         }
 

@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -97,9 +98,14 @@ fun ScreenHeader(
 }
 
 @Composable
-fun SectionLabel(text: String, modifier: Modifier = Modifier, trailing: @Composable (() -> Unit)? = null) {
+fun SectionLabel(
+    text: String,
+    modifier: Modifier = Modifier,
+    color: Color = Nix.colors.textMuted,
+    trailing: @Composable (() -> Unit)? = null,
+) {
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(text.uppercase(), style = NixType.Eyebrow, color = Nix.colors.textMuted, modifier = Modifier.weight(1f))
+        Text(text.uppercase(), style = NixType.Eyebrow, color = color, modifier = Modifier.weight(1f))
         trailing?.invoke()
     }
 }
@@ -223,6 +229,7 @@ fun NixTextField(
     keyboardType: KeyboardType = KeyboardType.Text,
     maxLength: Int = 200,
     focusRequester: FocusRequester? = null,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
 ) {
     val c = Nix.colors
     Column(modifier) {
@@ -235,6 +242,7 @@ fun NixTextField(
             value = value,
             onValueChange = { if (it.length <= maxLength) onValueChange(it) },
             singleLine = singleLine,
+            visualTransformation = visualTransformation,
             textStyle = NixType.Body.copy(color = c.textPrimary),
             cursorBrush = SolidColor(c.accent),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),

@@ -19,6 +19,13 @@
   7. iOS: nothing of the last weeks is compiled or run on a Mac.
 - **Owner's working rules:** explain simply (beginner developer); never put AI names in commits, PRs, code or docs; ask before assuming; after a notable fix add a beginner "interview story" to `D:\Career_development\Claude_app_dev\Interview Talks` (stories 1 to 6 exist); keep replies and tool use short to save tokens.
 
+## Prayer habit card (2026-11-12, branch `claude/islamic-prayer-habit-card-eff051`)
+
+- **Built:** a good habit named like a prayer gets 5 a day automatically, the add form turns gold from the prayer word downward, and the card is a gold Islamic-art card with star buttons, five lighting stars and a burst on every count (see README, "Prayer habit").
+- **Verified:** `:shared:testAndroidHostTest` passes (5 new `PrayerHabitDetectorTest` tests included) and `:androidApp:assembleDebug` builds. The debug APK was copied to `D:\Career_development\Claude_app_dev\NixUra-debug.apk`.
+- **Not verified:** nothing was seen running. The look and feel of the animations (gold wash, burst, star buttons) and the colour contrast still need the owner's eyes on a phone. iOS: the code is in `commonMain` but was not compiled for iOS (no Mac).
+- **Known limits:** the widget shows a prayer habit with the plain green fill; the gold wash origin is read when the page lays out, so it can be slightly off if the keyboard moves the page; English only (Arabic strings are not built yet).
+
 ## One-paragraph summary
 
 NixUra (renamed everywhere on 2026-11-03; app id and code packages `com.adhamelgendy.nixura` since 2026-11-05) is a Kotlin Multiplatform + Compose app to quit bad habits, build good ones and count down to events. The offline tracking core was built and verified earlier (Room, MVVM, Koin; 30 tests and `assembleDebug` passed). On 2026-10 the owner approved a large scope expansion and asked to merge a v0-designed UI ("NixUra UI"): new screens, good habits, events with reminders, profile, settings, onboarding and an offline rule-based coach. That work was written without Gradle access, then built by the owner in Android Studio. **The owner reports (2026-10-23) that everything works properly and has been tested on Android** (after two first-run fixes: stale Room database and screen padding). **iOS has never been built or run**; the owner approved iOS as a full target with no restrictions on AI agents touching iOS code. **Remaining work (owner-stated): (1) fine-tune the UI, (2) add a real AI agent, (3) add curated info on many specific bad habits and recognise a habit from however the user typed it, (4) make the app work on iOS.**
