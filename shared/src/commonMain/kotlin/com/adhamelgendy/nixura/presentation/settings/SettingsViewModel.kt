@@ -48,6 +48,9 @@ class SettingsViewModel(
         update { it.copy(usageStatsEnabled = enabled) }
     }
 
+    /** The real AI coach: the user's consent to send messages and habit data to online AI services. */
+    fun onAiCoach(enabled: Boolean) = update { it.copy(aiCoachConsent = enabled) }
+
     fun onCheckInMinutes(minutes: Int) = update { it.copy(dailyCheckInMinutes = minutes) }
 
     fun onLanguage(code: String) = update { it.copy(languageCode = code) }

@@ -83,8 +83,8 @@ class KtorApiTransport(
             followRedirects = false
             install(HttpTimeout) {
                 connectTimeoutMillis = 10_000
-                requestTimeoutMillis = 25_000
-                socketTimeoutMillis = 25_000
+                requestTimeoutMillis = 45_000
+                socketTimeoutMillis = 45_000
             }
         }
     }

@@ -53,6 +53,9 @@ fun platformModule() = module {
     single<SocialSignIn> { NotAvailableSocialSignIn }
     // Usage stats need the Firebase iOS SDK (Swift package): not added yet, so iOS collects nothing.
     single<UsageStats> { NoUsageStats }
+    // Voice notes need an AVAudioRecorder implementation and the NSMicrophoneUsageDescription key: not built yet, so
+    // iOS hides the microphone. The AI chat itself works here (it is shared code).
+    single<com.adhamelgendy.nixura.domain.coach.ai.VoiceRecorder> { com.adhamelgendy.nixura.domain.coach.ai.UnsupportedVoiceRecorder }
 
     // iOS syncs while the app is open; background sync (BGTaskScheduler) is not implemented yet.
     single<BackgroundSyncScheduler> { NoOpBackgroundSyncScheduler }

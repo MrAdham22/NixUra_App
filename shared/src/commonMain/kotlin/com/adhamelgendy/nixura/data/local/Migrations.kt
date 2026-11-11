@@ -136,3 +136,10 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
         connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `weekly_target` INTEGER")
     }
 }
+
+/** v6 → v7, additive only: progress cards the AI coach attaches to a reply. Existing messages have none (null). */
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `coach_messages` ADD COLUMN `visuals` TEXT")
+    }
+}

@@ -40,7 +40,7 @@ interface CoachRepository {
     suspend fun unusedConversationId(): Long?
     suspend fun hasMessages(conversationId: Long): Boolean
     suspend fun createConversation(): Long
-    suspend fun append(conversationId: Long, role: CoachRole, text: String): Long
+    suspend fun append(conversationId: Long, role: CoachRole, text: String, visuals: List<String> = emptyList()): Long
     suspend fun delete(conversationId: Long)
 }
 

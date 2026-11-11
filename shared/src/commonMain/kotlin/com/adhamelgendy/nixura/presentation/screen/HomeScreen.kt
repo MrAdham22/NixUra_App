@@ -94,6 +94,7 @@ fun HomeScreen(navigator: Navigator) {
     val s = LocalStrings.current
     val c = Nix.colors
     var scoreSheet by remember { mutableStateOf<ScoreKind?>(null) }
+    val voiceVm: com.adhamelgendy.nixura.presentation.voice.VoiceNoteViewModel = koinViewModel()
     val deleteFlow = rememberDeleteFlow()
 
     val hour = (days.millisOfDay(now) / 3_600_000L).toInt()
@@ -115,6 +116,8 @@ fun HomeScreen(navigator: Navigator) {
         )
 
         if (session is SessionState.SignedOut) GuestBanner { navigator.push(Route.Auth.Login) }
+
+        if (voiceVm.supported) com.adhamelgendy.nixura.presentation.voice.VoiceCard(onClick = voiceVm::open)
 
         if (nothingYet) {
             StartCard(navigator)

@@ -191,6 +191,8 @@ fun AppRoot() {
 
 @Composable
 private fun MainContent(navigator: Navigator) {
+    // The voice note sheet: opened by the mic buttons on Home and in the coach.
+    com.adhamelgendy.nixura.presentation.voice.VoiceNoteHost(navigator)
     val route = navigator.current
     val reducedMotion = rememberReducedMotion()
     // All pager tabs share one state (Route.Home stands for "the tab host"), so swiping/tapping between them never

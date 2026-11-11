@@ -4,6 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.adhamelgendy.nixura.domain.coach.BadHabitSnapshot
 import com.adhamelgendy.nixura.domain.coach.CoachNote
+import com.adhamelgendy.nixura.domain.coach.ai.AiMode
+import com.adhamelgendy.nixura.domain.coach.ai.AiQuota
+import com.adhamelgendy.nixura.domain.coach.ai.CoachAction
+import com.adhamelgendy.nixura.domain.coach.ai.CoachVisual
+import com.adhamelgendy.nixura.domain.usecase.BuildCoachVisualsUseCase
+import com.adhamelgendy.nixura.domain.usecase.CoachNotice
+import com.adhamelgendy.nixura.domain.usecase.GetAiQuotaUseCase
+import com.adhamelgendy.nixura.domain.usecase.ObserveAiModeUseCase
+import com.adhamelgendy.nixura.domain.usecase.SetAiConsentUseCase
 import com.adhamelgendy.nixura.domain.model.CoachConversation
 import com.adhamelgendy.nixura.domain.model.CoachMessage
 import com.adhamelgendy.nixura.domain.usecase.DeleteCoachChatUseCase
@@ -17,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -36,6 +46,17 @@ data class CoachUiState(
     /** Habit currently shown in the focus strip. */
     val focusHabitId: Long? = null,
     val errorMessage: String? = null,
+    val aiMode: AiMode = AiMode.Guest,
+    /** Today's remaining free AI uses; null until the server said. */
+    val quota: AiQuota? = null,
+    /** Set while the "use the AI coach?" question is open; holds the message waiting to be sent. */
+    val consentFor: String? = null,
+    /** Why the offline coach answered the last message although the AI is on. */
+    val notice: CoachNotice? = null,
+    /** Things the AI wants to add for the user; the screen opens the review sheet and then clears this. */
+    val pendingActions: List<CoachAction> = emptyList(),
+    /** Data of the progress cards, by key (see [CoachMessage.visuals]). */
+    val visuals: Map<String, CoachVisual> = emptyMap(),
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -46,6 +67,10 @@ class CoachViewModel(
     private val sendMessage: SendCoachMessageUseCase,
     private val deleteChat: DeleteCoachChatUseCase,
     private val getContext: GetCoachContextUseCase,
+    observeAiMode: ObserveAiModeUseCase,
+    private val setAiConsent: SetAiConsentUseCase,
+    private val getQuota: GetAiQuotaUseCase,
+    private val buildVisuals: BuildCoachVisualsUseCase,
 ) : ViewModel() {
 
     private val transient = MutableStateFlow(CoachUiState())
@@ -56,8 +81,10 @@ class CoachViewModel(
 
     private val messages = activeChat.flatMapLatest { id -> if (id == null) flowOf(emptyList()) else observeMessages(id) }
 
-    val uiState: StateFlow<CoachUiState> = combine(messages, observeConversations(), activeChat, transient) { messages, chats, active, extra ->
-        extra.copy(messages = messages, conversations = chats, activeChatId = active)
+    private val aiMode = observeAiMode()
+
+    val uiState: StateFlow<CoachUiState> = combine(messages, observeConversations(), activeChat, transient, aiMode) { messages, chats, active, extra, mode ->
+        extra.copy(messages = messages, conversations = chats, activeChatId = active, aiMode = mode)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -66,6 +93,16 @@ class CoachViewModel(
 
     init {
         onScreenShown()
+        // Progress cards: whenever the chat shows a card, read its numbers fresh.
+        viewModelScope.launch {
+            messages.collect { list ->
+                val keys = list.flatMap { it.visuals }.toSet()
+                transient.update { it.copy(visuals = buildVisuals(keys)) }
+            }
+        }
+        viewModelScope.launch {
+            aiMode.collect { mode -> transient.update { it.copy(quota = if (mode == AiMode.On) getQuota() else null) } }
+        }
     }
 
     /** Called whenever the coach screen is shown (e.g. after all data was erased, the chat needs a new greeting). */
@@ -94,13 +131,44 @@ class CoachViewModel(
     fun onSend(text: String) {
         if (transient.value.isTyping) return
         val chat = activeChat.value ?: return
+        // A signed-in user is asked once whether the real AI may be used, before the first message goes anywhere.
+        if (uiState.value.aiMode == AiMode.NeedsConsent) {
+            transient.update { it.copy(consentFor = text) }
+            return
+        }
         viewModelScope.launch {
-            transient.update { it.copy(isTyping = true, errorMessage = null) }
+            transient.update { it.copy(isTyping = true, errorMessage = null, notice = null) }
             val result = sendMessage(chat, text, replyDelayMillis = REPLY_DELAY_MILLIS, focusHabitId = selectedHabitId)
-            transient.update { it.copy(isTyping = false, errorMessage = result.exceptionOrNull()?.message) }
+            val outcome = result.getOrNull()
+            transient.update {
+                it.copy(
+                    isTyping = false,
+                    errorMessage = result.exceptionOrNull()?.message,
+                    notice = outcome?.notice,
+                    quota = outcome?.quota ?: if (outcome?.notice == CoachNotice.LimitReached) it.quota?.copy(chatLeft = 0) else it.quota,
+                    pendingActions = outcome?.actions.orEmpty(),
+                )
+            }
             refreshContext()
         }
     }
+
+    /** The answer to "use the AI coach?". Either way the waiting message is then sent (to the AI or the offline coach). */
+    fun onConsent(agreed: Boolean) {
+        val waiting = transient.value.consentFor ?: return
+        transient.update { it.copy(consentFor = null) }
+        viewModelScope.launch {
+            setAiConsent(agreed)
+            aiMode.first { it != AiMode.NeedsConsent }
+            onSend(waiting)
+        }
+    }
+
+    fun onConsentDismissed() = transient.update { it.copy(consentFor = null) }
+
+    fun onActionsHandled() = transient.update { it.copy(pendingActions = emptyList()) }
+
+    fun onDismissNotice() = transient.update { it.copy(notice = null) }
 
     /** The user picked which quit habit to talk about; the coach uses its data from now on. */
     fun onSelectHabit(habitId: Long) {

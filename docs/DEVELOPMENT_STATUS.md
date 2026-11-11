@@ -2,6 +2,23 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## Where we are now (2026-11-11, read this first in a new chat)
+
+- **`master`** (`6ed81b1`) holds everything merged so far: Firebase sign-in, UI polish, the email link page (PR #4), weekly good habits (PR #5, Room v6) and the Notion Worker (PR #6).
+- **`feat/ai-coach`** is pushed and **not merged yet; no pull request is open**. It holds the real AI coach, voice notes, the animated progress cards and Room v7. The owner opens the PR at `https://github.com/MrAdham22/NixUra_App/compare/master...feat/ai-coach?expand=1` (the `gh` tool is not installed on the owner's PC, and GitHub is not signed in for agents).
+- **Live server:** one Cloudflare Worker, `nixura-notion`, at `https://nixura-notion.nixura-notion-worker.workers.dev` (code in `workers/notion`; Notion link + AI coach). It is deployed from `feat/ai-coach`. Deploy with `npx wrangler deploy` in that folder (Wrangler is logged in on the owner's PC). Secrets set: the Notion ones, `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`. Not set: `MISTRAL_API_KEY` (Mistral's console kept its "create key" button greyed out; probably needs the free plan chosen or a phone number verified).
+- **Owner's phone** runs the `feat/ai-coach` debug build (Room v7). A build from an older branch must not be installed over it: Room cannot downgrade.
+- **Tested on the phone by the owner (2026-11-11):** AI chat, a voice note, and after the model change a second chat and voice note that Gemini answered with no fallback.
+- **Next steps, in order:**
+  1. Owner: open and merge the `feat/ai-coach` pull request.
+  2. Owner: untick "Update content", "Insert content", "Insert comments" and pick "No user information" on the Notion connection (NixUra only reads).
+  3. Mistral key, when its console allows it: `npx wrangler secret put MISTRAL_API_KEY` in `workers/notion`.
+  4. Branded emails: needs a domain the owner buys (Firebase refuses the action URL change, see "Branded email link page").
+  5. Firestore sync (designed, not built; sync is paused). It must carry `weeklyTarget`.
+  6. The owner's to-do list at the end of this file (polish pass, specialised cards, paid plan, on-device model, iOS voice notes).
+  7. iOS: nothing of the last weeks is compiled or run on a Mac.
+- **Owner's working rules:** explain simply (beginner developer); never put AI names in commits, PRs, code or docs; ask before assuming; after a notable fix add a beginner "interview story" to `D:\Career_development\Claude_app_dev\Interview Talks` (stories 1 to 6 exist); keep replies and tool use short to save tokens.
+
 ## One-paragraph summary
 
 NixUra (renamed everywhere on 2026-11-03; app id and code packages `com.adhamelgendy.nixura` since 2026-11-05) is a Kotlin Multiplatform + Compose app to quit bad habits, build good ones and count down to events. The offline tracking core was built and verified earlier (Room, MVVM, Koin; 30 tests and `assembleDebug` passed). On 2026-10 the owner approved a large scope expansion and asked to merge a v0-designed UI ("NixUra UI"): new screens, good habits, events with reminders, profile, settings, onboarding and an offline rule-based coach. That work was written without Gradle access, then built by the owner in Android Studio. **The owner reports (2026-10-23) that everything works properly and has been tested on Android** (after two first-run fixes: stale Room database and screen padding). **iOS has never been built or run**; the owner approved iOS as a full target with no restrictions on AI agents touching iOS code. **Remaining work (owner-stated): (1) fine-tune the UI, (2) add a real AI agent, (3) add curated info on many specific bad habits and recognise a habit from however the user typed it, (4) make the app work on iOS.**
@@ -61,7 +78,7 @@ Android is done and owner-tested. The owner's remaining work is items 0-4; the r
 0. **Move to Firebase + Cloudflare (owner decision 2026-11-05), in order:** (a) Firebase sign-in, done on `feat/firebase-auth`, needs a phone test; (b) Firestore sync, designed (see "Firestore sync design"), not built, sync is paused until then; (c) Notion through a Cloudflare Worker: built, deployed and connected to real Notion on the owner's phone (`feat/notion-worker`, 2026-11-11, see "Notion Worker"); (d) the AI coach Worker (item 2); (e) payments for more than about 20 coach messages a day.
 0b. **Owner's UI requests (2026-11-08):** items 1-4 (logo buttons, the stacked sign-in screens bug, Profile, Settings) are done on `feat/ui-polish`, see "UI polish". (5) the emails: the branded link page is built (`feat/auth-action-page`, see "Branded email link page"); left: deploy it and set the action URL, set sender name / subject / reply-to in Templates, and later a custom domain (SPF/DKIM).
 1. **Fine-tune the UI** (spacing, typography, animations, small screens, light theme, contrast).
-2. **Real AI agent** behind `CoachResponder` (see `docs/AI_COACH_UPGRADE.md`): a Cloudflare Worker with Workers AI, signed-in users only, about 20 messages a day; consent toggle, offline fallback to the rule-based coach, server-side key.
+2. **AI coach:** built on `feat/ai-coach` (see "AI coach and voice notes"). Left: try it signed in on a phone (real AI answer, a real recording, the review-then-add flow), and the owner adds the API keys.
 3. **Bad-habit knowledge + free-text understanding:** extend `HabitKnowledgeBase` with curated info for many more habits (effects, withdrawal, recovery timeline, triggers, tips) and make habit recognition robust to however the user typed the name (normalisation, synonyms, typos/fuzzy match, multi-word and multi-language input; fall back to a generic profile and, once the AI exists, to the AI). Use it to personalise the card, analysis screen, coach and milestones. Add unit tests for the matcher.
 4. **iOS (approved, unrestricted):** (a) on a Mac run `:shared:linkDebugFrameworkIosSimulatorArm64` and build/run `iosApp` in Xcode, fix errors; (b) implement `NotificationScheduler` + `NotificationPermissionGateway` with `UNUserNotificationCenter` in `iosMain` (cap at 64 pending requests); (c) check status-bar style (`SystemBars.ios.kt`), safe areas and keyboard on a real iPhone; (d) run `:shared:iosSimulatorArm64Test`; (d2) iOS widgets (WidgetKit + App Group; none exist yet, Android widgets are Android-only); (e) before TestFlight: bundle id, signing team, app icon, `Info.plist` strings.
 
@@ -434,3 +451,48 @@ Started on step (c) before (b), with the owner's go-ahead: the Notion Worker doe
   - The rate limits are counted per Cloudflare location, not globally.
   - A user deleted directly in the Firebase console keeps a Notion row until someone removes it by hand.
   - `backend/` still contains the old Notion code: remove it once the Worker is confirmed with real Notion.
+
+## AI coach and voice notes (2026-11-11, branch `feat/ai-coach`)
+
+Owner decisions this round: start the AI now (before Firestore sync); a chain of free AI services, not Workers AI alone; 10 messages and 2 voice notes per user per day for now, lower later with a paid plan; signed-in users only; voice notes show what was understood before adding; the coach sees habits and the next 30 days of events.
+
+- **Worker** (`workers/notion/src/ai`, deployed to `https://nixura-notion.nixura-notion-worker.workers.dev`):
+  - Routes `POST /v1/coach/chat`, `POST /v1/coach/voice`, `GET /v1/coach/quota`, all behind the Firebase sign-in check and a 12-a-minute limit per user.
+  - Chain `AI_CHAIN` = gemini, groq, cloudflare, mistral, openrouter. A service without its key is skipped; a failure moves to the next; only the service name and status are logged.
+  - Voice: Gemini hears the clip directly; otherwise Groq or Cloudflare Whisper turns it into text and any chat model picks out the items.
+  - Daily limits in D1 `ai_usage` (migration `0002`), reserved in one statement and refunded when no AI answered.
+  - Every model answer is cleaned: unknown action types dropped, names cut, dates and times checked, at most 8 items.
+  - Keys set on 2026-11-11: `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`. Not set: `MISTRAL_API_KEY`.
+- **App:**
+  - Real AI in the coach chat with offline fallback and a notice; consent sheet; "AI coach" switch in Settings.
+  - Animated progress cards in the chat (also from the offline coach).
+  - Voice notes: mic card on Home and mic button in the coach; review list; adds quit habits (counter starts now), good habits (daily or N days a week) and events (09:00 when no time was said, no reminders).
+  - Room v7: `coach_messages.visuals` (additive `MIGRATION_6_7`).
+  - HTTP timeout raised from 25 to 45 seconds (a voice note can take the chain that long).
+  - Privacy text in the app names the AI services.
+- **Verified:**
+  - `npm test` in `workers/notion`: 17 tests, 0 failures; `npm run typecheck` clean.
+  - `:shared:testAndroidHostTest`: 454 tests, 0 failures (new: the AI client's requests, answers and error cases; the offline card picker). `:androidApp:assembleDebug` OK.
+  - `tools/room_migration_check.py`: only its two known `REMOVED_BY_IMPORT` complaints.
+  - Emulator (Pixel_10_Pro), installed over a v6 app: the app opens (v6 → v7 ran); the Home mic card; the voice sheet's "needs an account" view; the coach's mic button and guest subtitle; an animated good-habit card under an offline reply.
+  - Live Worker: deployed, `ai_usage` exists, the coach routes answer 401 without a sign-in.
+- **Verified on the owner's phone (2026-11-11, owner-reported "both worked"):** AI chat and a voice note, signed in, with the Gemini, Groq and OpenRouter keys set (Mistral's console would not create a key; skipped). The Worker's log and `ai_usage` showed 4 chats and 1 voice note answered.
+- **Found in that log and changed:** Gemini (`gemini-flash-latest`) failed every time (call errors and 503 "overloaded"), so the default is now `gemini-flash-lite-latest`; Groq answered 400 on some calls in JSON mode, so JSON mode is off for Groq (answers are parsed leniently anyway); the per-call chat timeout went from 9 to 11 seconds, and timeouts are now logged as 408. Re-tested by the owner right after: one chat and one voice note, both answered by Gemini with no fallback in the log.
+- **Not verified:**
+  - The daily limit being reached, and OpenRouter and Mistral as answering services (the chain never got that far).
+  - The model names in `wrangler.jsonc` (`gemini-flash-latest`, `openai/gpt-oss-120b`, `mistral-small-latest`, `openrouter/free`, the two `@cf/...` models) against each provider: a wrong one just makes that service fail over to the next.
+  - Arabic voice notes. iOS (shared code not compiled here; the recorder is a placeholder).
+- **Risks:**
+  - Free quotas are per app, not per user: with many users the chain ends at the offline coach more often.
+  - Gemini's free tier terms (data use, no personal information, not for EU/UK/Switzerland users): fine for testing, to be settled before a public launch.
+  - The consent is stored on the device only; the Worker cannot check it.
+
+## To-do list (owner, 2026-11-11)
+
+Not started; kept here so they are not lost.
+
+1. **Polish pass over the whole app:** more motion, smoother transitions, small "hooks" that make coming back feel good (in a healthy way).
+2. **Specialised habit cards**, like the water card with its water motion: one for prayers, one for smoking, and more ideas of that kind.
+3. **Paid plan** for more AI messages and voice notes; then lower the free limits (for example 5 messages and 1 or 2 voice notes).
+4. **An AI model that runs on the phone** (free, private, offline); needs a large download and a recent phone.
+5. **Voice notes on iOS** (`AVAudioRecorder` + `NSMicrophoneUsageDescription`).

@@ -24,6 +24,9 @@ import org.koin.compose.koinInject
 
 class MainActivity : ComponentActivity() {
 
+    private val microphonePermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* the voice sheet re-checks the permission itself */ }
+
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* result handled by next isGranted() check */ }
 
@@ -60,6 +63,9 @@ class MainActivity : ComponentActivity() {
 
         socialSignIn.activity = this
 
+        (application as NixUraApplication).voiceRecorder.launcher = {
+            microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
         (application as NixUraApplication).notificationPermission.launcher = {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }

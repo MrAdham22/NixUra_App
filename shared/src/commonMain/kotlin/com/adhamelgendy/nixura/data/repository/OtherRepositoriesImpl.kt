@@ -133,8 +133,11 @@ class CoachRepositoryImpl(
         return dao.insertConversation(CoachConversationEntity(title = "", createdAtEpochMillis = now, updatedAtEpochMillis = now))
     }
 
-    override suspend fun append(conversationId: Long, role: CoachRole, text: String): Long = dao.append(
-        CoachMessageEntity(conversationId = conversationId, role = role.name, text = text, createdAtEpochMillis = clock.nowEpochMillis()),
+    override suspend fun append(conversationId: Long, role: CoachRole, text: String, visuals: List<String>): Long = dao.append(
+        CoachMessageEntity(
+            conversationId = conversationId, role = role.name, text = text, createdAtEpochMillis = clock.nowEpochMillis(),
+            visuals = visuals.takeIf { it.isNotEmpty() }?.joinToString(","),
+        ),
         titleIfNew = if (role == CoachRole.USER) text.take(MAX_CHAT_TITLE) else "",
     )
 
@@ -169,6 +172,7 @@ class PreferencesRepositoryImpl(
             dailyCheckInMinutes = map[KEY_CHECKIN]?.toIntOrNull() ?: defaults.dailyCheckInMinutes,
             guideCompleted = map[KEY_GUIDE_DONE]?.let { it == "1" } ?: defaults.guideCompleted,
             usageStatsEnabled = map[KEY_USAGE_STATS]?.let { it == "1" } ?: defaults.usageStatsEnabled,
+            aiCoachConsent = map[KEY_AI_COACH]?.let { it == "1" },
         )
     }
 
@@ -201,7 +205,7 @@ class PreferencesRepositoryImpl(
         val local = listOf(
             PreferenceEntity(KEY_GUIDE_DONE, if (settings.guideCompleted) "1" else "0"),
             PreferenceEntity(KEY_USAGE_STATS, if (settings.usageStatsEnabled) "1" else "0"),
-        )
+        ) + listOfNotNull(settings.aiCoachConsent?.let { PreferenceEntity(KEY_AI_COACH, if (it) "1" else "0") })
         dao.upsertAll(synced + local + marks)
     }
 
@@ -217,6 +221,7 @@ class PreferencesRepositoryImpl(
         const val KEY_CHECKIN = "settings.checkin_minutes"
         const val KEY_GUIDE_DONE = "settings.guide_done"
         const val KEY_USAGE_STATS = "settings.usage_stats"
+        const val KEY_AI_COACH = "settings.ai_coach"
     }
 }
 
