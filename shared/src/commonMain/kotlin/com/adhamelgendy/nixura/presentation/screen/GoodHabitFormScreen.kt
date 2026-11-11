@@ -5,8 +5,6 @@ package com.adhamelgendy.nixura.presentation.screen
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -37,6 +35,7 @@ import com.adhamelgendy.nixura.presentation.components.PrayerWordTransformation
 import com.adhamelgendy.nixura.presentation.theme.PrayerPalette
 import com.adhamelgendy.nixura.presentation.components.ErrorBanner
 import com.adhamelgendy.nixura.presentation.components.NixButton
+import com.adhamelgendy.nixura.presentation.components.NixButtonStyle
 import com.adhamelgendy.nixura.presentation.components.NixCard
 import com.adhamelgendy.nixura.presentation.components.NixChip
 import com.adhamelgendy.nixura.presentation.components.NixTextField
@@ -71,8 +70,6 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
 
     // A prayer habit ("pray", "Salah", "صلاة"...): five a day, and the whole page turns gold from the word down.
     val prayer = remember(name) { PrayerHabitDetector.isPrayer(name) }
-    var fieldMidY by remember { mutableStateOf(0f) }
-    var boxTopY by remember { mutableStateOf(0f) }
     var prayerApplied by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(prayer) {
         if (prayer && !prayerApplied && !editing) {
@@ -99,8 +96,8 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
         }
     }
 
-    Box(Modifier.fillMaxSize().onGloballyPositioned { boxTopY = it.positionInRoot().y }) {
-    PrayerGoldWash(prayer, fieldMidY - boxTopY)
+    Box(Modifier.fillMaxSize()) {
+    PrayerGoldWash(prayer)
     SubScreen(title = if (editing) s.editHabit else s.newGoodHabit, onBack = { navigator.back() }) {
         state.errorMessage?.let { ErrorBanner(it, vm::onDismissError) }
 
@@ -112,7 +109,6 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
             maxLength = 80,
             focusRequester = nameFocus,
             visualTransformation = if (prayer) PrayerWordTransformation(PrayerPalette.Gold) else VisualTransformation.None,
-            modifier = Modifier.onGloballyPositioned { fieldMidY = it.positionInRoot().y + it.size.height / 2f },
         )
         if (prayer) Text(s.prayerHint, style = NixType.Small, color = PrayerPalette.GoldLight)
 
@@ -180,6 +176,7 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
             },
             enabled = name.isNotBlank(),
             loading = state.isSaving,
+            style = if (prayer) NixButtonStyle.Gold else NixButtonStyle.Primary,
             modifier = Modifier.fillMaxWidth(),
         )
     }

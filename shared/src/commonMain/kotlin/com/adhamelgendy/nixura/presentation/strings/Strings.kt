@@ -151,9 +151,7 @@ open class Strings {
         "Drink water" to 8,
         "Morning walk" to 1,
         "Workout" to 1,
-        "Read 10 pages" to 1,
         "Meditate" to 1,
-        "Sleep before midnight" to 1,
         "Pray" to 5,
     )
     /** Shown on the stars of a five-a-day prayer habit. */

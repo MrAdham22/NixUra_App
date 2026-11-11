@@ -24,7 +24,8 @@
 - **Built:** a good habit named like a prayer gets 5 a day automatically, the add form turns gold from the prayer word downward, and the card is a gold Islamic-art card with star buttons, five lighting stars and a burst on every count (see README, "Prayer habit").
 - **Verified:** `:shared:testAndroidHostTest` passes (5 new `PrayerHabitDetectorTest` tests included) and `:androidApp:assembleDebug` builds. The debug APK was copied to `D:\Career_development\Claude_app_dev\NixUra-debug.apk`.
 - **Not verified:** nothing was seen running. The look and feel of the animations (gold wash, burst, star buttons) and the colour contrast still need the owner's eyes on a phone. iOS: the code is in `commonMain` but was not compiled for iOS (no Mac).
-- **Known limits:** the widget shows a prayer habit with the plain green fill; the gold wash origin is read when the page lays out, so it can be slightly off if the keyboard moves the page; English only (Arabic strings are not built yet).
+- **Owner feedback round (2026-11-12, after seeing it on the phone):** the shine now loops seamlessly (two bands half a loop apart, each wraps only while outside the card); the gold wash starts at the very top and covers the status and navigation bar areas; richer amber colors; gold "Add habit" button (`NixButtonStyle.Gold`); "Read 10 pages" and "Sleep before midnight" removed from the quick picks; card redesign inspired by the owner's reference picture (mosque silhouette, crescent, golden dawn, mihrab-arch badge, double frame, rays when all five are done). Tests pass and the APK builds; **this round was not seen on the phone yet** (the phone disconnected before install).
+- **Known limits:** the widget shows a prayer habit with the plain green fill; English only (Arabic strings are not built yet).
 
 ## One-paragraph summary
 

@@ -463,7 +463,11 @@ fun GoodHabitCard(
         paint = look.paint,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            GlyphBadge(goodGlyphFor(habit.id), if (look.fill > 0f) look.content else c.accent, (if (look.fill > 0f) look.content else c.accent).copy(alpha = 0.14f))
+            if (habit.fillStyle == GoodHabitFillStyle.PRAYER) {
+                PrayerArchBadge(look)
+            } else {
+                GlyphBadge(goodGlyphFor(habit.id), if (look.fill > 0f) look.content else c.accent, (if (look.fill > 0f) look.content else c.accent).copy(alpha = 0.14f))
+            }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(habit.name, style = NixType.Heading, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)

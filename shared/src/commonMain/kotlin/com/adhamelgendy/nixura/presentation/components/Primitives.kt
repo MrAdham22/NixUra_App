@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import com.adhamelgendy.nixura.presentation.theme.PrayerPalette
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -110,7 +111,8 @@ fun SectionLabel(
     }
 }
 
-enum class NixButtonStyle { Primary, Secondary, Ghost, Danger }
+/** [Gold] is the prayer habit's button: a gold gradient with dark text. */
+enum class NixButtonStyle { Primary, Secondary, Ghost, Danger, Gold }
 
 @Composable
 fun NixButton(
@@ -128,16 +130,19 @@ fun NixButton(
         NixButtonStyle.Secondary -> c.surfaceRaised
         NixButtonStyle.Ghost -> Color.Transparent
         NixButtonStyle.Danger -> c.danger.copy(alpha = 0.14f)
+        NixButtonStyle.Gold -> PrayerPalette.Gold
     }
     val fg = when (style) {
         NixButtonStyle.Primary -> c.onAccent
         NixButtonStyle.Secondary -> c.textPrimary
         NixButtonStyle.Ghost -> c.textSecondary
         NixButtonStyle.Danger -> c.danger
+        NixButtonStyle.Gold -> PrayerPalette.Night
     }
     val border = when (style) {
         NixButtonStyle.Secondary -> c.border
         NixButtonStyle.Danger -> c.danger.copy(alpha = 0.35f)
+        NixButtonStyle.Gold -> PrayerPalette.GoldLight.copy(alpha = 0.8f)
         else -> Color.Transparent
     }
     val shape = RoundedCornerShape(16.dp)
@@ -147,7 +152,17 @@ fun NixButton(
             // At least the usual height; a label too long for one line wraps and the button grows, never "Sign out a…".
             .heightIn(min = 50.dp)
             .clip(shape)
-            .background(if (enabled) bg else bg.copy(alpha = bg.alpha * 0.45f), shape)
+            .then(
+                if (style == NixButtonStyle.Gold) {
+                    Modifier.background(
+                        Brush.verticalGradient(listOf(PrayerPalette.GoldLight, PrayerPalette.Gold, PrayerPalette.GoldDeep)),
+                        shape,
+                        alpha = if (enabled) 1f else 0.45f,
+                    )
+                } else {
+                    Modifier.background(if (enabled) bg else bg.copy(alpha = bg.alpha * 0.45f), shape)
+                },
+            )
             .border(1.dp, border, shape)
             .padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.Center,
