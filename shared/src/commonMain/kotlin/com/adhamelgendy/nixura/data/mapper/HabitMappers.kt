@@ -92,6 +92,7 @@ fun CoachMessageEntity.toDomain(): CoachMessage = CoachMessage(
     role = if (role == CoachRole.USER.name) CoachRole.USER else CoachRole.COACH,
     text = text,
     createdAtEpochMillis = createdAtEpochMillis,
+    visuals = visuals?.split(',')?.filter { it.isNotBlank() }.orEmpty(),
 )
 
 fun encodeReminders(leads: List<Long>): String = leads.distinct().sortedDescending().joinToString(",")

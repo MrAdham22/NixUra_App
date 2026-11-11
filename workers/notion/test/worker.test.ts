@@ -88,6 +88,7 @@ async function makeCtx(notion = fakeNotion(), opts: { limited?: boolean; configu
   const { publicKey } = await signingKeys();
   const deps: Deps = {
     notion: service,
+    coach: null as any,
     verify: (t) => verifyFirebaseIdToken(t, PROJECT, async () => publicKey),
     limit: async () => !opts.limited,
   };

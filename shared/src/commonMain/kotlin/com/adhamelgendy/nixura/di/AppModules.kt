@@ -129,7 +129,15 @@ fun appModule() = module {
     factory { BuildCoachSnapshotUseCase(get(), get(), get(), get(), get(), get()) }
     factory { ObserveCoachMessagesUseCase(get()) }
     factory { EnsureCoachGreetingUseCase(get(), get(), get()) }
-    factory { SendCoachMessageUseCase(get(), get(), get()) }
+    factory { SendCoachMessageUseCase(get(), get(), get(), get(), get(), get()) }
+    // Real AI coach (through NixUra's Worker) and voice notes.
+    factory { com.adhamelgendy.nixura.domain.usecase.BuildAiContextUseCase(get(), get(), get(), get(), get()) }
+    factory { com.adhamelgendy.nixura.domain.usecase.ObserveAiModeUseCase(get(), get()) }
+    factory { com.adhamelgendy.nixura.domain.usecase.SetAiConsentUseCase(get()) }
+    factory { com.adhamelgendy.nixura.domain.usecase.GetAiQuotaUseCase(get()) }
+    factory { com.adhamelgendy.nixura.domain.usecase.UnderstandVoiceNoteUseCase(get(), get()) }
+    factory { com.adhamelgendy.nixura.domain.usecase.ApplyCoachActionsUseCase(get(), get(), get(), get(), get()) }
+    factory { com.adhamelgendy.nixura.domain.usecase.BuildCoachVisualsUseCase(get(), get(), get(), get()) }
     factory { DeleteCoachChatUseCase(get()) }
     factory { ObserveCoachConversationsUseCase(get()) }
     factory { GetCoachContextUseCase(get(), get(), get()) }
@@ -156,7 +164,8 @@ fun appModule() = module {
     }
     viewModel { GoodHabitsViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { EventsViewModel(get(), get(), get(), get(), get()) }
-    viewModel { CoachViewModel(get(), get(), get(), get(), get(), get()) }
+    viewModel { CoachViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { com.adhamelgendy.nixura.presentation.voice.VoiceNoteViewModel(get(), get(), get(), get(), get()) }
     viewModel { ProfileViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { SettingsViewModel(get(), get(), get(), get()) }
 }

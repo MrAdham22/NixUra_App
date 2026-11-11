@@ -1,5 +1,10 @@
 # Upgrading the AI Coach from offline rules to a real AI
 
+> **Built on 2026-11-11.** The real AI coach now exists: the app calls NixUra's Cloudflare Worker (`workers/notion/src/ai`),
+> which tries five free AI services in order (Gemini, Groq, Cloudflare Workers AI, Mistral, OpenRouter) and the app falls
+> back to the offline coach. Setup, keys and limits: README, "AI coach and voice notes". How it is wired:
+> `docs/PROJECT_CONTEXT.md`, "AI coach and voice notes". The text below is the original guide, kept for background.
+
 Status today: the coach is **offline and rule-based** (`domain/coach/CoachEngine.kt` +
 `HabitKnowledgeBase.kt`). It is free, private and works without internet. It is bound in
 `di/AppModules.kt` as `CoachResponder -> RuleBasedCoachResponder`. A real AI only needs a second

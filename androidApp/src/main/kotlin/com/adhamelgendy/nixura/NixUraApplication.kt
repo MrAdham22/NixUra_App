@@ -26,6 +26,7 @@ import org.koin.dsl.module
 class NixUraApplication : Application() {
 
     val notificationPermission by lazy { AndroidNotificationPermission(this) }
+    val voiceRecorder by lazy { com.adhamelgendy.nixura.voice.AndroidVoiceRecorder(this) }
 
     override fun onCreate() {
         super.onCreate()
@@ -42,6 +43,7 @@ class NixUraApplication : Application() {
                 single { AndroidSocialSignIn(AndroidFirebaseConfig.webClientId(applicationContext), BuildConfig.FACEBOOK_ENABLED) }
                 single<SocialSignIn> { get<AndroidSocialSignIn>() }
                 single<UsageStats> { FirebaseUsageStats(applicationContext) }
+                single<com.adhamelgendy.nixura.domain.coach.ai.VoiceRecorder> { voiceRecorder }
                 single<BackgroundSyncScheduler> { AndroidBackgroundSync(applicationContext) }
                 single { AndroidGoogleAuthorizer(applicationContext) }
                 single<GoogleAuthorizer> { get<AndroidGoogleAuthorizer>() }

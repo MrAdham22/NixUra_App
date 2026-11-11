@@ -1,10 +1,12 @@
 import { AppError } from './errors.js';
+import type { CoachService } from './ai/coach.js';
 import type { NotionService } from './notion.js';
 
-export type LimitKind = 'notion' | 'start' | 'callback';
+export type LimitKind = 'notion' | 'start' | 'callback' | 'ai';
 
 export interface Deps {
   notion: NotionService;
+  coach: CoachService;
   /** Firebase ID token → user id, or null. */
   verify: (idToken: string) => Promise<string | null>;
   /** true = allowed, false = over the limit. */
@@ -12,6 +14,9 @@ export interface Deps {
 }
 
 const MAX_BODY_BYTES = 8 * 1024;
+const MAX_CHAT_BYTES = 32 * 1024;
+/** A voice note travels as base64 inside JSON. */
+const MAX_VOICE_BYTES = 700 * 1024;
 const CALLBACK = '/v1/integrations/notion/callback';
 
 /** The same routes and answers as the old backend's Notion part, so the app only needs the new address. */
@@ -53,6 +58,18 @@ export async function handle(req: Request, deps: Deps): Promise<Response> {
         if (!(await deps.limit('notion', uid))) throw tooMany();
         return json(await deps.notion.query(uid, b.databaseId, b.titleProperty, b.dateProperty, b.since));
       }
+      case 'GET /v1/coach/quota':
+        return json(await deps.coach.quota(uid));
+      case 'POST /v1/coach/chat': {
+        const body = await readJson(req, MAX_CHAT_BYTES);
+        if (!(await deps.limit('ai', uid))) throw tooMany();
+        return json(await deps.coach.chat(uid, body));
+      }
+      case 'POST /v1/coach/voice': {
+        const body = await readJson(req, MAX_VOICE_BYTES);
+        if (!(await deps.limit('ai', uid))) throw tooMany();
+        return json(await deps.coach.voice(uid, body));
+      }
     }
     throw new AppError('not_found', 404, 'Not found.');
   } catch (e) {
@@ -69,6 +86,9 @@ const ROUTES = new Set([
   'DELETE /v1/integrations/notion',
   'GET /v1/integrations/notion/databases',
   'POST /v1/integrations/notion/query',
+  'GET /v1/coach/quota',
+  'POST /v1/coach/chat',
+  'POST /v1/coach/voice',
 ]);
 
 async function signedIn(req: Request, deps: Deps): Promise<string> {
@@ -79,11 +99,11 @@ async function signedIn(req: Request, deps: Deps): Promise<string> {
   return uid;
 }
 
-async function readJson(req: Request): Promise<unknown> {
+async function readJson(req: Request, maxBytes = MAX_BODY_BYTES): Promise<unknown> {
   const declared = Number(req.headers.get('content-length') ?? '0');
-  if (declared > MAX_BODY_BYTES) throw new AppError('too_large', 413, 'Request too large.');
+  if (declared > maxBytes) throw new AppError('too_large', 413, 'Request too large.');
   const text = await req.text();
-  if (text.length > MAX_BODY_BYTES) throw new AppError('too_large', 413, 'Request too large.');
+  if (text.length > maxBytes) throw new AppError('too_large', 413, 'Request too large.');
   try {
     return JSON.parse(text);
   } catch {

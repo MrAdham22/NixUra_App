@@ -24,6 +24,18 @@ Live at **https://nixura-notion.nixura-notion-worker.workers.dev** (deployed 202
 - Logs only ever contain an error's kind, never tokens, user ids or Notion data.
 - Rate limits (Cloudflare's Rate Limiting binding, counted per location): 60 Notion calls a minute per user, 10 connects a minute per user, and 30 callbacks a minute per IP.
 
+## AI coach routes
+
+| Route | What |
+|---|---|
+| `GET /v1/coach/quota` | today's remaining AI messages and voice notes, and whether any AI service is switched on |
+| `POST /v1/coach/chat` | the chat so far + the user's habit data → `{reply, show, actions, provider, remaining}` |
+| `POST /v1/coach/voice` | a voice note (base64 audio) → `{transcript, actions, provider, remaining}` |
+
+All three need a sign-in. The code is in `src/ai/`: `providers.ts` (Gemini, the OpenAI-style services, Workers AI), `coach.ts` (the fallback chain, time budgets, daily limits), `prompts.ts`, `model.ts` (checks requests and cleans model answers), `usage.ts` (D1 `ai_usage`). Tests: `test/ai.test.ts`.
+
+Settings in `wrangler.jsonc`: `AI_CHAIN` (order), `AI_CHAT_PER_DAY`, `AI_VOICE_PER_DAY`, and one model name per service. Secrets, all optional: `GEMINI_API_KEY`, `GROQ_API_KEY`, `MISTRAL_API_KEY`, `OPENROUTER_API_KEY` (where to get them: main README, "What you need to do: AI keys"). Cloudflare Workers AI needs no key.
+
 ## Files
 
 - `src/index.ts`: wires Cloudflare's bindings (D1, rate limits, secrets) to the code.

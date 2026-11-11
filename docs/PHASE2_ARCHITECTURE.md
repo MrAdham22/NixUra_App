@@ -81,3 +81,5 @@ The Phase 2 architecture still holds (domain / data / presentation, MVVM, Koin, 
 - Google import feeds (2026-11-04): new port `DeviceRegion` (Android `AndroidDeviceRegion`, iOS `IosDeviceRegion`, both in the Koin platform modules); `GoogleAuthorizer.forget`; `GoogleCalendarCatalog.holidayCalendar`. `AppRoot` polls linked calendars every 2 minutes while the app is resumed. No Room schema change (categories are stored by name).
 
 - **2026-11-11:** the Notion link moved from the Node `backend/` to a Cloudflare Worker (`workers/notion/`). It checks Firebase ID tokens and stores encrypted Notion tokens in D1. The app's `AuthorizedApi` and `NotionBackendClient` stay the same; only `NIXURA_API_BASE_URL` changed.
+
+- **2026-11-11:** real AI coach and voice notes. New ports `AiCoachGateway` and `VoiceRecorder` (`domain/coach/ai`), client `data/coach/AiCoachClient`, use cases in `domain/usecase/AiCoachUseCases.kt`, UI in `presentation/voice` and `presentation/coach/CoachVisualCards.kt`. The offline `CoachResponder` stays as the fallback. Room v7.

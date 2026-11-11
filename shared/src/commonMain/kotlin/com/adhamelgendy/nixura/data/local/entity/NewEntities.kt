@@ -80,6 +80,8 @@ data class CoachMessageEntity(
     val role: String,
     val text: String,
     @ColumnInfo(name = "created_at") val createdAtEpochMillis: Long,
+    /** Progress cards shown under an AI reply: comma-separated keys such as "quit:12,good:3,overview". Null = none. */
+    val visuals: String? = null,
 )
 
 @Entity(tableName = "preferences")

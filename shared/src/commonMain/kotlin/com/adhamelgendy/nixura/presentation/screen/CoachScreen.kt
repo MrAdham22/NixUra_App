@@ -78,6 +78,9 @@ import com.adhamelgendy.nixura.presentation.theme.NixUraPalette
 import com.adhamelgendy.nixura.presentation.util.formatDate
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import com.adhamelgendy.nixura.domain.coach.ai.AiMode
+import com.adhamelgendy.nixura.domain.usecase.CoachNotice
+import com.adhamelgendy.nixura.presentation.coach.CoachVisualCard
 
 private val QuickActionIcons = listOf(NixIcon.Flame, NixIcon.Sparkle, NixIcon.Reset, NixIcon.Shield)
 
@@ -89,6 +92,20 @@ fun CoachScreen(navigator: Navigator) {
     val c = Nix.colors
     var input by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
+    val voiceVm: com.adhamelgendy.nixura.presentation.voice.VoiceNoteViewModel = koinViewModel()
+
+    // The AI understood "add ..." in the chat: show the same review list as a voice note, never add silently.
+    LaunchedEffect(state.pendingActions) {
+        if (state.pendingActions.isNotEmpty()) {
+            voiceVm.review(state.pendingActions)
+            vm.onActionsHandled()
+        }
+    }
+    if (state.consentFor != null) {
+        com.adhamelgendy.nixura.presentation.components.NixSheet(onDismiss = vm::onConsentDismissed) {
+            com.adhamelgendy.nixura.presentation.voice.AiConsentContent(onAgree = { vm.onConsent(true) }, onDecline = { vm.onConsent(false) })
+        }
+    }
     // Until the user writes something, a short welcome replaces the chat.
     val fresh = state.messages.none { it.role == CoachRole.USER } && !state.isTyping
 
@@ -108,11 +125,35 @@ fun CoachScreen(navigator: Navigator) {
     Column(Modifier.fillMaxSize()) {
         CoachHeader(
             title = s.coachTitle,
+            subtitle = when (state.aiMode) {
+                AiMode.On -> state.quota?.let { s.coachModeAiLeft(it.chatLeft) } ?: s.coachModeAi
+                AiMode.Guest -> s.coachModeGuest
+                AiMode.NeedsConsent, AiMode.Declined -> s.coachModeOfflineShort
+            },
             onBack = { navigator.back() },
             onHistory = { navigator.push(Route.CoachHistory) },
             onNewChat = { input = ""; vm.onNewChat() },
         )
         state.errorMessage?.let { ErrorBanner(it, vm::onDismissError, Modifier.padding(horizontal = 20.dp)) }
+        state.notice?.let { notice ->
+            NixCard(
+                Modifier.padding(horizontal = 20.dp, vertical = 4.dp).fillMaxWidth(),
+                onClick = vm::onDismissNotice,
+                color = c.accentWarm.copy(alpha = 0.12f),
+                borderColor = c.accentWarm.copy(alpha = 0.35f),
+                padding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+            ) {
+                Text(
+                    when (notice) {
+                        CoachNotice.LimitReached -> s.coachNoticeLimit
+                        CoachNotice.AiResting -> s.coachNoticeResting
+                        CoachNotice.Offline -> s.coachNoticeOffline
+                    },
+                    style = NixType.Small,
+                    color = c.textSecondary,
+                )
+            }
+        }
 
         if (fresh) {
             CoachWelcome(
@@ -146,6 +187,7 @@ fun CoachScreen(navigator: Navigator) {
                 items(state.messages, key = { it.id }) { message ->
                     val mine = message.role == CoachRole.USER
                     Row(Modifier.fillMaxWidth().animateItem(), horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start) {
+                        Column(horizontalAlignment = if (mine) Alignment.End else Alignment.Start) {
                         Box(
                             Modifier
                                 .widthIn(max = 320.dp)
@@ -158,6 +200,14 @@ fun CoachScreen(navigator: Navigator) {
                                 style = NixType.Body,
                                 color = if (mine) c.onAccent else c.textPrimary,
                             )
+                        }
+                        // Progress cards the coach chose to show, drawn from the user's own numbers.
+                        message.visuals.forEach { key ->
+                            state.visuals[key]?.let { visual ->
+                                Spacer(Modifier.height(8.dp))
+                                CoachVisualCard(visual)
+                            }
+                        }
                         }
                     }
                 }
@@ -191,7 +241,10 @@ fun CoachScreen(navigator: Navigator) {
                 maxLength = 500,
                 modifier = Modifier.weight(1f),
             )
-            NixIconButton(
+            // Nothing typed yet: the button is a microphone (say what to add). Typing turns it into Send.
+            if (input.isBlank() && voiceVm.supported && !state.isTyping) {
+                NixIconButton(NixIcon.Mic, voiceVm::open, size = 50.dp, tint = c.onAccent, background = c.accent, bordered = false, haptic = true)
+            } else NixIconButton(
                 NixIcon.Send,
                 { send(input) },
                 size = 50.dp,
@@ -381,7 +434,7 @@ private fun TypingDots() {
 
 /** Compact header: back button, title with the mode line underneath, chat history and new chat. */
 @Composable
-private fun CoachHeader(title: String, onBack: () -> Unit, onHistory: () -> Unit, onNewChat: () -> Unit) {
+private fun CoachHeader(title: String, onBack: () -> Unit, onHistory: () -> Unit, onNewChat: () -> Unit, subtitle: String = LocalStrings.current.coachModeOfflineShort) {
     val c = Nix.colors
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
@@ -391,7 +444,7 @@ private fun CoachHeader(title: String, onBack: () -> Unit, onHistory: () -> Unit
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = NixType.Heading, color = c.textPrimary, maxLines = 1)
-            CoachModeLine()
+            CoachModeLine(subtitle)
         }
         NixIconButton(NixIcon.Clock, onHistory, tint = c.textSecondary, size = 40.dp, background = c.surface.copy(alpha = 0.6f), bordered = false)
         Spacer(Modifier.width(8.dp))
@@ -401,8 +454,8 @@ private fun CoachHeader(title: String, onBack: () -> Unit, onHistory: () -> Unit
 
 /** Isolated subtitle slot. Mission 3 replaces its text with the Offline / AI mode label. */
 @Composable
-private fun CoachModeLine() {
-    Text(LocalStrings.current.coachModeOfflineShort, style = NixType.Small, color = Nix.colors.textMuted, maxLines = 1)
+private fun CoachModeLine(text: String) {
+    Text(text, style = NixType.Small, color = Nix.colors.textMuted, maxLines = 1)
 }
 
 /** One-line "today's focus" strip. Tap it to open the list of quit habits and pick the one to talk about. */

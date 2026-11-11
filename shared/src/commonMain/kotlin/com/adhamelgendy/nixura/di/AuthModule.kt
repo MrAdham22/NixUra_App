@@ -78,6 +78,7 @@ fun authModule() = module {
     single<ImportedEventStore> { RoomImportedEventStore(get<NixUraDatabase>().eventDao()) }
     single { GoogleCalendarSource(get(), GoogleCalendarApi(KtorApiTransport.defaultClient()), get(), get(), get()) }
     single<GoogleCalendarCatalog> { get<GoogleCalendarSource>() }
+    single<com.adhamelgendy.nixura.domain.coach.ai.AiCoachGateway> { com.adhamelgendy.nixura.data.coach.AiCoachClient(get()) }
     single { NotionBackendClient(get()) }
     single<NotionLink> { get<NotionBackendClient>() }
     single { NotionCalendarSource(get(), get(), get()) }

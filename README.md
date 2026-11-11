@@ -11,13 +11,13 @@
 | Offline quit tracking (Room, MVVM, Koin) | Built and **verified earlier** (30 tests, `assembleDebug` passed on the author's machine before the UI merge) |
 | NixUra UI merge + all features below | **Built, run and tested on Android — working properly (owner-confirmed).** First-run bugs fixed: stale Room database crash, screen padding from gesture insets. The Android app is considered feature-complete for the current scope. |
 | Pure-logic unit tests (day math, coach, planner, scores, shade ramp, counters) | 71 tests compiled with plain `kotlinc` 2.4.20 and **passed** outside Gradle. They also live in `shared/src/commonTest`. |
-| Room v6 schema + migrations | Audited with `tools/room_migration_check.py` (real SQLite: migrations vs entities, backfill, all queries, erase order, import dedupe index) — **OK**. v2 to v3 and v3 to v4 ran on the owner's phone with real data. v4 to v5 (money tracker, imported events) ran on the emulator with real data. v5 to v6 (weekly good habits) ran on the emulator over an existing install. |
+| Room v7 schema + migrations | Audited with `tools/room_migration_check.py` (real SQLite: migrations vs entities, backfill, all queries, erase order, import dedupe index) — **OK**. v2 to v3 and v3 to v4 ran on the owner's phone with real data. v4 to v5 (money tracker, imported events) ran on the emulator with real data. v5 to v6 (weekly good habits) and v6 to v7 (coach progress cards) ran on the emulator over an existing install. |
 | Accounts (Firebase) | **Moved to Firebase Authentication (2026-11-08, branch `feat/firebase-auth`).** Email + password with a verification **link** and a password-reset **link**, Google sign-in on Android, Facebook sign-in on Android (needs the client token, see [Accounts setup](#what-you-need-to-do-firebase-accounts)). 428 tests pass and the app builds; on the emulator the sign-in screen shows and a reset request reached the Firebase project. **Not yet tried on a phone:** creating an account, the verification link, Google and Facebook sign-in. iOS: email + password only, **unverified** (needs `GoogleService-Info.plist` and a Mac). |
 | Cloud sync | **Paused** while it moves to Firestore (next step): the old server cannot check Firebase sign-ins, so changes stay queued on the phone and the sync status shows offline. The Firestore design is agreed (see docs/DEVELOPMENT_STATUS.md). |
 | User-review redesign (dashboard, sign-in flow, gradients, explanations, chat history, starter guide) | Built and tested on the owner's phone (2026-11-03). |
 | Round 3: water fill, card-style widgets, long-press delete with undo, money-saved tracker | Built, tests pass, **seen working on the emulator** (details in DEVELOPMENT_STATUS). Not yet run on the owner's phone. |
 | Google Calendar and Notion import | Google works on the owner's Android phone (2026-11-04): Events, Birthdays, Tasks and Holidays for the user's country, each with its own category. Notion connects through a Cloudflare Worker (`workers/notion`); the owner linked a real Notion workspace from the phone on 2026-11-11 (see [Linking calendars](#linking-calendars-google-calendar-and-notion)). Google Calendar on iOS is not built yet. |
-| AI coach | Offline rule-based coach ships and works. The **real AI coach comes after Firestore sync and Notion** (owner decision 2026-11-05): a Cloudflare Worker with Workers AI, signed-in users only, about 20 messages a day, more with a paid plan. Guide in [docs/AI_COACH_UPGRADE.md](docs/AI_COACH_UPGRADE.md) |
+| AI coach | **Real AI coach built (2026-11-11), with voice notes and animated progress cards.** Signed-in users who agree get AI replies through NixUra's Worker, which tries five free AI services in order and falls back to the offline coach; 10 messages and 2 voice notes a day. On the emulator: guest views, the database upgrade and the progress cards. **Not yet run with a real AI answer or a real recording** (needs a signed-in phone). See [AI coach and voice notes](#ai-coach-and-voice-notes). |
 | Android home-screen widgets (quit counter, good-habit quick log, events) | **Logic confirmed on a device by the owner** (numbers, live clock, "+"/"-", choosing a habit/event). The **card-style redesign** (widgets mirror the in-app cards, size-aware layouts) and the **"Add to Home screen" buttons** are written and type-checked but **not yet run on a device**. 90 pure-logic tests (planner, state mapping, quick-log use cases) compiled with plain `kotlinc` outside Gradle and **passed**. iOS widgets are **not implemented** (planned; need macOS, WidgetKit and an App Group). |
 | iOS | **Approved target, not yet built or run.** Shared UI/logic is written for it (Compose host in `iosApp`, `iosMain` actuals). Reminders are a no-op placeholder until a `UNUserNotificationCenter` implementation is added. Needs macOS + Xcode to verify. |
 
@@ -55,7 +55,7 @@ Notifications: event reminders, streak milestones and a daily check-in. **Androi
 Everything above is working on Android. The owner's remaining work, in no fixed order:
 
 1. **Fine-tune the UI.** Polish spacing, typography, animations, small-screen and light-theme details across all screens.
-2. **A real AI agent in the app, after Firestore sync and Notion (owner decision 2026-11-05): a Cloudflare Worker with Workers AI, signed-in users only, about 20 messages a day.** Replace/augment the offline `RuleBasedCoachResponder` with an actual AI behind the existing `CoachResponder` interface, with a consent toggle, an offline fallback and a server-side key (design in [docs/AI_COACH_UPGRADE.md](docs/AI_COACH_UPGRADE.md)).
+2. **AI coach: try it signed in on a phone, add the API keys** (see [AI coach and voice notes](#ai-coach-and-voice-notes)). Later: a paid plan for more than the free daily uses, voice notes on iOS, and an AI model that runs on the phone itself.
 3. **Richer knowledge about specific bad habits, understood from free text.** Add curated info (effects, withdrawal, recovery timeline, tips, triggers) for many more habits, and recognise a habit however the user typed it (synonyms, typos, different phrasing, multi-word names, other languages) so each habit feels personalised: the habit card, analysis screen, coach replies and milestones adapt to it. Today the coach matches the name by simple keyword category (`HabitKnowledgeBase`); this item generalises that. *Round 2:* a catalog of 20 substance, food and drink habits with dense hour/day timelines is written (`domain/coach/catalog/SubstanceCatalog`, unmerged and unverified, see `docs/DEVELOPMENT_STATUS.md`), and a catalog of 28 behavioural, screen, mental and body-reflex habits (`domain/coach/catalog/BehaviorCatalog`, unmerged and unverified, same file).
 4. **Make the app work on iOS.** Build and run `iosApp` on a Mac, fix first-run errors, implement iOS notifications, verify layout/status bar on a real iPhone, then TestFlight.
 
@@ -102,7 +102,7 @@ Single `:shared` module, Clean Architecture + MVVM:
 - **`:androidApp`**: `NixUraApplication` (starts Koin), `MainActivity`, `notifications/` (alarm scheduler, receivers, permission bridge). Widgets: `widgets/` (three `AppWidgetProvider`s, `WidgetRenderer`, `WidgetUpdater`, quick-log / system / pin receivers, `WidgetConfigActivity`, `AndroidWidgetPinner`); `MainActivity` also handles widget deep links; `NixUraApplication` starts the widget updater and registers the Android `WidgetPinner` binding. Layouts `res/layout/widget_*.xml` are generated by `tools/gen_widget_layouts.py`.
 - **iOS**: `shared/src/iosMain` (`MainViewController`, database builder, `platformModule()`, UTC offset, system bars) and `iosApp/` (SwiftUI `ContentView` hosting the Compose view controller; framework name `Shared`).
 
-Database: Room **version 6** (`MIGRATION_1_2` … `MIGRATION_5_6` in `data/local/Migrations.kt`; v5 adds the `cost_*` columns on `habits` and `source`, `external_id`, `external_updated_at`, `all_day` on `events`; v6 adds `weekly_target` on `good_habits`, null = daily). Tables: `habits`, `habit_events`, `good_habits`, `good_habit_logs`, `events`, `coach_conversations`, `coach_messages`, `preferences`.
+Database: Room **version 7** (`MIGRATION_1_2` … `MIGRATION_6_7` in `data/local/Migrations.kt`; v5 adds the `cost_*` columns on `habits` and `source`, `external_id`, `external_updated_at`, `all_day` on `events`; v6 adds `weekly_target` on `good_habits`, null = daily; v7 adds `visuals` on `coach_messages`). Tables: `habits`, `habit_events`, `good_habits`, `good_habit_logs`, `events`, `coach_conversations`, `coach_messages`, `preferences`.
 
 The coach is behind `CoachResponder` (`RuleBasedCoachResponder` today). A real AI is a second implementation; see the upgrade guide.
 
@@ -123,7 +123,7 @@ Habbit_app/
 ├── firebase.json, .firebaserc     # Firebase Hosting config (project nixura)
 ├── hosting/public/                # nixura.web.app: the branded email-link page (auth/action), home and 404 pages
 ├── iosApp/                        # iOS app: Xcode project + SwiftUI host that embeds the shared Compose UI
-├── workers/notion/                # Cloudflare Worker for the Notion link (OAuth, encrypted tokens in D1); see its README
+├── workers/notion/                # Cloudflare Worker: Notion link and the AI coach (free AI chain, daily limits); see its README
 ├── tools/room_migration_check.py  # validates the migrations + DAO SQL against the entities (python3, no deps)
 ├── tools/phone_link.ps1           # Windows dev helper: keeps USB phones linked to the local backend (adb reverse)
 ├── shared/src/{commonMain,androidMain,iosMain,commonTest}/kotlin/com/adhamelgendy/nixura/
@@ -208,6 +208,32 @@ firebase deploy --only hosting
 ```
 
 Then in Firebase → Authentication → Templates → **Customize action URL**, enter `https://nixura.web.app/auth/action` (one setting for all templates). To undo, clear that field: the emails go back to Firebase's page.
+
+## AI coach and voice notes
+
+Signed-in users who agree get a real AI coach, and can add habits and events by voice. Guests, and anyone who declines, keep the offline coach.
+
+- **Server:** the AI routes live in the same Cloudflare Worker as Notion (`workers/notion`, `src/ai/`). The app sends the message, the habits with their numbers and the events of the next 30 days. It never sends a name, an email or an account id.
+- **Free AI chain:** the Worker tries Gemini → Groq → Cloudflare Workers AI → Mistral → OpenRouter, and moves on when one fails or is out of free quota. If none answers, the app's offline coach replies. The order is the `AI_CHAIN` setting in `workers/notion/wrangler.jsonc`; a service without a key is skipped.
+- **Limits:** 10 AI messages and 2 voice notes per user per day (`AI_CHAT_PER_DAY`, `AI_VOICE_PER_DAY`), counted in the D1 table `ai_usage`. A use only counts when an AI really answered.
+- **Voice notes:** the mic card on Home, or the mic button in the coach. Up to 60 seconds. The app shows what the AI understood, and adds only what the user confirms. Android only for now.
+- **Progress cards:** when the user asks how they are doing, the reply comes with an animated card (streak ring, 7-day bars or an overview). The AI only picks which card; the numbers are the app's own. The offline coach shows them too.
+- **Consent:** asked once before the first AI use; Settings → Privacy and data → AI coach turns it off again.
+
+### What you need to do: AI keys
+
+Cloudflare Workers AI needs no key and already works. Each key below adds one more free service; any of them can be skipped. In `workers/notion`, run the command and paste the key when it asks (it goes straight to Cloudflare, never into git or the app).
+
+| Service | Where to get the key | Command |
+|---|---|---|
+| Google Gemini | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) → Create API key | `npx wrangler secret put GEMINI_API_KEY` |
+| Groq | [console.groq.com/keys](https://console.groq.com/keys) → Create API Key | `npx wrangler secret put GROQ_API_KEY` |
+| Mistral | [console.mistral.ai](https://console.mistral.ai) → API Keys → Create new key (free plan) | `npx wrangler secret put MISTRAL_API_KEY` |
+| OpenRouter | [openrouter.ai/keys](https://openrouter.ai/keys) → Create key | `npx wrangler secret put OPENROUTER_API_KEY` |
+
+A key works a few seconds after the command; no redeploy and no app update. Model names are settings in `wrangler.jsonc` (`GEMINI_MODEL` and so on); change one and run `npx wrangler deploy` if a provider retires a model.
+
+**Before a public launch:** Google's free Gemini tier may use what is sent to improve its products, says not to send personal information, and is not allowed for users in the EU, UK or Switzerland. Move Gemini to the paid tier or take it out of `AI_CHAIN` first.
 
 ## Linking calendars (Google Calendar and Notion)
 

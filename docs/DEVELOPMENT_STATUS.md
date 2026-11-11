@@ -61,7 +61,7 @@ Android is done and owner-tested. The owner's remaining work is items 0-4; the r
 0. **Move to Firebase + Cloudflare (owner decision 2026-11-05), in order:** (a) Firebase sign-in, done on `feat/firebase-auth`, needs a phone test; (b) Firestore sync, designed (see "Firestore sync design"), not built, sync is paused until then; (c) Notion through a Cloudflare Worker: built, deployed and connected to real Notion on the owner's phone (`feat/notion-worker`, 2026-11-11, see "Notion Worker"); (d) the AI coach Worker (item 2); (e) payments for more than about 20 coach messages a day.
 0b. **Owner's UI requests (2026-11-08):** items 1-4 (logo buttons, the stacked sign-in screens bug, Profile, Settings) are done on `feat/ui-polish`, see "UI polish". (5) the emails: the branded link page is built (`feat/auth-action-page`, see "Branded email link page"); left: deploy it and set the action URL, set sender name / subject / reply-to in Templates, and later a custom domain (SPF/DKIM).
 1. **Fine-tune the UI** (spacing, typography, animations, small screens, light theme, contrast).
-2. **Real AI agent** behind `CoachResponder` (see `docs/AI_COACH_UPGRADE.md`): a Cloudflare Worker with Workers AI, signed-in users only, about 20 messages a day; consent toggle, offline fallback to the rule-based coach, server-side key.
+2. **AI coach:** built on `feat/ai-coach` (see "AI coach and voice notes"). Left: try it signed in on a phone (real AI answer, a real recording, the review-then-add flow), and the owner adds the API keys.
 3. **Bad-habit knowledge + free-text understanding:** extend `HabitKnowledgeBase` with curated info for many more habits (effects, withdrawal, recovery timeline, triggers, tips) and make habit recognition robust to however the user typed the name (normalisation, synonyms, typos/fuzzy match, multi-word and multi-language input; fall back to a generic profile and, once the AI exists, to the AI). Use it to personalise the card, analysis screen, coach and milestones. Add unit tests for the matcher.
 4. **iOS (approved, unrestricted):** (a) on a Mac run `:shared:linkDebugFrameworkIosSimulatorArm64` and build/run `iosApp` in Xcode, fix errors; (b) implement `NotificationScheduler` + `NotificationPermissionGateway` with `UNUserNotificationCenter` in `iosMain` (cap at 64 pending requests); (c) check status-bar style (`SystemBars.ios.kt`), safe areas and keyboard on a real iPhone; (d) run `:shared:iosSimulatorArm64Test`; (d2) iOS widgets (WidgetKit + App Group; none exist yet, Android widgets are Android-only); (e) before TestFlight: bundle id, signing team, app icon, `Info.plist` strings.
 
@@ -434,3 +434,47 @@ Started on step (c) before (b), with the owner's go-ahead: the Notion Worker doe
   - The rate limits are counted per Cloudflare location, not globally.
   - A user deleted directly in the Firebase console keeps a Notion row until someone removes it by hand.
   - `backend/` still contains the old Notion code: remove it once the Worker is confirmed with real Notion.
+
+## AI coach and voice notes (2026-11-11, branch `feat/ai-coach`)
+
+Owner decisions this round: start the AI now (before Firestore sync); a chain of free AI services, not Workers AI alone; 10 messages and 2 voice notes per user per day for now, lower later with a paid plan; signed-in users only; voice notes show what was understood before adding; the coach sees habits and the next 30 days of events.
+
+- **Worker** (`workers/notion/src/ai`, deployed to `https://nixura-notion.nixura-notion-worker.workers.dev`):
+  - Routes `POST /v1/coach/chat`, `POST /v1/coach/voice`, `GET /v1/coach/quota`, all behind the Firebase sign-in check and a 12-a-minute limit per user.
+  - Chain `AI_CHAIN` = gemini, groq, cloudflare, mistral, openrouter. A service without its key is skipped; a failure moves to the next; only the service name and status are logged.
+  - Voice: Gemini hears the clip directly; otherwise Groq or Cloudflare Whisper turns it into text and any chat model picks out the items.
+  - Daily limits in D1 `ai_usage` (migration `0002`), reserved in one statement and refunded when no AI answered.
+  - Every model answer is cleaned: unknown action types dropped, names cut, dates and times checked, at most 8 items.
+  - **Keys set: none yet.** Only Cloudflare Workers AI (no key) is active until the owner adds keys (README, "What you need to do: AI keys").
+- **App:**
+  - Real AI in the coach chat with offline fallback and a notice; consent sheet; "AI coach" switch in Settings.
+  - Animated progress cards in the chat (also from the offline coach).
+  - Voice notes: mic card on Home and mic button in the coach; review list; adds quit habits (counter starts now), good habits (daily or N days a week) and events (09:00 when no time was said, no reminders).
+  - Room v7: `coach_messages.visuals` (additive `MIGRATION_6_7`).
+  - HTTP timeout raised from 25 to 45 seconds (a voice note can take the chain that long).
+  - Privacy text in the app names the AI services.
+- **Verified:**
+  - `npm test` in `workers/notion`: 17 tests, 0 failures; `npm run typecheck` clean.
+  - `:shared:testAndroidHostTest`: 454 tests, 0 failures (new: the AI client's requests, answers and error cases; the offline card picker). `:androidApp:assembleDebug` OK.
+  - `tools/room_migration_check.py`: only its two known `REMOVED_BY_IMPORT` complaints.
+  - Emulator (Pixel_10_Pro), installed over a v6 app: the app opens (v6 → v7 ran); the Home mic card; the voice sheet's "needs an account" view; the coach's mic button and guest subtitle; an animated good-habit card under an offline reply.
+  - Live Worker: deployed, `ai_usage` exists, the coach routes answer 401 without a sign-in.
+- **Not verified** (needs a signed-in phone, and the owner's own consent tap):
+  - A real AI reply, the fallback between real services, and the daily limit against the live Worker.
+  - Recording on a real device, the microphone permission flow, and a voice note turned into items.
+  - The model names in `wrangler.jsonc` (`gemini-flash-latest`, `openai/gpt-oss-120b`, `mistral-small-latest`, `openrouter/free`, the two `@cf/...` models) against each provider: a wrong one just makes that service fail over to the next.
+  - Arabic voice notes. iOS (shared code not compiled here; the recorder is a placeholder).
+- **Risks:**
+  - Free quotas are per app, not per user: with many users the chain ends at the offline coach more often.
+  - Gemini's free tier terms (data use, no personal information, not for EU/UK/Switzerland users): fine for testing, to be settled before a public launch.
+  - The consent is stored on the device only; the Worker cannot check it.
+
+## To-do list (owner, 2026-11-11)
+
+Not started; kept here so they are not lost.
+
+1. **Polish pass over the whole app:** more motion, smoother transitions, small "hooks" that make coming back feel good (in a healthy way).
+2. **Specialised habit cards**, like the water card with its water motion: one for prayers, one for smoking, and more ideas of that kind.
+3. **Paid plan** for more AI messages and voice notes; then lower the free limits (for example 5 messages and 1 or 2 voice notes).
+4. **An AI model that runs on the phone** (free, private, offline); needs a large download and a recent phone.
+5. **Voice notes on iOS** (`AVAudioRecorder` + `NSMicrophoneUsageDescription`).

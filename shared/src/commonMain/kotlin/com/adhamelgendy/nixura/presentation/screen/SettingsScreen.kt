@@ -147,6 +147,18 @@ fun SettingsScreen(navigator: Navigator) {
         SectionLabel(s.privacyAndData)
         NixCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                NixIconView(NixIcon.Sparkle, c.accent, size = 22.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(s.aiSettingTitle, style = NixType.BodyStrong, color = c.textPrimary)
+                    Text(s.aiSettingHint, style = NixType.Small, color = c.textMuted)
+                }
+                Spacer(Modifier.width(8.dp))
+                NixSwitch(settings.aiCoachConsent == true, vm::onAiCoach)
+            }
+        }
+        NixCard {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 NixIconView(NixIcon.Shield, c.accent, size = 22.dp)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {

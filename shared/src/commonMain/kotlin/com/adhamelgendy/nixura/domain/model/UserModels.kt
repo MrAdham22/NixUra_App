@@ -16,6 +16,11 @@ data class AppSettings(
     val guideCompleted: Boolean = false,
     /** Anonymous usage stats (Firebase Analytics). Off until the user turns it on; per device, never synced. */
     val usageStatsEnabled: Boolean = false,
+    /**
+     * The real AI coach: `null` = not asked yet, `true` = the user agreed that messages and habit data go to online AI
+     * services, `false` = declined (offline coach only). Per device, never synced.
+     */
+    val aiCoachConsent: Boolean? = null,
 )
 
 enum class CoachRole { USER, COACH }
@@ -33,4 +38,6 @@ data class CoachMessage(
     val role: CoachRole,
     val text: String,
     val createdAtEpochMillis: Long,
+    /** Keys of the progress cards to draw under this reply ("quit:<id>", "good:<id>", "overview"). */
+    val visuals: List<String> = emptyList(),
 )
