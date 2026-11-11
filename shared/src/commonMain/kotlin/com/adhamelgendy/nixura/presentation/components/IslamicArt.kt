@@ -135,10 +135,15 @@ internal fun rememberPrayerArt(fill: Float, count: Int): PrayerArt {
         val corner = 20.dp.toPx()
         val frame = 1.6.dp.toPx()
         val inset = 5.dp.toPx()
-        val mosqueWidth = (w * 0.56f).coerceAtMost(240.dp.toPx())
+        // Sized by the card's height too, so a short row gets a small mosque that never reaches its text
+        // A short row (Home) shows a big mosque filling its height, the owner's favourite; a full card keeps it
+        // smaller in the room left for it at the bottom, with the moon at the top centre, clear of the buttons.
+        val shortRow = h < 120.dp.toPx()
+        val mosqueWidth = if (shortRow) minOf(w * 0.56f, 240.dp.toPx()) else minOf(w * 0.46f, 200.dp.toPx())
         val mosque = mosquePath((w - mosqueWidth) / 2f, h + 1f, mosqueWidth)
         val domeTop = Offset(w / 2f, h - mosqueWidth * MOSQUE_DOME_TOP)
-        val moon = crescentPath(w * 0.58f, 14.dp.toPx(), 7.dp.toPx())
+        val moonCenter = if (shortRow) Offset(w * 0.58f, 14.dp.toPx()) else Offset(w / 2f, 12.dp.toPx())
+        val moon = crescentPath(moonCenter.x, moonCenter.y, 7.dp.toPx())
         // On the inner frame, halfway round each rounded corner
         val d = corner - (corner - inset) * 0.7071f
         val cornerStars = listOf(Offset(d, d), Offset(w - d, d), Offset(d, h - d), Offset(w - d, h - d))
@@ -185,7 +190,7 @@ internal fun rememberPrayerArt(fill: Float, count: Int): PrayerArt {
             drawPath(mosque, lerp(PrayerPalette.Gold, PrayerPalette.Night, done).copy(alpha = 0.45f), style = Stroke(1.dp.toPx()))
             // Crescent moon
             val moonColor = lerp(PrayerPalette.GoldLight, PrayerPalette.Night, done)
-            drawCircle(moonColor.copy(alpha = 0.16f), 15.dp.toPx(), Offset(w * 0.58f, 14.dp.toPx()))
+            drawCircle(moonColor.copy(alpha = 0.16f), 15.dp.toPx(), moonCenter)
             drawPath(moon, moonColor.copy(alpha = 0.92f))
             // Light that keeps sliding across. Two bands half a loop apart: one leaves the card while the other is in
             // the middle, and each wraps around only while it is fully outside, so the loop never shows a seam.

@@ -120,6 +120,7 @@ fun PrayerGoldWash(active: Boolean, modifier: Modifier = Modifier) {
                         Offset(w / 2f, h),
                         w * 0.75f,
                     ),
+                    size = Size(w, h), // the whole screen, not just the page area inside the bars
                 )
                 drawPath(mosque, MosqueShade.copy(alpha = 0.82f))
                 drawPath(mosque, PrayerPalette.Gold.copy(alpha = 0.55f), style = Stroke(1.2.dp.toPx()))

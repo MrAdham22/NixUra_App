@@ -510,6 +510,8 @@ fun GoodHabitCard(
             Spacer(Modifier.weight(1f))
             Text(if (habit.isWeekly) s.daysDoneTotal(habit.totalTimesDone) else s.timesDoneTotal(habit.totalTimesDone), style = NixType.Small, color = look.contentMuted)
         }
+        // Room at the bottom of a prayer card for its mosque, so it stands clear of the text
+        if (habit.fillStyle == GoodHabitFillStyle.PRAYER) Spacer(Modifier.height(48.dp))
     }
     if (streakInfo) {
         if (habit.isWeekly) {
