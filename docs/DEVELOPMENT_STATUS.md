@@ -58,7 +58,7 @@ Bugs already found by the owner's first build: `Pickers.kt` had a stray broken f
 
 Android is done and owner-tested. The owner's remaining work is items 0-4; the rest is backlog.
 
-0. **Move to Firebase + Cloudflare (owner decision 2026-11-05), in order:** (a) Firebase sign-in, done on `feat/firebase-auth`, needs a phone test; (b) Firestore sync, designed (see "Firestore sync design"), not built, sync is paused until then; (c) Notion through a Cloudflare Worker; (d) the AI coach Worker (item 2); (e) payments for more than about 20 coach messages a day.
+0. **Move to Firebase + Cloudflare (owner decision 2026-11-05), in order:** (a) Firebase sign-in, done on `feat/firebase-auth`, needs a phone test; (b) Firestore sync, designed (see "Firestore sync design"), not built, sync is paused until then; (c) Notion through a Cloudflare Worker: built, deployed and connected to real Notion on the owner's phone (`feat/notion-worker`, 2026-11-11, see "Notion Worker"); (d) the AI coach Worker (item 2); (e) payments for more than about 20 coach messages a day.
 0b. **Owner's UI requests (2026-11-08):** items 1-4 (logo buttons, the stacked sign-in screens bug, Profile, Settings) are done on `feat/ui-polish`, see "UI polish". (5) the emails: the branded link page is built (`feat/auth-action-page`, see "Branded email link page"); left: deploy it and set the action URL, set sender name / subject / reply-to in Templates, and later a custom domain (SPF/DKIM).
 1. **Fine-tune the UI** (spacing, typography, animations, small screens, light theme, contrast).
 2. **Real AI agent** behind `CoachResponder` (see `docs/AI_COACH_UPGRADE.md`): a Cloudflare Worker with Workers AI, signed-in users only, about 20 messages a day; consent toggle, offline fallback to the rule-based coach, server-side key.
@@ -403,3 +403,34 @@ Owner request: a good habit that is done a few days a week (e.g. medicine 3 time
 - **What changed:** `good_habits.weekly_target` (Room v6, `MIGRATION_5_6`, null = daily), `GoodHabit.weeklyTarget`, sync payload field (optional, old records stay daily). Rules in `domain/calculator/WeeklyGoalCalculator.kt` (14 tests): goal met = 100% (more never goes above); the current week is left out of the score while still reachable, counts done/goal once it cannot be reached; finished weeks count done/goal; the creation week's goal is ceil(goal x days left / 7). `ScoreCalculator` averages only habits that count (a lone new weekly habit gives no score; Profile then says weekly habits count once the goal is met). Stats: streaks and completed weeks in weeks, "this week" and "last 4 weeks" completion. UI: form "How often" (Every day / Days a week, stepper 1-7), card and Home row fill with the week's progress and show "N / M days this week", the strip shows Sunday to Saturday, a done day shows a tick and cannot go above 1 (also the widget and past-day edits). Coach and the daily check-in skip a weekly habit that is done today or whose week is met. Also fixed: the good-habit form's name field asked "What do you want to stop?" (now "What do you want to build?").
 - **Verified:** `:shared:testAndroidHostTest` (447 tests, 0 failures) and `:androidApp:assembleDebug`; `tools/room_migration_check.py` (the two "SQL ERROR" lines about `$REMOVED_BY_IMPORT_SQL` are a checker limitation and also appear on master); on the emulator (Pixel_10_Pro) installed over an existing v5 install: the app opened (migration ran), a weekly habit was created on a Wednesday ("0 / 2 days this week"), two taps counted once with a tick, the detail screen showed weeks, days done, this week / last 4 weeks. An independent check of the screens found 7 points; fixed: the widget total said "times", the score tip wording, "Days per week" vs "Days a week", today shown as "Missed" in the day editor (now "Not done yet") and a dead "+" on a done weekly day. Left as they were: the Home row tick rule differs from the card for daily habits with a target above 1 (older), the month calendar starts on Monday while the weekly week starts on Sunday, the form heading style.
 - **Not verified:** the home-screen widget with a weekly habit, switching an existing habit between daily and weekly on a device, light theme, iOS (not compiled here: `./gradlew :shared:compileKotlinIosSimulatorArm64 :shared:iosSimulatorArm64Test` on a Mac). The Firestore sync design must carry `weeklyTarget` in the good-habit document.
+
+## Notion Worker (2026-11-11, branch `feat/notion-worker`)
+
+Started on step (c) before (b), with the owner's go-ahead: the Notion Worker doesn't depend on Firestore.
+
+- **What:** `workers/notion/`, a Cloudflare Worker (TypeScript, D1, Rate Limiting binding) with the same routes and answers as the Notion part of `backend/`. The app already sent Firebase ID tokens through `AuthorizedApi`, so only its address changed. The Worker checks each token with Google's public keys (`jose`).
+- **Live:**
+  - Address: `https://nixura-notion.nixura-notion-worker.workers.dev`, on the owner's Cloudflare account. The workers.dev subdomain `nixura-notion-worker` was picked by Wrangler on the first deploy and can be renamed in the dashboard; the app's address would then change too.
+  - D1 database `nixura-notion` with migration `0001_notion.sql` applied.
+  - Secret `INTEGRATION_TOKEN_KEY` set: 32 random bytes generated straight into Cloudflare, never printed.
+  - Secrets `NOTION_CLIENT_ID` and `NOTION_CLIENT_SECRET` set on 2026-11-11 from the owner's Notion OAuth connection, with Redirect URI `https://nixura-notion.nixura-notion-worker.workers.dev/v1/integrations/notion/callback` (README, "What you need to do: Notion").
+- **App:**
+  - `NIXURA_API_BASE_URL` now defaults to the Worker in debug and release builds. The separate debug override `nixuraDebugApiBaseUrl` is removed: the owner's `~/.gradle/gradle.properties` line `nixuraDebugApiBaseUrl=http://localhost:8081` now does nothing and can be deleted.
+  - iOS `Info.plist` and the iOS fallback also point at the Worker.
+  - `FirebaseAuthRepository.deleteAccount` removes the Notion link once the password is confirmed and before Firebase deletes the account. The Worker can't learn about deleted Firebase accounts, unlike the old backend's `ON DELETE CASCADE`.
+- **Verified:**
+  - `npm test` in `workers/notion`: 10 tests, 0 failures. They are ported from the backend's Notion tests, plus Firebase token checks, input checks, limits and reading the backend's cipher format.
+  - `npm run typecheck` is clean.
+  - `:shared:testAndroidHostTest`: 434 tests, 0 failures, with a new test that deletion erases server data only after the password is checked.
+  - `:androidApp:assembleDebug` OK; the generated `BuildConfig` has the Worker address.
+  - Live checks with `curl`: `/health` answers `{"ok":true}`; signed-in routes without a valid token answer `401`; unknown routes answer `404`; the callback answers `503 integration_unavailable` until the Notion keys are set; `Cache-Control: no-store` and `nosniff` are present.
+- **Verified on the owner's phone (2026-11-11):** the owner created the Notion OAuth connection "NixUra" and set `NOTION_CLIENT_ID` and `NOTION_CLIENT_SECRET`. A build of `feat/weekly-good-habits` pointed at the Worker was installed, and the owner connected Notion from Settings and reported it working. The live D1 database then held one `notion_links` row for the owner's workspace, which also proves a real Firebase ID token passes the Worker's check.
+- **Not verified:**
+  - Importing events after picking a database was reported by the owner, not checked row by row.
+  - Disconnect, and the Notion cleanup on account deletion, against the live Worker.
+  - iOS.
+- **To do in Notion (owner):** the connection still had Update content, Insert content, Insert comments and "user information including email" ticked on 2026-11-11. NixUra only needs Read content and No user information.
+- **Risks:**
+  - The rate limits are counted per Cloudflare location, not globally.
+  - A user deleted directly in the Firebase console keeps a Notion row until someone removes it by hand.
+  - `backend/` still contains the old Notion code: remove it once the Worker is confirmed with real Notion.

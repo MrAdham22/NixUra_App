@@ -33,11 +33,15 @@ class FirebaseAuthRepositoryTest {
 
     private class Fixture(val repo: FirebaseAuthRepository, val sessions: SessionManagerImpl, val firebase: FakeFirebase)
 
-    private fun fixture(social: SocialSignIn = FakeSocial(), handler: (String, String) -> TransportResponse): Fixture {
+    private fun fixture(
+        social: SocialSignIn = FakeSocial(),
+        eraseServerData: suspend () -> Unit = {},
+        handler: (String, String) -> TransportResponse,
+    ): Fixture {
         val firebase = FakeFirebase(handler)
         val sessions = SessionManagerImpl(InMemorySecureStore())
         val api = FirebaseAuthApi(FirebaseConfig("k"), firebase)
-        return Fixture(FirebaseAuthRepository(api, sessions, FirebaseSession(api, sessions, clock), social), sessions, firebase)
+        return Fixture(FirebaseAuthRepository(api, sessions, FirebaseSession(api, sessions, clock), social, eraseServerData), sessions, firebase)
     }
 
     @Test fun registerMailsALinkAndSignsInOnlyOnceTheEmailIsConfirmed() = runTest {
@@ -159,6 +163,24 @@ class FirebaseAuthRepositoryTest {
         f.sessions.signIn(storedSession(expiresAt = clock.now + 3_600_000))
         assertIs<AuthResult.Success<Unit>>(f.repo.deleteAccount("pw"))
         assertNull(f.sessions.current())
+    }
+
+    @Test fun deleteErasesServerDataOnlyAfterThePasswordIsConfirmed() = runTest {
+        var erased = 0
+        var passwordOk = false
+        val f = fixture(eraseServerData = { erased++ }) { m, _ ->
+            when (m) {
+                "accounts:signInWithPassword" -> if (passwordOk) signInReply() else fbError("INVALID_LOGIN_CREDENTIALS")
+                "accounts:delete" -> TransportResponse(200, "{}")
+                else -> error(m)
+            }
+        }
+        f.sessions.signIn(storedSession(expiresAt = clock.now + 3_600_000))
+        assertIs<AuthResult.Failure>(f.repo.deleteAccount("wrong"))
+        assertEquals(0, erased)
+        passwordOk = true
+        assertIs<AuthResult.Success<Unit>>(f.repo.deleteAccount("pw"))
+        assertEquals(1, erased)
     }
 
     @Test fun deleteWithAnOldSignInAsksToSignInAgain() = runTest {

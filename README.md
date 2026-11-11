@@ -16,7 +16,7 @@
 | Cloud sync | **Paused** while it moves to Firestore (next step): the old server cannot check Firebase sign-ins, so changes stay queued on the phone and the sync status shows offline. The Firestore design is agreed (see docs/DEVELOPMENT_STATUS.md). |
 | User-review redesign (dashboard, sign-in flow, gradients, explanations, chat history, starter guide) | Built and tested on the owner's phone (2026-11-03). |
 | Round 3: water fill, card-style widgets, long-press delete with undo, money-saved tracker | Built, tests pass, **seen working on the emulator** (details in DEVELOPMENT_STATUS). Not yet run on the owner's phone. |
-| Google Calendar and Notion import | Google works on the owner's Android phone (2026-11-04): Events, Birthdays, Tasks and Holidays for the user's country, each with its own category. Notion is **not run against real Notion yet**: it needs the Notion integration and a running backend (see [Linking calendars](#linking-calendars-google-calendar-and-notion)). Google Calendar on iOS is not built yet. |
+| Google Calendar and Notion import | Google works on the owner's Android phone (2026-11-04): Events, Birthdays, Tasks and Holidays for the user's country, each with its own category. Notion connects through a Cloudflare Worker (`workers/notion`); the owner linked a real Notion workspace from the phone on 2026-11-11 (see [Linking calendars](#linking-calendars-google-calendar-and-notion)). Google Calendar on iOS is not built yet. |
 | AI coach | Offline rule-based coach ships and works. The **real AI coach comes after Firestore sync and Notion** (owner decision 2026-11-05): a Cloudflare Worker with Workers AI, signed-in users only, about 20 messages a day, more with a paid plan. Guide in [docs/AI_COACH_UPGRADE.md](docs/AI_COACH_UPGRADE.md) |
 | Android home-screen widgets (quit counter, good-habit quick log, events) | **Logic confirmed on a device by the owner** (numbers, live clock, "+"/"-", choosing a habit/event). The **card-style redesign** (widgets mirror the in-app cards, size-aware layouts) and the **"Add to Home screen" buttons** are written and type-checked but **not yet run on a device**. 90 pure-logic tests (planner, state mapping, quick-log use cases) compiled with plain `kotlinc` outside Gradle and **passed**. iOS widgets are **not implemented** (planned; need macOS, WidgetKit and an App Group). |
 | iOS | **Approved target, not yet built or run.** Shared UI/logic is written for it (Compose host in `iosApp`, `iosMain` actuals). Reminders are a no-op placeholder until a `UNUserNotificationCenter` implementation is added. Needs macOS + Xcode to verify. |
@@ -89,6 +89,7 @@ Semantic tokens (dark/light) are in `presentation/theme/NixColors.kt`. UI was ad
 | Facebook Login | 19.0.1 |
 | Material icons core (`org.jetbrains.compose.material:material-icons-core`, used for the settings gear) | 1.7.3 |
 | minSdk / compileSdk | 24 / 37 |
+| Notion Worker (`workers/notion`): Wrangler / jose / TypeScript, on Cloudflare Workers + D1 | 4.150.0 / 5.9.6 / 5.6.3 |
 
 ## Architecture
 
@@ -122,6 +123,7 @@ Habbit_app/
 ├── firebase.json, .firebaserc     # Firebase Hosting config (project nixura)
 ├── hosting/public/                # nixura.web.app: the branded email-link page (auth/action), home and 404 pages
 ├── iosApp/                        # iOS app: Xcode project + SwiftUI host that embeds the shared Compose UI
+├── workers/notion/                # Cloudflare Worker for the Notion link (OAuth, encrypted tokens in D1); see its README
 ├── tools/room_migration_check.py  # validates the migrations + DAO SQL against the entities (python3, no deps)
 ├── tools/phone_link.ps1           # Windows dev helper: keeps USB phones linked to the local backend (adb reverse)
 ├── shared/src/{commonMain,androidMain,iosMain,commonTest}/kotlin/com/adhamelgendy/nixura/
@@ -216,7 +218,7 @@ Linking needs an account: guests make no network calls. Sync runs when you tap "
 How the pieces work:
 
 - **Google Calendar and Tasks:** authorized on the phone with Google's Authorization API, read-only scopes `calendar.readonly` and `tasks.readonly` only. The access token is asked for at each sync and never stored; Disconnect revokes it and clears Google's cached copy on the phone. Events and Birthdays read the primary calendar with `eventTypes` (`default` + `fromGmail`, or `birthday`); calendar feeds are incremental with Google sync tokens (an expired token, HTTP 410, starts that feed over); tasks are read in full each time. If the Tasks API is off or not allowed, tasks are skipped and the rest still imports. Code: `androidApp/.../integrations/AndroidGoogleAuthorizer.kt`, `shared/.../data/integration/GoogleCalendarSource.kt`.
-- **Notion:** a public integration with OAuth through NixUra's server. The client secret and your Notion token stay on the server, the token encrypted with AES-256-GCM (`integration_links`). The app only receives event data. Pick one database, its title property and its date property (suggested automatically). Incremental with `last_edited_time`, plus a full read every 3 days that catches deleted pages; 429 answers are retried after Notion's `Retry-After`. Code: `backend/src/integrations/`, `shared/.../data/integration/NotionSource.kt`.
+- **Notion:** a public integration with OAuth through NixUra's server, a Cloudflare Worker that checks the user's Firebase sign-in on every call. The client secret and your Notion token stay on the server, the token encrypted with AES-256-GCM (D1 table `notion_links`). The app only receives event data. Pick one database, its title property and its date property (suggested automatically). Incremental with `last_edited_time`, plus a full read every 3 days that catches deleted pages; 429 answers are retried after Notion's `Retry-After`. Code: `workers/notion/src/`, `shared/.../data/integration/NotionSource.kt`. Deleting an account removes its Notion link first.
 - **Duplicates** are impossible by design: one row per (`source`, `external_id`), enforced by a unique index; the rules are in `domain/integration/ImportPlanner.kt` (unit-tested).
 
 ### What you need to do: Google Calendar
@@ -236,18 +238,17 @@ How the pieces work:
 
 ### What you need to do: Notion
 
-1. Open [Notion → My integrations](https://www.notion.so/profile/integrations) → **New integration** → type **Public**.
-2. Fill in the name (NixUra), website, privacy policy and terms links, and the **Redirect URI**: `https://YOUR-SERVER/v1/integrations/notion/callback`. Notion needs a public https address: for local testing, run a tunnel to the backend (for example `cloudflared tunnel --url http://localhost:8081`) and use its https address.
-3. Capabilities: **Read content** only (no insert or update), and no user email.
-4. Copy the **OAuth client ID** and **client secret** into `backend/.env` (never into the app), along with the rest:
+Done on 2026-11-11; kept here in case it has to be redone. Notion now calls integrations "connections".
+
+1. Open [Notion → Developer connections](https://www.notion.so/profile/integrations) → **New connection** → name NixUra, authentication method **OAuth**, installable in any workspace.
+2. On the connection's page, add the **Redirect URI**: `https://nixura-notion.nixura-notion-worker.workers.dev/v1/integrations/notion/callback`.
+3. Capabilities: **Read content** only, and **No user information**.
+4. Give the Worker the two values. In `workers/notion`, run each command and paste the value when it asks (it goes straight to Cloudflare, never into git or the app):
    ```
-   NOTION_CLIENT_ID=...
-   NOTION_CLIENT_SECRET=...
-   NOTION_REDIRECT_URI=https://YOUR-SERVER/v1/integrations/notion/callback
-   INTEGRATION_TOKEN_KEY=   # openssl rand -base64 32
+   npx wrangler secret put NOTION_CLIENT_ID
+   npx wrangler secret put NOTION_CLIENT_SECRET
    ```
-5. Run `npm run migrate` in `backend/` (adds `integration_links` and `oauth_states`; already done on the local dev database), then restart the backend.
-6. In the app: Settings → Integrations → Notion → Connect. In Notion's page, share the database that holds your events, then come back to the app and pick it.
+5. In the app: Settings → Calendars → Notion → Connect. In Notion's page, share the database that holds your events, then come back to the app and pick it.
 
 Notion has no "revoke" call for public integrations: Disconnect deletes the token on the server, and you can also remove NixUra under Notion → Settings → Connections.
 
@@ -260,6 +261,8 @@ Notion has no "revoke" call for public integrations: Disconnect deletes the toke
 gradlew.bat :shared:testAndroidHostTest
 gradlew.bat :shared:allTests
 ```
+
+The Notion Worker has its own tests: `cd workers/notion && npm install && npm test && npm run typecheck`.
 
 Run these first after pulling the merged UI. After changing any Room entity, DAO or migration also run `python3 tools/room_migration_check.py` (edit it if you add tables). iOS simulator tests only run on macOS (they are skipped on Windows/Linux).
 Widget logic tests live in `shared/src/commonTest/.../domain/widget/` and `.../usecase/WidgetUseCasesTest.kt` (90 cases). Widgets themselves need a device: add each widget (from the launcher and from "Add to Home screen"), compare with the in-app card, tap "+"/"-" (also with the app killed), resize from 1 to 4 rows and 2 to 5 columns (check the title never disappears and nothing overlaps), rotate, reboot, change time zone, cross midnight, delete the habit/event, switch theme, tap each widget to check the deep link.

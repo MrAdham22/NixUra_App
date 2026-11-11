@@ -1,0 +1,31 @@
+// NixUra Notion link: replaces the Notion part of the old Node /backend.
+// Secrets (never in this file or in git), set with `npx wrangler secret put <NAME>`:
+//   NOTION_CLIENT_ID, NOTION_CLIENT_SECRET  (from the Notion public integration)
+//   INTEGRATION_TOKEN_KEY                   (32 random bytes, base64; encrypts the Notion tokens at rest)
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nixura-notion",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": { "enabled": true },
+  "vars": {
+    "FIREBASE_PROJECT_ID": "nixura",
+    "APP_RETURN_URL": "nixura://integrations/notion"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nixura-notion",
+      "database_id": "3ff987ee-e71f-47d5-9dbb-858f8d84ff18",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // Per user (or per IP for the public callback), counted at each Cloudflare location.
+  "ratelimits": [
+    { "name": "NOTION_LIMIT", "namespace_id": "4101", "simple": { "limit": 60, "period": 60 } },
+    { "name": "START_LIMIT", "namespace_id": "4102", "simple": { "limit": 10, "period": 60 } },
+    { "name": "CALLBACK_LIMIT", "namespace_id": "4103", "simple": { "limit": 30, "period": 60 } }
+  ]
+}

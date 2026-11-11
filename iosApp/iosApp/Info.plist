@@ -4,8 +4,8 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
-	<!-- Backend base URL (https only). The owner sets the real host before release. -->
+	<!-- NixUra server (https only): the Notion Worker in workers/notion. -->
 	<key>NixUraApiBaseUrl</key>
-	<string>https://api.nixura.example</string>
+	<string>https://nixura-notion.nixura-notion-worker.workers.dev</string>
 </dict>
 </plist>

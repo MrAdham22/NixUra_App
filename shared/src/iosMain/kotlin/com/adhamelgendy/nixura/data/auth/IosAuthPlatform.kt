@@ -107,5 +107,5 @@ fun iosFirebaseConfig(): FirebaseConfig {
 /** Base URL comes from Info.plist (`NixUraApiBaseUrl`); iOS App Transport Security already blocks cleartext. */
 fun iosApiConfig(): ApiConfig {
     val url = NSBundle.mainBundle.objectForInfoDictionaryKey("NixUraApiBaseUrl") as? String
-    return ApiConfig(baseUrl = url?.takeIf { it.startsWith("https://") } ?: "https://api.nixura.example", allowCleartext = false)
+    return ApiConfig(baseUrl = url?.takeIf { it.startsWith("https://") } ?: "https://nixura-notion.nixura-notion-worker.workers.dev", allowCleartext = false)
 }

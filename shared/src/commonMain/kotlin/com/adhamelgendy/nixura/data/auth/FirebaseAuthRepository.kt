@@ -24,6 +24,8 @@ class FirebaseAuthRepository internal constructor(
     private val sessions: SessionManagerImpl,
     private val tokens: FirebaseSession,
     private val social: SocialSignIn,
+    /** Erases what NixUra's server keeps for this account (the Notion link). Best effort; runs once the password is confirmed. */
+    private val eraseServerData: suspend () -> Unit = {},
 ) : AuthRepository {
 
     /** A signed-up or signed-in account whose email is not confirmed yet. Never persisted. */
@@ -146,6 +148,8 @@ class FirebaseAuthRepository internal constructor(
                 IdTokenResult.Offline -> return AuthResult.Failure(AuthError(AuthErrorKind.Network))
             }
         }
+        // The Worker cannot hear about a deleted Firebase account, so its Notion link is removed while the session still works.
+        runCatching { eraseServerData() }
         return when (val r = api.delete(idToken)) {
             is FbResult.Ok -> {
                 sessions.signOutLocally()
