@@ -1,5 +1,7 @@
 package com.adhamelgendy.nixura.domain.notification
 
+import com.adhamelgendy.nixura.domain.calculator.GoodHabitStatsCalculator
+import com.adhamelgendy.nixura.domain.calculator.WeeklyGoalCalculator
 import com.adhamelgendy.nixura.domain.coach.BadHabitSnapshot
 import com.adhamelgendy.nixura.domain.coach.CoachEngine
 import com.adhamelgendy.nixura.domain.coach.CoachSnapshot
@@ -85,7 +87,20 @@ class NotificationPlanner(
                 },
                 goodHabits = goodHabits.map { gh ->
                     val todayCount = if (offset == 0) gh.logs.firstOrNull { it.dayIndex == day }?.count ?: 0 else 0
-                    GoodHabitSnapshot(gh.habit.name, todayCount, gh.habit.dailyTarget, 0)
+                    val weekly = gh.habit.weeklyTarget
+                    if (weekly == null) {
+                        GoodHabitSnapshot(gh.habit.name, todayCount, gh.habit.dailyTarget, 0)
+                    } else {
+                        // What is known now: days already done count only while that day is still in this week.
+                        val created = dayCalculator.dayIndexOf(gh.habit.createdAtEpochMillis)
+                        val week = WeeklyGoalCalculator.weekStartOf(day)
+                        val done = if (week == WeeklyGoalCalculator.weekStartOf(today)) {
+                            WeeklyGoalCalculator.doneDays(GoodHabitStatsCalculator.countsByDay(gh), week, today, created)
+                        } else {
+                            0
+                        }
+                        GoodHabitSnapshot(gh.habit.name, todayCount, 1, 0, weekly, done, WeeklyGoalCalculator.goalFor(week, weekly, created))
+                    }
                 },
             )
             val note = coach.dailyCheckIn(snapshot, seed = day)

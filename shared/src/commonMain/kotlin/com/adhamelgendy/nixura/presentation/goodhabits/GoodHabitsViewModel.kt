@@ -13,6 +13,8 @@ import com.adhamelgendy.nixura.domain.usecase.ObserveGoodHabitsUseCase
 import com.adhamelgendy.nixura.domain.usecase.SetGoodHabitCountUseCase
 import com.adhamelgendy.nixura.domain.usecase.UpdateGoodHabitUseCase
 import com.adhamelgendy.nixura.domain.usecase.DeletableItem
+import com.adhamelgendy.nixura.domain.usecase.MAX_DAILY_COUNT
+import com.adhamelgendy.nixura.domain.calculator.WeeklyGoalCalculator
 import com.adhamelgendy.nixura.presentation.deletion.PendingDeletions
 import com.adhamelgendy.nixura.presentation.deletion.hides
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +45,26 @@ data class GoodHabitUi(
     val countsByDay: Map<Long, Int>,
     val createdDayIndex: Long,
     val fillStyle: GoodHabitFillStyle = GoodHabitFillStyle.PLAIN,
-)
+    /** `null` = daily habit. Otherwise days a week; then streaks and [daysCompleted] are in weeks. */
+    val weeklyTarget: Int? = null,
+    /** What the card fills with: today's count / daily target, or days done / goal this week. */
+    val progressCount: Int = todayCount,
+    val progressTarget: Int = dailyTarget,
+    /** This week's goal is met (weekly habits only). */
+    val weekGoalMet: Boolean = false,
+    /** First day (Sunday) of the current week. */
+    val weekStartIndex: Long = 0,
+) {
+    val isWeekly: Boolean get() = weeklyTarget != null
+
+    /** The goal of the period is reached: today's target, or this week's goal. Drives the completion pulse. */
+    val goalReached: Boolean get() = if (isWeekly) weekGoalMet else doneToday
+
+    /** Nothing more is needed today. */
+    val settledToday: Boolean get() = doneToday || weekGoalMet
+
+    val maxCountPerDay: Int get() = if (isWeekly) 1 else MAX_DAILY_COUNT
+}
 
 data class GoodHabitsUiState(
     val habits: List<GoodHabitUi> = emptyList(),
@@ -105,17 +126,19 @@ class GoodHabitsViewModel(
     }
 
     fun onSetCount(habitId: Long, dayIndex: Long, count: Int) {
+        val maxPerDay = uiState.value.habits.firstOrNull { it.id == habitId }?.maxCountPerDay ?: MAX_DAILY_COUNT
         viewModelScope.launch {
-            setCount(habitId, dayIndex, count.coerceAtLeast(0)).onFailure { error ->
+            setCount(habitId, dayIndex, count.coerceAtLeast(0), maxPerDay).onFailure { error ->
                 transient.update { it.copy(errorMessage = error.message ?: "Could not save") }
             }
         }
     }
 
-    fun onCreate(name: String, dailyTarget: Int, colorArgb: Long?, onSuccess: () -> Unit) {
+    /** [weeklyTarget] `null` = daily habit. */
+    fun onCreate(name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int? = null, onSuccess: () -> Unit) {
         viewModelScope.launch {
             transient.update { it.copy(isSaving = true, errorMessage = null) }
-            val result = createGoodHabit(name, dailyTarget, colorArgb)
+            val result = createGoodHabit(name, dailyTarget, colorArgb, weeklyTarget)
             transient.update { state ->
                 state.copy(isSaving = false, errorMessage = result.exceptionOrNull()?.message)
             }
@@ -123,10 +146,10 @@ class GoodHabitsViewModel(
         }
     }
 
-    fun onUpdate(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, onSuccess: () -> Unit) {
+    fun onUpdate(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int? = null, onSuccess: () -> Unit) {
         viewModelScope.launch {
             transient.update { it.copy(isSaving = true, errorMessage = null) }
-            val result = updateGoodHabit(id, name, dailyTarget, colorArgb)
+            val result = updateGoodHabit(id, name, dailyTarget, colorArgb, weeklyTarget)
             transient.update { state ->
                 state.copy(isSaving = false, errorMessage = result.exceptionOrNull()?.message)
             }
@@ -157,6 +180,11 @@ class GoodHabitsViewModel(
             countsByDay = GoodHabitStatsCalculator.countsByDay(this),
             createdDayIndex = createdDay,
             fillStyle = styleCache.getOrPut(habit.name) { fillStyles.styleFor(habit.name) },
+            weeklyTarget = habit.weeklyTarget,
+            progressCount = stats.progressCount,
+            progressTarget = stats.progressTarget,
+            weekGoalMet = stats.weekGoalMet,
+            weekStartIndex = WeeklyGoalCalculator.weekStartOf(today),
         )
     }
 }

@@ -323,7 +323,10 @@ fun DaySquare(
     }
 }
 
-/** Last 7 days, oldest first, ending today. */
+/**
+ * Last 7 days, oldest first, ending today. With [weekStartIndex] it shows that week instead (Sunday to Saturday, for a
+ * weekly habit), with the days still to come dimmed.
+ */
 @Composable
 fun WeekStrip(
     countsByDay: Map<Long, Int>,
@@ -335,19 +338,21 @@ fun WeekStrip(
     doneColor: Color = Nix.colors.positive,
     idleColor: Color = Nix.colors.surfaceRaised,
     todayBorder: Color = Nix.colors.textSecondary,
+    weekStartIndex: Long? = null,
 ) {
     val s = LocalStrings.current
+    val firstDay = weekStartIndex ?: (todayIndex - 6)
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        for (offset in 6 downTo 0) {
-            val day = todayIndex - offset
+        for (i in 0 until 7) {
+            val day = firstDay + i
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Text(s.weekdayLetters[CivilCalendar.isoWeekday(day) - 1], style = NixType.Small, color = labelColor)
                 DaySquare(
                     count = countsByDay[day] ?: 0,
                     target = target,
                     modifier = Modifier.fillMaxWidth(),
-                    isToday = offset == 0,
-                    enabled = day >= createdDayIndex - 6,
+                    isToday = day == todayIndex,
+                    enabled = if (weekStartIndex != null) day <= todayIndex else day >= createdDayIndex - 6,
                     doneColor = doneColor,
                     idleColor = idleColor,
                     todayBorder = todayBorder,
@@ -443,8 +448,8 @@ fun GoodHabitCard(
 ) {
     val s = LocalStrings.current
     val c = Nix.colors
-    val look = rememberGoodFill(habit.todayCount, habit.dailyTarget, habit.fillStyle)
-    val pulse = rememberCompletionPulse(habit.doneToday)
+    val look = rememberGoodFill(habit.progressCount, habit.progressTarget, habit.fillStyle)
+    val pulse = rememberCompletionPulse(habit.goalReached)
     var streakInfo by remember { mutableStateOf(false) }
     NixCard(
         modifier.fillMaxWidth().graphicsLayer { scaleX = pulse.value; scaleY = pulse.value },
@@ -457,12 +462,12 @@ fun GoodHabitCard(
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(habit.name, style = NixType.Heading, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(s.todayProgress(habit.todayCount, habit.dailyTarget), style = NixType.Small, color = look.contentMuted)
+                Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted)
             }
             NixIconButton(NixIcon.Minus, onMinus, size = 38.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), bordered = false)
             Spacer(Modifier.width(8.dp))
             NixIconButton(
-                if (habit.doneToday && habit.dailyTarget == 1) NixIcon.Tick else NixIcon.Plus,
+                if (habit.doneToday && (habit.dailyTarget == 1 || habit.isWeekly)) NixIcon.Tick else NixIcon.Plus,
                 onPlus,
                 size = 44.dp,
                 tint = if (habit.doneToday) look.background else c.onAccent,
@@ -473,11 +478,12 @@ fun GoodHabitCard(
         }
         Spacer(Modifier.height(14.dp))
         WeekStrip(
-            habit.countsByDay, habit.dailyTarget, todayIndex, habit.createdDayIndex,
+            habit.countsByDay, if (habit.isWeekly) 1 else habit.dailyTarget, todayIndex, habit.createdDayIndex,
             labelColor = look.contentMuted,
             doneColor = look.doneSquare,
             idleColor = look.content.copy(alpha = 0.10f),
             todayBorder = look.content.copy(alpha = 0.7f),
+            weekStartIndex = if (habit.isWeekly) habit.weekStartIndex else null,
         )
         Spacer(Modifier.height(6.dp))
         Row(
@@ -486,15 +492,23 @@ fun GoodHabitCard(
         ) {
             NixIconView(NixIcon.Flame, if (look.fill >= 0.6f) look.content else c.accentWarm, size = 16.dp)
             Spacer(Modifier.width(6.dp))
-            Text(s.streakDays(habit.currentStreak), style = NixType.SmallStrong, color = look.content)
+            Text(if (habit.isWeekly) s.streakWeeks(habit.currentStreak) else s.streakDays(habit.currentStreak), style = NixType.SmallStrong, color = look.content)
             Spacer(Modifier.weight(1f))
-            Text(s.timesDoneTotal(habit.totalTimesDone), style = NixType.Small, color = look.contentMuted)
+            Text(if (habit.isWeekly) s.daysDoneTotal(habit.totalTimesDone) else s.timesDoneTotal(habit.totalTimesDone), style = NixType.Small, color = look.contentMuted)
         }
     }
     if (streakInfo) {
-        InfoSheet(s.statCurrentStreak, s.daysCount(habit.currentStreak), s.infoCurrentStreak, onDismiss = { streakInfo = false })
+        if (habit.isWeekly) {
+            InfoSheet(s.statCurrentStreak, s.weeksCount(habit.currentStreak), s.infoCurrentStreakWeekly, onDismiss = { streakInfo = false })
+        } else {
+            InfoSheet(s.statCurrentStreak, s.daysCount(habit.currentStreak), s.infoCurrentStreak, onDismiss = { streakInfo = false })
+        }
     }
 }
+
+/** "3 / 8 today" for a daily habit, "2 / 3 days this week" for a weekly one. */
+fun goodProgressText(habit: GoodHabitUi, s: Strings): String =
+    if (habit.isWeekly) s.weekProgress(habit.progressCount, habit.progressTarget) else s.todayProgress(habit.todayCount, habit.dailyTarget)
 
 /** A small celebratory bounce, with a firm tap, the moment a habit's target is reached. */
 @Composable

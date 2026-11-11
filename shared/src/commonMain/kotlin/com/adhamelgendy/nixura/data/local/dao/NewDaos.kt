@@ -22,8 +22,8 @@ interface GoodHabitDao {
     @Insert
     suspend fun insert(habit: GoodHabitEntity): Long
 
-    @Query("UPDATE good_habits SET name = :name, daily_target = :dailyTarget, color_argb = :colorArgb, updated_at = :updatedAt, dirty = 1 WHERE id = :id")
-    suspend fun updateDetails(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, updatedAt: Long)
+    @Query("UPDATE good_habits SET name = :name, daily_target = :dailyTarget, color_argb = :colorArgb, weekly_target = :weeklyTarget, updated_at = :updatedAt, dirty = 1 WHERE id = :id")
+    suspend fun updateDetails(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?, updatedAt: Long)
 
     @Query("UPDATE good_habits SET archived_at = :archivedAt, updated_at = :archivedAt, dirty = 1 WHERE id = :id")
     suspend fun archive(id: Long, archivedAt: Long)

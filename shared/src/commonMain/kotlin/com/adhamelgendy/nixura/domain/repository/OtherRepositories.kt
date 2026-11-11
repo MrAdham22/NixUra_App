@@ -12,8 +12,9 @@ import kotlinx.coroutines.flow.Flow
 
 interface GoodHabitRepository {
     fun observeGoodHabits(): Flow<List<GoodHabitWithLogs>>
-    suspend fun create(name: String, dailyTarget: Int, colorArgb: Long?): Long
-    suspend fun update(id: Long, name: String, dailyTarget: Int, colorArgb: Long?)
+    /** [weeklyTarget] `null` = daily habit; otherwise days a week (then [dailyTarget] is 1). */
+    suspend fun create(name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int? = null): Long
+    suspend fun update(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int? = null)
     suspend fun archive(id: Long)
 
     /** Sets the number of times the habit was done on [dayIndex]. `count <= 0` clears that day. */

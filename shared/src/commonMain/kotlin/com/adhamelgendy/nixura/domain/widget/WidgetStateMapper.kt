@@ -2,6 +2,7 @@ package com.adhamelgendy.nixura.domain.widget
 
 import com.adhamelgendy.nixura.domain.calculator.GoodHabitStatsCalculator
 import com.adhamelgendy.nixura.domain.calculator.TrackingStateCalculator
+import com.adhamelgendy.nixura.domain.calculator.WeeklyGoalCalculator
 import com.adhamelgendy.nixura.domain.model.Event
 import com.adhamelgendy.nixura.domain.model.GoodHabitWithLogs
 import com.adhamelgendy.nixura.domain.model.HabitTracking
@@ -48,21 +49,25 @@ object WidgetStateMapper {
         val createdDayIndex = days.dayIndexOf(item.habit.createdAtEpochMillis)
         val stats = GoodHabitStatsCalculator.compute(item, todayIndex, createdDayIndex)
         val counts = GoodHabitStatsCalculator.countsByDay(item)
-        val week = (6 downTo 0).map { offset ->
-            val day = todayIndex - offset
+        // Same days as the in-app strip: the last 7 days, or this week (Sunday to Saturday) for a weekly habit.
+        val firstDay = if (stats.isWeekly) WeeklyGoalCalculator.weekStartOf(todayIndex) else todayIndex - 6
+        val week = (0 until 7).map { i ->
+            val day = firstDay + i
             WidgetDay(
                 isoWeekday = CivilCalendar.isoWeekday(day),
                 status = GoodHabitStatsCalculator.statusOf(counts[day] ?: 0, stats.dailyTarget),
-                enabled = day >= createdDayIndex - 6, // same rule as the in-app week strip
-                isToday = offset == 0,
+                enabled = if (stats.isWeekly) day <= todayIndex else day >= createdDayIndex - 6,
+                isToday = day == todayIndex,
                 ratio = GoodHabitStatsCalculator.fillLevel(counts[day] ?: 0, stats.dailyTarget),
             )
         }
         return GoodWidgetState.Active(
             habitId = item.habit.id,
             name = item.habit.name,
-            count = stats.todayCount,
-            target = stats.dailyTarget,
+            count = stats.progressCount,
+            target = stats.progressTarget,
+            weeklyTarget = stats.weeklyTarget,
+            todayCount = stats.todayCount,
             colorArgb = item.habit.colorArgb,
             week = week,
             currentStreakDays = stats.currentStreakDays,

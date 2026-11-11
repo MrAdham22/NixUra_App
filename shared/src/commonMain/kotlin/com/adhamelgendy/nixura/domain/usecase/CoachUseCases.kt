@@ -51,7 +51,10 @@ class BuildCoachSnapshotUseCase(
             },
             goodHabits = goodHabits.observeGoodHabits().first().map {
                 val stats = GoodHabitStatsCalculator.compute(it, today, dayCalculator.dayIndexOf(it.habit.createdAtEpochMillis))
-                GoodHabitSnapshot(it.habit.name, stats.todayCount, stats.dailyTarget, stats.currentStreakDays)
+                GoodHabitSnapshot(
+                    it.habit.name, stats.todayCount, stats.dailyTarget, stats.currentStreakDays,
+                    stats.weeklyTarget, stats.weekDone, stats.weekGoal,
+                )
             },
             nextEvent = events.observeEvents().first()
                 .filter { it.targetAtEpochMillis > now }

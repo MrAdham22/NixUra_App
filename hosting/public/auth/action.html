@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#1D1A39">
+  <title>NixUra</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/nixura.css">
+</head>
+<body>
+  <main class="card" aria-live="polite">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1D1A39" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 19C5 10 10 5 19 5C19 14 14 19 5 19Z"/><path d="M5 19L13 11"/>
+        </svg>
+      </div>
+      <div class="wordmark">NixUra</div>
+    </div>
+
+    <!-- Working: shown while the link is checked. -->
+    <section id="view-loading">
+      <div class="spinner" role="progressbar" aria-label="Working"></div>
+      <h1>One moment…</h1>
+      <p>We're checking your link.</p>
+    </section>
+
+    <!-- Done: email confirmed, email change undone, or password changed. -->
+    <section id="view-done" hidden>
+      <div class="status-icon ok" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5L10 17.5L19 7.5"/></svg>
+      </div>
+      <h1 id="done-title"></h1>
+      <p id="done-body"></p>
+      <p class="small" id="done-note"></p>
+    </section>
+
+    <!-- New password form (password reset). -->
+    <section id="view-reset" hidden>
+      <h1>Choose a new password</h1>
+      <p id="reset-for"></p>
+      <form id="reset-form" novalidate>
+        <label for="pw">New password</label>
+        <div class="field">
+          <input id="pw" type="password" autocomplete="new-password" maxlength="128" aria-describedby="pw-error pw-hint" required>
+          <button type="button" class="toggle" data-target="pw" aria-label="Show password">Show</button>
+        </div>
+        <p class="error" id="pw-error" hidden></p>
+        <p class="hint" id="pw-hint">At least 10 characters. A short sentence works well.</p>
+
+        <label for="pw2">Type it again</label>
+        <div class="field">
+          <input id="pw2" type="password" autocomplete="new-password" maxlength="128" aria-describedby="pw2-error" required>
+          <button type="button" class="toggle" data-target="pw2" aria-label="Show password">Show</button>
+        </div>
+        <p class="error" id="pw2-error" hidden></p>
+
+        <p class="error" id="form-error" role="alert" hidden></p>
+        <button class="button" id="reset-submit" type="submit">Save new password</button>
+      </form>
+    </section>
+
+    <!-- Problem: expired, used or broken link, or no connection. -->
+    <section id="view-error" hidden>
+      <div class="status-icon bad" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 7V13"/><path d="M12 17H12.01"/></svg>
+      </div>
+      <h1 id="error-title"></h1>
+      <p id="error-body"></p>
+      <button class="button" id="error-retry" type="button" hidden>Try again</button>
+    </section>
+
+    <p class="footer">NixUra · Quit bad habits, build good ones</p>
+  </main>
+  <script src="/assets/auth-action.js"></script>
+</body>
+</html>
