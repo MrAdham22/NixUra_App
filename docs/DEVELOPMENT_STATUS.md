@@ -2,6 +2,23 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## Where we are now (2026-11-11, read this first in a new chat)
+
+- **`master`** (`6ed81b1`) holds everything merged so far: Firebase sign-in, UI polish, the email link page (PR #4), weekly good habits (PR #5, Room v6) and the Notion Worker (PR #6).
+- **`feat/ai-coach`** is pushed and **not merged yet; no pull request is open**. It holds the real AI coach, voice notes, the animated progress cards and Room v7. The owner opens the PR at `https://github.com/MrAdham22/NixUra_App/compare/master...feat/ai-coach?expand=1` (the `gh` tool is not installed on the owner's PC, and GitHub is not signed in for agents).
+- **Live server:** one Cloudflare Worker, `nixura-notion`, at `https://nixura-notion.nixura-notion-worker.workers.dev` (code in `workers/notion`; Notion link + AI coach). It is deployed from `feat/ai-coach`. Deploy with `npx wrangler deploy` in that folder (Wrangler is logged in on the owner's PC). Secrets set: the Notion ones, `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`. Not set: `MISTRAL_API_KEY` (Mistral's console kept its "create key" button greyed out; probably needs the free plan chosen or a phone number verified).
+- **Owner's phone** runs the `feat/ai-coach` debug build (Room v7). A build from an older branch must not be installed over it: Room cannot downgrade.
+- **Tested on the phone by the owner (2026-11-11):** AI chat, a voice note, and after the model change a second chat and voice note that Gemini answered with no fallback.
+- **Next steps, in order:**
+  1. Owner: open and merge the `feat/ai-coach` pull request.
+  2. Owner: untick "Update content", "Insert content", "Insert comments" and pick "No user information" on the Notion connection (NixUra only reads).
+  3. Mistral key, when its console allows it: `npx wrangler secret put MISTRAL_API_KEY` in `workers/notion`.
+  4. Branded emails: needs a domain the owner buys (Firebase refuses the action URL change, see "Branded email link page").
+  5. Firestore sync (designed, not built; sync is paused). It must carry `weeklyTarget`.
+  6. The owner's to-do list at the end of this file (polish pass, specialised cards, paid plan, on-device model, iOS voice notes).
+  7. iOS: nothing of the last weeks is compiled or run on a Mac.
+- **Owner's working rules:** explain simply (beginner developer); never put AI names in commits, PRs, code or docs; ask before assuming; after a notable fix add a beginner "interview story" to `D:\Career_development\Claude_app_dev\Interview Talks` (stories 1 to 6 exist); keep replies and tool use short to save tokens.
+
 ## One-paragraph summary
 
 NixUra (renamed everywhere on 2026-11-03; app id and code packages `com.adhamelgendy.nixura` since 2026-11-05) is a Kotlin Multiplatform + Compose app to quit bad habits, build good ones and count down to events. The offline tracking core was built and verified earlier (Room, MVVM, Koin; 30 tests and `assembleDebug` passed). On 2026-10 the owner approved a large scope expansion and asked to merge a v0-designed UI ("NixUra UI"): new screens, good habits, events with reminders, profile, settings, onboarding and an offline rule-based coach. That work was written without Gradle access, then built by the owner in Android Studio. **The owner reports (2026-10-23) that everything works properly and has been tested on Android** (after two first-run fixes: stale Room database and screen padding). **iOS has never been built or run**; the owner approved iOS as a full target with no restrictions on AI agents touching iOS code. **Remaining work (owner-stated): (1) fine-tune the UI, (2) add a real AI agent, (3) add curated info on many specific bad habits and recognise a habit from however the user typed it, (4) make the app work on iOS.**
@@ -460,9 +477,9 @@ Owner decisions this round: start the AI now (before Firestore sync); a chain of
   - Emulator (Pixel_10_Pro), installed over a v6 app: the app opens (v6 → v7 ran); the Home mic card; the voice sheet's "needs an account" view; the coach's mic button and guest subtitle; an animated good-habit card under an offline reply.
   - Live Worker: deployed, `ai_usage` exists, the coach routes answer 401 without a sign-in.
 - **Verified on the owner's phone (2026-11-11, owner-reported "both worked"):** AI chat and a voice note, signed in, with the Gemini, Groq and OpenRouter keys set (Mistral's console would not create a key; skipped). The Worker's log and `ai_usage` showed 4 chats and 1 voice note answered.
-- **Found in that log and changed:** Gemini (`gemini-flash-latest`) failed every time (call errors and 503 "overloaded"), so the default is now `gemini-flash-lite-latest`; Groq answered 400 on some calls in JSON mode, so JSON mode is off for Groq (answers are parsed leniently anyway); the per-call chat timeout went from 9 to 11 seconds, and timeouts are now logged as 408. **Not re-tested after these changes.**
+- **Found in that log and changed:** Gemini (`gemini-flash-latest`) failed every time (call errors and 503 "overloaded"), so the default is now `gemini-flash-lite-latest`; Groq answered 400 on some calls in JSON mode, so JSON mode is off for Groq (answers are parsed leniently anyway); the per-call chat timeout went from 9 to 11 seconds, and timeouts are now logged as 408. Re-tested by the owner right after: one chat and one voice note, both answered by Gemini with no fallback in the log.
 - **Not verified:**
-  - Which service answers after the changes above (Gemini has not answered once yet), and the daily limit being reached.
+  - The daily limit being reached, and OpenRouter and Mistral as answering services (the chain never got that far).
   - The model names in `wrangler.jsonc` (`gemini-flash-latest`, `openai/gpt-oss-120b`, `mistral-small-latest`, `openrouter/free`, the two `@cf/...` models) against each provider: a wrong one just makes that service fail over to the next.
   - Arabic voice notes. iOS (shared code not compiled here; the recorder is a placeholder).
 - **Risks:**

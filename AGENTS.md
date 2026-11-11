@@ -16,6 +16,8 @@ NixUra is an offline-first habit app for **Android and iOS** (Kotlin Multiplatfo
 
 ## Current state in one line
 
+**Latest (2026-11-11):** `master` has Firebase sign-in, weekly good habits (Room v6) and the Notion Worker. The real AI coach, voice notes and progress cards (Room v7) are on `feat/ai-coach`, deployed on the Worker and working on the owner's phone, waiting for the owner's pull request. The exact state and the next steps are at the top of `docs/DEVELOPMENT_STATUS.md` ("Where we are now").
+
 The merged UI + features (good habits, events, profile, settings, coach, Android notifications) **are built, run and tested on Android and work properly** (owner-confirmed, 2026-10-23). The owner's remaining work: fine-tune the UI, add a real AI agent, add curated info on many bad habits with recognition of free-typed habit names, and make the app work on iOS (never built or run; iOS notifications not implemented). When asked to continue: check the "What is left" list in DEVELOPMENT_STATUS.md, run what your machine can (`:androidApp:assembleDebug`, `:shared:testAndroidHostTest`; on macOS also the iOS tasks), and never claim a build or test passed unless you ran it. Round 2 added Android home-screen widgets (quit counter, good-habit quick log, events, styled like the in-app cards, plus "Add to Home screen" buttons) in `androidApp/.../widgets/` with shared logic in `domain/widget/`. The earlier widget version was confirmed working on a device by the owner; the card redesign and the pin buttons are **unverified** (type-checked and unit-tested only). Round 2 coach/catalog work from other agents is also **unverified** unless the docs say otherwise. iOS widgets are not implemented (need macOS + WidgetKit + App Group).
 
 ## Architecture (mandatory)
