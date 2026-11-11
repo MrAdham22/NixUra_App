@@ -35,6 +35,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
@@ -139,7 +141,8 @@ internal fun rememberPrayerArt(fill: Float, count: Int): PrayerArt {
         // A short row (Home) shows a big mosque filling its height, the owner's favourite; a full card keeps it
         // smaller in the room left for it at the bottom, with the moon at the top centre, clear of the buttons.
         val shortRow = h < 120.dp.toPx()
-        val mosqueWidth = if (shortRow) minOf(w * 0.56f, 240.dp.toPx()) else minOf(w * 0.46f, 200.dp.toPx())
+        // On a short row the minaret tips stop just under the top edge (the mosque is ~0.43 × its width tall)
+        val mosqueWidth = if (shortRow) minOf(w * 0.5f, 215.dp.toPx(), h * 2.2f) else minOf(w * 0.46f, 200.dp.toPx())
         val mosque = mosquePath((w - mosqueWidth) / 2f, h + 1f, mosqueWidth)
         val domeTop = Offset(w / 2f, h - mosqueWidth * MOSQUE_DOME_TOP)
         val moonCenter = if (shortRow) Offset(w * 0.58f, 14.dp.toPx()) else Offset(w / 2f, 12.dp.toPx())
@@ -436,9 +439,27 @@ fun GoodHabitButton(
     }
 }
 
+/** A domed arch (a mihrab) filling a box [w] × [h]: straight sides, an onion top rising to a point. */
+private fun mihrabPath(w: Float, h: Float): Path {
+    val l = w * 0.12f
+    val r = w * 0.88f
+    val bottom = h * 0.96f
+    val spring = h * 0.52f
+    val apexX = w / 2f
+    val apexY = h * 0.04f
+    return Path().apply {
+        moveTo(l, bottom)
+        lineTo(l, spring)
+        cubicTo(l, h * 0.22f, apexX - w * 0.14f, h * 0.2f, apexX, apexY)
+        cubicTo(apexX + w * 0.14f, h * 0.2f, r, h * 0.22f, r, spring)
+        lineTo(r, bottom)
+        close()
+    }
+}
+
 /**
- * One small star per prayer of the day. Each lights up gold with a little pop when it is counted. With a target of
- * five the stars carry the names of the five prayers.
+ * One small arch per prayer of the day, like a mihrab. A counted prayer turns its arch gold with a tick and a little
+ * pop. With a target of five the arches carry the names of the five prayers.
  */
 @Composable
 fun PrayerBeads(count: Int, target: Int, look: GoodFill, names: List<String>, modifier: Modifier = Modifier) {
@@ -452,16 +473,43 @@ fun PrayerBeads(count: Int, target: Int, look: GoodFill, names: List<String>, mo
                 label = "bead$i",
             )
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Canvas(Modifier.size(26.dp).graphicsLayer { scaleX = 0.85f + 0.3f * pop; scaleY = 0.85f + 0.3f * pop }) {
-                    val c = Offset(size.width / 2f, size.height / 2f)
-                    val r = size.minDimension / 2f
-                    val star = octagramPath(c.x, c.y, r * 0.92f)
-                    if (pop > 0.01f) {
-                        val litColor = if (solid) PrayerPalette.Night else PrayerPalette.Gold
-                        drawCircle(litColor.copy(alpha = (0.22f * pop).coerceIn(0f, 1f)), r, c)
-                        drawPath(star, litColor.copy(alpha = pop.coerceIn(0f, 1f)))
+                Canvas(
+                    Modifier.size(width = 30.dp, height = 34.dp)
+                        .graphicsLayer { scaleX = 0.9f + 0.18f * pop; scaleY = 0.9f + 0.18f * pop },
+                ) {
+                    val w = size.width
+                    val h = size.height
+                    val arch = mihrabPath(w, h)
+                    val shown = pop.coerceIn(0f, 1f)
+                    // Unlit: a dark recess with a soft outline
+                    drawPath(arch, PrayerPalette.Night.copy(alpha = if (solid) 0.25f else 0.45f))
+                    if (shown > 0.01f) {
+                        // Lit: gold glow, gold body, a darker inner arch and a tick
+                        drawCircle(PrayerPalette.Gold.copy(alpha = 0.28f * shown), w * 0.62f, Offset(w / 2f, h * 0.58f))
+                        val body = if (solid) {
+                            Brush.verticalGradient(listOf(PrayerPalette.NightPlum, PrayerPalette.Night))
+                        } else {
+                            Brush.verticalGradient(listOf(PrayerPalette.GoldLight, PrayerPalette.Gold, PrayerPalette.GoldDeep))
+                        }
+                        drawPath(arch, body, alpha = shown)
+                        val ink = if (solid) PrayerPalette.GoldLight else PrayerPalette.Night
+                        val tick = Path().apply {
+                            moveTo(w * 0.32f, h * 0.62f)
+                            lineTo(w * 0.46f, h * 0.76f)
+                            lineTo(w * 0.70f, h * 0.48f)
+                        }
+                        drawPath(
+                            tick,
+                            ink.copy(alpha = shown),
+                            style = Stroke(2.2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
+                        )
                     }
-                    drawPath(star, look.content.copy(alpha = 0.40f), style = Stroke(1.2.dp.toPx()))
+                    val edge = when {
+                        shown > 0.01f && !solid -> PrayerPalette.GoldLight
+                        shown > 0.01f -> PrayerPalette.Gold
+                        else -> look.content.copy(alpha = 0.45f)
+                    }
+                    drawPath(arch, edge, style = Stroke(1.3.dp.toPx(), join = StrokeJoin.Round))
                 }
                 names.getOrNull(i)?.let {
                     Text(

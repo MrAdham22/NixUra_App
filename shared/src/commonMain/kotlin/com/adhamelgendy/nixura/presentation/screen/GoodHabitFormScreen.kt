@@ -35,7 +35,7 @@ import com.adhamelgendy.nixura.presentation.components.PrayerWordTransformation
 import com.adhamelgendy.nixura.presentation.theme.PrayerPalette
 import com.adhamelgendy.nixura.presentation.components.ErrorBanner
 import com.adhamelgendy.nixura.presentation.components.NixButton
-import com.adhamelgendy.nixura.presentation.components.NixButtonStyle
+import com.adhamelgendy.nixura.presentation.components.PrayerGoldButton
 import com.adhamelgendy.nixura.presentation.components.NixCard
 import com.adhamelgendy.nixura.presentation.components.NixChip
 import com.adhamelgendy.nixura.presentation.components.NixTextField
@@ -167,18 +167,28 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
             }
         }
 
-        NixButton(
-            text = if (editing) s.saveChanges else s.addHabit,
-            onClick = {
-                val weeklyTarget = if (weekly) daysPerWeek else null
-                if (editId != null) vm.onUpdate(editId, name, target, null, weeklyTarget) { navigator.back() }
-                else vm.onCreate(name, target, null, weeklyTarget) { navigator.back() }
-            },
-            enabled = name.isNotBlank(),
-            loading = state.isSaving,
-            style = if (prayer) NixButtonStyle.Gold else NixButtonStyle.Primary,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        val save = {
+            val weeklyTarget = if (weekly) daysPerWeek else null
+            if (editId != null) vm.onUpdate(editId, name, target, null, weeklyTarget) { navigator.back() }
+            else vm.onCreate(name, target, null, weeklyTarget) { navigator.back() }
+        }
+        if (prayer) {
+            PrayerGoldButton(
+                text = if (editing) s.saveChanges else s.addHabit,
+                onClick = save,
+                enabled = name.isNotBlank(),
+                loading = state.isSaving,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            NixButton(
+                text = if (editing) s.saveChanges else s.addHabit,
+                onClick = save,
+                enabled = name.isNotBlank(),
+                loading = state.isSaving,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
     }
 }
