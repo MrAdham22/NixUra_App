@@ -54,4 +54,4 @@ Set with `npx wrangler secret put NAME`. They are never kept in this folder or i
 | Name | State |
 |---|---|
 | `INTEGRATION_TOKEN_KEY` | set (32 random bytes, generated straight into Cloudflare; nobody has seen it). Changing it makes the stored tokens unreadable, so everyone would have to connect Notion again. |
-| `NOTION_CLIENT_ID`, `NOTION_CLIENT_SECRET` | **not set yet.** They come from the Notion public integration; see the main README, "What you need to do: Notion". Until they are set, connecting answers `503 integration_unavailable`. |
+| `NOTION_CLIENT_ID`, `NOTION_CLIENT_SECRET` | set on 2026-11-11, from the Notion OAuth connection "NixUra"; see the main README, "What you need to do: Notion". Without them, connecting answers `503 integration_unavailable`. |

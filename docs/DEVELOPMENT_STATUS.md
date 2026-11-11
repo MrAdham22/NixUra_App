@@ -58,7 +58,7 @@ Bugs already found by the owner's first build: `Pickers.kt` had a stray broken f
 
 Android is done and owner-tested. The owner's remaining work is items 0-4; the rest is backlog.
 
-0. **Move to Firebase + Cloudflare (owner decision 2026-11-05), in order:** (a) Firebase sign-in, done on `feat/firebase-auth`, needs a phone test; (b) Firestore sync, designed (see "Firestore sync design"), not built, sync is paused until then; (c) Notion through a Cloudflare Worker: built and deployed on `feat/notion-worker` (2026-11-11), waiting for the owner's Notion integration keys (see "Notion Worker"); (d) the AI coach Worker (item 2); (e) payments for more than about 20 coach messages a day.
+0. **Move to Firebase + Cloudflare (owner decision 2026-11-05), in order:** (a) Firebase sign-in, done on `feat/firebase-auth`, needs a phone test; (b) Firestore sync, designed (see "Firestore sync design"), not built, sync is paused until then; (c) Notion through a Cloudflare Worker: built, deployed and connected to real Notion on the owner's phone (`feat/notion-worker`, 2026-11-11, see "Notion Worker"); (d) the AI coach Worker (item 2); (e) payments for more than about 20 coach messages a day.
 0b. **Owner's UI requests (2026-11-08):** items 1-4 (logo buttons, the stacked sign-in screens bug, Profile, Settings) are done on `feat/ui-polish`, see "UI polish". Left: (5) make the verification and reset emails look trustworthy: in Firebase > Authentication > Templates set the sender name (NixUra), subject and reply-to, and later a custom domain (SPF/DKIM) and an action-link page on Firebase Hosting so the link is not `nixura.firebaseapp.com/__/auth/action?...`.
 1. **Fine-tune the UI** (spacing, typography, animations, small screens, light theme, contrast).
 2. **Real AI agent** behind `CoachResponder` (see `docs/AI_COACH_UPGRADE.md`): a Cloudflare Worker with Workers AI, signed-in users only, about 20 messages a day; consent toggle, offline fallback to the rule-based coach, server-side key.
@@ -395,7 +395,7 @@ Started on step (c) before (b), with the owner's go-ahead: the Notion Worker doe
   - Address: `https://nixura-notion.nixura-notion-worker.workers.dev`, on the owner's Cloudflare account. The workers.dev subdomain `nixura-notion-worker` was picked by Wrangler on the first deploy and can be renamed in the dashboard; the app's address would then change too.
   - D1 database `nixura-notion` with migration `0001_notion.sql` applied.
   - Secret `INTEGRATION_TOKEN_KEY` set: 32 random bytes generated straight into Cloudflare, never printed.
-  - **Not set:** `NOTION_CLIENT_ID` and `NOTION_CLIENT_SECRET`. They need the owner's Notion public integration, with Redirect URI `https://nixura-notion.nixura-notion-worker.workers.dev/v1/integrations/notion/callback` (README, "What you need to do: Notion").
+  - Secrets `NOTION_CLIENT_ID` and `NOTION_CLIENT_SECRET` set on 2026-11-11 from the owner's Notion OAuth connection, with Redirect URI `https://nixura-notion.nixura-notion-worker.workers.dev/v1/integrations/notion/callback` (README, "What you need to do: Notion").
 - **App:**
   - `NIXURA_API_BASE_URL` now defaults to the Worker in debug and release builds. The separate debug override `nixuraDebugApiBaseUrl` is removed: the owner's `~/.gradle/gradle.properties` line `nixuraDebugApiBaseUrl=http://localhost:8081` now does nothing and can be deleted.
   - iOS `Info.plist` and the iOS fallback also point at the Worker.
@@ -406,10 +406,12 @@ Started on step (c) before (b), with the owner's go-ahead: the Notion Worker doe
   - `:shared:testAndroidHostTest`: 434 tests, 0 failures, with a new test that deletion erases server data only after the password is checked.
   - `:androidApp:assembleDebug` OK; the generated `BuildConfig` has the Worker address.
   - Live checks with `curl`: `/health` answers `{"ok":true}`; signed-in routes without a valid token answer `401`; unknown routes answer `404`; the callback answers `503 integration_unavailable` until the Notion keys are set; `Cache-Control: no-store` and `nosniff` are present.
+- **Verified on the owner's phone (2026-11-11):** the owner created the Notion OAuth connection "NixUra" and set `NOTION_CLIENT_ID` and `NOTION_CLIENT_SECRET`. A build of `feat/weekly-good-habits` pointed at the Worker was installed, and the owner connected Notion from Settings and reported it working. The live D1 database then held one `notion_links` row for the owner's workspace, which also proves a real Firebase ID token passes the Worker's check.
 - **Not verified:**
-  - A real Firebase ID token against the live Worker: this branch has Room v5, and the phone already runs v6 from `feat/weekly-good-habits`, so it wasn't installed there.
-  - The whole Notion connect flow, which needs the keys.
+  - Importing events after picking a database was reported by the owner, not checked row by row.
+  - Disconnect, and the Notion cleanup on account deletion, against the live Worker.
   - iOS.
+- **To do in Notion (owner):** the connection still had Update content, Insert content, Insert comments and "user information including email" ticked on 2026-11-11. NixUra only needs Read content and No user information.
 - **Risks:**
   - The rate limits are counted per Cloudflare location, not globally.
   - A user deleted directly in the Firebase console keeps a Notion row until someone removes it by hand.

@@ -16,7 +16,7 @@
 | Cloud sync | **Paused** while it moves to Firestore (next step): the old server cannot check Firebase sign-ins, so changes stay queued on the phone and the sync status shows offline. The Firestore design is agreed (see docs/DEVELOPMENT_STATUS.md). |
 | User-review redesign (dashboard, sign-in flow, gradients, explanations, chat history, starter guide) | Built and tested on the owner's phone (2026-11-03). |
 | Round 3: water fill, card-style widgets, long-press delete with undo, money-saved tracker | Built, tests pass, **seen working on the emulator** (details in DEVELOPMENT_STATUS). Not yet run on the owner's phone. |
-| Google Calendar and Notion import | Google works on the owner's Android phone (2026-11-04): Events, Birthdays, Tasks and Holidays for the user's country, each with its own category. Notion is **not run against real Notion yet**: its server, a Cloudflare Worker (`workers/notion`), is deployed since 2026-11-11, but the Notion integration and its two keys still have to be added (see [Linking calendars](#linking-calendars-google-calendar-and-notion)). Google Calendar on iOS is not built yet. |
+| Google Calendar and Notion import | Google works on the owner's Android phone (2026-11-04): Events, Birthdays, Tasks and Holidays for the user's country, each with its own category. Notion connects through a Cloudflare Worker (`workers/notion`); the owner linked a real Notion workspace from the phone on 2026-11-11 (see [Linking calendars](#linking-calendars-google-calendar-and-notion)). Google Calendar on iOS is not built yet. |
 | AI coach | Offline rule-based coach ships and works. The **real AI coach comes after Firestore sync and Notion** (owner decision 2026-11-05): a Cloudflare Worker with Workers AI, signed-in users only, about 20 messages a day, more with a paid plan. Guide in [docs/AI_COACH_UPGRADE.md](docs/AI_COACH_UPGRADE.md) |
 | Android home-screen widgets (quit counter, good-habit quick log, events) | **Logic confirmed on a device by the owner** (numbers, live clock, "+"/"-", choosing a habit/event). The **card-style redesign** (widgets mirror the in-app cards, size-aware layouts) and the **"Add to Home screen" buttons** are written and type-checked but **not yet run on a device**. 90 pure-logic tests (planner, state mapping, quick-log use cases) compiled with plain `kotlinc` outside Gradle and **passed**. iOS widgets are **not implemented** (planned; need macOS, WidgetKit and an App Group). |
 | iOS | **Approved target, not yet built or run.** Shared UI/logic is written for it (Compose host in `iosApp`, `iosMain` actuals). Reminders are a no-op placeholder until a `UNUserNotificationCenter` implementation is added. Needs macOS + Xcode to verify. |
@@ -223,17 +223,17 @@ How the pieces work:
 
 ### What you need to do: Notion
 
-The Worker is already deployed at `https://nixura-notion.nixura-notion-worker.workers.dev`, with its database and its encryption key. Only Notion's part is left:
+Done on 2026-11-11; kept here in case it has to be redone. Notion now calls integrations "connections".
 
-1. Open [Notion → My integrations](https://www.notion.so/profile/integrations) → **New integration** → type **Public**.
-2. Fill in the name (NixUra), website, privacy policy and terms links (`https://nixura.web.app` works as the website), and the **Redirect URI**: `https://nixura-notion.nixura-notion-worker.workers.dev/v1/integrations/notion/callback`.
-3. Capabilities: **Read content** only (no insert or update), and no user email.
-4. Give the Worker the two keys. In `workers/notion`, run each command and paste the value when it asks (it is sent straight to Cloudflare, never into git or the app):
+1. Open [Notion → Developer connections](https://www.notion.so/profile/integrations) → **New connection** → name NixUra, authentication method **OAuth**, installable in any workspace.
+2. On the connection's page, add the **Redirect URI**: `https://nixura-notion.nixura-notion-worker.workers.dev/v1/integrations/notion/callback`.
+3. Capabilities: **Read content** only, and **No user information**.
+4. Give the Worker the two values. In `workers/notion`, run each command and paste the value when it asks (it goes straight to Cloudflare, never into git or the app):
    ```
    npx wrangler secret put NOTION_CLIENT_ID
    npx wrangler secret put NOTION_CLIENT_SECRET
    ```
-5. In the app: Settings → Integrations → Notion → Connect. In Notion's page, share the database that holds your events, then come back to the app and pick it.
+5. In the app: Settings → Calendars → Notion → Connect. In Notion's page, share the database that holds your events, then come back to the app and pick it.
 
 Notion has no "revoke" call for public integrations: Disconnect deletes the token on the server, and you can also remove NixUra under Notion → Settings → Connections.
 
