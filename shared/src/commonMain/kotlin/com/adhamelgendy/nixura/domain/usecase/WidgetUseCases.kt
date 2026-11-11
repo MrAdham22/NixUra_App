@@ -41,13 +41,13 @@ private suspend fun adjustTodayCount(
         val item = repository.observeGoodHabits().first().firstOrNull { it.habit.id == habitId }
             ?: throw IllegalStateException("Habit not found")
         val current = item.logs.firstOrNull { it.dayIndex == today }?.count ?: 0
-        val next = (current + delta).coerceIn(0, MAX_DAILY_COUNT)
+        val next = (current + delta).coerceIn(0, item.habit.maxCountPerDay)
         if (next != current) repository.setCount(habitId, today, next)
         next
     }
 }
 
-/** Adds 1 to today's (local day) count of a good habit, clamped to [MAX_DAILY_COUNT]. Returns the new count. */
+/** Adds 1 to today's (local day) count of a good habit, clamped to [maxCountPerDay] (1 for weekly). Returns the new count. */
 class IncrementGoodHabitTodayUseCase(
     private val repository: GoodHabitRepository,
     private val clock: Clock,

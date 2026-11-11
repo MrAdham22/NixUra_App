@@ -17,6 +17,8 @@ data class GoodHabitEntity(
     @ColumnInfo(name = "updated_at", defaultValue = "0") val updatedAtEpochMillis: Long = createdAtEpochMillis,
     @ColumnInfo(name = "deleted_at") val deletedAtEpochMillis: Long? = null,
     @ColumnInfo(name = "dirty", defaultValue = "1") val dirty: Boolean = true,
+    /** `null` = daily habit; 1..7 = done on this many days a week (Sunday to Saturday). */
+    @ColumnInfo(name = "weekly_target") val weeklyTarget: Int? = null,
 )
 
 /** [syncId] is `<good habit sync id>:<day>`, so two devices logging the same day update one row instead of adding two. */

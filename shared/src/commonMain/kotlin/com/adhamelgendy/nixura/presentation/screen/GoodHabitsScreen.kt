@@ -68,7 +68,8 @@ fun GoodHabitsScreen(navigator: Navigator) {
                 onAction = { navigator.push(Route.GoodHabitForm()) },
             )
         } else if (state.habits.isNotEmpty()) {
-            val done = state.habits.count { it.doneToday }
+            // A weekly habit whose goal is met needs nothing more today.
+            val done = state.habits.count { it.settledToday }
             NixCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(s.todayLabel.uppercase(), style = NixType.Eyebrow, color = c.textMuted, modifier = Modifier.weight(1f))

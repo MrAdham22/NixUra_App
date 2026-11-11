@@ -208,8 +208,8 @@ internal object WidgetRenderer {
         text(rv, R.id.w_name, st.name, content)
         rv.setInt(R.id.w_name, "setMaxLines", plan.titleMaxLines)
         val progressColor = muted
-        val progressText = env.s.todayProgress(st.count, st.target)
-        val streakText = env.s.streakDays(st.currentStreakDays)
+        val progressText = if (st.isWeekly) env.s.weekProgress(st.count, st.target) else env.s.todayProgress(st.count, st.target)
+        val streakText = if (st.isWeekly) env.s.streakWeeks(st.currentStreakDays) else env.s.streakDays(st.currentStreakDays)
         // The day streak is always visible: in its own row when the plan has room for it, otherwise merged into the
         // sub line under the name (the stacked layout shows its count on the button row, so there the sub line is the streak alone).
         val streakInRow = hasStreak && plan.showStreakRow
@@ -230,7 +230,7 @@ internal object WidgetRenderer {
         tint(rv, R.id.w_minus_icon, content)
         show(rv, R.id.w_minus, plan.showMinus)
         tint(rv, R.id.w_plus_bg, if (st.done) content else c.accent)
-        rv.setImageViewResource(R.id.w_plus_icon, if (st.done && st.target == 1) R.drawable.ic_w_tick else R.drawable.ic_w_plus)
+        rv.setImageViewResource(R.id.w_plus_icon, if (st.done && (st.target == 1 || st.isWeekly)) R.drawable.ic_w_tick else R.drawable.ic_w_plus)
         tint(rv, R.id.w_plus_icon, if (st.done) cardTone else c.onAccent)
         rv.setContentDescription(R.id.w_plus, env.s.widgetAddOne)
         rv.setContentDescription(R.id.w_minus, env.s.widgetRemoveOne)
@@ -268,10 +268,11 @@ internal object WidgetRenderer {
             show(rv, R.id.w_week, plan.showWeek)
         }
         if (hasStreak) {
-            // streak row: "N day streak" + "N times in total"
+            // streak row: "N day streak" + "N times in total" (weekly: "N week streak" + "N days in total")
             tint(rv, R.id.w_flame, if (st.progress >= 0.6f) content else c.accentWarm)
             text(rv, R.id.w_streak_text, streakText, content)
-            text(rv, R.id.w_total_text, env.s.timesDoneTotal(st.totalTimesDone), muted)
+            val totalText = if (st.isWeekly) env.s.daysDoneTotal(st.totalTimesDone) else env.s.timesDoneTotal(st.totalTimesDone)
+            text(rv, R.id.w_total_text, totalText, muted)
             show(rv, R.id.w_total_text, env.widthDp >= 200) // on narrow widgets the streak keeps the whole row
             show(rv, R.id.w_streak_row, plan.showStreakRow)
         }
