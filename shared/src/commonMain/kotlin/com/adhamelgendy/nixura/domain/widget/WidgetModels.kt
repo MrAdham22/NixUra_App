@@ -145,11 +145,20 @@ sealed interface GoodWidgetState {
         val totalTimesDone: Int = 0,
         /** Same fill as the in-app card: rising water for water habits, green otherwise. */
         val fillStyle: GoodHabitFillStyle = GoodHabitFillStyle.PLAIN,
+        /**
+         * Set for a weekly habit: then [count] / [target] are days done / this week's goal, [week] is this week
+         * (Sunday to Saturday), [currentStreakDays] is in weeks and [todayCount] is 0 or 1.
+         */
+        val weeklyTarget: Int? = null,
+        val todayCount: Int = count,
     ) : GoodWidgetState {
-        val done: Boolean get() = count >= target
+        val isWeekly: Boolean get() = weeklyTarget != null
+
+        /** Today is logged as done: today's target reached, or for a weekly habit today was logged. */
+        val done: Boolean get() = if (isWeekly) todayCount > 0 else count >= target
         val remaining: Int get() = (target - count).coerceAtLeast(0)
         val progress: Float get() = GoodHabitStatsCalculator.fillLevel(count, target)
-        val canDecrement: Boolean get() = count > 0
+        val canDecrement: Boolean get() = todayCount > 0
     }
 }
 

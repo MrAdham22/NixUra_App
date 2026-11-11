@@ -53,6 +53,7 @@ import com.adhamelgendy.nixura.presentation.components.SectionLabel
 import com.adhamelgendy.nixura.presentation.components.TabScreen
 import com.adhamelgendy.nixura.presentation.components.pressable
 import com.adhamelgendy.nixura.presentation.components.rememberCompletionPulse
+import com.adhamelgendy.nixura.presentation.components.goodProgressText
 import com.adhamelgendy.nixura.presentation.components.rememberGoodFill
 import com.adhamelgendy.nixura.presentation.events.EventsViewModel
 import com.adhamelgendy.nixura.presentation.goodhabits.GoodHabitUi
@@ -303,8 +304,8 @@ private fun DrawScope.ring(color: Color, progress: Float, width: Float, inset: F
 @Composable
 private fun TodayRow(habit: GoodHabitUi, onOpen: () -> Unit, onPlus: () -> Unit, onLongClick: () -> Unit) {
     val s = LocalStrings.current
-    val look = rememberGoodFill(habit.todayCount, habit.dailyTarget, habit.fillStyle)
-    val pulse = rememberCompletionPulse(habit.doneToday)
+    val look = rememberGoodFill(habit.progressCount, habit.progressTarget, habit.fillStyle)
+    val pulse = rememberCompletionPulse(habit.goalReached)
     NixCard(
         Modifier.fillMaxWidth().graphicsLayer { scaleX = pulse.value; scaleY = pulse.value },
         onClick = onOpen,
@@ -316,7 +317,7 @@ private fun TodayRow(habit: GoodHabitUi, onOpen: () -> Unit, onPlus: () -> Unit,
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(habit.name, style = NixType.BodyStrong, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(s.todayProgress(habit.todayCount, habit.dailyTarget), style = NixType.Small, color = look.contentMuted, maxLines = 1)
+                Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted, maxLines = 1)
             }
             Spacer(Modifier.width(10.dp))
             NixIconButton(

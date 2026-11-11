@@ -129,3 +129,10 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
         connection.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_events_source_external_id` ON `events` (`source`, `external_id`)")
     }
 }
+
+/** v5 → v6, additive only: weekly good habits ("N days a week"). Existing habits stay daily (`weekly_target` null). */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `weekly_target` INTEGER")
+    }
+}

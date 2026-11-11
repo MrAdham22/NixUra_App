@@ -50,18 +50,19 @@ class GoodHabitRepositoryImpl(
             }
         }
 
-    override suspend fun create(name: String, dailyTarget: Int, colorArgb: Long?): Long =
+    override suspend fun create(name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?): Long =
         goodHabitDao.insert(
             GoodHabitEntity(
                 name = name,
                 dailyTarget = dailyTarget,
                 colorArgb = colorArgb,
                 createdAtEpochMillis = clock.nowEpochMillis(),
+                weeklyTarget = weeklyTarget,
             ),
         )
 
-    override suspend fun update(id: Long, name: String, dailyTarget: Int, colorArgb: Long?) =
-        goodHabitDao.updateDetails(id, name, dailyTarget, colorArgb, clock.nowEpochMillis())
+    override suspend fun update(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?) =
+        goodHabitDao.updateDetails(id, name, dailyTarget, colorArgb, weeklyTarget, clock.nowEpochMillis())
 
     override suspend fun archive(id: Long) = goodHabitDao.archive(id, clock.nowEpochMillis())
 

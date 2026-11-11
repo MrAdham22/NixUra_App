@@ -110,7 +110,7 @@ Unit tests for calculator and color progression; Room tests after Phase 4 gate. 
 The owner approved expanding the app. Current scope:
 
 - **Quit habits** (original core) with user-chosen card colors (`ShadeRamp`), analysis screen, recovery timeline from an offline knowledge base (drawn as a vertical timeline: `RecoveryTimeline` in `BadHabitDetailScreen.kt`), backdated start, edit/archive.
-- **Good habits:** daily target counters (`good_habits`, `good_habit_logs` keyed by local day index), streaks, 7/30-day completion, calendar with green done squares, past-day edits.
+- **Good habits:** daily target counters (`good_habits`, `good_habit_logs` keyed by local day index), streaks, 7/30-day completion, calendar with green done squares, past-day edits. **Weekly habits** (`weekly_target` 1..7, owner decision 2026-11-11): "N days a week", any days, Sunday to Saturday, a day counts once. Rules live in `domain/calculator/WeeklyGoalCalculator.kt`: a week that reaches its goal is 100%; the current week is left out of the Discipline score while the goal can still be reached, and counts done/goal once it cannot; finished weeks count done/goal; the creation week's goal shrinks to the days left (ceil(goal x days / 7)). Streaks are in weeks.
 - **Events:** countdown/count-up, categories, multiple reminder lead times (`events.reminders` = comma-separated millis), Android local notifications.
 - **Coach:** offline, rule-based (`CoachEngine`, `HabitKnowledgeBase`) behind `CoachResponder`; separate chats in `coach_conversations` and `coach_messages`, kept on the phone and not synced (owner decision); crisis messages answered locally with a support message; alcohol/gambling carry safety notes. No network.
 - **Profile & settings:** name/email/age stored locally in `preferences` (key/value); settings: dark/light, language (English only), notifications, daily check-in time, erase all data; an interactive starter guide once per device (`presentation/guide`), replayable from Settings.
@@ -118,7 +118,7 @@ The owner approved expanding the app. Current scope:
 
 Still **out of scope:** ads. Accounts and cloud sync now exist (see "Accounts and cloud sync" below); online AI and analytics are planned.
 
-Persistence: Room **v5** — tables `habits` (+`color_argb`, + the money tracker's `cost_*` columns), `habit_events`, `good_habits`, `good_habit_logs` (unique `good_habit_id`+`day_index`), `events` (+`source`, `external_id`, `external_updated_at`, `all_day`; unique `source`+`external_id`), `coach_conversations`, `coach_messages` (+`conversation_id`), `preferences`. The first five also have `sync_id`, `updated_at`, `deleted_at` and `dirty`. `MIGRATION_1_2` … `MIGRATION_4_5` are hand-written. No destructive fallback.
+Persistence: Room **v6** — tables `habits` (+`color_argb`, + the money tracker's `cost_*` columns), `habit_events`, `good_habits` (+`weekly_target`), `good_habit_logs` (unique `good_habit_id`+`day_index`), `events` (+`source`, `external_id`, `external_updated_at`, `all_day`; unique `source`+`external_id`), `coach_conversations`, `coach_messages` (+`conversation_id`), `preferences`. The first five also have `sync_id`, `updated_at`, `deleted_at` and `dirty`. `MIGRATION_1_2` … `MIGRATION_5_6` are hand-written. No destructive fallback.
 
 ## Accounts and cloud sync
 

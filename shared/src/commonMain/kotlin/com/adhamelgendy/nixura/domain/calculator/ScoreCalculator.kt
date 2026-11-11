@@ -27,33 +27,43 @@ object ScoreCalculator {
     private fun quitProgress(habit: HabitTracking): Double =
         (habit.tracking.activeElapsedMillis.toDouble() / QUIT_HORIZON.inWholeMilliseconds).coerceIn(0.0, 1.0)
 
-    /** Average weighted completion of all good habits over the 7 days ending [endDay]. `null` when there are none. */
+    /**
+     * Average completion of all good habits for the week ending [endDay]: the last 7 days for a daily habit, and for a
+     * weekly habit this week once it is decided, otherwise last week ([WeeklyGoalCalculator.scoreValue]). A weekly habit
+     * with nothing decided yet is left out, so it never lowers the score early. `null` when nothing counts.
+     */
     fun disciplineScore(
         habits: List<GoodHabitWithLogs>,
         endDay: Long,
         createdDayIndexOf: (GoodHabitWithLogs) -> Long,
     ): Int? {
-        if (habits.isEmpty()) return null
-        return (habits.map { weekCompletion(it, endDay, createdDayIndexOf) }.average() * 100).toInt()
+        val values = habits.mapNotNull { weekCompletion(it, endDay, createdDayIndexOf) }
+        if (values.isEmpty()) return null
+        return (values.average() * 100).toInt()
     }
 
-    /** What [disciplineScore] averages: each habit's own completion, best first. */
+    /** What [disciplineScore] averages: each counted habit's own completion, best first. */
     fun disciplineLines(
         habits: List<GoodHabitWithLogs>,
         endDay: Long,
         createdDayIndexOf: (GoodHabitWithLogs) -> Long,
     ): List<HabitScoreLine> =
-        habits.map { HabitScoreLine(it.habit.name, (weekCompletion(it, endDay, createdDayIndexOf) * 100).toInt()) }
-            .sortedByDescending { it.percent }
+        habits.mapNotNull { habit ->
+            weekCompletion(habit, endDay, createdDayIndexOf)?.let { HabitScoreLine(habit.habit.name, (it * 100).toInt()) }
+        }.sortedByDescending { it.percent }
 
-    private fun weekCompletion(habit: GoodHabitWithLogs, endDay: Long, createdDayIndexOf: (GoodHabitWithLogs) -> Long): Float =
-        GoodHabitStatsCalculator.completion(
-            counts = GoodHabitStatsCalculator.countsByDay(habit),
+    private fun weekCompletion(habit: GoodHabitWithLogs, endDay: Long, createdDayIndexOf: (GoodHabitWithLogs) -> Long): Float? {
+        val counts = GoodHabitStatsCalculator.countsByDay(habit)
+        val createdDay = createdDayIndexOf(habit)
+        habit.habit.weeklyTarget?.let { return WeeklyGoalCalculator.scoreValue(counts, it, endDay, createdDay) }
+        return GoodHabitStatsCalculator.completion(
+            counts = counts,
             target = habit.habit.dailyTarget,
             endDay = endDay,
-            createdDayIndex = createdDayIndexOf(habit),
+            createdDayIndex = createdDay,
             windowDays = 7,
         )
+    }
 
     fun momentum(quit: Int?, discipline: Int?): Int? = when {
         quit != null && discipline != null -> (quit + discipline) / 2

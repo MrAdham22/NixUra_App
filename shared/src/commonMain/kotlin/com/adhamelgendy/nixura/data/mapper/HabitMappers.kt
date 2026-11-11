@@ -71,6 +71,7 @@ fun GoodHabitEntity.toDomain(): GoodHabit = GoodHabit(
     colorArgb = colorArgb,
     createdAtEpochMillis = createdAtEpochMillis,
     archivedAtEpochMillis = archivedAtEpochMillis,
+    weeklyTarget = weeklyTarget,
 )
 
 fun GoodHabitLogEntity.toDomain(): GoodHabitLog = GoodHabitLog(goodHabitId, dayIndex, count)

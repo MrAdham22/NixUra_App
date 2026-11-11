@@ -15,8 +15,20 @@ data class GoodHabitSnapshot(
     val name: String,
     val todayCount: Int,
     val dailyTarget: Int,
+    /** Days for a daily habit, weeks for a weekly one. */
     val streakDays: Int,
-)
+    /** Set for a weekly habit ("N days a week"): days done this week and this week's goal. */
+    val weeklyTarget: Int? = null,
+    val weekDone: Int = 0,
+    val weekGoal: Int = 0,
+) {
+    /** Still worth doing today: below today's target, or for a weekly habit not done today and the week not met yet. */
+    val pendingToday: Boolean
+        get() = if (weeklyTarget != null) todayCount == 0 && weekDone < weekGoal else todayCount < dailyTarget
+
+    val progressLine: String
+        get() = if (weeklyTarget != null) "$weekDone of $weekGoal days this week" else "$todayCount of $dailyTarget today"
+}
 
 data class EventSnapshot(
     val title: String,
@@ -123,10 +135,10 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
         val name = snapshot.userName.trim()
         val title = if (name.isEmpty()) "Daily check-in" else "Daily check-in, $name"
         val focus = snapshot.badHabits.minByOrNull { it.elapsed }
-        val pendingGood = snapshot.goodHabits.firstOrNull { it.todayCount < it.dailyTarget }
+        val pendingGood = snapshot.goodHabits.firstOrNull { it.pendingToday }
         val body = when {
             focus != null -> "${displayName(focus.name)}: ${durationText(focus.elapsed)} clear. ${motivation(focus.name, focus.elapsed, seed)}"
-            pendingGood != null -> "Don't forget \"${pendingGood.name}\" today — ${pendingGood.todayCount} of ${pendingGood.dailyTarget} so far."
+            pendingGood != null -> "Don't forget \"${pendingGood.name}\" today — ${pendingGood.progressLine} so far."
             else -> "Take a minute to notice how you are doing. Small steps count."
         }
         return CoachNote(title, body)
@@ -385,7 +397,8 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
             sb.append("• ${displayName(it.name)}: ${durationText(it.elapsed)} clear (best ${durationText(it.longest)})\n")
         }
         snapshot.goodHabits.forEach {
-            sb.append("• ${it.name}: ${it.todayCount}/${it.dailyTarget} today, streak ${it.streakDays} ${plural(it.streakDays, "day", "days")}\n")
+            val unit = if (it.weeklyTarget != null) plural(it.streakDays, "week", "weeks") else plural(it.streakDays, "day", "days")
+            sb.append("• ${it.name}: ${it.progressLine}, streak ${it.streakDays} $unit\n")
         }
         val best = snapshot.badHabits.maxByOrNull { it.elapsed }
         if (best != null) sb.append("\nYour strongest streak is ${displayName(best.name)}. Keep it protected.")
@@ -423,11 +436,11 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
         if (snapshot.goodHabits.isEmpty()) {
             return "Good habits crowd out bad ones. Add one small thing — a glass of water, a short walk — and check in daily."
         }
-        val pending = snapshot.goodHabits.filter { it.todayCount < it.dailyTarget }
+        val pending = snapshot.goodHabits.filter { it.pendingToday }
         return if (pending.isEmpty()) {
             "You have completed all your good habits today. That discipline is what makes quitting stick."
         } else {
-            "Still to do today:\n" + pending.joinToString("\n") { "• ${it.name} (${it.todayCount}/${it.dailyTarget})" } +
+            "Still to do today:\n" + pending.joinToString("\n") { "• ${it.name} (${it.progressLine})" } +
                 "\n\nSmall actions repeated daily become who you are."
         }
     }

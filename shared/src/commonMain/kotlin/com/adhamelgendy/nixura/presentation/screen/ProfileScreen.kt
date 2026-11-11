@@ -111,7 +111,7 @@ fun ProfileScreen(navigator: Navigator) {
         SectionLabel(s.yourProgress)
         Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             ScoreCard(s.quitScoreTitle, s.quitScoreBody, stats.quitScore, c.accent, s.noBadHabitsYet, Modifier.weight(1f).fillMaxHeight()) { scoreSheet = ScoreKind.BreakingFree }
-            ScoreCard(s.disciplineScoreTitle, s.disciplineScoreBody, stats.disciplineScore, c.positive, s.noGoodHabitsYet, Modifier.weight(1f).fillMaxHeight()) { scoreSheet = ScoreKind.Discipline }
+            ScoreCard(s.disciplineScoreTitle, s.disciplineScoreBody, stats.disciplineScore, c.positive, if (stats.goodHabitCount > 0) s.disciplineWaiting else s.noGoodHabitsYet, Modifier.weight(1f).fillMaxHeight()) { scoreSheet = ScoreKind.Discipline }
         }
 
         SectionLabel(s.profileTotals)

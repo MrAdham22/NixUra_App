@@ -85,6 +85,7 @@ open class Strings {
     open val newBadHabit: String = "New habit to quit"
     open val editHabit: String = "Edit habit"
     open val habitNameLabel: String = "What do you want to stop?"
+    open val goodHabitNameLabel: String = "What do you want to build?"
     open val habitNamePlaceholder: String = "e.g. Smoking, soda, late-night scrolling"
     open val coachUnderstood: String = "Your coach understood"
     open val firstMilestone: String = "First milestone"
@@ -175,6 +176,29 @@ open class Strings {
     open val legendPartial: String = "Partly"
     open val legendMissed: String = "Missed"
     open val editPastHint: String = "Forgot to log a day? Adjust it here."
+
+    // Weekly good habits ("N days a week", Sunday to Saturday)
+    open val habitFrequency: String = "How often"
+    open val frequencyDaily: String = "Every day"
+    open val frequencyWeekly: String = "Days a week"
+    open val weeklyTarget: String = "Days a week"
+    open val notDoneYet: String = "Not done yet"
+    open val weeklyTargetHint: String = "Any days from Sunday to Saturday. Each day counts once."
+    open val weekProgress: (Int, Int) -> String = { done, goal -> "$done / $goal days this week" }
+    open val weekGoalReached: String = "Weekly goal reached"
+    open val daysToGoThisWeek: (Int) -> String = { if (it == 1) "1 more day this week" else "$it more days this week" }
+    open val thisWeekLabel: String = "This week"
+    open val last4Weeks: String = "Last 4 weeks"
+    open val weeksCount: (Int) -> String = { if (it == 1) "1 week" else "$it weeks" }
+    open val streakWeeks: (Int) -> String = { if (it == 1) "1 week streak" else "$it week streak" }
+    open val daysDoneTotal: (Int) -> String = { if (it == 1) "1 day in total" else "$it days in total" }
+    open val statDaysDone: String = "Days done"
+    open val statWeeksCompleted: String = "Weeks completed"
+    open val infoCurrentStreakWeekly: String = "Weeks in a row you reached this habit's weekly goal. This week counts as soon as you reach it, and a missed week starts the count again."
+    open val infoBestStreakWeekly: String = "The most weeks in a row you have ever reached the weekly goal."
+    open val infoDaysDoneWeekly: String = "Every day you did this habit, all weeks added together. A day counts once."
+    open val infoWeeksCompleted: String = "How many weeks you reached the full weekly goal."
+    open val disciplineWaiting: String = "Your weekly habits count once this week's goal is met."
 
     // Events
     open val eventsEyebrow: String = "Look forward"
@@ -485,10 +509,10 @@ open class Strings {
     // Score and streak explanations
     open val scoreHowTitle: String = "How it's worked out"
     open val scoreRuleBreakingFree: String = "Each quit habit counts up to 100% over 30 clear days. A relapse starts that habit again. This score is the average of all of them."
-    open val scoreRuleDiscipline: String = "For each good habit: how much of your daily target you reached over the last 7 days. This score is the average of all of them."
+    open val scoreRuleDiscipline: String = "For each good habit: how much of its target you reached. A daily habit looks at the last 7 days. A weekly habit looks at this week once its goal is met (or can no longer be met), and at last week until then. This score is the average of all of them."
     open val scoreRuleMomentum: String = "The average of Breaking free and Discipline. If you only track one kind of habit, it is that score."
     open val scoreTipBreakingFree: String = "Every clear hour moves this up."
-    open val scoreTipDiscipline: String = "Reach today's targets to lift it. Days before a habit existed don't count against you."
+    open val scoreTipDiscipline: String = "Reach today's targets to lift it. Days before a habit existed don't count against you, and a weekly habit only lowers it once its goal can no longer be met."
     open val scoreTipMomentum: String = "Tap Breaking free or Discipline on the dashboard to see each habit's share."
     open val infoCurrentStreak: String = "Days in a row you reached this habit's daily target. Today counts as soon as you reach it, and a missed day starts the count again."
     open val infoBestStreak: String = "The most days in a row you have ever reached the daily target."

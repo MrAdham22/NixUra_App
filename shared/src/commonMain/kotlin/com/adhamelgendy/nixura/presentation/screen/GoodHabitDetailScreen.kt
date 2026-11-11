@@ -77,21 +77,29 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
             return@SubScreen
         }
 
-        // Today
-        val look = rememberGoodFill(habit.todayCount, habit.dailyTarget, habit.fillStyle)
-        val pulse = rememberCompletionPulse(habit.doneToday)
+        // Today (a weekly habit: this week)
+        val weekly = habit.isWeekly
+        val look = rememberGoodFill(habit.progressCount, habit.progressTarget, habit.fillStyle)
+        val pulse = rememberCompletionPulse(habit.goalReached)
         NixCard(Modifier.graphicsLayer { scaleX = pulse.value; scaleY = pulse.value }, paint = look.paint) {
-            Text(s.todayLabel.uppercase(), style = NixType.Eyebrow, color = look.contentMuted)
+            Text((if (weekly) s.thisWeekLabel else s.todayLabel).uppercase(), style = NixType.Eyebrow, color = look.contentMuted)
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("${habit.todayCount} / ${habit.dailyTarget}", style = NixType.counter(40), color = look.content)
-                    Text(if (habit.doneToday) s.goalReached else s.timesToGo(habit.dailyTarget - habit.todayCount), style = NixType.Small, color = look.contentMuted)
+                    Text("${habit.progressCount} / ${habit.progressTarget}", style = NixType.counter(40), color = look.content)
+                    val left = habit.progressTarget - habit.progressCount
+                    val note = when {
+                        weekly && habit.weekGoalMet -> s.weekGoalReached
+                        weekly -> s.daysToGoThisWeek(left)
+                        habit.doneToday -> s.goalReached
+                        else -> s.timesToGo(left)
+                    }
+                    Text(note, style = NixType.Small, color = look.contentMuted)
                 }
                 NixIconButton(NixIcon.Minus, { vm.onChangeToday(habit.id, -1) }, size = 46.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), bordered = false)
                 Spacer(Modifier.width(10.dp))
                 NixIconButton(
-                    NixIcon.Plus, { vm.onChangeToday(habit.id, +1) }, size = 52.dp,
+                    if (weekly && habit.doneToday) NixIcon.Tick else NixIcon.Plus, { vm.onChangeToday(habit.id, +1) }, size = 52.dp,
                     tint = if (habit.doneToday) look.background else c.onAccent,
                     background = if (habit.doneToday) look.content else c.accent,
                     bordered = false, haptic = true,
@@ -102,24 +110,35 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
         AddToHomeScreenButton(WidgetKind.GOOD_QUICK_LOG, habit.id)
 
         // Stats
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatTile(s.statCurrentStreak, s.daysCount(habit.currentStreak), Modifier.weight(1f), info = s.infoCurrentStreak)
-            StatTile(s.statBestStreak, s.daysCount(habit.bestStreak), Modifier.weight(1f), info = s.infoBestStreak)
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatTile(s.statTotalTimes, habit.totalTimesDone.toString(), Modifier.weight(1f), info = s.infoTotalTimes)
-            StatTile(s.statDaysCompleted, habit.daysCompleted.toString(), Modifier.weight(1f), info = s.infoDaysCompleted)
+        if (weekly) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatTile(s.statCurrentStreak, s.weeksCount(habit.currentStreak), Modifier.weight(1f), info = s.infoCurrentStreakWeekly)
+                StatTile(s.statBestStreak, s.weeksCount(habit.bestStreak), Modifier.weight(1f), info = s.infoBestStreakWeekly)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatTile(s.statDaysDone, habit.totalTimesDone.toString(), Modifier.weight(1f), info = s.infoDaysDoneWeekly)
+                StatTile(s.statWeeksCompleted, habit.daysCompleted.toString(), Modifier.weight(1f), info = s.infoWeeksCompleted)
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatTile(s.statCurrentStreak, s.daysCount(habit.currentStreak), Modifier.weight(1f), info = s.infoCurrentStreak)
+                StatTile(s.statBestStreak, s.daysCount(habit.bestStreak), Modifier.weight(1f), info = s.infoBestStreak)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatTile(s.statTotalTimes, habit.totalTimesDone.toString(), Modifier.weight(1f), info = s.infoTotalTimes)
+                StatTile(s.statDaysCompleted, habit.daysCompleted.toString(), Modifier.weight(1f), info = s.infoDaysCompleted)
+            }
         }
         NixCard {
             Row {
-                Text(s.last7Days, style = NixType.BodyStrong, color = c.textSecondary, modifier = Modifier.weight(1f))
+                Text(if (weekly) s.thisWeekLabel else s.last7Days, style = NixType.BodyStrong, color = c.textSecondary, modifier = Modifier.weight(1f))
                 Text("${(habit.completion7 * 100).toInt()}%", style = NixType.BodyStrong, color = c.textPrimary)
             }
             Spacer(Modifier.height(8.dp))
             NixProgressBar(habit.completion7, color = c.positive)
             Spacer(Modifier.height(14.dp))
             Row {
-                Text(s.last30Days, style = NixType.BodyStrong, color = c.textSecondary, modifier = Modifier.weight(1f))
+                Text(if (weekly) s.last4Weeks else s.last30Days, style = NixType.BodyStrong, color = c.textSecondary, modifier = Modifier.weight(1f))
                 Text("${(habit.completion30 * 100).toInt()}%", style = NixType.BodyStrong, color = c.textPrimary)
             }
             Spacer(Modifier.height(8.dp))
@@ -134,7 +153,7 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
                     year = shownYear,
                     month = shownMonth,
                     countsByDay = habit.countsByDay,
-                    target = habit.dailyTarget,
+                    target = if (weekly) 1 else habit.dailyTarget,
                     todayIndex = state.todayIndex,
                     createdDayIndex = habit.createdDayIndex,
                     selectedDay = selectedDay,
@@ -151,11 +170,21 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(formatDate(day, s, includeWeekday = true), style = NixType.BodyStrong, color = c.textPrimary)
-                            Text(s.todayProgress(count, habit.dailyTarget), style = NixType.Small, color = c.textSecondary)
+                            Text(
+                                when {
+                                    !weekly -> s.todayProgress(count, habit.dailyTarget)
+                                    count > 0 -> s.legendDone
+                                    day == state.todayIndex -> s.notDoneYet
+                                    else -> s.legendMissed
+                                },
+                                style = NixType.Small,
+                                color = c.textSecondary,
+                            )
                         }
                         NixIconButton(NixIcon.Minus, { vm.onSetCount(habit.id, day, count - 1) }, size = 40.dp)
                         Spacer(Modifier.width(8.dp))
-                        NixIconButton(NixIcon.Plus, { vm.onSetCount(habit.id, day, count + 1) }, size = 40.dp)
+                        // A weekly habit's day counts once: done shows a tick instead of a + that would do nothing.
+                        NixIconButton(if (weekly && count > 0) NixIcon.Tick else NixIcon.Plus, { vm.onSetCount(habit.id, day, count + 1) }, size = 40.dp)
                     }
                 }
                 Text(s.editPastHint, style = NixType.Small, color = c.textMuted)

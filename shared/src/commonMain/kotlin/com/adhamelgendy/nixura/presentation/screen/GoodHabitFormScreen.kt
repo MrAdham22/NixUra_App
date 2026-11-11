@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.adhamelgendy.nixura.domain.calculator.WeeklyGoalCalculator
 import com.adhamelgendy.nixura.domain.recognition.HabitNameHandoff
 import com.adhamelgendy.nixura.domain.recognition.HabitPolarity
 import com.adhamelgendy.nixura.domain.recognition.HabitRecognizer
@@ -54,6 +55,8 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
 
     var name by rememberSaveable { mutableStateOf("") }
     var target by rememberSaveable { mutableStateOf(1) }
+    var weekly by rememberSaveable { mutableStateOf(false) }
+    var daysPerWeek by rememberSaveable { mutableStateOf(DEFAULT_DAYS_PER_WEEK) }
     var loadedEdit by rememberSaveable { mutableStateOf(false) }
     val nameFocus = remember { FocusRequester() }
 
@@ -67,6 +70,8 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
             state.habits.firstOrNull { it.id == editId }?.let {
                 name = it.name
                 target = it.dailyTarget
+                weekly = it.isWeekly
+                it.weeklyTarget?.let { days -> daysPerWeek = days }
                 loadedEdit = true
             }
         }
@@ -78,7 +83,7 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
         NixTextField(
             value = name,
             onValueChange = { name = it },
-            label = s.habitNameLabel,
+            label = s.goodHabitNameLabel,
             placeholder = s.goodNamePlaceholder,
             maxLength = 80,
             focusRequester = nameFocus,
@@ -112,27 +117,39 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
                     },
                 )
                 s.goodSuggestions.forEach { (label, suggestedTarget) ->
-                    NixChip(label, selected = name == label, onClick = { name = label; target = suggestedTarget })
+                    NixChip(label, selected = name == label, onClick = { name = label; target = suggestedTarget; weekly = false })
                 }
             }
         }
 
         NixCard {
+            Text(s.habitFrequency, style = NixType.BodyStrong, color = c.textPrimary)
+            Spacer(Modifier.height(10.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                NixChip(s.frequencyDaily, selected = !weekly, onClick = { weekly = false })
+                NixChip(s.frequencyWeekly, selected = weekly, onClick = { weekly = true })
+            }
+            Spacer(Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
-                    Text(s.dailyTarget, style = NixType.BodyStrong, color = c.textPrimary)
+                    Text(if (weekly) s.weeklyTarget else s.dailyTarget, style = NixType.BodyStrong, color = c.textPrimary)
                     Spacer(Modifier.height(2.dp))
-                    Text(s.dailyTargetHint, style = NixType.Small, color = c.textMuted)
+                    Text(if (weekly) s.weeklyTargetHint else s.dailyTargetHint, style = NixType.Small, color = c.textMuted)
                 }
-                Stepper(target, { target = it }, min = 1, max = 99)
+                if (weekly) {
+                    Stepper(daysPerWeek, { daysPerWeek = it }, min = 1, max = WeeklyGoalCalculator.MAX_DAYS_PER_WEEK)
+                } else {
+                    Stepper(target, { target = it }, min = 1, max = 99)
+                }
             }
         }
 
         NixButton(
             text = if (editing) s.saveChanges else s.addHabit,
             onClick = {
-                if (editId != null) vm.onUpdate(editId, name, target, null) { navigator.back() }
-                else vm.onCreate(name, target, null) { navigator.back() }
+                val weeklyTarget = if (weekly) daysPerWeek else null
+                if (editId != null) vm.onUpdate(editId, name, target, null, weeklyTarget) { navigator.back() }
+                else vm.onCreate(name, target, null, weeklyTarget) { navigator.back() }
             },
             enabled = name.isNotBlank(),
             loading = state.isSaving,
@@ -140,3 +157,5 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
         )
     }
 }
+
+private const val DEFAULT_DAYS_PER_WEEK = 3

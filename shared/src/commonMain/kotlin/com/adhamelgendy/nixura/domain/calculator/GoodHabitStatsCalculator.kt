@@ -4,19 +4,37 @@ import com.adhamelgendy.nixura.domain.model.GoodHabitWithLogs
 
 enum class DayStatus { NONE, PARTIAL, DONE }
 
+/**
+ * For a weekly habit ([weeklyTarget] set) the streaks and [daysCompleted] are in **weeks**, [completionLast7] is this
+ * week's progress and [completionLast30] covers the last 4 weeks (see [WeeklyGoalCalculator]).
+ */
 data class GoodHabitStats(
     val todayCount: Int,
     val dailyTarget: Int,
     val doneToday: Boolean,
     val currentStreakDays: Int,
     val bestStreakDays: Int,
-    /** Sum of all counts ever logged ("times done"). */
+    /** Sum of all counts ever logged ("times done"); days done for a weekly habit. */
     val totalTimesDone: Int,
     val daysCompleted: Int,
     /** Weighted completion (0f..1f) over the last 7 days, partial days count fractionally. */
     val completionLast7: Float,
     val completionLast30: Float,
-)
+    val weeklyTarget: Int? = null,
+    /** Days done this week (Sunday to Saturday) and this week's goal. 0 for daily habits. */
+    val weekDone: Int = 0,
+    val weekGoal: Int = 0,
+) {
+    val isWeekly: Boolean get() = weeklyTarget != null
+    val weekGoalMet: Boolean get() = isWeekly && weekDone >= weekGoal
+
+    /** Nothing more is needed today: today's target is reached, or this week's goal is already met. */
+    val settledToday: Boolean get() = doneToday || weekGoalMet
+
+    /** The progress the cards fill with: today's count for a daily habit, days this week for a weekly one. */
+    val progressCount: Int get() = if (isWeekly) weekDone else todayCount
+    val progressTarget: Int get() = if (isWeekly) weekGoal else dailyTarget
+}
 
 object GoodHabitStatsCalculator {
 
@@ -37,6 +55,7 @@ object GoodHabitStatsCalculator {
         item.logs.associate { it.dayIndex to it.count }
 
     fun compute(item: GoodHabitWithLogs, todayIndex: Long, createdDayIndex: Long): GoodHabitStats {
+        item.habit.weeklyTarget?.let { return computeWeekly(item, it, todayIndex, createdDayIndex) }
         val target = item.habit.dailyTarget.coerceAtLeast(1)
         val counts = countsByDay(item)
         val todayCount = counts[todayIndex] ?: 0
@@ -71,6 +90,30 @@ object GoodHabitStatsCalculator {
             daysCompleted = doneDays.size,
             completionLast7 = completion(counts, target, todayIndex, createdDayIndex, 7),
             completionLast30 = completion(counts, target, todayIndex, createdDayIndex, 30),
+        )
+    }
+
+    private fun computeWeekly(item: GoodHabitWithLogs, weeklyTarget: Int, todayIndex: Long, createdDayIndex: Long): GoodHabitStats {
+        val w = WeeklyGoalCalculator
+        val counts = countsByDay(item)
+        val todayCount = (counts[todayIndex] ?: 0).coerceAtMost(1)
+        val thisWeek = w.weekStartOf(todayIndex)
+        val (best, metWeeks) = w.bestStreakAndMetWeeks(counts, weeklyTarget, todayIndex, createdDayIndex)
+        val current = w.currentStreakWeeks(counts, weeklyTarget, todayIndex, createdDayIndex)
+        val goal = w.goalFor(thisWeek, weeklyTarget, createdDayIndex)
+        return GoodHabitStats(
+            todayCount = todayCount,
+            dailyTarget = 1,
+            doneToday = todayCount > 0,
+            currentStreakDays = current,
+            bestStreakDays = maxOf(best, current),
+            totalTimesDone = counts.values.count { it > 0 },
+            daysCompleted = metWeeks,
+            completionLast7 = (w.doneDays(counts, thisWeek, todayIndex, createdDayIndex).toFloat() / goal).coerceIn(0f, 1f),
+            completionLast30 = w.recentCompletion(counts, weeklyTarget, todayIndex, createdDayIndex, weeks = 4),
+            weeklyTarget = weeklyTarget,
+            weekDone = w.doneDays(counts, thisWeek, todayIndex, createdDayIndex),
+            weekGoal = goal,
         )
     }
 
