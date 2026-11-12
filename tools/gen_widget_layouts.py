@@ -167,10 +167,11 @@ def counter(mt=0,labels=True,days_gap=12,lbl_size=COUNTER_LBL_SP):
         android:fontFeatureSettings="tnum" />'''+'\n'+lab)
     return lin('w_counter','horizontal','wrap_content','wrap_content',days+'\n'+clock,margin=mtm,gravity='bottom')
 
-def circle_btn(id,size,icon,border,ms=0):
+def circle_btn(id,size,icon,border,ms=0,icon_size=None):
     kids=img(id+'_bg','widget_circle','match_parent','match_parent',' android:scaleType="fitXY"')+'\n'
     if border: kids+=img(id+'_bd','widget_circle_border','match_parent','match_parent',' android:scaleType="fitXY"')+'\n'
-    kids+=img(id+'_icon','ic_w_'+icon,'%ddp'%int(size*0.5),'%ddp'%int(size*0.5),'',m(gravity='center'))
+    isz=icon_size or int(size*0.5)
+    kids+=img(id+'_icon','ic_w_'+icon,'%ddp'%isz,'%ddp'%isz,'',m(gravity='center'))
     return fl(id,'%ddp'%size,'%ddp'%size,kids,'\n        android:clickable="true"\n        android:focusable="true"',margin=(m(marginStart=ms) if ms else ''))
 
 def progress(mt=12,h=6):
@@ -196,6 +197,17 @@ def streak(mt=12,sp=12,flame=16):
         tv('w_total_text',sp,'',text='24 times in total',margin=m(marginStart=6)),
         margin=m(marginTop=mt),gravity='center_vertical')
 
+def marks(n=8,mt=10):
+    # Prayer habit: one arch per prayer of the day (bitmaps drawn by the renderer with the card's own code), with the
+    # prayer's name under it when the day has five. Cells beyond today's target are hidden (up to 8, as on the card).
+    cells=[]
+    for i in range(n):
+        cells.append(lin(f'w_mark_cell{i}','vertical','0dp','wrap_content',
+            img(f'w_mark{i}','widget_square','30dp','34dp',' android:scaleType="fitXY"')+'\n'+
+            tv(f'w_mark_name{i}',11,'',text='Fajr',margin=m(marginTop=2),extra='\n        android:gravity="center"'),
+            extra='\n        android:layout_weight="1"',gravity='center_horizontal'))
+    return lin('w_marks','horizontal','match_parent','wrap_content','\n'.join(cells),margin=m(marginTop=mt))
+
 def textcol(sub=True,name_lines=1,name_size=17):
     inner=tv('w_name',name_size,'medium',lines=name_lines,w_='match_parent')
     if sub: inner+='\n'+tv('w_sub',12,'',w_='match_parent',margin=m(marginTop=1))
@@ -220,7 +232,7 @@ wr('widget_bad_full',26,
    tv('w_longest',12,'',text='Longest streak 12d',margin=m(marginTop=10)),
    gravity='center')
 wr('widget_bad_row',26,
-   badge(36,20)+'\n'+tv('w_name',18,'medium',w_='0dp',lines=2,extra=WEIGHT+CENTER_TXT)+'\n'+counter(0),orient='horizontal')
+   badge(36,20)+'\n'+tv('w_name',18,'medium',w_='0dp',lines=2,margin=m(marginEnd=8),extra=WEIGHT+CENTER_TXT)+'\n'+counter(0),orient='horizontal')
 wr('widget_bad_slim',26,
    bad_header(26,15,17,1,8)+'\n'+counter(mt=4),gravity='center')
 
@@ -239,6 +251,21 @@ wr('widget_good_full_narrow',22,
        circle_btn('w_minus',32,'minus',True,6)+'\n'+
        circle_btn('w_plus',40,'plus',False,6),margin=m(marginTop=8),gravity='center_vertical')+'\n'+
    progress(10,6)+'\n'+week()+'\n'+streak())
+# Prayer habit (the gold Islamic-art card): the same rows as the full layouts plus the row of prayer arches, a 44 dp
+# arch badge and star buttons as large as the card's (38 and 44 dp x 1.18). Content sits at the top, so the mosque
+# the renderer paints in the background stands in the room left below the rows.
+wr('widget_good_prayer',22,
+   lin(None,'horizontal','match_parent','wrap_content',
+       badge(44,24)+'\n'+textcol(name_lines=3,name_size=20)+'\n'+circle_btn('w_minus',45,'minus',True,8,icon_size=16)+'\n'+
+       circle_btn('w_plus',52,'plus',False,8,icon_size=18),gravity='center_vertical')+'\n'+
+   progress(12,6)+'\n'+marks()+'\n'+week()+'\n'+streak(),gravity='top')
+wr('widget_good_prayer_narrow',22,
+   lin(None,'horizontal','match_parent','wrap_content',badge(32,18)+'\n'+textcol(name_lines=3,name_size=17),gravity='center_vertical')+'\n'+
+   lin(None,'horizontal','match_parent','wrap_content',
+       tv('w_count',24,'bold tnum',text='3/8',w_='0dp',extra=WEIGHT)+'\n'+
+       circle_btn('w_minus',38,'minus',True,6,icon_size=16)+'\n'+
+       circle_btn('w_plus',46,'plus',False,6,icon_size=18),margin=m(marginTop=8),gravity='center_vertical')+'\n'+
+   progress(10,6)+'\n'+marks()+'\n'+week()+'\n'+streak(),gravity='top')
 wr('widget_good_row',22,
    lin(None,'horizontal','match_parent','wrap_content',
        badge(36,20)+'\n'+

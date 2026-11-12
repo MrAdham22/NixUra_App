@@ -3,6 +3,8 @@
 package com.adhamelgendy.nixura.presentation.screen
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -20,14 +22,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.adhamelgendy.nixura.domain.calculator.WeeklyGoalCalculator
 import com.adhamelgendy.nixura.domain.recognition.HabitNameHandoff
 import com.adhamelgendy.nixura.domain.recognition.HabitPolarity
 import com.adhamelgendy.nixura.domain.recognition.HabitRecognizer
+import com.adhamelgendy.nixura.domain.recognition.PrayerHabitDetector
+import com.adhamelgendy.nixura.presentation.components.PrayerGoldWash
+import com.adhamelgendy.nixura.presentation.components.PrayerWordTransformation
+import com.adhamelgendy.nixura.presentation.theme.PrayerPalette
 import com.adhamelgendy.nixura.presentation.components.ErrorBanner
 import com.adhamelgendy.nixura.presentation.components.NixButton
+import com.adhamelgendy.nixura.presentation.components.PrayerGoldButton
 import com.adhamelgendy.nixura.presentation.components.NixCard
 import com.adhamelgendy.nixura.presentation.components.NixChip
 import com.adhamelgendy.nixura.presentation.components.NixTextField
@@ -60,6 +68,17 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
     var loadedEdit by rememberSaveable { mutableStateOf(false) }
     val nameFocus = remember { FocusRequester() }
 
+    // A prayer habit ("pray", "Salah", "صلاة"...): five a day, and the whole page turns gold from the word down.
+    val prayer = remember(name) { PrayerHabitDetector.isPrayer(name) }
+    var prayerApplied by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(prayer) {
+        if (prayer && !prayerApplied && !editing) {
+            target = PrayerHabitDetector.DAILY_PRAYERS
+            weekly = false
+        }
+        prayerApplied = prayer
+    }
+
     // A name carried over from the Quit form ("Add it to Build instead").
     LaunchedEffect(Unit) {
         if (!editing) handoff.take()?.let { name = it }
@@ -77,6 +96,8 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
         }
     }
 
+    Box(Modifier.fillMaxSize()) {
+    PrayerGoldWash(prayer)
     SubScreen(title = if (editing) s.editHabit else s.newGoodHabit, onBack = { navigator.back() }) {
         state.errorMessage?.let { ErrorBanner(it, vm::onDismissError) }
 
@@ -87,7 +108,9 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
             placeholder = s.goodNamePlaceholder,
             maxLength = 80,
             focusRequester = nameFocus,
+            visualTransformation = if (prayer) PrayerWordTransformation(PrayerPalette.Gold) else VisualTransformation.None,
         )
+        if (prayer) Text(s.prayerHint, style = NixType.Small, color = PrayerPalette.GoldLight)
 
         if (!editing && name.isNotBlank()) {
             val recognition = remember(name) { recognizer.recognize(name) }
@@ -106,7 +129,7 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
         }
 
         if (!editing) {
-            SectionLabel(s.quickPicks)
+            SectionLabel(s.quickPicks, color = if (prayer) PrayerPalette.GoldLight else c.textMuted)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 NixChip(
                     s.customHabitPill,
@@ -144,17 +167,29 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
             }
         }
 
-        NixButton(
-            text = if (editing) s.saveChanges else s.addHabit,
-            onClick = {
-                val weeklyTarget = if (weekly) daysPerWeek else null
-                if (editId != null) vm.onUpdate(editId, name, target, null, weeklyTarget) { navigator.back() }
-                else vm.onCreate(name, target, null, weeklyTarget) { navigator.back() }
-            },
-            enabled = name.isNotBlank(),
-            loading = state.isSaving,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        val save = {
+            val weeklyTarget = if (weekly) daysPerWeek else null
+            if (editId != null) vm.onUpdate(editId, name, target, null, weeklyTarget) { navigator.back() }
+            else vm.onCreate(name, target, null, weeklyTarget) { navigator.back() }
+        }
+        if (prayer) {
+            PrayerGoldButton(
+                text = if (editing) s.saveChanges else s.addHabit,
+                onClick = save,
+                enabled = name.isNotBlank(),
+                loading = state.isSaving,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            NixButton(
+                text = if (editing) s.saveChanges else s.addHabit,
+                onClick = save,
+                enabled = name.isNotBlank(),
+                loading = state.isSaving,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
     }
 }
 

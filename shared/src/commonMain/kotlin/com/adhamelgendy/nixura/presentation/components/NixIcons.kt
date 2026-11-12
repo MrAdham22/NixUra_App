@@ -26,6 +26,10 @@ enum class NixIcon {
     Home, Shield, CircleCheck, Calendar, Sparkle, User, Gear, Plus, Back, Chevron, Bell, Trash,
     Pencil, Flame, Send, Close, Tick, Minus, Reset, Archive, Moon, Sun, Globe, Clock, Info, Leaf,
     Eye, EyeOff, Mail, Lock, Mic, Stop,
+
+    // Habit-category glyphs (path data in TopicIcons.kt)
+    Cigarette, WineGlass, Cup, Soda, Candy, Burger, Phone, Gamepad, Tv, Pill, Money, Dice, Thought, Chair, Speech,
+    Hand, Drop, Dumbbell, Shoe, Book, Arch, Lotus, Apple, Heart, Music,
 }
 
 /** 24×24 icons drawn in code; [NixIcon.Gear] uses the official Material "Settings" icon (material-icons-core). */
@@ -40,6 +44,15 @@ fun NixIconView(icon: NixIcon, tint: Color, modifier: Modifier = Modifier, size:
         val stroke = Stroke(width = strokeWidth * s, cap = StrokeCap.Round, join = StrokeJoin.Round)
         drawNixIcon(icon, tint, s, stroke)
     }
+}
+
+/**
+ * Draws [icon] over the whole of this DrawScope (the 24-unit grid scaled to its width). Used where there is no
+ * composable, such as the Android home-screen widgets, so they show exactly the same glyphs as the app.
+ */
+fun DrawScope.drawNixIcon(icon: NixIcon, tint: Color, strokeWidth: Float = 1.8f) {
+    val s = size.width / 24f
+    drawNixIcon(icon, tint, s, Stroke(width = strokeWidth * s, cap = StrokeCap.Round, join = StrokeJoin.Round))
 }
 
 private fun DrawScope.line(c: Color, s: Float, w: Float, x1: Float, y1: Float, x2: Float, y2: Float) =
@@ -59,6 +72,10 @@ private fun DrawScope.poly(c: Color, s: Float, st: Stroke, close: Boolean, varar
 
 private fun DrawScope.drawNixIcon(icon: NixIcon, c: Color, s: Float, st: Stroke) {
     val w = st.width
+    if (isTopicIcon(icon)) {
+        drawTopicIcon(icon, c, s, w)
+        return
+    }
     when (icon) {
         NixIcon.Home -> {
             poly(c, s, st, false, 3f, 11f, 12f, 3.5f, 21f, 11f)
@@ -217,6 +234,7 @@ private fun DrawScope.drawNixIcon(icon: NixIcon, c: Color, s: Float, st: Stroke)
             p.lineTo(16f * s, 10.5f * s)
             drawPath(p, c, style = st)
         }
+        else -> Unit // the habit-category glyphs, drawn above by drawTopicIcon
     }
 }
 

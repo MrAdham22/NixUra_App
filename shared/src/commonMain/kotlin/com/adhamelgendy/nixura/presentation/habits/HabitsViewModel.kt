@@ -1,5 +1,7 @@
 package com.adhamelgendy.nixura.presentation.habits
 
+import com.adhamelgendy.nixura.domain.recognition.HabitTopic
+import com.adhamelgendy.nixura.domain.recognition.HabitTopicDetector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.adhamelgendy.nixura.domain.calculator.TrackingStateCalculator
@@ -35,7 +37,10 @@ class HabitsViewModel(
     private val clock: Clock,
     private val updateHabit: UpdateHabitUseCase,
     pendingDeletions: PendingDeletions,
+    private val topics: HabitTopicDetector? = null,
 ) : ViewModel() {
+
+    private val topicCache = HashMap<String, HabitTopic>()
 
     private val mapper = StreakColorMapper()
     private val stageCount = StreakColorProgressionConfig.Default.stopCount
@@ -173,6 +178,7 @@ class HabitsViewModel(
             cost = habit.cost,
             // Follows the counter: the current clean streak, reset by a relapse.
             moneySaved = habit.cost?.let { MoneySavedCalculator.saved(it, tracking.activeElapsedMillis) },
+            topic = topics?.let { t -> topicCache.getOrPut(habit.name) { t.quitTopic(habit.name) } } ?: HabitTopic.OTHER_QUIT,
         )
     }
 }

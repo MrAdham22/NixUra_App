@@ -42,6 +42,28 @@ class WidgetLayoutPlannerTest {
         }
     }
 
+    @Test fun quitRowNeverSplitsAWordOfTheName() {
+        // a 3x1 widget: before, "smoking" was broken into "smok / ing" beside the counter
+        for (w in listOf(220, 240, 260, 280, 320)) for (h in listOf(56, 64, 72, 90)) for (days in listOf(1L, 12L, 365L)) {
+            for (name in listOf("smoking", "Junk Food", "Social media")) {
+                val p = WidgetLayoutPlanner.plan(WidgetKind.QUIT_COUNTER, w, h, days, name)
+                assertEquals(WidgetVariant.ROW, p.variant)
+                val pad = p.paddingDp
+                val nameW = w - 2 * pad - WidgetLayoutPlanner.counterWidthDp(p.counterSizeDp, days) - 8 - if (p.showBadge) 48 else 0
+                assertTrue(WidgetLayoutPlanner.titleFitsWhole(name, nameW, p.titleSizeDp, 2), "$name split at ${w}x$h, $days days")
+            }
+        }
+    }
+
+    @Test fun prayerWidgetShowsItsArchesBeforeTheWeek() {
+        val p = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 320, 200, title = "pray", prayerMarks = 5)
+        assertTrue(p.showPrayerMarks)
+        assertFalse(p.showProgress)
+        val tight = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 320, 130, title = "pray", prayerMarks = 5)
+        if (tight.showWeek) assertTrue(tight.showPrayerMarks)
+        assertTrue(p.usedHeightDp <= 200 - 2 * p.paddingDp)
+    }
+
     @Test fun nothingIsShownThatNeedsAnEarlierRow() {
         for (kind in WidgetKind.entries) for (h in sizes) for (w in sizes) {
             val p = WidgetLayoutPlanner.plan(kind, w, h)

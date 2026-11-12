@@ -8,8 +8,23 @@ import android.graphics.Path
 import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
+import com.adhamelgendy.nixura.presentation.components.NixIcon
+import com.adhamelgendy.nixura.presentation.components.PrayerCardScene
+import com.adhamelgendy.nixura.presentation.components.drawNixIcon
+import com.adhamelgendy.nixura.presentation.components.drawPrayerCard
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.Canvas as ComposeCanvas
 import com.adhamelgendy.nixura.presentation.appearance.CardGradient
 import com.adhamelgendy.nixura.presentation.appearance.LiquidGeometry
 import com.adhamelgendy.nixura.presentation.appearance.prefersLightContentOnCard
@@ -84,6 +99,47 @@ internal object WidgetCardPainter {
         canvas.block(w.toFloat(), h.toFloat(), clip)
         return bitmap
     }
+
+    /**
+     * Runs Compose drawing code into a bitmap of [widthPx] x [heightPx], so a widget shows exactly what the in-app card
+     * draws (same functions, same colors). [density] is pixels per dp of the bitmap.
+     */
+    fun compose(widthPx: Int, heightPx: Int, density: Float, block: DrawScope.() -> Unit): Bitmap {
+        val w = widthPx.coerceAtLeast(1)
+        val h = heightPx.coerceAtLeast(1)
+        val image = ImageBitmap(w, h)
+        CanvasDrawScope().draw(Density(density), LayoutDirection.Ltr, ComposeCanvas(image), Size(w.toFloat(), h.toFloat()), block)
+        return image.asAndroidBitmap()
+    }
+
+    /** One of the app's line icons ([NixIcon]) in [color], [sizePx] square. */
+    fun icon(sizePx: Int, density: Float, icon: NixIcon, color: Color): Bitmap =
+        compose(sizePx, sizePx, density) { drawNixIcon(icon, color) }
+
+    /**
+     * The whole prayer card (`drawPrayerCard`: night sky, star tiling, mosque, moon, gold frame) clipped to the
+     * widget's rounded corners. [maxMosqueHeightDp] is the free room under the widget's rows. Drawn at most
+     * [MAX_PRAYER_PIXELS]; the thin gold lines need more pixels than the soft gradients.
+     */
+    fun prayerCard(widthPx: Int, heightPx: Int, density: Float, radiusDp: Float, fill: Float, maxMosqueHeightDp: Float): Bitmap {
+        val w0 = widthPx.coerceAtLeast(1)
+        val h0 = heightPx.coerceAtLeast(1)
+        val scale = minOf(1f, sqrt(MAX_PRAYER_PIXELS.toFloat() / (w0.toLong() * h0)))
+        val w = (w0 * scale).toInt().coerceAtLeast(1)
+        val h = (h0 * scale).toInt().coerceAtLeast(1)
+        val d = density * scale
+        return compose(w, h, d) {
+            val r = radiusDp * d
+            val clip = androidx.compose.ui.graphics.Path().apply {
+                addRoundRect(RoundRect(0f, 0f, w.toFloat(), h.toFloat(), CornerRadius(r)))
+            }
+            clipPath(clip) {
+                drawPrayerCard(PrayerCardScene(w.toFloat(), h.toFloat(), this, maxMosqueHeightDp * d), fill)
+            }
+        }
+    }
+
+    private const val MAX_PRAYER_PIXELS = 720_000
 
     /** A still wave looks natural slightly off its crest. */
     private const val PHASE = (PI * 0.35).toFloat()

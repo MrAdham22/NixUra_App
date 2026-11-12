@@ -7,6 +7,7 @@ import com.adhamelgendy.nixura.domain.model.Event
 import com.adhamelgendy.nixura.domain.model.GoodHabitWithLogs
 import com.adhamelgendy.nixura.domain.model.HabitTracking
 import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyle
+import com.adhamelgendy.nixura.domain.recognition.HabitTopic
 import com.adhamelgendy.nixura.domain.time.CivilCalendar
 import com.adhamelgendy.nixura.domain.time.DayCalculator
 
@@ -16,7 +17,12 @@ import com.adhamelgendy.nixura.domain.time.DayCalculator
  */
 object WidgetStateMapper {
 
-    fun quit(boundHabitId: Long?, trackings: List<HabitTracking>, nowEpochMillis: Long): QuitWidgetState {
+    fun quit(
+        boundHabitId: Long?,
+        trackings: List<HabitTracking>,
+        nowEpochMillis: Long,
+        topicOf: (String) -> HabitTopic = { HabitTopic.OTHER_QUIT },
+    ): QuitWidgetState {
         if (trackings.isEmpty()) return QuitWidgetState.NoHabits
         if (boundHabitId == null) return QuitWidgetState.NotConfigured
         val item = trackings.firstOrNull { it.habit.id == boundHabitId && !it.habit.isArchived }
@@ -31,6 +37,7 @@ object WidgetStateMapper {
             longestStreakMillis = snapshot.longestStreakMillis,
             cost = item.habit.cost,
             nowEpochMillis = nowEpochMillis,
+            topic = topicOf(item.habit.name),
         )
     }
 
@@ -40,6 +47,7 @@ object WidgetStateMapper {
         nowEpochMillis: Long,
         days: DayCalculator,
         fillStyleOf: (String) -> GoodHabitFillStyle = { GoodHabitFillStyle.PLAIN },
+        topicOf: (String) -> HabitTopic = { HabitTopic.OTHER_BUILD },
     ): GoodWidgetState {
         val active = habits.filter { it.habit.archivedAtEpochMillis == null }
         if (active.isEmpty()) return GoodWidgetState.NoHabits
@@ -73,6 +81,8 @@ object WidgetStateMapper {
             currentStreakDays = stats.currentStreakDays,
             totalTimesDone = stats.totalTimesDone,
             fillStyle = fillStyleOf(item.habit.name),
+            dailyTarget = stats.dailyTarget,
+            topic = topicOf(item.habit.name),
         )
     }
 
