@@ -35,7 +35,7 @@ fun platformModule(
 
     // Android home-screen widgets (registered here because AppModules.kt belongs to another agent this round).
     // Their repositories, Clock and DayCalculator come from appModule().
-    factory { LoadWidgetStateUseCase(get(), get(), get(), get(), get(), get(), get()) }
+    factory { LoadWidgetStateUseCase(get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { IncrementGoodHabitTodayUseCase(get(), get(), get()) }
     factory { DecrementGoodHabitTodayUseCase(get(), get(), get()) }
     factory { ObserveWidgetDataChangesUseCase(get(), get(), get(), get()) }

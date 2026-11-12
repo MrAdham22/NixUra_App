@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.habits
 
+import com.adhamelgendy.nixura.domain.recognition.HabitTopic
 import com.adhamelgendy.nixura.domain.money.HabitCost
 import com.adhamelgendy.nixura.domain.money.MoneySaved
 import kotlin.time.Duration
@@ -24,6 +25,8 @@ data class HabitCardUiModel(
     val cost: HabitCost? = null,
     /** Saved during the current streak, live; `null` without a tracker. */
     val moneySaved: MoneySaved? = null,
+    /** Kind of habit, for the glyph on the card (derived from the name). */
+    val topic: HabitTopic = HabitTopic.OTHER_QUIT,
 )
 
 data class HabitsUiState(

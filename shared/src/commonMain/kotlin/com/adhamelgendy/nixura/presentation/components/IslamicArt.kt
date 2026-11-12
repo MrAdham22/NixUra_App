@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.adhamelgendy.nixura.presentation.platform.rememberReducedMotion
@@ -107,6 +108,154 @@ internal data class PrayerArt(
 
 private class FixedState(override val value: Float) : State<Float>
 
+/** Where the sliding light rests when animations are off (and on the home-screen widget, which cannot animate). */
+const val PRAYER_STILL_SHINE = 0.62f
+
+/** Colors a prayer card's content reads on at a given fill; shared by the card and the Android widget. */
+data class PrayerCardColors(
+    val content: Color,
+    val contentMuted: Color,
+    val background: Color,
+    val doneSquare: Color,
+    /** 0 until the last prayer, then 1: the card turns solid gold. */
+    val done: Float,
+)
+
+/** The colors of a prayer card whose day is [fill] (0..1) done. */
+fun prayerCardColors(fill: Float): PrayerCardColors {
+    val done = ((fill - 0.92f) / 0.08f).coerceIn(0f, 1f)
+    val content = lerp(PrayerPalette.Cream, PrayerPalette.Night, done)
+    return PrayerCardColors(
+        content = content,
+        contentMuted = content.copy(alpha = 0.72f),
+        background = lerp(PrayerPalette.NightPlum, PrayerPalette.GoldDeep, done),
+        doneSquare = lerp(PrayerPalette.Gold, PrayerPalette.Night, done),
+        done = done,
+    )
+}
+
+/**
+ * The shapes of a prayer card of [width] x [height] px (star tiling, mosque, moon, corner stars), built once per size.
+ * [maxMosqueHeight] (px) keeps the mosque inside the room left for it: a widget passes the free space under its rows.
+ * The mosque is left out when that room is too small for it to still read as a mosque.
+ */
+class PrayerCardScene(val width: Float, val height: Float, density: Density, maxMosqueHeight: Float = Float.MAX_VALUE) {
+    internal val tiling: Path
+    internal val corner: Float
+    internal val frame: Float
+    internal val inset: Float
+    internal val mosque: Path?
+    internal val domeTop: Offset
+    internal val moonCenter: Offset
+    internal val moon: Path
+    internal val cornerStars: List<Path>
+
+    init {
+        with(density) {
+            val w = width
+            val h = height
+            tiling = starTiling(w, h, 46.dp.toPx())
+            corner = 20.dp.toPx()
+            frame = 1.6.dp.toPx()
+            inset = 5.dp.toPx()
+            // A short row (Home) shows a big mosque filling its height, the owner's favourite; a full card keeps it
+            // smaller in the room left for it at the bottom, with the moon at the top centre, clear of the buttons.
+            val shortRow = h < 120.dp.toPx()
+            // On a short row the minaret tips stop just under the top edge (the mosque is ~0.43 x its width tall)
+            val natural = if (shortRow) minOf(w * 0.5f, 215.dp.toPx(), h * 2.2f) else minOf(w * 0.46f, 200.dp.toPx())
+            val mosqueWidth = minOf(natural, maxMosqueHeight / MOSQUE_HEIGHT)
+            mosque = if (mosqueWidth >= 64.dp.toPx()) mosquePath((w - mosqueWidth) / 2f, h + 1f, mosqueWidth) else null
+            domeTop = Offset(w / 2f, h - mosqueWidth * MOSQUE_DOME_TOP)
+            moonCenter = if (shortRow) Offset(w * 0.58f, 14.dp.toPx()) else Offset(w / 2f, 12.dp.toPx())
+            moon = crescentPath(moonCenter.x, moonCenter.y, 7.dp.toPx())
+            // On the inner frame, halfway round each rounded corner
+            val d = corner - (corner - inset) * 0.7071f
+            cornerStars = listOf(Offset(d, d), Offset(w - d, d), Offset(d, h - d), Offset(w - d, h - d))
+                .map { octagramPath(it.x, it.y, 4.dp.toPx()) }
+        }
+    }
+}
+
+/**
+ * Paints a prayer card: night sky, star tiling, golden dawn, mosque, crescent, the sliding light at [shimmer] (0..1),
+ * the burst of a counted prayer at [burst] (1 = none) and the double gold frame. [fill] is today's progress (0..1).
+ */
+fun DrawScope.drawPrayerCard(scene: PrayerCardScene, fill: Float, shimmer: Float = PRAYER_STILL_SHINE, burst: Float = 1f) {
+    val w = scene.width
+    val h = scene.height
+    val done = prayerCardColors(fill).done
+    // Night sky, a faint glow from above; replaced by solid gold when every prayer is done
+    drawRect(Brush.verticalGradient(listOf(PrayerPalette.NightPlum, PrayerPalette.Night)))
+    drawRect(Brush.radialGradient(listOf(PrayerPalette.Gold.copy(alpha = 0.10f), Color.Transparent), Offset(w * 0.58f, 0f), w * 0.6f))
+    if (done > 0f) {
+        drawRect(
+            Brush.linearGradient(listOf(PrayerPalette.GoldLight, PrayerPalette.Gold, PrayerPalette.GoldDeep), Offset.Zero, Offset(w, h)),
+            alpha = done,
+        )
+    }
+    // The star tiling
+    val lineColor = lerp(PrayerPalette.Gold, PrayerPalette.Bronze, done)
+    drawPath(scene.tiling, lineColor.copy(alpha = 0.08f + 0.08f * fill + 0.12f * done), style = Stroke(1.dp.toPx()))
+    // A golden dawn behind the mosque that grows with every prayer
+    val dawn = (0.25f + 0.75f * fill) * (1f - done)
+    if (dawn > 0f) {
+        drawRect(
+            Brush.radialGradient(
+                listOf(PrayerPalette.Gold.copy(alpha = 0.55f * dawn), PrayerPalette.Gold.copy(alpha = 0.12f * dawn), Color.Transparent),
+                Offset(w / 2f, h),
+                (w * (0.35f + 0.35f * fill)).coerceAtLeast(1f),
+            ),
+        )
+    }
+    val mosque = scene.mosque
+    // Rays from the dome once the day is complete
+    if (done > 0f && mosque != null) {
+        for (i in 0 until 18) {
+            val a = PI_F + i * (PI_F / 17f)
+            val len = w * 0.7f
+            drawLine(
+                Color.White.copy(alpha = 0.30f * done),
+                scene.domeTop,
+                Offset(scene.domeTop.x + cos(a) * len, scene.domeTop.y + sin(a) * len),
+                strokeWidth = (if (i % 2 == 0) 3f else 1.5f).dp.toPx(),
+            )
+        }
+    }
+    // The mosque, a dark silhouette with a golden rim
+    if (mosque != null) {
+        drawPath(mosque, lerp(Color(0xFF110B20), PrayerPalette.GoldDeep, done).copy(alpha = 0.78f))
+        drawPath(mosque, lerp(PrayerPalette.Gold, PrayerPalette.Night, done).copy(alpha = 0.45f), style = Stroke(1.dp.toPx()))
+    }
+    // Crescent moon
+    val moonColor = lerp(PrayerPalette.GoldLight, PrayerPalette.Night, done)
+    drawCircle(moonColor.copy(alpha = 0.16f), 15.dp.toPx(), scene.moonCenter)
+    drawPath(scene.moon, moonColor.copy(alpha = 0.92f))
+    // Light that keeps sliding across. Two bands half a loop apart: one leaves the card while the other is in
+    // the middle, and each wraps around only while it is fully outside, so the loop never shows a seam.
+    drawShine(shimmer, w, h)
+    drawShine((shimmer + 0.5f) % 1f, w, h)
+    drawBurst(burst, w, h)
+    // Double gold frame with a small star at each corner
+    val frameBrush = Brush.linearGradient(listOf(PrayerPalette.GoldLight, PrayerPalette.GoldDeep, PrayerPalette.Gold), Offset.Zero, Offset(w, h))
+    drawRoundRect(
+        frameBrush,
+        topLeft = Offset(scene.frame / 2f, scene.frame / 2f),
+        size = Size(w - scene.frame, h - scene.frame),
+        cornerRadius = CornerRadius(scene.corner),
+        style = Stroke(scene.frame),
+        alpha = 0.85f,
+    )
+    drawRoundRect(
+        frameBrush,
+        topLeft = Offset(scene.inset, scene.inset),
+        size = Size(w - scene.inset * 2f, h - scene.inset * 2f),
+        cornerRadius = CornerRadius(scene.corner - scene.inset),
+        style = Stroke(0.8.dp.toPx()),
+        alpha = 0.35f,
+    )
+    scene.cornerStars.forEach { drawPath(it, PrayerPalette.Gold.copy(alpha = 0.9f)) }
+}
+
 /**
  * Builds the painting of a prayer card at [fill] (0..1) for today's [count]. Every counted prayer sends a burst of
  * golden stars across the card (not with "remove animations"); the card turns solid gold once all are done.
@@ -125,108 +274,20 @@ internal fun rememberPrayerArt(fill: Float, count: Int): PrayerArt {
     }
     val transition = rememberInfiniteTransition(label = "prayerShimmer")
     val shimmerAnim = transition.animateFloat(0f, 1f, infiniteRepeatable(tween(7000, easing = LinearEasing)), label = "shimmer")
-    val still = remember { FixedState(0.62f) }
+    val still = remember { FixedState(PRAYER_STILL_SHINE) }
     val shimmer: State<Float> = if (reduced) still else shimmerAnim
 
-    val done = ((fill - 0.92f) / 0.08f).coerceIn(0f, 1f)
-    val content = lerp(PrayerPalette.Cream, PrayerPalette.Night, done)
+    val colors = prayerCardColors(fill)
     val art = Modifier.drawWithCache {
-        val w = size.width
-        val h = size.height
-        val tiling = starTiling(w, h, 46.dp.toPx())
-        val corner = 20.dp.toPx()
-        val frame = 1.6.dp.toPx()
-        val inset = 5.dp.toPx()
-        // Sized by the card's height too, so a short row gets a small mosque that never reaches its text
-        // A short row (Home) shows a big mosque filling its height, the owner's favourite; a full card keeps it
-        // smaller in the room left for it at the bottom, with the moon at the top centre, clear of the buttons.
-        val shortRow = h < 120.dp.toPx()
-        // On a short row the minaret tips stop just under the top edge (the mosque is ~0.43 × its width tall)
-        val mosqueWidth = if (shortRow) minOf(w * 0.5f, 215.dp.toPx(), h * 2.2f) else minOf(w * 0.46f, 200.dp.toPx())
-        val mosque = mosquePath((w - mosqueWidth) / 2f, h + 1f, mosqueWidth)
-        val domeTop = Offset(w / 2f, h - mosqueWidth * MOSQUE_DOME_TOP)
-        val moonCenter = if (shortRow) Offset(w * 0.58f, 14.dp.toPx()) else Offset(w / 2f, 12.dp.toPx())
-        val moon = crescentPath(moonCenter.x, moonCenter.y, 7.dp.toPx())
-        // On the inner frame, halfway round each rounded corner
-        val d = corner - (corner - inset) * 0.7071f
-        val cornerStars = listOf(Offset(d, d), Offset(w - d, d), Offset(d, h - d), Offset(w - d, h - d))
-            .map { octagramPath(it.x, it.y, 4.dp.toPx()) }
-        onDrawBehind {
-            // Night sky, a faint glow from above; replaced by solid gold when every prayer is done
-            drawRect(Brush.verticalGradient(listOf(PrayerPalette.NightPlum, PrayerPalette.Night)))
-            drawRect(Brush.radialGradient(listOf(PrayerPalette.Gold.copy(alpha = 0.10f), Color.Transparent), Offset(w * 0.58f, 0f), w * 0.6f))
-            if (done > 0f) {
-                drawRect(
-                    Brush.linearGradient(listOf(PrayerPalette.GoldLight, PrayerPalette.Gold, PrayerPalette.GoldDeep), Offset.Zero, Offset(w, h)),
-                    alpha = done,
-                )
-            }
-            // The star tiling
-            val lineColor = lerp(PrayerPalette.Gold, PrayerPalette.Bronze, done)
-            drawPath(tiling, lineColor.copy(alpha = 0.08f + 0.08f * fill + 0.12f * done), style = Stroke(1.dp.toPx()))
-            // A golden dawn behind the mosque that grows with every prayer
-            val dawn = (0.25f + 0.75f * fill) * (1f - done)
-            if (dawn > 0f) {
-                drawRect(
-                    Brush.radialGradient(
-                        listOf(PrayerPalette.Gold.copy(alpha = 0.55f * dawn), PrayerPalette.Gold.copy(alpha = 0.12f * dawn), Color.Transparent),
-                        Offset(w / 2f, h),
-                        (w * (0.35f + 0.35f * fill)).coerceAtLeast(1f),
-                    ),
-                )
-            }
-            // Rays from the dome once the day is complete
-            if (done > 0f) {
-                for (i in 0 until 18) {
-                    val a = PI_F + i * (PI_F / 17f)
-                    val len = w * 0.7f
-                    drawLine(
-                        Color.White.copy(alpha = 0.30f * done),
-                        domeTop,
-                        Offset(domeTop.x + cos(a) * len, domeTop.y + sin(a) * len),
-                        strokeWidth = (if (i % 2 == 0) 3f else 1.5f).dp.toPx(),
-                    )
-                }
-            }
-            // The mosque, a dark silhouette with a golden rim
-            drawPath(mosque, lerp(Color(0xFF110B20), PrayerPalette.GoldDeep, done).copy(alpha = 0.78f))
-            drawPath(mosque, lerp(PrayerPalette.Gold, PrayerPalette.Night, done).copy(alpha = 0.45f), style = Stroke(1.dp.toPx()))
-            // Crescent moon
-            val moonColor = lerp(PrayerPalette.GoldLight, PrayerPalette.Night, done)
-            drawCircle(moonColor.copy(alpha = 0.16f), 15.dp.toPx(), moonCenter)
-            drawPath(moon, moonColor.copy(alpha = 0.92f))
-            // Light that keeps sliding across. Two bands half a loop apart: one leaves the card while the other is in
-            // the middle, and each wraps around only while it is fully outside, so the loop never shows a seam.
-            drawShine(shimmer.value, w, h)
-            drawShine((shimmer.value + 0.5f) % 1f, w, h)
-            drawBurst(burst.value, w, h)
-            // Double gold frame with a small star at each corner
-            val frameBrush = Brush.linearGradient(listOf(PrayerPalette.GoldLight, PrayerPalette.GoldDeep, PrayerPalette.Gold), Offset.Zero, Offset(w, h))
-            drawRoundRect(
-                frameBrush,
-                topLeft = Offset(frame / 2f, frame / 2f),
-                size = Size(w - frame, h - frame),
-                cornerRadius = CornerRadius(corner),
-                style = Stroke(frame),
-                alpha = 0.85f,
-            )
-            drawRoundRect(
-                frameBrush,
-                topLeft = Offset(inset, inset),
-                size = Size(w - inset * 2f, h - inset * 2f),
-                cornerRadius = CornerRadius(corner - inset),
-                style = Stroke(0.8.dp.toPx()),
-                alpha = 0.35f,
-            )
-            cornerStars.forEach { drawPath(it, PrayerPalette.Gold.copy(alpha = 0.9f)) }
-        }
+        val scene = PrayerCardScene(size.width, size.height, this)
+        onDrawBehind { drawPrayerCard(scene, fill, shimmer.value, burst.value) }
     }
     return PrayerArt(
         modifier = art,
-        content = content,
-        contentMuted = content.copy(alpha = 0.72f),
-        background = lerp(PrayerPalette.NightPlum, PrayerPalette.GoldDeep, done),
-        doneSquare = lerp(PrayerPalette.Gold, PrayerPalette.Night, done),
+        content = colors.content,
+        contentMuted = colors.contentMuted,
+        background = colors.background,
+        doneSquare = colors.doneSquare,
     )
 }
 
@@ -248,6 +309,9 @@ private fun DrawScope.drawShine(p: Float, w: Float, h: Float) {
 
 /** Height of the mosque's main dome top, as a share of the mosque's width. */
 internal const val MOSQUE_DOME_TOP = 0.33f
+
+/** Height of the whole mosque (minaret tips), as a share of its width. */
+internal const val MOSQUE_HEIGHT = 0.43f
 
 /**
  * A mosque silhouette standing on [baseY]: a wall, a large central dome on a drum, two small domes and two minarets
@@ -308,36 +372,39 @@ internal fun crescentPath(cx: Float, cy: Float, r: Float): Path {
 @Composable
 fun PrayerArchBadge(look: GoodFill, modifier: Modifier = Modifier) {
     val solid = look.fill >= 0.99f
-    Canvas(modifier.size(44.dp)) {
-        val s = size.minDimension
-        val c = Offset(s / 2f, s / 2f)
-        drawCircle(if (solid) PrayerPalette.Night.copy(alpha = 0.85f) else PrayerPalette.Night.copy(alpha = 0.55f), s / 2f, c)
-        drawCircle(
-            Brush.linearGradient(listOf(PrayerPalette.GoldLight, PrayerPalette.GoldDeep), Offset.Zero, Offset(s, s)),
-            s / 2f - 1.dp.toPx(),
-            c,
-            style = Stroke(1.6.dp.toPx()),
-        )
-        fun arch(scale: Float): Path {
-            val l = s * (0.5f - 0.2f * scale)
-            val r = s * (0.5f + 0.2f * scale)
-            val bottom = s * 0.76f
-            val spring = s * (0.5f - 0.02f * scale)
-            val apex = s * (0.5f - 0.32f * scale)
-            return Path().apply {
-                moveTo(l, bottom)
-                lineTo(l, spring)
-                cubicTo(l, s * 0.5f - (s * 0.5f - apex) * 0.55f, s * 0.5f - s * 0.06f * scale, apex + s * 0.05f * scale, s * 0.5f, apex)
-                cubicTo(s * 0.5f + s * 0.06f * scale, apex + s * 0.05f * scale, r, s * 0.5f - (s * 0.5f - apex) * 0.55f, r, spring)
-                lineTo(r, bottom)
-            }
+    Canvas(modifier.size(44.dp)) { drawPrayerArchBadge(solid) }
+}
+
+/** The mihrab badge over the whole of this DrawScope; [solid] = every prayer of the day is done (gold card). */
+fun DrawScope.drawPrayerArchBadge(solid: Boolean) {
+    val s = size.minDimension
+    val c = Offset(s / 2f, s / 2f)
+    drawCircle(if (solid) PrayerPalette.Night.copy(alpha = 0.85f) else PrayerPalette.Night.copy(alpha = 0.55f), s / 2f, c)
+    drawCircle(
+        Brush.linearGradient(listOf(PrayerPalette.GoldLight, PrayerPalette.GoldDeep), Offset.Zero, Offset(s, s)),
+        s / 2f - 1.dp.toPx(),
+        c,
+        style = Stroke(1.6.dp.toPx()),
+    )
+    fun arch(scale: Float): Path {
+        val l = s * (0.5f - 0.2f * scale)
+        val r = s * (0.5f + 0.2f * scale)
+        val bottom = s * 0.76f
+        val spring = s * (0.5f - 0.02f * scale)
+        val apex = s * (0.5f - 0.32f * scale)
+        return Path().apply {
+            moveTo(l, bottom)
+            lineTo(l, spring)
+            cubicTo(l, s * 0.5f - (s * 0.5f - apex) * 0.55f, s * 0.5f - s * 0.06f * scale, apex + s * 0.05f * scale, s * 0.5f, apex)
+            cubicTo(s * 0.5f + s * 0.06f * scale, apex + s * 0.05f * scale, r, s * 0.5f - (s * 0.5f - apex) * 0.55f, r, spring)
+            lineTo(r, bottom)
         }
-        val gold = PrayerPalette.Gold
-        drawPath(arch(1f), Brush.verticalGradient(listOf(gold.copy(alpha = 0.35f), Color.Transparent)))
-        drawPath(arch(1f), gold, style = Stroke(1.6.dp.toPx()))
-        drawPath(arch(0.62f), gold.copy(alpha = 0.6f), style = Stroke(1.dp.toPx()))
-        drawLine(gold, Offset(s * 0.24f, s * 0.76f), Offset(s * 0.76f, s * 0.76f), strokeWidth = 1.6.dp.toPx())
     }
+    val gold = PrayerPalette.Gold
+    drawPath(arch(1f), Brush.verticalGradient(listOf(gold.copy(alpha = 0.35f), Color.Transparent)))
+    drawPath(arch(1f), gold, style = Stroke(1.6.dp.toPx()))
+    drawPath(arch(0.62f), gold.copy(alpha = 0.6f), style = Stroke(1.dp.toPx()))
+    drawLine(gold, Offset(s * 0.24f, s * 0.76f), Offset(s * 0.76f, s * 0.76f), strokeWidth = 1.6.dp.toPx())
 }
 
 /** The burst of a counted prayer: three stars growing and turning in turn, a flash and sparkles flying outward. */
@@ -387,32 +454,43 @@ fun PrayerStarButton(
         contentAlignment = Alignment.Center,
     ) {
         Canvas(Modifier.fillMaxSize()) {
-            val spin = if (reduced) 0f else spinAnim.value * (PI_F / 180f)
-            val c = Offset(this.size.width / 2f, this.size.height / 2f)
-            val r = this.size.minDimension / 2f * 0.96f
-            if (secondary) {
-                drawPath(octagramPath(c.x, c.y, r), ink.copy(alpha = 0.10f))
-                drawPath(octagramPath(c.x, c.y, r), ink.copy(alpha = 0.55f), style = Stroke(1.3.dp.toPx()))
-            } else {
-                val fillBrush = if (onGold) {
-                    Brush.radialGradient(listOf(PrayerPalette.NightPlum, PrayerPalette.Night), c, r)
-                } else {
-                    Brush.radialGradient(listOf(PrayerPalette.GoldLight, PrayerPalette.Gold, PrayerPalette.GoldDeep), c, r)
-                }
-                val edge = if (onGold) PrayerPalette.Gold else PrayerPalette.Bronze.copy(alpha = 0.55f)
-                // The outer star turns slowly, the inner outline the other way
-                val outer = octagramPath(c.x, c.y, r, spin)
-                drawPath(outer, fillBrush)
-                drawPath(outer, edge, style = Stroke(1.4.dp.toPx()))
-                drawPath(octagramPath(c.x, c.y, r * 0.74f, -spin * 1.4f), edge.copy(alpha = 0.7f), style = Stroke(1.dp.toPx()))
-                drawCircle(
-                    if (onGold) PrayerPalette.Gold.copy(alpha = 0.20f) else PrayerPalette.GoldLight.copy(alpha = 0.35f),
-                    r * 0.44f,
-                    c,
-                )
-            }
+            drawPrayerStar(secondary, onGold, ink, spin = if (reduced) 0f else spinAnim.value * (PI_F / 180f))
         }
-        NixIconView(icon, if (secondary) ink else if (onGold) PrayerPalette.GoldLight else PrayerPalette.Night, size = size * 0.42f)
+        NixIconView(icon, prayerStarIconTint(secondary, onGold, ink), size = size * 0.42f)
+    }
+}
+
+/** Color of the +, - or tick icon on a prayer star button. */
+fun prayerStarIconTint(secondary: Boolean, onGold: Boolean, ink: Color): Color =
+    if (secondary) ink else if (onGold) PrayerPalette.GoldLight else PrayerPalette.Night
+
+/**
+ * The star of a prayer button over the whole of this DrawScope: gold for "+" (night-colored on a gold card), a quiet
+ * outline in [ink] for "-" ([secondary]). [spin] turns the stars (radians).
+ */
+fun DrawScope.drawPrayerStar(secondary: Boolean, onGold: Boolean, ink: Color, spin: Float = 0f) {
+    val c = Offset(size.width / 2f, size.height / 2f)
+    val r = size.minDimension / 2f * 0.96f
+    if (secondary) {
+        drawPath(octagramPath(c.x, c.y, r), ink.copy(alpha = 0.10f))
+        drawPath(octagramPath(c.x, c.y, r), ink.copy(alpha = 0.55f), style = Stroke(1.3.dp.toPx()))
+    } else {
+        val fillBrush = if (onGold) {
+            Brush.radialGradient(listOf(PrayerPalette.NightPlum, PrayerPalette.Night), c, r)
+        } else {
+            Brush.radialGradient(listOf(PrayerPalette.GoldLight, PrayerPalette.Gold, PrayerPalette.GoldDeep), c, r)
+        }
+        val edge = if (onGold) PrayerPalette.Gold else PrayerPalette.Bronze.copy(alpha = 0.55f)
+        // The outer star turns slowly, the inner outline the other way
+        val outer = octagramPath(c.x, c.y, r, spin)
+        drawPath(outer, fillBrush)
+        drawPath(outer, edge, style = Stroke(1.4.dp.toPx()))
+        drawPath(octagramPath(c.x, c.y, r * 0.74f, -spin * 1.4f), edge.copy(alpha = 0.7f), style = Stroke(1.dp.toPx()))
+        drawCircle(
+            if (onGold) PrayerPalette.Gold.copy(alpha = 0.20f) else PrayerPalette.GoldLight.copy(alpha = 0.35f),
+            r * 0.44f,
+            c,
+        )
     }
 }
 
@@ -458,6 +536,45 @@ private fun mihrabPath(w: Float, h: Float): Path {
 }
 
 /**
+ * One prayer's arch over the whole of this DrawScope. [shown] 0 = not prayed yet (a dark recess), 1 = prayed (gold with
+ * a tick); [solid] = the card is solid gold; [content] is the card's text color, for the unlit outline.
+ */
+fun DrawScope.drawPrayerBead(shown: Float, solid: Boolean, content: Color) {
+    val w = size.width
+    val h = size.height
+    val arch = mihrabPath(w, h)
+    // Unlit: a dark recess with a soft outline
+    drawPath(arch, PrayerPalette.Night.copy(alpha = if (solid) 0.25f else 0.45f))
+    if (shown > 0.01f) {
+        // Lit: gold glow, gold body, a darker inner arch and a tick
+        drawCircle(PrayerPalette.Gold.copy(alpha = 0.28f * shown), w * 0.62f, Offset(w / 2f, h * 0.58f))
+        val body = if (solid) {
+            Brush.verticalGradient(listOf(PrayerPalette.NightPlum, PrayerPalette.Night))
+        } else {
+            Brush.verticalGradient(listOf(PrayerPalette.GoldLight, PrayerPalette.Gold, PrayerPalette.GoldDeep))
+        }
+        drawPath(arch, body, alpha = shown)
+        val ink = if (solid) PrayerPalette.GoldLight else PrayerPalette.Night
+        val tick = Path().apply {
+            moveTo(w * 0.32f, h * 0.62f)
+            lineTo(w * 0.46f, h * 0.76f)
+            lineTo(w * 0.70f, h * 0.48f)
+        }
+        drawPath(
+            tick,
+            ink.copy(alpha = shown),
+            style = Stroke(2.2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
+        )
+    }
+    val edge = when {
+        shown > 0.01f && !solid -> PrayerPalette.GoldLight
+        shown > 0.01f -> PrayerPalette.Gold
+        else -> content.copy(alpha = 0.45f)
+    }
+    drawPath(arch, edge, style = Stroke(1.3.dp.toPx(), join = StrokeJoin.Round))
+}
+
+/**
  * One small arch per prayer of the day, like a mihrab. A counted prayer turns its arch gold with a tick and a little
  * pop. With a target of five the arches carry the names of the five prayers.
  */
@@ -476,41 +593,7 @@ fun PrayerBeads(count: Int, target: Int, look: GoodFill, names: List<String>, mo
                 Canvas(
                     Modifier.size(width = 30.dp, height = 34.dp)
                         .graphicsLayer { scaleX = 0.9f + 0.18f * pop; scaleY = 0.9f + 0.18f * pop },
-                ) {
-                    val w = size.width
-                    val h = size.height
-                    val arch = mihrabPath(w, h)
-                    val shown = pop.coerceIn(0f, 1f)
-                    // Unlit: a dark recess with a soft outline
-                    drawPath(arch, PrayerPalette.Night.copy(alpha = if (solid) 0.25f else 0.45f))
-                    if (shown > 0.01f) {
-                        // Lit: gold glow, gold body, a darker inner arch and a tick
-                        drawCircle(PrayerPalette.Gold.copy(alpha = 0.28f * shown), w * 0.62f, Offset(w / 2f, h * 0.58f))
-                        val body = if (solid) {
-                            Brush.verticalGradient(listOf(PrayerPalette.NightPlum, PrayerPalette.Night))
-                        } else {
-                            Brush.verticalGradient(listOf(PrayerPalette.GoldLight, PrayerPalette.Gold, PrayerPalette.GoldDeep))
-                        }
-                        drawPath(arch, body, alpha = shown)
-                        val ink = if (solid) PrayerPalette.GoldLight else PrayerPalette.Night
-                        val tick = Path().apply {
-                            moveTo(w * 0.32f, h * 0.62f)
-                            lineTo(w * 0.46f, h * 0.76f)
-                            lineTo(w * 0.70f, h * 0.48f)
-                        }
-                        drawPath(
-                            tick,
-                            ink.copy(alpha = shown),
-                            style = Stroke(2.2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
-                        )
-                    }
-                    val edge = when {
-                        shown > 0.01f && !solid -> PrayerPalette.GoldLight
-                        shown > 0.01f -> PrayerPalette.Gold
-                        else -> look.content.copy(alpha = 0.45f)
-                    }
-                    drawPath(arch, edge, style = Stroke(1.3.dp.toPx(), join = StrokeJoin.Round))
-                }
+                ) { drawPrayerBead(pop.coerceIn(0f, 1f), solid, look.content) }
                 names.getOrNull(i)?.let {
                     Text(
                         it,

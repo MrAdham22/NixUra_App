@@ -18,6 +18,7 @@ import com.adhamelgendy.nixura.domain.notification.NotificationPlanner
 import com.adhamelgendy.nixura.domain.notification.NotificationSyncService
 import com.adhamelgendy.nixura.domain.money.CountableHabits
 import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyleDetector
+import com.adhamelgendy.nixura.domain.recognition.HabitTopicDetector
 import com.adhamelgendy.nixura.domain.recognition.HabitNameHandoff
 import com.adhamelgendy.nixura.domain.recognition.HabitRecognizer
 import com.adhamelgendy.nixura.domain.repository.CoachRepository
@@ -103,6 +104,7 @@ fun appModule() = module {
     single { HabitRecognizer(get()) }
     single { HabitNameHandoff() }
     single { GoodHabitFillStyleDetector(get()) }
+    single { HabitTopicDetector(get()) }
     single { CountableHabits(get()) }
     single { CoachEngine(get()) }
     single<CoachResponder> { RuleBasedCoachResponder(get(), get()) }
@@ -160,9 +162,10 @@ fun appModule() = module {
             clock = get(),
             updateHabit = get(),
             pendingDeletions = get(),
+            topics = get(),
         )
     }
-    viewModel { GoodHabitsViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { GoodHabitsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { EventsViewModel(get(), get(), get(), get(), get()) }
     viewModel { CoachViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { com.adhamelgendy.nixura.presentation.voice.VoiceNoteViewModel(get(), get(), get(), get(), get()) }

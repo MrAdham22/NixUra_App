@@ -4,6 +4,7 @@ import com.adhamelgendy.nixura.domain.calculator.DayStatus
 import com.adhamelgendy.nixura.domain.calculator.GoodHabitStatsCalculator
 import com.adhamelgendy.nixura.domain.model.EventCategory
 import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyle
+import com.adhamelgendy.nixura.domain.recognition.HabitTopic
 import com.adhamelgendy.nixura.domain.money.Currencies
 import com.adhamelgendy.nixura.domain.money.HabitCost
 import com.adhamelgendy.nixura.domain.money.MoneySaved
@@ -88,6 +89,8 @@ sealed interface QuitWidgetState {
         /** What the habit used to cost; the widget shows the money saved this streak, like the card. */
         val cost: HabitCost? = null,
         val nowEpochMillis: Long = 0,
+        /** Kind of habit, for the glyph in the badge (same as the in-app card). */
+        val topic: HabitTopic = HabitTopic.OTHER_QUIT,
     ) : QuitWidgetState {
         val clock: WidgetClockSplit get() = WidgetClockSplit.ofElapsed(elapsedMillis)
 
@@ -151,6 +154,10 @@ sealed interface GoodWidgetState {
          */
         val weeklyTarget: Int? = null,
         val todayCount: Int = count,
+        /** Today's own goal (the number of prayer arches of a prayer habit). */
+        val dailyTarget: Int = target,
+        /** Kind of habit, for the glyph in the badge (same as the in-app card). */
+        val topic: HabitTopic = HabitTopic.OTHER_BUILD,
     ) : GoodWidgetState {
         val isWeekly: Boolean get() = weeklyTarget != null
 

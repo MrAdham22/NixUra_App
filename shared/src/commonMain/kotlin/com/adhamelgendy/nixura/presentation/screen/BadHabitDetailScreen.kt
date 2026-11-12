@@ -68,7 +68,7 @@ import com.adhamelgendy.nixura.presentation.components.NixIconView
 import com.adhamelgendy.nixura.presentation.components.NixProgressBar
 import com.adhamelgendy.nixura.presentation.components.SectionLabel
 import com.adhamelgendy.nixura.presentation.components.SubScreen
-import com.adhamelgendy.nixura.presentation.components.badGlyphFor
+import com.adhamelgendy.nixura.presentation.components.icon
 import com.adhamelgendy.nixura.presentation.components.InfoSheet
 import com.adhamelgendy.nixura.presentation.components.habitCardFill
 import com.adhamelgendy.nixura.presentation.components.habitCardGradient
@@ -135,7 +135,7 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                GlyphBadge(badGlyphFor(model.habitId), primary, primary.copy(alpha = 0.14f), size = 46.dp)
+                GlyphBadge(model.topic.icon(), primary, primary.copy(alpha = 0.14f), size = 46.dp)
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(model.name, style = NixType.Title, color = primary)

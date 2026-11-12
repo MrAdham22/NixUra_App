@@ -32,8 +32,15 @@ import com.adhamelgendy.nixura.presentation.appearance.prefersLightContentOnCard
 import com.adhamelgendy.nixura.presentation.theme.DarkNixColors
 import com.adhamelgendy.nixura.presentation.theme.LightNixColors
 import com.adhamelgendy.nixura.presentation.components.NixIcon
-import com.adhamelgendy.nixura.presentation.components.badGlyphFor
-import com.adhamelgendy.nixura.presentation.components.goodGlyphFor
+import com.adhamelgendy.nixura.presentation.components.MAX_PRAYER_BEADS
+import com.adhamelgendy.nixura.presentation.components.drawPrayerArchBadge
+import com.adhamelgendy.nixura.presentation.components.drawPrayerBead
+import com.adhamelgendy.nixura.presentation.components.drawPrayerStar
+import com.adhamelgendy.nixura.presentation.components.icon
+import com.adhamelgendy.nixura.presentation.components.prayerCardColors
+import com.adhamelgendy.nixura.presentation.components.prayerStarIconTint
+import com.adhamelgendy.nixura.domain.recognition.PrayerHabitDetector
+import androidx.compose.ui.graphics.Color
 import com.adhamelgendy.nixura.presentation.strings.Strings
 import com.adhamelgendy.nixura.presentation.strings.stringsFor
 import com.adhamelgendy.nixura.presentation.util.formatDateTime
@@ -139,8 +146,11 @@ internal object WidgetRenderer {
         tint(rv, R.id.w_border, if (lightText) 0xFFFFFFFF.toInt() else 0xFF000000.toInt(), if (lightText) 36 else 26)
         rv.setViewPadding(R.id.w_content, px(env, plan.paddingDp), px(env, plan.paddingDp), px(env, plan.paddingDp), px(env, plan.paddingDp))
 
-        badge(env, rv, plan, glyphRes(badGlyphFor(st.habitId)), primary, 36)
+        badge(env, rv, plan, st.topic.icon(), primary)
         text(rv, R.id.w_name, st.name, primary)
+        // The planner shrinks the name (after dropping the badge) so that no word is split across lines
+        if (plan.titleSizeDp > 0) rv.setTextViewTextSize(R.id.w_name, TypedValue.COMPLEX_UNIT_DIP, plan.titleSizeDp.toFloat())
+        if (plan.variant == WidgetVariant.ROW) rv.setInt(R.id.w_name, "setMaxLines", plan.titleMaxLines)
         if (plan.variant == WidgetVariant.FULL) {
             rv.setInt(R.id.w_name, "setMaxLines", plan.titleMaxLines)
             text(rv, R.id.w_eyebrow, env.s.clearFor.uppercase(), muted)
@@ -171,38 +181,64 @@ internal object WidgetRenderer {
 
     private fun goodCard(env: Env, st: GoodWidgetState.Active): RenderedWidget {
         val c = env.c
+        // A prayer habit is drawn like the in-app prayer card: night sky with the star tiling, mosque and moon, gold
+        // frame, arch badge, star buttons and one arch per prayer (all painted by the card's own drawing code).
+        val prayer = st.fillStyle == GoodHabitFillStyle.PRAYER
+        val marks = if (prayer && !st.isWeekly && st.dailyTarget in 2..MAX_PRAYER_BEADS) st.dailyTarget else 0
         // The planner puts the habit name first: it drops the badge, then moves the buttons below the name, before the
         // name would be squeezed; on short wide widgets (about 4x2) it keeps the streak row.
-        val plan = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, env.widthDp, env.heightDp, title = st.name)
+        val plan = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, env.widthDp, env.heightDp, title = st.name, prayerMarks = marks, prayer = prayer)
         val stacked = plan.controlsBelow
+        val full = plan.variant == WidgetVariant.FULL
         val layout = when {
+            prayer && stacked && full -> R.layout.widget_good_prayer_narrow
             stacked -> R.layout.widget_good_full_narrow // buttons under the name; rows the plan hides stay hidden
-            plan.variant == WidgetVariant.FULL -> R.layout.widget_good_full
+            prayer && full -> R.layout.widget_good_prayer
+            full -> R.layout.widget_good_full
             plan.variant == WidgetVariant.ROW -> R.layout.widget_good_row
             else -> R.layout.widget_good_slim
         }
+        val prayerLayout = layout == R.layout.widget_good_prayer || layout == R.layout.widget_good_prayer_narrow
         val hasBadge = layout != R.layout.widget_good_slim
         val hasProgress = layout != R.layout.widget_good_slim
-        val hasWeek = layout == R.layout.widget_good_full || layout == R.layout.widget_good_full_narrow // narrow is also used by SLIM when stacked; the plan then hides the strip
-        val hasStreak = layout == R.layout.widget_good_full || layout == R.layout.widget_good_full_narrow || layout == R.layout.widget_good_row
+        val hasWeek = layout != R.layout.widget_good_row && layout != R.layout.widget_good_slim // narrow is also used by SLIM when stacked; the plan then hides the strip
+        val hasStreak = layout != R.layout.widget_good_slim
         val rv = RemoteViews(env.context.packageName, layout)
         // Same fill as GoodHabitCard (goodFillColors): the card turns green, or fills with water, as today's count grows.
         val nix = if (env.darkTheme) DarkNixColors else LightNixColors
         val water = st.fillStyle == GoodHabitFillStyle.WATER
         val fill = goodFillColors(st.progress, water, nix)
-        val content = fill.content.toArgb()
-        val muted = fill.contentMuted.toArgb()
-        val cardTone = fill.background.toArgb()
+        val pc = if (prayer) prayerCardColors(st.progress) else null
+        val contentC = pc?.content ?: fill.content
+        val backgroundC = pc?.background ?: fill.background
+        val doneSquareC = pc?.doneSquare ?: fill.doneSquare
+        val content = contentC.toArgb()
+        val muted = (pc?.contentMuted ?: fill.contentMuted).toArgb()
+        val cardTone = backgroundC.toArgb()
         val tone = if (st.progress > 0f) content else c.accent
-
-        if (water) {
-            val (bw, bh) = paintSizePx(env)
-            rv.setImageViewBitmap(R.id.w_bg, WidgetCardPainter.liquid(bw, bh, dpPx(env, 22f), st.progress, nix.surface, fill.liquidSurface, fill.liquidDepth))
-        } else {
-            tint(rv, R.id.w_bg, cardTone)
-        }
-        tint(rv, R.id.w_border, c.border, c.borderAlpha)
+        val solid = st.progress >= 0.99f
+        val density = env.context.resources.displayMetrics.density
         val pad = px(env, plan.paddingDp)
+
+        when {
+            prayer -> {
+                val (bw, bh) = paintSizePx(env)
+                // The mosque stands in the room left under the rows (and the bottom padding) of a tall widget;
+                // a short widget gets the big mosque of the Home row, as the scene decides by height.
+                val freeDp = if (prayerLayout) bh / density - 2 * plan.paddingDp - plan.usedHeightDp + plan.paddingDp - 2f else Float.MAX_VALUE
+                rv.setImageViewBitmap(R.id.w_bg, WidgetCardPainter.prayerCard(bw, bh, density, 22f, st.progress, freeDp))
+                tint(rv, R.id.w_border, c.border, 0) // the gold frame is painted
+            }
+            water -> {
+                val (bw, bh) = paintSizePx(env)
+                rv.setImageViewBitmap(R.id.w_bg, WidgetCardPainter.liquid(bw, bh, dpPx(env, 22f), st.progress, nix.surface, fill.liquidSurface, fill.liquidDepth))
+                tint(rv, R.id.w_border, c.border, c.borderAlpha)
+            }
+            else -> {
+                tint(rv, R.id.w_bg, cardTone)
+                tint(rv, R.id.w_border, c.border, c.borderAlpha)
+            }
+        }
         rv.setViewPadding(R.id.w_content, pad, pad, pad, pad)
 
         text(rv, R.id.w_name, st.name, content)
@@ -216,46 +252,82 @@ internal object WidgetRenderer {
         text(rv, R.id.w_sub, if (streakInRow) progressText else if (stacked) streakText else "$streakText · $progressText", progressColor)
         if (stacked) {
             text(rv, R.id.w_count, "${st.count}/${st.target}", content)
-            rv.setTextViewTextSize(R.id.w_count, TypedValue.COMPLEX_UNIT_DIP, if (plan.variant == WidgetVariant.FULL) 24f else 20f)
+            rv.setTextViewTextSize(R.id.w_count, TypedValue.COMPLEX_UNIT_DIP, if (full) 24f else 20f)
             show(rv, R.id.w_sub, !streakInRow) // the count is on the button row; the sub line only carries the streak when there is no streak row
         }
         if (hasBadge) {
-            badge(env, rv, plan, glyphRes(goodGlyphFor(st.habitId)), tone, 36)
+            if (prayer) {
+                show(rv, R.id.w_badge, plan.showBadge)
+                val size = (44 * density).toInt()
+                rv.setImageViewBitmap(R.id.w_badge_bg, WidgetCardPainter.compose(size, size, density) { drawPrayerArchBadge(solid) })
+                show(rv, R.id.w_badge_icon, false)
+            } else {
+                badge(env, rv, plan, st.topic.icon(), tone)
+            }
         }
 
         // buttons as on the card: a soft minus in the content color, and plus in the accent (content-colored once done,
-        // with a tick when a once-a-day habit is done)
-        tint(rv, R.id.w_minus_bg, content, 26)
-        tint(rv, R.id.w_minus_bd, c.border, 0)
-        tint(rv, R.id.w_minus_icon, content)
+        // with a tick when a once-a-day habit is done); the gold and outlined stars on a prayer card
         show(rv, R.id.w_minus, plan.showMinus)
-        tint(rv, R.id.w_plus_bg, if (st.done) content else c.accent)
-        rv.setImageViewResource(R.id.w_plus_icon, if (st.done && (st.target == 1 || st.isWeekly)) R.drawable.ic_w_tick else R.drawable.ic_w_plus)
-        tint(rv, R.id.w_plus_icon, if (st.done) cardTone else c.onAccent)
+        val plusIcon = if (st.done && (st.target == 1 || st.isWeekly)) R.drawable.ic_w_tick else R.drawable.ic_w_plus
+        rv.setImageViewResource(R.id.w_plus_icon, plusIcon)
+        if (prayer) {
+            val size = (52 * density).toInt()
+            rv.setImageViewBitmap(R.id.w_minus_bg, WidgetCardPainter.compose(size, size, density) { drawPrayerStar(true, solid, contentC) })
+            tint(rv, R.id.w_minus_bd, c.border, 0)
+            tint(rv, R.id.w_minus_icon, prayerStarIconTint(true, solid, contentC).toArgb())
+            rv.setImageViewBitmap(R.id.w_plus_bg, WidgetCardPainter.compose(size, size, density) { drawPrayerStar(false, solid, contentC) })
+            tint(rv, R.id.w_plus_icon, prayerStarIconTint(false, solid, contentC).toArgb())
+        } else {
+            tint(rv, R.id.w_minus_bg, content, 26)
+            tint(rv, R.id.w_minus_bd, c.border, 0)
+            tint(rv, R.id.w_minus_icon, content)
+            tint(rv, R.id.w_plus_bg, if (st.done) content else c.accent)
+            tint(rv, R.id.w_plus_icon, if (st.done) cardTone else c.onAccent)
+        }
         rv.setContentDescription(R.id.w_plus, env.s.widgetAddOne)
         rv.setContentDescription(R.id.w_minus, env.s.widgetRemoveOne)
         rv.setOnClickPendingIntent(R.id.w_plus, WidgetIntents.adjust(env.context, env.widgetId, st.habitId, increment = true))
         rv.setOnClickPendingIntent(R.id.w_minus, WidgetIntents.adjust(env.context, env.widgetId, st.habitId, increment = false))
 
         if (hasProgress) {
-            show(rv, R.id.w_prog, plan.showProgress)
+            show(rv, R.id.w_prog, plan.showProgress && !prayer) // the prayer card has its arches instead
             tint(rv, R.id.w_prog_track, content, 26)
             tint(rv, R.id.w_prog_fill, if (st.progress > 0f) content else c.accent)
             rv.setInt(R.id.w_prog_fill, "setImageLevel", (st.progress * 10_000).toInt())
         }
+        if (prayerLayout) {
+            // one arch per prayer, gold with a tick once prayed; the five prayers' names under them
+            val markIds = intArrayOf(R.id.w_mark0, R.id.w_mark1, R.id.w_mark2, R.id.w_mark3, R.id.w_mark4, R.id.w_mark5, R.id.w_mark6, R.id.w_mark7)
+            val cellIds = intArrayOf(R.id.w_mark_cell0, R.id.w_mark_cell1, R.id.w_mark_cell2, R.id.w_mark_cell3, R.id.w_mark_cell4, R.id.w_mark_cell5, R.id.w_mark_cell6, R.id.w_mark_cell7)
+            val nameIds = intArrayOf(R.id.w_mark_name0, R.id.w_mark_name1, R.id.w_mark_name2, R.id.w_mark_name3, R.id.w_mark_name4, R.id.w_mark_name5, R.id.w_mark_name6, R.id.w_mark_name7)
+            val names = if (marks == PrayerHabitDetector.DAILY_PRAYERS) env.s.prayerNames else emptyList()
+            val mw = (30 * density).toInt()
+            val mh = (34 * density).toInt()
+            for (i in markIds.indices) {
+                show(rv, cellIds[i], i < marks)
+                if (i >= marks) continue
+                val lit = i < st.todayCount
+                rv.setImageViewBitmap(markIds[i], WidgetCardPainter.compose(mw, mh, density) { drawPrayerBead(if (lit) 1f else 0f, solid, contentC) })
+                val name = names.getOrNull(i)
+                show(rv, nameIds[i], name != null)
+                if (name != null) text(rv, nameIds[i], name, if (lit) content else muted)
+            }
+            show(rv, R.id.w_marks, plan.showPrayerMarks && marks > 0)
+        }
         if (hasWeek) {
             // week strip: same colors as WeekStrip/DaySquare on the card (idle = content at 10%, colored by how much of
             // the target was reached); today gets a real outline (dedicated drawable, tinted with the content color)
-            val onLightContent = !fill.background.prefersLightContentOnCard()
+            val onLightContent = !backgroundC.prefersLightContentOnCard()
             val todayFrame = if (onLightContent) R.drawable.widget_square_today_on_light else R.drawable.widget_square_today_on_dark
-            val idle = fill.content.copy(alpha = 0.10f).compositeOver(fill.background)
+            val idle = contentC.copy(alpha = 0.10f).compositeOver(backgroundC)
             val letters = env.s.weekdayLetters
             val sq = intArrayOf(R.id.w_wk_sq0, R.id.w_wk_sq1, R.id.w_wk_sq2, R.id.w_wk_sq3, R.id.w_wk_sq4, R.id.w_wk_sq5, R.id.w_wk_sq6)
             val bd = intArrayOf(R.id.w_wk_bd0, R.id.w_wk_bd1, R.id.w_wk_bd2, R.id.w_wk_bd3, R.id.w_wk_bd4, R.id.w_wk_bd5, R.id.w_wk_bd6)
             val lt = intArrayOf(R.id.w_wk_letter0, R.id.w_wk_letter1, R.id.w_wk_letter2, R.id.w_wk_letter3, R.id.w_wk_letter4, R.id.w_wk_letter5, R.id.w_wk_letter6)
             st.week.forEachIndexed { i, day ->
                 text(rv, lt[i], letters.getOrElse(day.isoWeekday - 1) { "" }, muted)
-                if (day.enabled) tint(rv, sq[i], lerp(idle, fill.doneSquare, day.ratio).toArgb()) else tint(rv, sq[i], c.surface, 0)
+                if (day.enabled) tint(rv, sq[i], lerp(idle, doneSquareC, day.ratio).toArgb()) else tint(rv, sq[i], c.surface, 0)
                 when {
                     day.isToday -> {
                         rv.setImageViewResource(bd[i], todayFrame)
@@ -402,24 +474,16 @@ internal object WidgetRenderer {
         IntArray(5) { i -> (edges[i + 1] - edges[i]).roundToInt().coerceAtLeast(0) }
     }.getOrNull()
 
-    /** Glyph badge: tinted icon on a rounded square of the same color at 14% (as `GlyphBadge`). */
-    private fun badge(env: Env, rv: RemoteViews, plan: WidgetLayoutPlan, iconRes: Int, color: Int, @Suppress("UNUSED_PARAMETER") sizeDp: Int) {
+    /**
+     * Glyph badge: the habit's category icon on a rounded square of the same color at 14% (as `GlyphBadge`). The icon
+     * is drawn by the app's own icon code ([drawNixIcon]) into a bitmap, so widget and card show the same glyph.
+     */
+    private fun badge(env: Env, rv: RemoteViews, plan: WidgetLayoutPlan, icon: NixIcon, color: Int) {
         show(rv, R.id.w_badge, plan.showBadge)
-        rv.setImageViewResource(R.id.w_badge_icon, iconRes)
-        tint(rv, R.id.w_badge_icon, color)
+        if (!plan.showBadge) return
+        val density = env.context.resources.displayMetrics.density
+        rv.setImageViewBitmap(R.id.w_badge_icon, WidgetCardPainter.icon((24 * density).toInt(), density, icon, Color(color)))
         tint(rv, R.id.w_badge_bg, color, 36)
-    }
-
-    private fun glyphRes(icon: NixIcon): Int = when (icon) {
-        NixIcon.Flame -> R.drawable.ic_w_flame
-        NixIcon.Shield -> R.drawable.ic_w_shield
-        NixIcon.Moon -> R.drawable.ic_w_moon
-        NixIcon.Sparkle -> R.drawable.ic_w_sparkle
-        NixIcon.Leaf -> R.drawable.ic_w_leaf
-        NixIcon.Sun -> R.drawable.ic_w_sun
-        NixIcon.CircleCheck -> R.drawable.ic_w_check
-        NixIcon.Clock -> R.drawable.ic_w_clock
-        else -> R.drawable.ic_w_sparkle
     }
 
     /** Empty, "tap to choose" and error states, drawn as a small card in the same style. */

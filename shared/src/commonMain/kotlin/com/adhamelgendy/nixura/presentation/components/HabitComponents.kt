@@ -83,12 +83,6 @@ import org.koin.compose.koinInject
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-private val BadGlyphs = listOf(NixIcon.Flame, NixIcon.Shield, NixIcon.Moon, NixIcon.Sparkle, NixIcon.Leaf, NixIcon.Sun)
-private val GoodGlyphs = listOf(NixIcon.Leaf, NixIcon.Sun, NixIcon.Sparkle, NixIcon.CircleCheck, NixIcon.Moon, NixIcon.Clock)
-
-fun badGlyphFor(id: Long): NixIcon = BadGlyphs[(id.coerceAtLeast(0) % BadGlyphs.size).toInt()]
-fun goodGlyphFor(id: Long): NixIcon = GoodGlyphs[(id.coerceAtLeast(0) % GoodGlyphs.size).toInt()]
-
 /** Preset card colors. `null` (Auto) uses the default NixUra brand progression. */
 val HabitColorPresets: List<Long> = listOf(
     0xFFAE445A, 0xFF862549, 0xFFF39F5A, 0xFF8E44AD, 0xFF2A9D8F, 0xFF4C6FFF, 0xFF3FA66B, 0xFFE9C46A,
@@ -246,7 +240,7 @@ fun BadHabitCard(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            GlyphBadge(badGlyphFor(model.habitId), primary, primary.copy(alpha = 0.14f))
+            GlyphBadge(model.topic.icon(), primary, primary.copy(alpha = 0.14f))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(model.name, style = NixType.Heading, color = primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -466,7 +460,7 @@ fun GoodHabitCard(
             if (habit.fillStyle == GoodHabitFillStyle.PRAYER) {
                 PrayerArchBadge(look)
             } else {
-                GlyphBadge(goodGlyphFor(habit.id), if (look.fill > 0f) look.content else c.accent, (if (look.fill > 0f) look.content else c.accent).copy(alpha = 0.14f))
+                GlyphBadge(habit.topic.icon(), if (look.fill > 0f) look.content else c.accent, (if (look.fill > 0f) look.content else c.accent).copy(alpha = 0.14f))
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {

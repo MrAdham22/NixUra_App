@@ -1,5 +1,7 @@
 package com.adhamelgendy.nixura.presentation.goodhabits
 
+import com.adhamelgendy.nixura.domain.recognition.HabitTopic
+import com.adhamelgendy.nixura.domain.recognition.HabitTopicDetector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.adhamelgendy.nixura.domain.calculator.GoodHabitStatsCalculator
@@ -45,6 +47,8 @@ data class GoodHabitUi(
     val countsByDay: Map<Long, Int>,
     val createdDayIndex: Long,
     val fillStyle: GoodHabitFillStyle = GoodHabitFillStyle.PLAIN,
+    /** Kind of habit, for the glyph on the card (derived from the name). */
+    val topic: HabitTopic = HabitTopic.OTHER_BUILD,
     /** `null` = daily habit. Otherwise days a week; then streaks and [daysCompleted] are in weeks. */
     val weeklyTarget: Int? = null,
     /** What the card fills with: today's count / daily target, or days done / goal this week. */
@@ -83,12 +87,14 @@ class GoodHabitsViewModel(
     private val dayCalculator: DayCalculator,
     private val fillStyles: GoodHabitFillStyleDetector,
     pendingDeletions: PendingDeletions,
+    private val topics: HabitTopicDetector? = null,
 ) : ViewModel() {
 
     private val transient = MutableStateFlow(GoodHabitsUiState())
 
     /** Habit name → fill style. Only touched inside the one uiState flow, which runs sequentially. */
     private val styleCache = HashMap<String, GoodHabitFillStyle>()
+    private val topicCache = HashMap<String, HabitTopic>()
     private val tick = MutableStateFlow(0L)
     private val initialState = GoodHabitsUiState(todayIndex = dayCalculator.dayIndexOf(clock.nowEpochMillis()))
 
@@ -180,6 +186,7 @@ class GoodHabitsViewModel(
             countsByDay = GoodHabitStatsCalculator.countsByDay(this),
             createdDayIndex = createdDay,
             fillStyle = styleCache.getOrPut(habit.name) { fillStyles.styleFor(habit.name) },
+            topic = topics?.let { t -> topicCache.getOrPut(habit.name) { t.buildTopic(habit.name) } } ?: HabitTopic.OTHER_BUILD,
             weeklyTarget = habit.weeklyTarget,
             progressCount = stats.progressCount,
             progressTarget = stats.progressTarget,
