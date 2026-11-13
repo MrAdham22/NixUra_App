@@ -39,6 +39,9 @@ interface CoachRepository {
     /** A chat the user has not written in yet, if any. */
     suspend fun unusedConversationId(): Long?
     suspend fun hasMessages(conversationId: Long): Boolean
+
+    /** Replaces the greeting of a chat the user has not written in yet, so it matches today's habits and name. */
+    suspend fun refreshGreeting(conversationId: Long, text: String)
     suspend fun createConversation(): Long
     suspend fun append(conversationId: Long, role: CoachRole, text: String, visuals: List<String> = emptyList()): Long
     suspend fun delete(conversationId: Long)

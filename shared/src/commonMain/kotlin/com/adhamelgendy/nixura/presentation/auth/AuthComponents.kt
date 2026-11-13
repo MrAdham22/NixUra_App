@@ -2,6 +2,7 @@ package com.adhamelgendy.nixura.presentation.auth
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,6 +39,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.adhamelgendy.nixura.resources.Res
+import com.adhamelgendy.nixura.resources.nixura_logo
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -113,14 +117,17 @@ fun passwordProblemText(problem: PasswordProblem, s: Strings): String = when (pr
     PasswordProblem.LowVariety -> s.pwLowVariety
 }
 
-/** The leaf tile used on the landing and account screens. */
+/**
+ * The NixUra logo (the app icon: a broken chain with a glowing "i") as a rounded tile. Used on the landing and account
+ * screens, the top bar and Settings. Decorative: the "NixUra" name is always written next to it.
+ */
 @Composable
 fun BrandMark(modifier: Modifier = Modifier, size: Dp = 56.dp) {
-    Box(
-        modifier.size(size).clip(RoundedCornerShape(size * 0.32f))
-            .background(Brush.linearGradient(listOf(NixUraPalette.Rose, NixUraPalette.Orange))),
-        contentAlignment = Alignment.Center,
-    ) { NixIconView(NixIcon.Leaf, NixUraPalette.Navy, size = size * 0.57f) }
+    Image(
+        painter = painterResource(Res.drawable.nixura_logo),
+        contentDescription = null,
+        modifier = modifier.size(size).clip(RoundedCornerShape(size * 0.28f)),
+    )
 }
 
 /** The brand's main action: rose-to-orange gradient, a slight press-in, and a spinner while [loading]. */

@@ -137,6 +137,13 @@ abstract class CoachMessageDao {
     @Query("SELECT COUNT(*) FROM coach_messages WHERE conversation_id = :conversationId")
     abstract suspend fun messageCount(conversationId: Long): Int
 
+    /** Rewrites the coach's greeting while the user has not written in the chat yet; a used chat is never touched. */
+    @Query(
+        "UPDATE coach_messages SET text = :text WHERE conversation_id = :conversationId AND role = 'COACH' " +
+            "AND NOT EXISTS (SELECT 1 FROM coach_messages u WHERE u.conversation_id = :conversationId AND u.role = 'USER')",
+    )
+    abstract suspend fun refreshUnusedGreeting(conversationId: Long, text: String): Int
+
     @Insert
     abstract suspend fun insertConversation(conversation: CoachConversationEntity): Long
 

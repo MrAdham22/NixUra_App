@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.auth.BrandMark
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -202,7 +203,7 @@ fun SettingsScreen(navigator: Navigator) {
         }
         NixCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                NixIconView(NixIcon.Leaf, c.accent, size = 22.dp)
+                BrandMark(size = 28.dp)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text("NixUra", style = NixType.BodyStrong, color = c.textPrimary)

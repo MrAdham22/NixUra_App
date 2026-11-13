@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.adhamelgendy.nixura.presentation.auth.AccountSheet
+import com.adhamelgendy.nixura.presentation.auth.BrandMark
 import com.adhamelgendy.nixura.presentation.auth.AuthGate
 import com.adhamelgendy.nixura.presentation.components.pressable
 import com.adhamelgendy.nixura.presentation.guide.GuideTarget
@@ -352,10 +353,7 @@ private fun TopBar(navigator: Navigator) {
         Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(Brush.linearGradient(listOf(NixUraPalette.Rose, NixUraPalette.Orange))),
-            contentAlignment = Alignment.Center,
-        ) { NixIconView(NixIcon.Leaf, NixUraPalette.Navy, size = 20.dp) }
+        BrandMark(size = 34.dp)
         Spacer(Modifier.width(10.dp))
         Text("NixUra", style = NixType.Heading, color = c.textPrimary)
         Spacer(Modifier.weight(1f))
