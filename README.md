@@ -1,10 +1,67 @@
+<div align="center">
+
+<img src="docs/assets/nixura-icon.png" alt="NixUra app icon" width="128" height="128" />
+
 # NixUra
 
-**NixUra** (Android and iOS) helps people break bad habits, build good ones and look forward to important moments. It tracks the exact time (days, hours, minutes, seconds) since the last slip, shows progress with cards that lighten as a streak grows, tracks daily good habits on a calendar, counts down to life events with reminders, and includes an on-device AI-style coach.
+**Quit what drains you. Build what lifts you. Count down to what matters.**
 
-> **Naming:** the app is **NixUra** everywhere: launcher label, Gradle project, iOS app name, docs. The app id is `com.adhamelgendy.nixura` (Android `applicationId`, Kotlin packages, iOS bundle id). It replaced the placeholder `com.example.reclaimapp` on 2026-11-05; an install of the old id is a different app to the phone, so uninstall it. The id must never change after publishing to a store.
+An offline-first habit app for **Android and iOS**, written once in **Kotlin Multiplatform** and **Compose Multiplatform**.
 
-## Status (read this first)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-7F52FF?logo=kotlin&logoColor=white)
+![Compose Multiplatform](https://img.shields.io/badge/Compose_Multiplatform-1.12.1-4285F4?logo=jetpackcompose&logoColor=white)
+![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS-AE445A)
+![Room](https://img.shields.io/badge/Room_KMP-v7_schema-F39F5A)
+![Firebase](https://img.shields.io/badge/Firebase-Auth-FFCA28?logo=firebase&logoColor=black)
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)
+![Tests](https://img.shields.io/badge/unit_tests-460%2B-4CC38A)
+
+<img src="docs/assets/hero.png" alt="NixUra screens: home dashboard, habits to quit, habits to build, AI coach" width="100%" />
+
+</div>
+
+## What is NixUra?
+
+NixUra helps people **break bad habits**, **build good ones** and **look forward to important moments**.
+
+- **Quit counters** run live to the second since the last slip. Each card starts in a deep shade and lightens as the streak grows (0, 1, 3, 7, 14 and 30 days), with a body-and-mind recovery timeline and an optional money-saved tracker.
+- **Good habits** have a daily target (for example 8 glasses of water) or run N days a week, with a month calendar, streaks and completion rates. Water habits fill with rising water, and prayer habits turn into a gold card with the five daily prayers.
+- **Events** count down live, with as many reminders as you like. They can also be imported from Google Calendar or Notion.
+- **The coach** works fully offline with rules, and knows what happens to your body after you quit. Signed-in users can opt in to a real AI coach and voice notes, served through a Cloudflare Worker that tries five free AI services in turn.
+- **Home-screen widgets** on Android: a quit counter, a good-habit quick log and an event countdown, drawn like the in-app cards.
+- **Private by default:** guests make no network calls. Accounts (Firebase) are optional.
+
+## Screenshots
+
+All screenshots are from the Android app running on a Pixel 9 emulator, with demo data.
+
+| Home dashboard | Habits to quit | Quit habit analysis |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/home.png" width="250" alt="Home dashboard" /> | <img src="docs/screenshots/quit.png" width="250" alt="Habits to quit" /> | <img src="docs/screenshots/quit-detail.png" width="250" alt="Quit habit analysis" /> |
+| **Habits to build** | **Prayer habit card** | **Good habit analysis** |
+| <img src="docs/screenshots/build.png" width="250" alt="Habits to build" /> | <img src="docs/screenshots/prayer.png" width="250" alt="Prayer habit card" /> | <img src="docs/screenshots/prayer-detail.png" width="250" alt="Good habit analysis" /> |
+| **Event countdowns** | **Coach** | **Coach reply with a progress card** |
+| <img src="docs/screenshots/events.png" width="250" alt="Event countdowns" /> | <img src="docs/screenshots/coach.png" width="250" alt="Coach" /> | <img src="docs/screenshots/coach-chat.png" width="250" alt="Coach reply" /> |
+| **Adding a quit habit (name recognised)** | **Adding a good habit** | **Adding an event with reminders** |
+| <img src="docs/screenshots/add-quit.png" width="250" alt="Add a quit habit" /> | <img src="docs/screenshots/add-good.png" width="250" alt="Add a good habit" /> | <img src="docs/screenshots/add-event.png" width="250" alt="Add an event" /> |
+| **Home-screen widgets** | **Light theme** | **Light theme** |
+| <img src="docs/screenshots/widgets.png" width="250" alt="Android home-screen widgets" /> | <img src="docs/screenshots/home-light.png" width="250" alt="Home in the light theme" /> | <img src="docs/screenshots/quit-light.png" width="250" alt="Quit list in the light theme" /> |
+| **Welcome** | **Sign in** | **Settings** |
+| <img src="docs/screenshots/welcome.png" width="250" alt="Welcome screen" /> | <img src="docs/screenshots/sign-in.png" width="250" alt="Sign-in screen" /> | <img src="docs/screenshots/settings.png" width="250" alt="Settings" /> |
+
+## Engineering highlights
+
+| | |
+|---|---|
+| **One codebase, two platforms** | Domain, data, ViewModels and the entire Compose UI live in one `:shared` Kotlin Multiplatform module. Platform code (notifications, widgets, sign-in SDKs) sits behind `expect`/`actual` and Koin platform modules. |
+| **Clean Architecture + MVVM** | A pure Kotlin `domain` (models, calculators, coach engine, notification planner, repository interfaces), a `data` layer (Room, mappers, repositories) and `presentation` (Compose screens, ViewModels, a small hand-written `Navigator`). |
+| **Offline first** | Room KMP database at schema version 7 with a migration for every step from v1, checked against real SQLite by `tools/room_migration_check.py`. |
+| **Accounts without an SDK lock-in** | Firebase Authentication through its REST API from shared Kotlin (email links, Google, Facebook), with tokens in encrypted storage and a single-flight token refresh. |
+| **Serverless backend** | A TypeScript Cloudflare Worker with D1: Notion OAuth with AES-256-GCM encrypted tokens, plus an AI route that falls back through Gemini, Groq, Workers AI, Mistral and OpenRouter, with daily per-user limits. It never sends a name, email or account id to an AI. |
+| **Live, battery-friendly widgets** | Classic RemoteViews widgets whose clocks are system `Chronometer`s, re-rendered by one inexact alarm at the next moment the text must change. A pure, unit-tested planner picks the layout from the widget size. |
+| **Tested logic** | More than 460 unit tests in `shared/src/commonTest` (day math, streaks, scores, coach replies, habit recognition, notification and widget planning), plus the Worker's own test suite. |
+
+## Project status
 
 | Area | State |
 |------|-------|
@@ -18,8 +75,11 @@
 | Round 3: water fill, card-style widgets, long-press delete with undo, money-saved tracker | Built, tests pass, **seen working on the emulator** (details in DEVELOPMENT_STATUS). Not yet run on the owner's phone. |
 | Google Calendar and Notion import | Google works on the owner's Android phone (2026-11-04): Events, Birthdays, Tasks and Holidays for the user's country, each with its own category. Notion connects through a Cloudflare Worker (`workers/notion`); the owner linked a real Notion workspace from the phone on 2026-11-11 (see [Linking calendars](#linking-calendars-google-calendar-and-notion)). Google Calendar on iOS is not built yet. |
 | AI coach | **Real AI coach built (2026-11-11), with voice notes and animated progress cards.** Signed-in users who agree get AI replies through NixUra's Worker, which tries five free AI services in order and falls back to the offline coach; 10 messages and 2 voice notes a day. AI chat and voice notes worked on the owner's phone (2026-11-11), answered by Gemini, with Groq and Cloudflare as working fallbacks. See [AI coach and voice notes](#ai-coach-and-voice-notes). |
-| Android home-screen widgets (quit counter, good-habit quick log, events) | **Logic confirmed on a device by the owner** (numbers, live clock, "+"/"-", choosing a habit/event). The **card-style redesign** (widgets mirror the in-app cards, size-aware layouts) and the **"Add to Home screen" buttons** are written and type-checked but **not yet run on a device**. 90 pure-logic tests (planner, state mapping, quick-log use cases) compiled with plain `kotlinc` outside Gradle and **passed**. iOS widgets are **not implemented** (planned; need macOS, WidgetKit and an App Group). |
+| Android home-screen widgets (quit counter, good-habit quick log, events) | **Logic confirmed on a device by the owner** (numbers, live clock, "+"/"-", choosing a habit/event). The **card-style redesign** (widgets mirror the in-app cards, size-aware layouts) and the **"Add to Home screen" buttons** were **seen working on the Pixel 9 emulator on 2026-11-14** (quit counter and quick log placed with "Add to Home screen", events widget from the launcher's picker; see the Home-screen widgets screenshot) but **not yet run on a phone**. 90 pure-logic tests (planner, state mapping, quick-log use cases) compiled with plain `kotlinc` outside Gradle and **passed**. iOS widgets are **not implemented** (planned; need macOS, WidgetKit and an App Group). |
+| App icon | **Official NixUra icon** (the broken chain with the glowing "i", owner's artwork, 2026-11-14): Android adaptive icon (`mipmap-*/ic_launcher_foreground.png` on `@color/ic_launcher_background`), legacy square and round icons for Android 7, a 512 px Play Store icon (`androidApp/src/main/ic_launcher-playstore.png`) and the iOS 1024 px `AppIcon`. Seen in the emulator's app drawer and splash screen; iOS not built yet. |
 | iOS | **Approved target, not yet built or run.** Shared UI/logic is written for it (Compose host in `iosApp`, `iosMain` actuals). Reminders are a no-op placeholder until a `UNUserNotificationCenter` implementation is added. Needs macOS + Xcode to verify. |
+
+> **Naming:** the app is **NixUra** everywhere: launcher label, Gradle project, iOS app name, docs. The app id is `com.adhamelgendy.nixura` (Android `applicationId`, Kotlin packages, iOS bundle id). It replaced the placeholder `com.example.reclaimapp` on 2026-11-05; an install of the old id is a different app to the phone, so uninstall it. The id must never change after publishing to a store.
 
 If you are an AI assistant or new developer: read [AGENTS.md](AGENTS.md), then [docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md) (what happened, what is unverified, what is left).
 
@@ -61,7 +121,7 @@ Everything above is working on Android. The owner's remaining work, in no fixed 
 3. **Richer knowledge about specific bad habits, understood from free text.** Add curated info (effects, withdrawal, recovery timeline, tips, triggers) for many more habits, and recognise a habit however the user typed it (synonyms, typos, different phrasing, multi-word names, other languages) so each habit feels personalised: the habit card, analysis screen, coach replies and milestones adapt to it. Today the coach matches the name by simple keyword category (`HabitKnowledgeBase`); this item generalises that. *Round 2:* a catalog of 20 substance, food and drink habits with dense hour/day timelines is written (`domain/coach/catalog/SubstanceCatalog`, unmerged and unverified, see `docs/DEVELOPMENT_STATUS.md`), and a catalog of 28 behavioural, screen, mental and body-reflex habits (`domain/coach/catalog/BehaviorCatalog`, unmerged and unverified, same file).
 4. **Make the app work on iOS.** Build and run `iosApp` on a Mac, fix first-run errors, implement iOS notifications, verify layout/status bar on a real iPhone, then TestFlight.
 
-Smaller backlog (not blocking): Arabic/RTL and translated content, accessibility labels, store readiness (application id/package, icon, privacy policy), more tests, backup/export. Widgets: Android done (see Status), **iOS widgets planned** (WidgetKit + App Group, needs macOS). Details: [docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md).
+Smaller backlog (not blocking): Arabic/RTL and translated content, accessibility labels, store readiness (privacy policy, store listing; the app id and the launcher icon are done), more tests, backup/export. Widgets: Android done (see Status), **iOS widgets planned** (WidgetKit + App Group, needs macOS). Details: [docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md).
 
 ## Visual identity
 
@@ -111,10 +171,12 @@ The coach is behind `CoachResponder` (`RuleBasedCoachResponder` today). A real A
 ## Project structure
 
 ```
-Habbit_app/
+NixUra/
 ├── AGENTS.md                      # entry instructions for AI agents
 ├── androidApp/                    # Android app: Application, MainActivity, notifications, manifest
 ├── docs/
+│   ├── screenshots/               # app screenshots used in this README
+│   ├── assets/                    # README icon and hero banner
 │   ├── PROJECT_CONTEXT.md         # product + architecture reference
 │   ├── DEVELOPMENT_STATUS.md      # what happened, what is verified, what is left
 │   ├── agents/agent-1-handoff.md  # swipe tabs, droplet nav bar, reminder edit/remove (unverified, see file)

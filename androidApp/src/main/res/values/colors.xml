@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="nixura_navy">#FF1D1A39</color>
+    <!-- Launcher icon backdrop, matches the dark interior of the NixUra icon artwork. -->
+    <color name="ic_launcher_background">#FF110721</color>
 </resources>
