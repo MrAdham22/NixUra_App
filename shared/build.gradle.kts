@@ -95,7 +95,3 @@ dependencies {
 room {
     schemaDirectory("$projectDir/schemas")
 }
-compose.resources {
-    // Generated accessors for shared/src/commonMain/composeResources (the NixUra logo).
-    packageOfResClass = "com.adhamelgendy.nixura.resources"
-}
