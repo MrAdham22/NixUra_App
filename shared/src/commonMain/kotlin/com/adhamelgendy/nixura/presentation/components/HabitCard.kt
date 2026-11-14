@@ -70,6 +70,7 @@ fun HabitCard(
             ProgressStageIndicator(
                 stageCount = stageCount,
                 activeStageIndex = activeStageIndex,
+                label = "Stage ${activeStageIndex + 1}/$stageCount",
                 labelColor = mutedText,
                 activeStageColor = primaryText,
                 inactiveStageColor = mutedText.copy(alpha = 0.45f),

@@ -76,11 +76,37 @@ class StreakColorMapper(
     }
 }
 
-/** Relative luminance heuristic for on-card text. */
-fun Color.prefersLightContentOnCard(): Boolean {
-    val r = red
-    val g = green
-    val b = blue
-    val luminance = 0.2126f * r + 0.7152f * g + 0.0722f * b
-    return luminance < 0.55f
+/** Light text on a habit card: a warm near-white, brighter than blush so it stays readable on rose. */
+val CardInkLight = Color(0xFFFFF7F5)
+
+/** Dark text on a habit card (the light end of the streak). */
+val CardInkDark = NixUraPalette.Navy
+
+/** Text colors on a habit card: [primary] for names and counters, [muted] for labels and secondary lines. */
+data class CardInk(val primary: Color, val muted: Color)
+
+/** The text colors that read best on this card color (see [prefersLightContentOnCard]). */
+fun Color.cardInk(): CardInk =
+    if (prefersLightContentOnCard()) CardInk(CardInkLight, CardInkLight.copy(alpha = 0.86f))
+    else CardInk(CardInkDark, CardInkDark.copy(alpha = 0.80f))
+
+/** WCAG relative luminance (0 = black, 1 = white) of an opaque color. */
+fun Color.relativeLuminance(): Float {
+    fun channel(v: Float): Double = if (v <= 0.04045f) v / 12.92 else kotlin.math.exp(2.4 * kotlin.math.ln((v + 0.055) / 1.055))
+    return (0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue)).toFloat()
 }
+
+/** WCAG contrast ratio (1..21) between two opaque colors. */
+fun contrastRatio(a: Color, b: Color): Float {
+    val la = a.relativeLuminance()
+    val lb = b.relativeLuminance()
+    return (maxOf(la, lb) + 0.05f) / (minOf(la, lb) + 0.05f)
+}
+
+/**
+ * True when light text reads better than dark text on this card color: whichever of [CardInkLight] and
+ * [CardInkDark] has the higher contrast ratio wins. (A plain brightness cut-off put blush text on rose cards at
+ * about 2.4:1.)
+ */
+fun Color.prefersLightContentOnCard(): Boolean =
+    contrastRatio(CardInkLight, this) >= contrastRatio(CardInkDark, this)

@@ -1,5 +1,7 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import com.adhamelgendy.nixura.presentation.util.timeLeft
+import com.adhamelgendy.nixura.domain.calculator.MilestoneCalculator
 import com.adhamelgendy.nixura.domain.recognition.PrayerHabitDetector
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -70,6 +72,7 @@ import com.adhamelgendy.nixura.domain.time.CivilCalendar
 import com.adhamelgendy.nixura.presentation.appearance.ShadeRamp
 import com.adhamelgendy.nixura.presentation.appearance.StreakColorMapper
 import com.adhamelgendy.nixura.presentation.appearance.StreakColorProgressionConfig
+import com.adhamelgendy.nixura.presentation.appearance.cardInk
 import com.adhamelgendy.nixura.presentation.appearance.prefersLightContentOnCard
 import com.adhamelgendy.nixura.presentation.goodhabits.GoodHabitUi
 import com.adhamelgendy.nixura.presentation.habits.HabitCardUiModel
@@ -137,7 +140,7 @@ private fun CounterBlockRow(parts: CounterParts, color: Color, mutedColor: Color
                     color = color,
                     maxLines = 1,
                 )
-                Text(unitLabel(unit, s).uppercase(), style = NixType.Eyebrow.copy(fontSize = 9.sp), color = mutedColor, maxLines = 1)
+                Text(unitLabel(unit, s).uppercase(), style = NixType.Eyebrow, color = mutedColor, maxLines = 1)
             }
         }
     }
@@ -225,8 +228,9 @@ fun BadHabitCard(
     val engine = koinInject<CoachEngine>()
     val gradient = habitCardGradient(model)
     val lightOnCard = gradient.middle.prefersLightContentOnCard()
-    val primary = if (lightOnCard) NixUraPalette.onDarkPrimary else NixUraPalette.onLightPrimary
-    val muted = if (lightOnCard) NixUraPalette.onDarkMuted else NixUraPalette.onLightMuted
+    val ink = gradient.middle.cardInk()
+    val primary = ink.primary
+    val muted = ink.muted
     val shape = RoundedCornerShape(26.dp)
     val category = remember(model.name) { engine.categoryFor(model.name) }
 
@@ -253,12 +257,14 @@ fun BadHabitCard(
             CounterBlocks(model.activeElapsed.toCounterParts(), primary, muted, valueSize = 30)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
+            val next = MilestoneCalculator.next(model.activeElapsed)
             ProgressStageIndicator(
                 stageCount = model.stageCount,
                 activeStageIndex = model.activeStageIndex,
+                label = s.nextMilestone(s.milestoneName(next.days), s.timeLeft(next.remaining)),
                 labelColor = muted,
                 activeStageColor = primary,
-                inactiveStageColor = muted.copy(alpha = 0.45f),
+                inactiveStageColor = muted,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -272,9 +278,20 @@ fun BadHabitCard(
                 modifier = Modifier.padding(top = 0.dp),
             )
         }
-        Text(s.longestLabel(model.longestStreakLabel), style = NixType.Small, color = muted)
+        if (model.isLongestYet()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                NixIconView(NixIcon.Sparkle, primary, size = 16.dp)
+                Spacer(Modifier.width(6.dp))
+                Text(s.longestYet, style = NixType.SmallStrong, color = primary)
+            }
+        } else {
+            Text(s.longestLabel(model.longestStreakLabel), style = NixType.Small, color = muted)
+        }
     }
 }
+
+/** The current streak is the best this habit has had (the longest streak includes the one running now). */
+fun HabitCardUiModel.isLongestYet(): Boolean = activeElapsed > Duration.ZERO && activeElapsed >= longestStreak
 
 // ---------- Good habits: day squares, week strip, month calendar ----------
 

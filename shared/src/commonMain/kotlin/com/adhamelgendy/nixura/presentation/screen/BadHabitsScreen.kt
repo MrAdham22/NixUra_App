@@ -35,7 +35,10 @@ import com.adhamelgendy.nixura.presentation.navigation.Route
 import com.adhamelgendy.nixura.presentation.strings.LocalStrings
 import com.adhamelgendy.nixura.presentation.theme.Nix
 import com.adhamelgendy.nixura.presentation.theme.NixType
-import com.adhamelgendy.nixura.presentation.util.formatElapsed
+import com.adhamelgendy.nixura.presentation.util.timeLeft
+import com.adhamelgendy.nixura.domain.calculator.MilestoneCalculator
+import com.adhamelgendy.nixura.domain.money.Currencies
+import androidx.compose.ui.text.style.TextOverflow
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -74,19 +77,46 @@ fun BadHabitsScreen(navigator: Navigator) {
                 onAction = { navigator.push(Route.BadHabitForm()) },
             )
         } else if (state.habits.isNotEmpty()) {
-            val best = state.habits.maxByOrNull { it.activeElapsed }
+            // The closest milestone across all habits: a near goal, instead of repeating a counter from the cards.
+            val nextWin = state.habits
+                .map { it to MilestoneCalculator.next(it.activeElapsed) }
+                .minByOrNull { it.second.remaining }
+            val savings = state.habits.mapNotNull { it.moneySaved }
+            val oneCurrency = savings.map { it.currency }.distinct().singleOrNull()
             NixCard(onClick = { bestInfo = true }) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(s.statHabitsQuitting.uppercase(), style = NixType.Eyebrow, color = c.textMuted)
+                Row(verticalAlignment = Alignment.Top) {
+                    Column(Modifier.weight(2f)) {
+                        Text(s.statNextWin.uppercase(), style = NixType.Eyebrow, color = c.textMuted)
                         Spacer(Modifier.height(4.dp))
-                        Text(state.habits.size.toString(), style = NixType.counter(28), color = c.textPrimary)
+                        if (nextWin != null) {
+                            val (habit, milestone) = nextWin
+                            Text(s.milestoneName(milestone.days), style = NixType.counter(28), color = c.textPrimary, maxLines = 1)
+                            Text(
+                                s.nextWinLine(habit.name, s.timeLeft(milestone.remaining)),
+                                style = NixType.Small,
+                                color = c.textSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                     Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(2f)) {
-                        Text(s.statBestActive.uppercase(), style = NixType.Eyebrow, color = c.textMuted)
-                        Spacer(Modifier.height(4.dp))
-                        Text(best?.let { formatElapsed(it.activeElapsed) } ?: "—", style = NixType.counter(28), color = c.textPrimary)
+                    Column(Modifier.weight(1f)) {
+                        if (oneCurrency != null) {
+                            Text(s.statSaved.uppercase(), style = NixType.Eyebrow, color = c.textMuted)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                Currencies.formatWhole(savings.sumOf { it.savedMinor }, oneCurrency),
+                                style = NixType.counter(22),
+                                color = c.textPrimary,
+                                maxLines = 1,
+                                softWrap = false,
+                            )
+                        } else {
+                            Text(s.statHabitsQuitting.uppercase(), style = NixType.Eyebrow, color = c.textMuted)
+                            Spacer(Modifier.height(4.dp))
+                            Text(state.habits.size.toString(), style = NixType.counter(28), color = c.textPrimary)
+                        }
                     }
                 }
             }
@@ -102,7 +132,12 @@ fun BadHabitsScreen(navigator: Navigator) {
         }
     }
     if (bestInfo) {
-        val best = state.habits.maxByOrNull { it.activeElapsed }
-        InfoSheet(s.statBestActive, best?.let { formatElapsed(it.activeElapsed) }, s.infoBestActive, onDismiss = { bestInfo = false })
+        val next = state.habits.map { it to MilestoneCalculator.next(it.activeElapsed) }.minByOrNull { it.second.remaining }
+        InfoSheet(
+            s.statNextWin,
+            next?.let { (habit, m) -> "${s.milestoneName(m.days)} · ${s.nextWinLine(habit.name, s.timeLeft(m.remaining))}" },
+            s.infoNextWin,
+            onDismiss = { bestInfo = false },
+        )
     }
 }

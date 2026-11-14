@@ -49,7 +49,9 @@ Premium, warm, hierarchical; not minimal-empty; not cluttered. Semantic tokens f
 - Derived from **active streak duration** via `StreakColorMapper` (presentation).
 - Six-stop progression dark → light; provisional thresholds 1d, 3d, 7d, 14d, 30d (configurable).
 - Deterministic; survives recompute after edits; resets visually on relapse.
-- Text + stage indicator — not color alone.
+- Text + stage indicator — not color alone. The stage marker shows the next milestone and the time left (`domain/calculator/MilestoneCalculator`: 1/3/7/14/30/60/90/180/365 days, then yearly).
+- On-card text (2026-11-14): `prefersLightContentOnCard()` picks light (`CardInkLight` #FFF7F5) or dark (navy) ink by WCAG contrast, not a brightness cut-off; `cardInk()` gives primary + muted (86% / 80%). Tested in `CardInkContrastTest` (primary ≥ 3.9:1, about the best two inks can do on a mid-tone card; muted ≥ 3:1).
+- Quit tab stat card: "Next win" (closest milestone across habits) + total saved, replacing "Best active streak".
 
 ## 7. Technical architecture
 

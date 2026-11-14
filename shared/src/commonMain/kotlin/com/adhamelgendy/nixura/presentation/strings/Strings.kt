@@ -80,6 +80,32 @@ open class Strings {
     open val statBestActive: String = "Best active streak"
     open val clearFor: String = "Clear for"
     open val longestLabel: (String) -> String = { "Longest streak $it" }
+    open val longestYet: String = "Your longest streak yet"
+    open val statNextWin: String = "Next win"
+    open val statSaved: String = "Saved"
+    open val infoNextWin: String = "The closest milestone among your quit habits. Hold on until then: every milestone you reach is a win, and a slip never erases the ones behind you."
+    open fun nextWinLine(habit: String, left: String): String = "$habit · in $left"
+    open fun nextMilestone(milestone: String, left: String): String = "Next: $milestone · $left"
+    open fun stageOf(stage: Int, count: Int): String = "Stage $stage of $count"
+    open fun milestoneName(days: Int): String = when {
+        days == 1 -> "1 day"
+        days < 7 -> "$days days"
+        days == 7 -> "1 week"
+        days < 30 && days % 7 == 0 -> "${days / 7} weeks"
+        days == 30 -> "1 month"
+        days < 365 && days % 30 == 0 -> "${days / 30} months"
+        days == 180 -> "6 months"
+        days == 365 -> "1 year"
+        days % 365 == 0 -> "${days / 365} years"
+        else -> "$days days"
+    }
+    /** Time left, short: "3d 20h", "5h 12m", "12m", "under 1m". */
+    open fun timeLeftShort(days: Long, hours: Long, minutes: Long): String = when {
+        days > 0 -> "${days}d ${hours}h"
+        hours > 0 -> "${hours}h ${minutes}m"
+        minutes > 0 -> "${minutes}m"
+        else -> "under 1m"
+    }
 
     // Bad habit form
     open val newBadHabit: String = "New habit to quit"
