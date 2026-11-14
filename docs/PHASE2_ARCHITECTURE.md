@@ -83,3 +83,5 @@ The Phase 2 architecture still holds (domain / data / presentation, MVVM, Koin, 
 - **2026-11-11:** the Notion link moved from the Node `backend/` to a Cloudflare Worker (`workers/notion/`). It checks Firebase ID tokens and stores encrypted Notion tokens in D1. The app's `AuthorizedApi` and `NotionBackendClient` stay the same; only `NIXURA_API_BASE_URL` changed.
 
 - **2026-11-11:** real AI coach and voice notes. New ports `AiCoachGateway` and `VoiceRecorder` (`domain/coach/ai`), client `data/coach/AiCoachClient`, use cases in `domain/usecase/AiCoachUseCases.kt`, UI in `presentation/voice` and `presentation/coach/CoachVisualCards.kt`. The offline `CoachResponder` stays as the fallback. Room v7.
+
+- **2026-11-14:** cloud sync on Firestore. `SyncRemote` is bound to `data/sync/FirestoreSyncRemote` (REST, shared code, own `KtorApiTransport` to `firestore.googleapis.com` behind a second `AuthorizedApi` that shares `FirebaseSession`). New: `SyncRemote.fetch` (refused items read directly), `FirebaseConfig.projectId`, `firestore.rules` + `firestore.indexes.json`. `HttpSyncRemote` removed; `PausedSyncRemote` kept for rollback. No Room schema change.

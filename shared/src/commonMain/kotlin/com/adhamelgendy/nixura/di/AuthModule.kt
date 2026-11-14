@@ -10,7 +10,9 @@ import com.adhamelgendy.nixura.data.auth.KtorApiTransport
 import com.adhamelgendy.nixura.data.auth.KtorFirebaseTransport
 import com.adhamelgendy.nixura.data.auth.SessionManagerImpl
 import com.adhamelgendy.nixura.data.local.NixUraDatabase
-import com.adhamelgendy.nixura.data.sync.PausedSyncRemote
+import com.adhamelgendy.nixura.data.auth.ApiConfig
+import com.adhamelgendy.nixura.data.sync.FIRESTORE_BASE_URL
+import com.adhamelgendy.nixura.data.sync.FirestoreSyncRemote
 import com.adhamelgendy.nixura.data.sync.RoomSyncLocalStore
 import com.adhamelgendy.nixura.domain.auth.AccountProfileSync
 import com.adhamelgendy.nixura.domain.auth.AuthRepository
@@ -58,14 +60,27 @@ fun authModule() = module {
     single { FirebaseAuthApi(get(), KtorFirebaseTransport(get<FirebaseConfig>())) }
     // One shared instance: its single-flight token refresh only works if every signed-in call goes through it.
     single { FirebaseSession(get(), get(), get()) }
-    single<AuthRepository> { FirebaseAuthRepository(get(), get(), get(), get(), eraseServerData = { get<NotionBackendClient>().disconnect() }) }
+    single<AuthRepository> { FirebaseAuthRepository(get(), get(), get(), get(), eraseServerData = {
+        // Synced data first, while the account still exists; leftovers (offline, partial) can be swept later.
+        runCatching { get<FirestoreSyncRemote>().deleteEverything() }
+        get<NotionBackendClient>().disconnect()
+    }) }
     single<ApiTransport> { KtorApiTransport(get()) }
     single { AuthorizedApi(get(), get()) }
     factory { AccountProfileSync(get(), get()) }
 
-    // Cloud sync. Platform modules provide BackgroundSyncScheduler. Paused until it moves to Firestore (next step):
-    // NixUra's old server does not accept Firebase sign-ins.
-    single<SyncRemote> { PausedSyncRemote }
+    // Cloud sync on Firestore (REST, shared code). Platform modules provide BackgroundSyncScheduler. Its own transport
+    // (Firestore's address) but the same FirebaseSession, so token renewal stays single-flight. To pause sync again,
+    // bind SyncRemote to data.sync.PausedSyncRemote and set CloudSync.AVAILABLE to false.
+    single {
+        FirestoreSyncRemote(
+            api = AuthorizedApi(KtorApiTransport(ApiConfig(FIRESTORE_BASE_URL)), get()),
+            projectId = get<FirebaseConfig>().projectId,
+            sessions = get(),
+            clock = get(),
+        )
+    }
+    single<SyncRemote> { get<FirestoreSyncRemote>() }
     single<SyncLocalStore> { RoomSyncLocalStore(get<NixUraDatabase>().syncDao(), get(), get(), get()) }
     single { SyncEngine(get(), get(), get(), get()) }
     single { SyncCoordinator(get(), get(), get(), get()) }

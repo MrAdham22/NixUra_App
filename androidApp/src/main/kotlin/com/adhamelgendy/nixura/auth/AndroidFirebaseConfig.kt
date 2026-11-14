@@ -20,6 +20,7 @@ object AndroidFirebaseConfig {
             put("X-Android-Package", context.packageName)
             signingSha1(context)?.let { put("X-Android-Cert", it) }
         },
+        projectId = string(context, "project_id"),
     )
 
     /** The Firebase project's web OAuth client, used by Google sign-in. Empty if `google-services.json` has none. */

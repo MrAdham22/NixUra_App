@@ -17,7 +17,12 @@ import kotlinx.serialization.KSerializer
  * `GoogleService-Info.plist`); it identifies the project and is not a secret, but Google may restrict it to this app,
  * so [platformHeaders] carry the app's identity (Android package + signing SHA-1, or the iOS bundle id).
  */
-data class FirebaseConfig(val apiKey: String, val platformHeaders: Map<String, String> = emptyMap())
+data class FirebaseConfig(
+    val apiKey: String,
+    val platformHeaders: Map<String, String> = emptyMap(),
+    /** The Firebase project id (`nixura`), where cloud sync keeps its Firestore data. */
+    val projectId: String = "",
+)
 
 /** One POST to a Firebase REST endpoint. A seam so the account logic is testable without a network. */
 internal interface FirebaseTransport {

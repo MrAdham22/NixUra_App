@@ -43,6 +43,12 @@ interface SyncRemote {
     /** Returns the records the server refused because it holds a newer version. */
     suspend fun push(records: List<SyncRecord>): SyncRemoteResult<List<SyncRecord>>
     suspend fun pull(cursor: String): SyncRemoteResult<SyncPage>
+
+    /**
+     * The server's current version of [records] (refused by [push]). The pull cursor may already be past them, when
+     * this phone pulled the newer version and was then edited with a clock running behind, so they are fetched directly.
+     */
+    suspend fun fetch(records: List<SyncRecord>): SyncRemoteResult<List<SyncRecord>> = SyncRemoteResult.Ok(emptyList())
 }
 
 /** This device's copy of the data. Implemented over Room. */
@@ -160,20 +166,26 @@ class SyncEngine(
         pullAll(adopt)?.let { return it }
         if (adopt) sessions.markGuestHandoffHandled()
 
-        var refused = false
+        val refused = ArrayList<SyncRecord>()
         repeat(MAX_PUSH_BATCHES) {
             val batch = local.pendingRecords(PUSH_BATCH)
             if (batch.isEmpty()) return@repeat
             when (val result = remote.push(batch)) {
                 is SyncRemoteResult.Ok -> {
                     local.markUploaded(batch)
-                    if (result.value.isNotEmpty()) refused = true
+                    refused += result.value
                 }
                 else -> return failureOf(result)
             }
         }
         // The server holds something newer than what was just sent: fetch it, so this device ends up the same.
-        if (refused) pullAll(adoptGuestData = false)?.let { return it }
+        if (refused.isNotEmpty()) {
+            pullAll(adoptGuestData = false)?.let { return it }
+            when (val current = remote.fetch(refused)) {
+                is SyncRemoteResult.Ok -> if (current.value.isNotEmpty()) local.applyRemote(current.value, local.cursor(), adoptGuestData = false)
+                else -> return failureOf(current)
+            }
+        }
 
         local.setLastSyncedAt(clock.nowEpochMillis())
         return SyncOutcome.Synced

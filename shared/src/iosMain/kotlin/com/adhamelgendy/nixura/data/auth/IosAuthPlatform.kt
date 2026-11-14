@@ -101,6 +101,7 @@ fun iosFirebaseConfig(): FirebaseConfig {
     return FirebaseConfig(
         apiKey = apiKey.orEmpty(),
         platformHeaders = if (bundleId != null) mapOf("X-Ios-Bundle-Identifier" to bundleId) else emptyMap(),
+        projectId = (values?.objectForKey("PROJECT_ID") as? String).orEmpty(),
     )
 }
 
