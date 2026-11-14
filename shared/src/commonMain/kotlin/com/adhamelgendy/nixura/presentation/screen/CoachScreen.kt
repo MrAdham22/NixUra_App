@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.components.GlowIconButton
 import com.adhamelgendy.nixura.presentation.util.forDisplay
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -274,7 +275,7 @@ fun CoachHistoryScreen(navigator: Navigator) {
         title = s.coachHistoryTitle,
         onBack = { navigator.back() },
         actions = {
-            NixIconButton(NixIcon.Plus, { vm.onNewChat(); navigator.back() }, tint = c.onAccent, background = c.accent, bordered = false, size = 40.dp)
+            GlowIconButton(NixIcon.Plus, { vm.onNewChat(); navigator.back() }, size = 40.dp)
         },
     ) {
         if (state.conversations.isEmpty()) {

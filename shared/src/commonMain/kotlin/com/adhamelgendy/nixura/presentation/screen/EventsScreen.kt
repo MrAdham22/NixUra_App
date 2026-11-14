@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.components.GlowIconButton
 import com.adhamelgendy.nixura.domain.widget.WidgetKind
 import com.adhamelgendy.nixura.presentation.components.rememberAddToHomeAction
 import com.adhamelgendy.nixura.presentation.deletion.SheetAction
@@ -53,13 +54,10 @@ fun EventsScreen(navigator: Navigator) {
             title = s.eventsTitle,
             subtitle = s.eventsSubtitle,
             trailing = {
-                NixIconButton(
+                GlowIconButton(
                     NixIcon.Plus,
                     { navigator.push(Route.EventForm()) },
                     modifier = Modifier.guideTarget(GuideTarget.AddEvent),
-                    tint = c.onAccent,
-                    background = c.accent,
-                    bordered = false,
                 )
             },
         )

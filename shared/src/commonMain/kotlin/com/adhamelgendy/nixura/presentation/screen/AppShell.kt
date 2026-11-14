@@ -1,5 +1,10 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.ColorFilter
+import nixura.shared.generated.resources.nixura_logo
 import nixura.shared.generated.resources.nixura_icon
 import nixura.shared.generated.resources.Res
 import org.jetbrains.compose.resources.painterResource
@@ -358,7 +363,16 @@ private fun TopBar(navigator: Navigator) {
         Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Image(painterResource(Res.drawable.nixura_icon), contentDescription = null, modifier = Modifier.size(30.dp).clip(RoundedCornerShape(8.dp)))
+        // The logo alone (no dark square), lifted off the bar with a soft drop shadow (preview 2026-11-14).
+        Box(Modifier.size(38.dp)) {
+            Image(
+                painterResource(Res.drawable.nixura_logo),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.6f)),
+                modifier = Modifier.matchParentSize().offset(x = 1.dp, y = 3.dp).blur(3.dp),
+            )
+            Image(painterResource(Res.drawable.nixura_logo), contentDescription = null, modifier = Modifier.matchParentSize())
+        }
         Spacer(Modifier.width(10.dp))
         Text("NixUra", style = NixType.Heading, color = c.textPrimary)
         Spacer(Modifier.weight(1f))

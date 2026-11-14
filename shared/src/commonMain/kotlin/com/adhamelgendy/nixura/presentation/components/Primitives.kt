@@ -1,5 +1,8 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.input.VisualTransformation
@@ -303,14 +306,14 @@ fun NixProgressBar(progress: Float, modifier: Modifier = Modifier, color: Color 
 @Composable
 fun Avatar(initial: String, modifier: Modifier = Modifier, size: Dp = 40.dp) {
     val c = Nix.colors
+    // The cards' look (deep-to-light gradient, corner light, tinted edge), owner-approved 2026-11-14.
     Box(
         modifier = modifier
             .size(size)
-            .clip(CircleShape)
-            .background(Brush.linearGradient(listOf(c.accent, c.accentWarm))),
+            .cardGlow(CircleShape, listOf(c.accent, c.accentWarm)),
         contentAlignment = Alignment.Center,
     ) {
-        Text(initial.take(1).uppercase(), style = NixType.Heading, color = Color(0xFF1D1A39))
+        Text(initial.take(1).uppercase(), style = NixType.Heading, color = Color(0xFFFFF7F5))
     }
 }
 
@@ -436,3 +439,36 @@ const val MIN_RING_SWEEP = 14f
 /** The app's one card shadow: 12dp, black ambient, a spot shadow tinted [glow] (DESIGN.md, Elevation & Depth). */
 fun Modifier.softLift(shape: Shape, glow: Color): Modifier =
     shadow(elevation = 12.dp, shape = shape, clip = false, ambientColor = Color.Black, spotColor = glow)
+
+/**
+ * The cards' look on a small round control (owner-approved 2026-11-14): a diagonal gradient from a deep shade of [colors]
+ * to its lighter end, a soft light in the top corner and a thin edge of the same hue, lifted with the app's soft
+ * shadow. The same recipe as the emerald good-habit and event cards, without a glassy shine.
+ */
+fun Modifier.cardGlow(shape: Shape, colors: List<Color>): Modifier {
+    val deep = lerp(colors.first(), Color(0xFF1D1A39), 0.38f)
+    val light = colors.last()
+    return this
+        .softLift(shape, colors.first())
+        .clip(shape)
+        .drawBehind {
+            drawRect(Brush.linearGradient(listOf(deep, colors.first(), light), Offset.Zero, Offset(size.width, size.height)))
+            drawRect(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.20f), Color.Transparent), Offset(size.width * 0.85f, 0f), size.maxDimension * 0.75f))
+        }
+        .border(1.dp, lerp(light, Color.White, 0.35f).copy(alpha = 0.45f), shape)
+}
+
+/** A round button ("+" and similar) in the cards' look, see [cardGlow]. */
+@Composable
+fun GlowIconButton(icon: NixIcon, onClick: () -> Unit, modifier: Modifier = Modifier, size: Dp = 42.dp, haptic: Boolean = false) {
+    val c = Nix.colors
+    Box(
+        modifier = modifier
+            .pressable(pressedScale = 0.9f, haptic = haptic, onClick = onClick)
+            .size(size)
+            .cardGlow(CircleShape, listOf(c.accent, lerp(c.accent, c.accentWarm, 0.45f))),
+        contentAlignment = Alignment.Center,
+    ) {
+        NixIconView(icon, c.onAccent, size = size * 0.5f)
+    }
+}

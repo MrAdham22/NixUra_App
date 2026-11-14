@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.components.GlowIconButton
 import com.adhamelgendy.nixura.presentation.deletion.SheetAction
 import com.adhamelgendy.nixura.domain.widget.WidgetKind
 import com.adhamelgendy.nixura.presentation.components.rememberAddToHomeAction
@@ -55,13 +56,10 @@ fun GoodHabitsScreen(navigator: Navigator) {
             title = s.goodTitle,
             subtitle = s.goodSubtitle,
             trailing = {
-                NixIconButton(
+                GlowIconButton(
                     NixIcon.Plus,
                     { navigator.push(Route.GoodHabitForm()) },
                     modifier = Modifier.guideTarget(GuideTarget.AddGood),
-                    tint = c.onAccent,
-                    background = c.accent,
-                    bordered = false,
                 )
             },
         )

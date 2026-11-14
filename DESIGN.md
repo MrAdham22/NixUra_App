@@ -333,7 +333,8 @@ Each category has its own colour (`eventCategoryColor`): Personal rose, Travel w
 
 ## Brand marks
 
-- The official icon (`composeResources/drawable/nixura_icon.png`, from the Android launcher artwork) appears on the landing screen (88dp, 22dp corners) and in the top bar beside "NixUra" (30dp, 8dp corners).
+- **Logo:** the official broken-chain artwork without its dark square (`composeResources/drawable/nixura_logo.png`, cut out of the launcher foreground), lifted off the top bar with a soft drop shadow (38dp, the logo tinted black at 60%, offset 1/3dp, blurred 3dp). The landing screen keeps the full icon (`nixura_icon.png`, 88dp).
+- **Rose "+" and the avatar (owner-approved 2026-11-14):** the cards' recipe on a small round control (`Modifier.cardGlow`, `GlowIconButton`): a diagonal gradient from a deep shade of the colour to its light end, a soft light in the top corner, a thin edge of the same hue and the soft lift. No glassy shine (tried and rejected). Used by the "+" in the Quit, Build and Events headers, the good-habit and Home "Today" add buttons, the new-chat "+" in chat history, and the avatar (rose to orange, warm-white initial). Neutral "+" buttons (steppers, the coach header) stay quiet.
 - Prayer look: selections are gold (`PrayerPalette.Gold` with night text) instead of rose; decorative stars stay in the side margins; the moon has a soft glow, never a button-shaped circle.
 
 ## Calendars and time

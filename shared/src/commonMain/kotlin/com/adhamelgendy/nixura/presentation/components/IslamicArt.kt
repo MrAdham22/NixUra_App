@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import com.adhamelgendy.nixura.presentation.theme.Nix
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
@@ -529,6 +530,9 @@ fun GoodHabitButton(
 ) {
     if (prayer) {
         PrayerStarButton(icon, onClick, size, onGold = look.fill >= 0.99f, secondary = secondary, ink = look.content, haptic = haptic)
+    } else if (!secondary && background == Nix.colors.accent) {
+        // The rose "+": the cards' look, like every other "+" in the app.
+        GlowIconButton(icon, onClick, size = size, haptic = haptic)
     } else {
         NixIconButton(icon, onClick, size = size, tint = tint, background = background, bordered = false, haptic = haptic)
     }

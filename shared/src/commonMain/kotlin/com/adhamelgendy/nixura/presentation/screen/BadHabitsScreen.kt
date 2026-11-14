@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.components.GlowIconButton
 import com.adhamelgendy.nixura.presentation.util.forDisplay
 import com.adhamelgendy.nixura.domain.usecase.DeletableItem
 import com.adhamelgendy.nixura.presentation.deletion.rememberDeleteFlow
@@ -58,13 +59,10 @@ fun BadHabitsScreen(navigator: Navigator) {
             title = s.badTitle,
             subtitle = s.badSubtitle,
             trailing = {
-                NixIconButton(
+                GlowIconButton(
                     NixIcon.Plus,
                     { navigator.push(Route.BadHabitForm()) },
                     modifier = Modifier.guideTarget(GuideTarget.AddQuit),
-                    tint = c.onAccent,
-                    background = c.accent,
-                    bordered = false,
                 )
             },
         )
