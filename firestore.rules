@@ -1,0 +1,71 @@
+rules_version = '2';
+
+// NixUra cloud sync (see docs/DEVELOPMENT_STATUS.md, "Firestore sync design").
+// Each signed-in user reaches only users/{their uid}/sync. Everything else is closed.
+// Deploy: firebase deploy --only firestore:rules,firestore:indexes --project nixura
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{uid}/sync/{docId} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid) && validWrite(docId);
+    }
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Device edit times may be at most 15 minutes ahead of the server (the app lowers fast clocks itself).
+    function notInFuture(millis) {
+      return millis is int && millis <= request.time.toMillis() + 900000;
+    }
+
+    function validWrite(docId) {
+      let d = request.resource.data;
+      return d.serverTime == request.time
+        && d.type is string
+        && (d.type == 'good_habit_log_month' ? validLogMonth(docId) : validItem(docId));
+    }
+
+    // One item: habit, good habit, relapse/reset event, countdown event or settings.
+    // An older edit (updatedAt) never overwrites a newer one.
+    function validItem(docId) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['type', 'id', 'updatedAt', 'deleted', 'data', 'serverTime'])
+        && d.keys().hasAll(['type', 'id', 'updatedAt', 'deleted', 'data', 'serverTime'])
+        && d.type in ['habit', 'good_habit', 'habit_event', 'event', 'settings']
+        && d.id is string && d.id.size() > 0 && d.id.size() <= 128
+        && docId == d.type + '~' + d.id
+        && notInFuture(d.updatedAt)
+        && d.deleted is bool
+        && d.data is map && d.data.size() <= 24
+        && (resource == null || d.updatedAt >= resource.data.updatedAt);
+    }
+
+    // A good habit's month: days.dDD = {id, count, updatedAt, deleted}. Each write changes one day (lastDay),
+    // and an older edit of that day never overwrites a newer one.
+    function validLogMonth(docId) {
+      let d = request.resource.data;
+      let before = resource == null ? {} : resource.data.days;
+      return d.keys().hasOnly(['type', 'habitId', 'month', 'lastDay', 'days', 'serverTime'])
+        && d.habitId is string && d.habitId.size() > 0 && d.habitId.size() <= 128
+        && d.month is string && d.month.matches('[0-9]{4}-(0[1-9]|1[0-2])')
+        && docId == 'goodlog~' + d.habitId + '~' + d.month
+        && (resource == null || (resource.data.habitId == d.habitId && resource.data.month == d.month))
+        && d.days is map && d.days.size() <= 31
+        && d.lastDay is string && d.lastDay.matches('d(0[1-9]|[12][0-9]|3[01])')
+        && d.days.diff(before).affectedKeys().hasOnly([d.lastDay])
+        && validDay(d.days[d.lastDay], before, d.lastDay);
+    }
+
+    function validDay(day, before, key) {
+      return day is map
+        && day.keys().hasOnly(['id', 'count', 'updatedAt', 'deleted'])
+        && day.id is string && day.id.size() <= 160
+        && day.count is int && day.count >= 0 && day.count <= 10000
+        && day.deleted is bool
+        && notInFuture(day.updatedAt)
+        && (!(key in before) || day.updatedAt >= before[key].updatedAt);
+    }
+  }
+}

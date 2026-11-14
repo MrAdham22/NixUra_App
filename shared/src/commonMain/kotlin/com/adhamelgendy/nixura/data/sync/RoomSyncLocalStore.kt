@@ -210,9 +210,15 @@ internal class RoomSyncLocalStore(
     private fun <T> decode(serializer: KSerializer<T>, r: SyncRecord): T? =
         runCatching { SyncJson.decodeFromString(serializer, r.payload) }.getOrNull()
 
+    private fun wins(localDirty: Boolean, localUpdatedAt: Long, r: SyncRecord) = SyncRules.remoteWins(localDirty, localUpdatedAt, r.updatedAt)
+
     private fun deletedAt(r: SyncRecord): Long? = if (r.deleted) r.updatedAt else null
 
     private suspend fun applyHabit(r: SyncRecord, adopt: Boolean, merged: MutableList<Long>) {
+        if (r.deleted) {
+            dao.habitBySyncId(r.id)?.let { e -> if (wins(e.dirty, e.updatedAtEpochMillis, r)) e.copy(updatedAtEpochMillis = r.updatedAt, deletedAtEpochMillis = r.updatedAt, dirty = false).takeIf { it != e }?.let { dao.updateHabit(it) } }
+            return
+        }
         val p = decode(HabitPayload.serializer(), r) ?: return
         var existing = dao.habitBySyncId(r.id)
         if (existing == null && adopt && !r.deleted && p.archivedAt == null) {
@@ -231,6 +237,10 @@ internal class RoomSyncLocalStore(
     }
 
     private suspend fun applyGoodHabit(r: SyncRecord, adopt: Boolean) {
+        if (r.deleted) {
+            dao.goodHabitBySyncId(r.id)?.let { e -> if (wins(e.dirty, e.updatedAtEpochMillis, r)) e.copy(updatedAtEpochMillis = r.updatedAt, deletedAtEpochMillis = r.updatedAt, dirty = false).takeIf { it != e }?.let { dao.updateGoodHabit(it) } }
+            return
+        }
         val p = decode(GoodHabitPayload.serializer(), r) ?: return
         var existing = dao.goodHabitBySyncId(r.id)
         if (existing == null && adopt && !r.deleted && p.archivedAt == null) {
@@ -249,6 +259,10 @@ internal class RoomSyncLocalStore(
     }
 
     private suspend fun applyHabitEvent(r: SyncRecord) {
+        if (r.deleted) {
+            dao.habitEventBySyncId(r.id)?.let { e -> if (wins(e.dirty, e.updatedAtEpochMillis, r)) e.copy(updatedAtEpochMillis = r.updatedAt, deletedAtEpochMillis = r.updatedAt, dirty = false).takeIf { it != e }?.let { dao.updateHabitEvent(it) } }
+            return
+        }
         val p = decode(HabitEventPayload.serializer(), r) ?: return
         val existing = dao.habitEventBySyncId(r.id)
         if (existing == null) {
@@ -262,6 +276,10 @@ internal class RoomSyncLocalStore(
     }
 
     private suspend fun applyGoodHabitLog(r: SyncRecord) {
+        if (r.deleted) {
+            dao.goodHabitLogBySyncId(r.id)?.let { e -> if (wins(e.dirty, e.updatedAtEpochMillis, r)) e.copy(updatedAtEpochMillis = r.updatedAt, deletedAtEpochMillis = r.updatedAt, dirty = false).takeIf { it != e }?.let { dao.upsertGoodHabitLog(it) } }
+            return
+        }
         val p = decode(GoodHabitLogPayload.serializer(), r) ?: return
         val existing = dao.goodHabitLogBySyncId(r.id)
         if (existing != null && !SyncRules.remoteWins(existing.dirty, existing.updatedAtEpochMillis, r.updatedAt)) return
@@ -281,6 +299,10 @@ internal class RoomSyncLocalStore(
     }
 
     private suspend fun applyEvent(r: SyncRecord, adopt: Boolean) {
+        if (r.deleted) {
+            dao.eventBySyncId(r.id)?.let { e -> if (wins(e.dirty, e.updatedAtEpochMillis, r)) e.copy(updatedAtEpochMillis = r.updatedAt, deletedAtEpochMillis = r.updatedAt, dirty = false).takeIf { it != e }?.let { dao.updateEvent(it) } }
+            return
+        }
         val p = decode(EventPayload.serializer(), r) ?: return
         var existing = dao.eventBySyncId(r.id)
         if (existing == null && adopt && !r.deleted) {

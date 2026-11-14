@@ -1,0 +1,13 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    { "collectionGroup": "sync", "fieldPath": "data", "indexes": [] },
+    { "collectionGroup": "sync", "fieldPath": "days", "indexes": [] },
+    { "collectionGroup": "sync", "fieldPath": "id", "indexes": [] },
+    { "collectionGroup": "sync", "fieldPath": "updatedAt", "indexes": [] },
+    { "collectionGroup": "sync", "fieldPath": "deleted", "indexes": [] },
+    { "collectionGroup": "sync", "fieldPath": "habitId", "indexes": [] },
+    { "collectionGroup": "sync", "fieldPath": "month", "indexes": [] },
+    { "collectionGroup": "sync", "fieldPath": "lastDay", "indexes": [] }
+  ]
+}
