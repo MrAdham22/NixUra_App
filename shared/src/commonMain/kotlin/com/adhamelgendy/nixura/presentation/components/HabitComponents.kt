@@ -1,5 +1,12 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import kotlin.time.Duration.Companion.days
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberInfiniteTransition
+import com.adhamelgendy.nixura.domain.model.EventCategory
+import com.adhamelgendy.nixura.presentation.appearance.eventCardLook
 import com.adhamelgendy.nixura.domain.coach.durationText
 import com.adhamelgendy.nixura.presentation.util.forDisplay
 import com.adhamelgendy.nixura.presentation.util.weekdayLettersSundayFirst
@@ -714,10 +721,40 @@ fun EventCard(
     val remaining = (event.targetAtEpochMillis - nowMillis).milliseconds
     val passed = remaining < Duration.ZERO
     val parts = (if (passed) -remaining else remaining).toCounterParts()
-    NixCard(modifier.fillMaxWidth(), onClick = onClick, onLongClick = onLongClick, lift = Color.Black) {
+    val look = eventCardLook(event.category, remaining.inWholeMinutes / (24f * 60f), passed, c.surface, c.isDark)
+    // On the last day the card's glow breathes slowly, so a near event feels alive (still with "remove animations").
+    val soon = !passed && remaining < 1.days
+    val reducedMotion = rememberReducedMotion()
+    val breath = if (soon && !reducedMotion) {
+        rememberInfiniteTransition(label = "eventBreath").animateFloat(
+            0.55f, 1f, infiniteRepeatable(tween(2200, easing = NixEasing), RepeatMode.Reverse), label = "eventGlow",
+        ).value
+    } else 1f
+    val shape = RoundedCornerShape(22.dp)
+    NixCard(
+        modifier.fillMaxWidth(),
+        onClick = onClick,
+        onLongClick = onLongClick,
+        borderColor = look.edge,
+        lift = if (passed) Color.Black else look.glow,
+        paint = Modifier.clip(shape).drawWithCache {
+            val fill = Brush.linearGradient(listOf(look.start, look.end), Offset.Zero, Offset(size.width, size.height))
+            val glow = Brush.radialGradient(
+                listOf(look.glow.copy(alpha = look.glow.alpha * breath), Color.Transparent),
+                center = Offset(size.width * 0.92f, 0f),
+                radius = size.maxDimension * 0.7f,
+            )
+            onDrawBehind {
+                drawRect(fill)
+                drawRect(glow)
+            }
+        },
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            GlyphBadge(eventCategoryIcon(event.category), look.accent, look.accent.copy(alpha = 0.16f), size = 40.dp)
+            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(s.categoryLabel(event.category).uppercase(), style = NixType.Eyebrow, color = if (passed) c.textMuted else c.textSecondary)
+                Text(s.categoryLabel(event.category).uppercase(), style = NixType.Eyebrow, color = if (passed) c.textMuted else look.accent)
                 Spacer(Modifier.height(4.dp))
                 Text(event.title.forDisplay(), style = NixType.Heading, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(dateText, style = NixType.Small, color = c.textMuted)
@@ -767,7 +804,7 @@ fun EventCard(
             Text(s.passedAgo(durationText(-remaining)), style = NixType.Small, color = c.textMuted)
         } else {
             Spacer(Modifier.height(14.dp))
-            Text(s.startsIn.uppercase(), style = NixType.Eyebrow, color = c.textMuted)
+            Text(s.startsIn.uppercase(), style = NixType.Eyebrow, color = c.textSecondary)
             Spacer(Modifier.height(6.dp))
             CounterBlocks(parts, c.textPrimary, c.textMuted, valueSize = 26, units = parts.unitsWithoutFarSeconds)
         }
@@ -837,3 +874,17 @@ fun ShadePreview(colorArgb: Long?, modifier: Modifier = Modifier) {
 
 /** Compact "12d 04:11:33" text used where space is tight. */
 fun compactElapsed(duration: Duration): String = formatElapsed(duration)
+
+/** A small glyph for each event category, shown in the card's badge. */
+fun eventCategoryIcon(category: EventCategory): NixIcon = when (category) {
+    EventCategory.PERSONAL -> NixIcon.User
+    EventCategory.TRAVEL -> NixIcon.Globe
+    EventCategory.WORK -> NixIcon.Archive
+    EventCategory.HEALTH -> NixIcon.Heart
+    EventCategory.CELEBRATION -> NixIcon.Sparkle
+    EventCategory.BIRTHDAY -> NixIcon.Candy
+    EventCategory.HOLIDAY -> NixIcon.Sun
+    EventCategory.TASK -> NixIcon.CircleCheck
+    EventCategory.EVENT -> NixIcon.Calendar
+    EventCategory.OTHER -> NixIcon.Clock
+}

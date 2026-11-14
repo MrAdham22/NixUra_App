@@ -125,7 +125,8 @@ fun CoachScreen(navigator: Navigator) {
 
     Column(Modifier.fillMaxSize()) {
         CoachHeader(
-            title = s.coachTitle,
+            // "AI Coach" only when the real AI answers; the line under the title never repeats the name.
+            title = if (state.aiMode == AiMode.On) s.coachTitle else s.coachTitleOffline,
             subtitle = when (state.aiMode) {
                 AiMode.On -> state.quota?.let { s.coachModeAiLeft(it.chatLeft) } ?: s.coachModeAi
                 AiMode.Guest -> s.coachModeGuest
@@ -158,6 +159,7 @@ fun CoachScreen(navigator: Navigator) {
 
         if (fresh) {
             CoachWelcome(
+                subtitle = if (state.aiMode == AiMode.On) s.coachWelcomeSubtitleAi else s.coachWelcomeSubtitle,
                 greeting = state.messages.firstOrNull()?.text.orEmpty(),
                 habits = state.habits,
                 suggestions = state.suggestions,
@@ -330,6 +332,7 @@ private fun ChatRow(chat: CoachConversation, date: String, active: Boolean, onOp
 /** The first thing you see: one line that matters, your numbers, and big obvious ways to start. */
 @Composable
 private fun CoachWelcome(
+    subtitle: String,
     greeting: String,
     habits: List<BadHabitSnapshot>,
     suggestions: List<String>,
@@ -355,7 +358,7 @@ private fun CoachWelcome(
             Spacer(Modifier.height(12.dp))
             Text(coachRichText(greeting, NixUraPalette.Orange), style = NixType.Title, color = NixUraPalette.Blush)
             Spacer(Modifier.height(6.dp))
-            Text(s.coachWelcomeSubtitle, style = NixType.Small, color = NixUraPalette.Blush.copy(alpha = 0.75f))
+            Text(subtitle, style = NixType.Small, color = NixUraPalette.Blush.copy(alpha = 0.75f))
             if (best != null) {
                 Spacer(Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

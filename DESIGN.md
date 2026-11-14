@@ -326,6 +326,10 @@ The card fills with liquid as today's target is reached: green for plain habits,
 ### Prayer card (signature)
 A night-sky card with an eight-pointed star tiling, a golden dawn, a mosque and a crescent, edged with a double gold frame. A diagonal band of light slides across it. Each counted prayer sends a burst of gold stars, and the card turns solid gold when every prayer of the day is done. Star-shaped buttons: gold and slowly turning for "+", a quiet outline for "-".
 
+## Event cards
+
+Each category has its own colour (`eventCategoryColor`): Personal rose, Travel water blue, Work indigo `#7C74E8`, Health green, Celebration orange, Birthday pink `#E77FA8`, Holiday teal `#2AA198`, Task slate `#8B93B8`, Event berry `#C25B8C`, Other lavender. The card is a diagonal tint of it over the surface, stronger as the event comes closer (14 days out → on the day; lighter in light theme so navy text keeps 4.5:1), with a corner glow, a category icon badge and a category-coloured label. On the last day the glow breathes slowly. Past events stay plain. Prayer gold is never an event colour.
+
 ## Brand marks
 
 - The official icon (`composeResources/drawable/nixura_icon.png`, from the Android launcher artwork) appears on the landing screen (88dp, 22dp corners) and in the top bar beside "NixUra" (30dp, 8dp corners).

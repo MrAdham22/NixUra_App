@@ -296,16 +296,26 @@ internal fun rememberPrayerArt(fill: Float, count: Int): PrayerArt {
  * it, so the jump from 1 back to 0 happens out of sight.
  */
 private fun DrawScope.drawShine(p: Float, w: Float, h: Float) {
-    val half = w * 0.22f
-    val x = -half * 2f + p * (w + half * 4f)
+    // The band's angle is fixed (it used to depend on the card's height, so on a tall card the band leaned so far
+    // that its lower end was still on the card when the loop restarted, and the light vanished mid-card).
+    val vx = w * 0.44f
+    val vy = vx * SHINE_TILT
+    // Horizontal reach of the band's soft edge from its centre line, and how far the line leans over the height.
+    val margin = (vx * vx + vy * vy) / (2f * vx)
+    val lean = h * vy / vx
+    // Start with the whole band left of the card, end with all of it (bottom included) right of it.
+    val x = -margin + p * (w + lean + 2f * margin)
     drawRect(
         Brush.linearGradient(
             listOf(Color.Transparent, Color.White.copy(alpha = 0.10f), Color.Transparent),
-            Offset(x - half, 0f),
-            Offset(x + half, h * 0.45f),
+            Offset(x - vx / 2f, -vy / 2f),
+            Offset(x + vx / 2f, vy / 2f),
         ),
     )
 }
+
+/** Slope of the shine's direction (down per across); the band leans the same on every card size. */
+private const val SHINE_TILT = 0.5f
 
 /** Height of the mosque's main dome top, as a share of the mosque's width. */
 internal const val MOSQUE_DOME_TOP = 0.33f

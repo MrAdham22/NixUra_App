@@ -1,5 +1,9 @@
 package com.adhamelgendy.nixura.widgets
 
+import com.adhamelgendy.nixura.presentation.appearance.relativeLuminance
+import com.adhamelgendy.nixura.presentation.appearance.eventCardLook
+import com.adhamelgendy.nixura.domain.coach.durationText
+import com.adhamelgendy.nixura.presentation.util.forDisplay
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.Context
@@ -147,7 +151,7 @@ internal object WidgetRenderer {
         rv.setViewPadding(R.id.w_content, px(env, plan.paddingDp), px(env, plan.paddingDp), px(env, plan.paddingDp), px(env, plan.paddingDp))
 
         badge(env, rv, plan, st.topic.icon(), primary)
-        text(rv, R.id.w_name, st.name, primary)
+        text(rv, R.id.w_name, st.name.forDisplay(), primary)
         // The planner shrinks the name (after dropping the badge) so that no word is split across lines
         if (plan.titleSizeDp > 0) rv.setTextViewTextSize(R.id.w_name, TypedValue.COMPLEX_UNIT_DIP, plan.titleSizeDp.toFloat())
         if (plan.variant == WidgetVariant.ROW) rv.setInt(R.id.w_name, "setMaxLines", plan.titleMaxLines)
@@ -155,15 +159,22 @@ internal object WidgetRenderer {
             rv.setInt(R.id.w_name, "setMaxLines", plan.titleMaxLines)
             text(rv, R.id.w_eyebrow, env.s.clearFor.uppercase(), muted)
             show(rv, R.id.w_eyebrow, plan.showCounterEyebrow)
-            text(rv, R.id.w_longest, env.s.longestLabel(formatElapsed(st.longestStreakMillis.milliseconds)), muted)
-            show(rv, R.id.w_longest, plan.showLongest)
-            // Money saved, as on the card (whole units: the widget cannot tick every second)
+            // One extra row fits under the counter: money saved when there is a tracker, else the longest streak.
+            // (Showing both cut the second one in half at the bottom of the widget.)
             val saved = st.moneySaved
             val cost = st.cost
-            if (saved != null && cost != null) {
-                text(rv, R.id.w_saved, env.s.moneyCardLine(Currencies.formatWhole(saved.savedMinor, saved.currency), env.s.unitsAvoided(saved.unitsAvoided, cost.unit)), primary)
+            val showMoney = saved != null && cost != null && plan.showLongest
+            if (showMoney) {
+                text(rv, R.id.w_saved, env.s.moneyCardLine(Currencies.formatWhole(saved!!.savedMinor, saved.currency), env.s.unitsAvoided(saved.unitsAvoided, cost!!.unit)), primary)
             }
-            show(rv, R.id.w_saved, saved != null && plan.showLongest)
+            show(rv, R.id.w_saved, showMoney)
+            val longestYet = st.elapsedMillis > 0 && st.elapsedMillis >= st.longestStreakMillis
+            text(
+                rv, R.id.w_longest,
+                if (longestYet) env.s.longestYet else env.s.longestLabel(durationText(st.longestStreakMillis.milliseconds)),
+                if (longestYet) primary else muted,
+            )
+            show(rv, R.id.w_longest, plan.showLongest && !showMoney)
         }
         counter(env, rv, plan, st.clock, countDown = false, valueColor = primary, labelColor = muted)
         rv.setOnClickPendingIntent(R.id.w_root, WidgetIntents.open(env.context, env.widgetId, WidgetIntents.TYPE_QUIT, st.habitId))
@@ -241,11 +252,16 @@ internal object WidgetRenderer {
         }
         rv.setViewPadding(R.id.w_content, pad, pad, pad, pad)
 
-        text(rv, R.id.w_name, st.name, content)
+        text(rv, R.id.w_name, st.name.forDisplay(), content)
         rv.setInt(R.id.w_name, "setMaxLines", plan.titleMaxLines)
         val progressColor = muted
         val progressText = if (st.isWeekly) env.s.weekProgress(st.count, st.target) else env.s.todayProgress(st.count, st.target)
-        val streakText = if (st.isWeekly) env.s.streakWeeks(st.currentStreakDays) else env.s.streakDays(st.currentStreakDays)
+        // As on the in-app card: no bold "0 day streak", an invitation instead.
+        val streakText = when {
+            st.currentStreakDays <= 0 -> if (st.isWeekly) env.s.streakStartWeek else env.s.streakStartToday
+            st.isWeekly -> env.s.streakWeeks(st.currentStreakDays)
+            else -> env.s.streakDays(st.currentStreakDays)
+        }
         // The day streak is always visible: in its own row when the plan has room for it, otherwise merged into the
         // sub line under the name (the stacked layout shows its count on the button row, so there the sub line is the streak alone).
         val streakInRow = hasStreak && plan.showStreakRow
@@ -342,7 +358,8 @@ internal object WidgetRenderer {
         if (hasStreak) {
             // streak row: "N day streak" + "N times in total" (weekly: "N week streak" + "N days in total")
             tint(rv, R.id.w_flame, if (st.progress >= 0.6f) content else c.accentWarm)
-            text(rv, R.id.w_streak_text, streakText, content)
+            show(rv, R.id.w_flame, st.currentStreakDays > 0) // no flame on "Start a streak today"
+            text(rv, R.id.w_streak_text, streakText, if (st.currentStreakDays > 0) content else muted)
             val totalText = if (st.isWeekly) env.s.daysDoneTotal(st.totalTimesDone) else env.s.timesDoneTotal(st.totalTimesDone)
             text(rv, R.id.w_total_text, totalText, muted)
             show(rv, R.id.w_total_text, env.widthDp >= 200) // on narrow widgets the streak keeps the whole row
@@ -378,17 +395,21 @@ internal object WidgetRenderer {
             WidgetVariant.SLIM -> R.layout.widget_event_slim
         }
         val rv = RemoteViews(env.context.packageName, layout)
-        tint(rv, R.id.w_bg, c.surface)
-        tint(rv, R.id.w_border, c.border, c.borderAlpha)
+        // The category color, warming as the event comes closer, as on the in-app event card.
+        val surface = androidx.compose.ui.graphics.Color(c.surface)
+        val daysLeft = clock.days + clock.remainderMillis / 86_400_000f
+        val look = eventCardLook(category, daysLeft, passed, surface, isDark = surface.relativeLuminance() < 0.2f)
+        tint(rv, R.id.w_bg, look.start.toArgb())
+        tint(rv, R.id.w_border, look.edge.copy(alpha = 1f).toArgb(), (look.edge.alpha * 255).toInt())
         val pad = px(env, plan.paddingDp)
         rv.setViewPadding(R.id.w_content, pad, pad, pad, pad)
 
-        text(rv, R.id.w_name, title, c.textPrimary)
+        text(rv, R.id.w_name, title.forDisplay(), c.textPrimary)
         rv.setInt(R.id.w_name, "setMaxLines", plan.titleMaxLines)
         if (plan.variant != WidgetVariant.SLIM) {
             val dayCalc = runCatching { KoinPlatform.getKoin().get<DayCalculator>() }.getOrNull()
             val date = dayCalc?.let { formatDateTime(targetAt, it, env.s, includeYear = false) } ?: ""
-            text(rv, R.id.w_eyebrow_cat, env.s.categoryLabel(category).uppercase(), if (passed) c.textMuted else c.accent)
+            text(rv, R.id.w_eyebrow_cat, env.s.categoryLabel(category).uppercase(), if (passed) c.textMuted else look.accent.toArgb())
             show(rv, R.id.w_eyebrow_cat, plan.variant == WidgetVariant.FULL || plan.showCategory)
             text(rv, R.id.w_date, date, c.textMuted)
             show(rv, R.id.w_date, plan.showDate && date.isNotEmpty())

@@ -319,6 +319,7 @@ open class Strings {
     // Coach
     open val coachEyebrow: String = "Your coach"
     open val coachTitle: String = "AI Coach"
+    open val coachTitleOffline: String = "Coach"
     open val coachInputHint: String = "Ask for help, a plan or motivation…"
     open val coachOfflineNote: String = "Replies are generated on your device. Private, but not a substitute for professional care."
     open val coachModeOfflineShort: String = "Offline · private, on your device"
@@ -592,6 +593,7 @@ open class Strings {
 
     // Coach
     open val coachWelcomeSubtitle: String = "Your private coach. It works offline."
+    open val coachWelcomeSubtitleAi: String = "Real AI replies. Your name and email are never sent."
     open val coachStatBest: String = "Best right now"
     open val coachStatHabits: String = "Quitting"
     open val coachStatToday: String = "Done today"
@@ -746,7 +748,7 @@ open class Strings {
     // The header already says "AI Coach"; the line under it says only what is new.
     open val coachModeAi: String = "Online"
     open fun coachModeAiLeft(left: Int): String = if (left == 1) "1 message left today" else "$left messages left today"
-    open val coachModeGuest: String = "Offline coach · sign in for the AI coach"
+    open val coachModeGuest: String = "Offline · sign in for real AI replies"
     open val coachNoticeLimit: String = "You've used today's AI messages. The offline coach answers until tomorrow."
     open val coachNoticeResting: String = "The AI coach is resting right now, so the offline coach answered."
     open val coachNoticeOffline: String = "No internet, so the offline coach answered."
