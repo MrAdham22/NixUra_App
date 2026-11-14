@@ -72,7 +72,7 @@ open class Strings {
     // Bad habits
     open val badEyebrow: String = "Break free"
     open val badTitle: String = "Habits to quit"
-    open val badSubtitle: String = "Every second you stay clear makes you stronger. Your cards lighten as your streak grows."
+    open val badSubtitle: String = "Your cards lighten as your streak grows."
     open val badEmptyTitle: String = "Nothing to quit yet"
     open val badEmptyBody: String = "Tell NixUra about a habit you want to leave behind and the counter starts right away."
     open val badAdd: String = "Add a habit to quit"
@@ -82,6 +82,14 @@ open class Strings {
     open val longestLabel: (String) -> String = { "Longest streak $it" }
     open val longestYet: String = "Your longest streak yet"
     open val cravingAction: String = "Craving? Talk it through"
+    open val cravingShort: String = "Craving?"
+    /** A counter read aloud by a screen reader: "3 days, 4 hours, 56 minutes, 12 seconds". */
+    open fun counterSpoken(days: Long?, hours: Long?, minutes: Long?, seconds: Long): String = listOfNotNull(
+        days?.let { if (it == 1L) "1 day" else "$it days" },
+        hours?.let { if (it == 1L) "1 hour" else "$it hours" },
+        minutes?.let { if (it == 1L) "1 minute" else "$it minutes" },
+        if (seconds == 1L) "1 second" else "$seconds seconds",
+    ).joinToString(", ")
     open val slipAction: String = "I slipped"
     open val cardMoreOptions: String = "More options"
     open fun cravingPrompt(habit: String): String = "I'm having a craving for $habit right now. Help me get through it."

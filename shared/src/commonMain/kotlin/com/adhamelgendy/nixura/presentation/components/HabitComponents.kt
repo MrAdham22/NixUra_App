@@ -1,5 +1,10 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import com.adhamelgendy.nixura.presentation.appearance.relativeLuminance
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -126,7 +131,17 @@ fun CounterBlocks(
             with(density) { (gap * (parts.visibleUnits.size - 1)).toPx() }
         val available = constraints.maxWidth.toFloat()
         val fitted = if (constraints.hasBoundedWidth && needed > available) (valueSize * available / needed).toInt() else valueSize
-        CounterBlockRow(parts, color, mutedColor, fitted, gap, s)
+        // Read as one phrase ("3 days, 4 hours, ...") instead of "3, DAYS, 04, HRS". Not a live region, so a
+        // screen reader reads it when focused and never announces every tick.
+        val spoken = s.counterSpoken(
+            parts.valueOf(CounterUnit.DAYS).takeIf { CounterUnit.DAYS in parts.visibleUnits },
+            parts.valueOf(CounterUnit.HOURS).takeIf { CounterUnit.HOURS in parts.visibleUnits },
+            parts.valueOf(CounterUnit.MINUTES).takeIf { CounterUnit.MINUTES in parts.visibleUnits },
+            parts.valueOf(CounterUnit.SECONDS),
+        )
+        Box(Modifier.clearAndSetSemantics { contentDescription = spoken }) {
+            CounterBlockRow(parts, color, mutedColor, fitted, gap, s)
+        }
     }
 }
 
@@ -232,7 +247,6 @@ fun BadHabitCard(
     val s = LocalStrings.current
     val engine = koinInject<CoachEngine>()
     val gradient = habitCardGradient(model)
-    val lightOnCard = gradient.middle.prefersLightContentOnCard()
     val ink = gradient.middle.cardInk()
     val primary = ink.primary
     val muted = ink.muted
@@ -243,8 +257,9 @@ fun BadHabitCard(
         modifier = modifier
             .fillMaxWidth()
             .pressable(pressedScale = 0.98f, onLongClick = onLongClick, onClick = onClick)
+            .habitCardLift(gradient, shape)
             .habitCardFill(gradient, shape)
-            .border(1.dp, if (lightOnCard) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.10f), shape)
+            .border(1.dp, habitCardEdge(gradient), shape)
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -296,33 +311,60 @@ fun BadHabitCard(
                 modifier = Modifier.padding(top = 0.dp),
             )
         }
-        if (model.isLongestYet()) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                NixIconView(NixIcon.Flame, primary, size = 16.dp)
-                Spacer(Modifier.width(6.dp))
-                Text(s.longestYet, style = NixType.SmallStrong, color = primary)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) {
+                if (model.isLongestYet()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        NixIconView(NixIcon.Flame, primary, size = 16.dp)
+                        Spacer(Modifier.width(6.dp))
+                        Text(s.longestYet, style = NixType.SmallStrong, color = primary, maxLines = 2)
+                    }
+                } else {
+                    Text(s.longestLabel(model.longestStreakLabel), style = NixType.Small, color = muted, maxLines = 2)
+                }
             }
-        } else {
-            Text(s.longestLabel(model.longestStreakLabel), style = NixType.Small, color = muted)
-        }
-        if (onCraving != null) {
-            val pill = RoundedCornerShape(50)
-            Row(
-                Modifier
-                    .pressable(pressedScale = 0.95f, haptic = true, onClick = onCraving)
-                    .heightIn(min = 44.dp)
-                    .clip(pill)
-                    .background(primary.copy(alpha = 0.14f), pill)
-                    .border(1.dp, primary.copy(alpha = 0.22f), pill)
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                NixIconView(NixIcon.Sparkle, primary, size = 18.dp)
-                Spacer(Modifier.width(8.dp))
-                Text(s.cravingAction, style = NixType.SmallStrong, color = primary, maxLines = 1)
+            if (onCraving != null) {
+                Spacer(Modifier.width(10.dp))
+                CravingChip(primary, onCraving)
             }
         }
     }
+}
+
+/** Small "Craving?" button on a quit card; read out as the full "Craving? Talk it through". */
+@Composable
+private fun CravingChip(ink: Color, onClick: () -> Unit) {
+    val s = LocalStrings.current
+    val pill = RoundedCornerShape(50)
+    Row(
+        Modifier
+            .pressable(pressedScale = 0.95f, haptic = true, onClick = onClick)
+            .clearAndSetSemantics { contentDescription = s.cravingAction; role = Role.Button }
+            .heightIn(min = 44.dp)
+            .clip(pill)
+            .background(ink.copy(alpha = 0.14f), pill)
+            .border(1.dp, ink.copy(alpha = 0.22f), pill)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        NixIconView(NixIcon.Sparkle, ink, size = 16.dp)
+        Spacer(Modifier.width(6.dp))
+        Text(s.cravingShort, style = NixType.SmallStrong, color = ink, maxLines = 1)
+    }
+}
+
+/**
+ * Lifts a habit card off the page: a soft shadow whose glow takes the color the card is growing into, so even a
+ * day-0 navy card separates from the navy background (DESIGN.md, Elevation & Depth).
+ */
+fun Modifier.habitCardLift(gradient: CardGradient, shape: Shape): Modifier =
+    shadow(elevation = 12.dp, shape = shape, clip = false, ambientColor = Color.Black, spotColor = gradient.end)
+
+/** The card's 1dp edge: stronger on the darkest stages, where the card is close to the page color. */
+fun habitCardEdge(gradient: CardGradient): Color = when {
+    !gradient.middle.prefersLightContentOnCard() -> Color.Black.copy(alpha = 0.10f)
+    gradient.middle.relativeLuminance() < 0.05f -> Color.White.copy(alpha = 0.24f)
+    else -> Color.White.copy(alpha = 0.14f)
 }
 
 /** The current streak is the best this habit has had (the longest streak includes the one running now). */

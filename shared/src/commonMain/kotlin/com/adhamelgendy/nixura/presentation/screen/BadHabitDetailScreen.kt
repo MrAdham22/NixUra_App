@@ -1,5 +1,7 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.components.habitCardEdge
+import com.adhamelgendy.nixura.presentation.components.habitCardLift
 import com.adhamelgendy.nixura.domain.usecase.DeletableItem
 import com.adhamelgendy.nixura.presentation.deletion.rememberDeleteFlow
 import com.adhamelgendy.nixura.domain.money.CountableHabits
@@ -131,8 +133,9 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
             Modifier
                 .fillMaxWidth()
                 .pressable(pressedScale = 0.98f, haptic = true) { clearInfo = true }
+                .habitCardLift(gradient, RoundedCornerShape(28.dp))
                 .habitCardFill(gradient, RoundedCornerShape(28.dp))
-                .border(1.dp, if (lightOnCard) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.10f), RoundedCornerShape(28.dp))
+                .border(1.dp, habitCardEdge(gradient), RoundedCornerShape(28.dp))
                 .padding(22.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {

@@ -267,19 +267,14 @@
     },
     "shadows": [
       {
-        "name": "lift-low",
-        "value": "0 4px 16px rgba(8, 6, 24, 0.35)",
-        "purpose": "PROVISIONAL (owner direction 2026-11-14, not in the code yet): resting lift for cards on navy."
+        "name": "habit-card-lift",
+        "value": "elevation 12dp; ambient #000000; spot = the card gradient's end colour (Android/Compose shadow, system alpha)",
+        "purpose": "Shipped 2026-11-14 on quit cards and the quit detail hero (habitCardLift)."
       },
       {
-        "name": "lift-glow",
-        "value": "0 8px 28px <the card's own colour at 25%>",
-        "purpose": "PROVISIONAL: tinted glow under streak cards."
-      },
-      {
-        "name": "lift-press",
-        "value": "0 2px 8px rgba(8, 6, 24, 0.30)",
-        "purpose": "PROVISIONAL: lower lift while a card is pressed."
+        "name": "habit-card-edge",
+        "value": "1dp: rgba(255,255,255,0.24) when card luminance < 0.05, rgba(255,255,255,0.14) other light-ink cards, rgba(0,0,0,0.10) dark-ink cards",
+        "purpose": "Keeps the darkest cards separate from the navy page (habitCardEdge)."
       }
     ],
     "motion": [
