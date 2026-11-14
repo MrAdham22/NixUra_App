@@ -1,5 +1,8 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.util.forDisplay
+import com.adhamelgendy.nixura.presentation.components.habitCardEdge
+import com.adhamelgendy.nixura.presentation.components.habitCardLift
 import com.adhamelgendy.nixura.domain.usecase.DeletableItem
 import com.adhamelgendy.nixura.presentation.deletion.rememberDeleteFlow
 import com.adhamelgendy.nixura.domain.money.CountableHabits
@@ -52,6 +55,7 @@ import com.adhamelgendy.nixura.domain.coach.CoachEngine
 import com.adhamelgendy.nixura.domain.coach.durationText
 import com.adhamelgendy.nixura.domain.time.DayCalculator
 import com.adhamelgendy.nixura.presentation.appearance.StreakColorProgressionConfig
+import com.adhamelgendy.nixura.presentation.appearance.cardInk
 import com.adhamelgendy.nixura.presentation.appearance.prefersLightContentOnCard
 import com.adhamelgendy.nixura.presentation.components.CounterBlocks
 import com.adhamelgendy.nixura.presentation.components.ConfirmDialog
@@ -101,7 +105,7 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
     var clearInfo by remember { mutableStateOf(false) }
 
     SubScreen(
-        title = model?.name ?: "",
+        title = model?.name?.forDisplay() ?: "",
         onBack = { navigator.back() },
         actions = {
             if (model != null) {
@@ -119,8 +123,9 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
 
         val gradient = habitCardGradient(model)
         val lightOnCard = gradient.middle.prefersLightContentOnCard()
-        val primary = if (lightOnCard) NixUraPalette.onDarkPrimary else NixUraPalette.onLightPrimary
-        val muted = if (lightOnCard) NixUraPalette.onDarkMuted else NixUraPalette.onLightMuted
+        val ink = gradient.middle.cardInk()
+        val primary = ink.primary
+        val muted = ink.muted
         val category = remember(model.name) { engine.categoryFor(model.name) }
         val insight = engine.insightFor(model.name, model.activeElapsed)
 
@@ -129,8 +134,9 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
             Modifier
                 .fillMaxWidth()
                 .pressable(pressedScale = 0.98f, haptic = true) { clearInfo = true }
+                .habitCardLift(gradient, RoundedCornerShape(28.dp))
                 .habitCardFill(gradient, RoundedCornerShape(28.dp))
-                .border(1.dp, if (lightOnCard) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.10f), RoundedCornerShape(28.dp))
+                .border(1.dp, habitCardEdge(gradient), RoundedCornerShape(28.dp))
                 .padding(22.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
@@ -138,7 +144,7 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
                 GlyphBadge(model.topic.icon(), primary, primary.copy(alpha = 0.14f), size = 46.dp)
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text(model.name, style = NixType.Title, color = primary)
+                    Text(model.name.forDisplay(), style = NixType.Title, color = primary)
                     Text(category.label, style = NixType.Small, color = muted)
                 }
             }
@@ -160,8 +166,6 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
                 Text(s.shadeMax, style = NixType.Small, color = muted)
             }
         }
-
-        AddToHomeScreenButton(WidgetKind.QUIT_COUNTER, model.habitId)
 
         // Stats
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -212,6 +216,9 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
 
         NixButton(s.recordRelapse, { confirmRelapse = true }, style = NixButtonStyle.Danger, icon = NixIcon.Reset, modifier = Modifier.fillMaxWidth())
         Text(s.relapseHint, style = NixType.Smaller, color = c.textMuted)
+
+        // An extra, so it comes after the habit itself.
+        AddToHomeScreenButton(WidgetKind.QUIT_COUNTER, model.habitId)
     }
 
     if (clearInfo && model != null) {

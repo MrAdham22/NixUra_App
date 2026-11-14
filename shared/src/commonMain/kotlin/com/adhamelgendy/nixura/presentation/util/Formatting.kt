@@ -60,3 +60,16 @@ fun formatLead(leadMillis: Long, s: Strings): String {
         else -> s.daysBefore((minutes / (60 * 24)).toInt())
     }
 }
+
+/** Weekday letters in NixUra's week order, Sunday first ("S M T W T F S"). */
+fun com.adhamelgendy.nixura.presentation.strings.Strings.weekdayLettersSundayFirst(): List<String> =
+    listOf(weekdayLetters[6]) + weekdayLetters.take(6)
+
+/**
+ * A name the user typed, for display: first letter capitalized ("smoking" → "Smoking"). Only for showing; the saved
+ * name, matching and anything sent to the coach keep exactly what the user typed.
+ */
+fun String.forDisplay(): String = trim().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+
+/** Every word capitalized, for a person's name ("adham ahmed" → "Adham Ahmed"). */
+fun String.personForDisplay(): String = trim().split(Regex("\\s+")).joinToString(" ") { it.forDisplay() }

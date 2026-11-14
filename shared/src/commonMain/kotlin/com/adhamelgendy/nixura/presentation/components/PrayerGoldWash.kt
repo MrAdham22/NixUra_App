@@ -125,12 +125,20 @@ fun PrayerGoldWash(active: Boolean, modifier: Modifier = Modifier) {
                 drawPath(mosque, MosqueShade.copy(alpha = 0.82f))
                 drawPath(mosque, PrayerPalette.Gold.copy(alpha = 0.55f), style = Stroke(1.2.dp.toPx()))
                 // Crescent moon at the top right
-                drawCircle(PrayerPalette.GoldLight.copy(alpha = 0.14f), 30.dp.toPx(), Offset(moonX, moonY))
+                // A soft glow with no edge, so the moon doesn't look like a round button in the header.
+                drawCircle(
+                    Brush.radialGradient(listOf(PrayerPalette.GoldLight.copy(alpha = 0.22f), Color.Transparent), Offset(moonX, moonY), 34.dp.toPx()),
+                    34.dp.toPx(),
+                    Offset(moonX, moonY),
+                )
                 drawPath(moon, PrayerPalette.GoldLight.copy(alpha = 0.9f))
                 // Twinkling stars
                 val phase = twinkle.value * 2f * PI.toFloat()
+                // In the side margins only, so no star sits on a field, a chip or a label.
+                val margin = 18.dp.toPx()
                 for (i in 0 until 26) {
-                    val x = ((i * 0.6180339f) % 1f) * w
+                    val f = (i * 0.6180339f) % 1f
+                    val x = if (i % 2 == 0) f * margin else w - margin + f * margin
                     val y = ((i * 0.3819660f + 0.17f) % 1f) * h * 0.8f
                     val a = (0.5f + 0.5f * sin(phase + i * 1.7f)).coerceIn(0f, 1f)
                     drawPath(

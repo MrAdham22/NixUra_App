@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.util.forDisplay
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -495,7 +496,7 @@ private fun FocusPicker(
             Text(body, style = NixType.Small, color = c.textPrimary)
             if (habits.isNotEmpty()) {
                 Spacer(Modifier.height(10.dp))
-                Text(pickHint, style = NixType.Eyebrow, color = c.textMuted)
+                Text(pickHint, style = NixType.SmallStrong, color = c.textMuted)
                 Spacer(Modifier.height(6.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     habits.forEach { habit ->
@@ -510,7 +511,7 @@ private fun FocusPicker(
                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(habit.name, style = NixType.Body, color = c.textPrimary, maxLines = 1, modifier = Modifier.weight(1f))
+                            Text(habit.name.forDisplay(), style = NixType.Body, color = c.textPrimary, maxLines = 1, modifier = Modifier.weight(1f))
                             Spacer(Modifier.width(8.dp))
                             Text(durationText(habit.elapsed), style = NixType.Small, color = c.textMuted, maxLines = 1)
                             if (selected) {

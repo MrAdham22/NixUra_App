@@ -1,5 +1,10 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import nixura.shared.generated.resources.nixura_icon
+import nixura.shared.generated.resources.Res
+import org.jetbrains.compose.resources.painterResource
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -144,7 +149,8 @@ fun AppRoot() {
 
     // The landing and sign-in screens are always the dark brand look, whatever the app's theme setting is.
     val inGate = state.loaded && session is SessionState.SignedOut && authPromptSeen == false
-    val darkTheme = state.settings.darkTheme || inGate || navigator.current is Route.Auth
+    val chosenDark = if (state.settings.followSystemTheme) isSystemInDarkTheme() else state.settings.darkTheme
+    val darkTheme = chosenDark || inGate || navigator.current is Route.Auth
     NixUraTheme(darkTheme = darkTheme) {
         SystemBarsEffect(darkTheme)
         CompositionLocalProvider(LocalStrings provides stringsFor(state.settings.languageCode)) {
@@ -352,6 +358,8 @@ private fun TopBar(navigator: Navigator) {
         Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        Image(painterResource(Res.drawable.nixura_icon), contentDescription = null, modifier = Modifier.size(30.dp).clip(RoundedCornerShape(8.dp)))
+        Spacer(Modifier.width(10.dp))
         Text("NixUra", style = NixType.Heading, color = c.textPrimary)
         Spacer(Modifier.weight(1f))
         Avatar(

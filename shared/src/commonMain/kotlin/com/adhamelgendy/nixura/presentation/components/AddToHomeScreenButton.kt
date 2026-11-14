@@ -38,7 +38,7 @@ fun AddToHomeScreenButton(kind: WidgetKind, targetId: Long?, modifier: Modifier 
                     WidgetPinResult.FAILED -> text.widgetAddToHomeFailed
                 }
             },
-            style = NixButtonStyle.Secondary,
+            style = NixButtonStyle.Ghost,
             icon = NixIcon.Home,
             modifier = Modifier.fillMaxWidth(),
         )

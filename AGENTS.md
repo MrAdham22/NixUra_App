@@ -11,6 +11,9 @@ NixUra is an offline-first habit app for **Android and iOS** (Kotlin Multiplatfo
 | [docs/PHASE2_ARCHITECTURE.md](docs/PHASE2_ARCHITECTURE.md) | Original architecture (see addendum at the end for what changed) |
 | [docs/AI_COACH_UPGRADE.md](docs/AI_COACH_UPGRADE.md) | How to replace the offline coach with a real AI |
 | [README.md](README.md) | Developer overview, features, build/test commands |
+| [PRODUCT.md](PRODUCT.md) | Product record for design work: users, positioning, principles, brand rules (owner-confirmed 2026-11-14) |
+| [docs/UI_POLISH_PLAN.md](docs/UI_POLISH_PLAN.md) | Screen-by-screen UI flaws and the order to fix them (2026-11-14) |
+| [DESIGN.md](DESIGN.md) | Visual system: tokens, type, shapes, components, rules ("Night Into Dawn"; sidecar in `.impeccable/design.json`) |
 
 **Always inspect the repository and git status** before acting. Do not trust chat history alone.
 
@@ -41,7 +44,7 @@ Android **and** iOS are both in scope. Agents may freely read, write, fix and ex
 
 ## Visual identity
 
-Palette: `#1D1A39` `#451952` `#862549` `#AE445A` `#F39F5A` `#E8BCB9`. Dark theme is default (background = navy). Semantic tokens: `presentation/theme/NixColors.kt`.
+Palette: `#1D1A39` `#451952` `#862549` `#AE445A` `#F39F5A` `#E8BCB9`. Dark theme is default (background = navy). Semantic tokens: `presentation/theme/NixColors.kt`. The full visual system is in `DESIGN.md`; keep it in sync when theme tokens or shared components change.
 
 Quit-habit card background follows the **active streak duration** (derived, never stored): default brand gradient via `StreakColorMapper`, or a user-chosen color via `ShadeRamp` (starts ~30% brightness, ends light). Thresholds 0/1/3/7/14/30 days in `StreakColorProgressionConfig`. Keep the counter logic (`TrackingStateCalculator`, 1 s tick in `HabitsViewModel`) intact.
 

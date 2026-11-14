@@ -2,6 +2,8 @@
 
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.util.forDisplay
+import com.adhamelgendy.nixura.presentation.theme.ProvideNixColors
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -98,6 +100,10 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
 
     Box(Modifier.fillMaxSize()) {
     PrayerGoldWash(prayer)
+    // In the prayer look, selections (chips, "Every day", the stepper, the cursor) are gold like the gold button,
+    // instead of the app's rose: one world on the page.
+    val base = Nix.colors
+    ProvideNixColors(if (prayer) base.copy(accent = PrayerPalette.Gold, onAccent = PrayerPalette.Night) else base) {
     SubScreen(title = if (editing) s.editHabit else s.newGoodHabit, onBack = { navigator.back() }) {
         state.errorMessage?.let { ErrorBanner(it, vm::onDismissError) }
 
@@ -111,6 +117,11 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
             visualTransformation = if (prayer) PrayerWordTransformation(PrayerPalette.Gold) else VisualTransformation.None,
         )
         if (prayer) Text(s.prayerHint, style = NixType.Small, color = PrayerPalette.GoldLight)
+        // Same name (or a second prayer habit): say so, the user may have meant the one they already have.
+        val existing = if (editing) null else state.habits.firstOrNull { it.isSameHabitAs(name) }
+        if (existing != null) {
+            Text(s.alreadyTracking(existing.name.forDisplay()), style = NixType.SmallStrong, color = if (prayer) PrayerPalette.Cream else c.accentWarm)
+        }
 
         if (!editing && name.isNotBlank()) {
             val recognition = remember(name) { recognizer.recognize(name) }
@@ -139,7 +150,8 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
                         nameFocus.requestFocus()
                     },
                 )
-                s.goodSuggestions.forEach { (label, suggestedTarget) ->
+                // Picks the user already tracks are left out.
+                s.goodSuggestions.filter { (label, _) -> state.habits.none { it.isSameHabitAs(label) } }.forEach { (label, suggestedTarget) ->
                     NixChip(label, selected = name == label, onClick = { name = label; target = suggestedTarget; weekly = false })
                 }
             }
@@ -191,6 +203,15 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
         }
     }
     }
+    }
 }
 
 private const val DEFAULT_DAYS_PER_WEEK = 3
+
+/** True when [typed] names this habit: the same words ignoring case and spaces, or both are prayer habits. */
+private fun com.adhamelgendy.nixura.presentation.goodhabits.GoodHabitUi.isSameHabitAs(typed: String): Boolean {
+    val a = name.trim().lowercase()
+    val b = typed.trim().lowercase()
+    if (b.isEmpty()) return false
+    return a == b || (PrayerHabitDetector.isPrayer(name) && PrayerHabitDetector.isPrayer(typed))
+}

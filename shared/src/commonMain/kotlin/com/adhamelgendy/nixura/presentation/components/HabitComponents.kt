@@ -1,5 +1,17 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import com.adhamelgendy.nixura.domain.coach.durationText
+import com.adhamelgendy.nixura.presentation.util.forDisplay
+import com.adhamelgendy.nixura.presentation.util.weekdayLettersSundayFirst
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import com.adhamelgendy.nixura.presentation.appearance.relativeLuminance
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.adhamelgendy.nixura.presentation.util.timeLeft
+import com.adhamelgendy.nixura.domain.calculator.MilestoneCalculator
 import com.adhamelgendy.nixura.domain.recognition.PrayerHabitDetector
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -70,6 +82,7 @@ import com.adhamelgendy.nixura.domain.time.CivilCalendar
 import com.adhamelgendy.nixura.presentation.appearance.ShadeRamp
 import com.adhamelgendy.nixura.presentation.appearance.StreakColorMapper
 import com.adhamelgendy.nixura.presentation.appearance.StreakColorProgressionConfig
+import com.adhamelgendy.nixura.presentation.appearance.cardInk
 import com.adhamelgendy.nixura.presentation.appearance.prefersLightContentOnCard
 import com.adhamelgendy.nixura.presentation.goodhabits.GoodHabitUi
 import com.adhamelgendy.nixura.presentation.habits.HabitCardUiModel
@@ -107,27 +120,39 @@ fun CounterBlocks(
     valueSize: Int,
     modifier: Modifier = Modifier,
     gap: Dp = 16.dp,
+    /** Which units to show; quit counters show every unit, far-off events drop the seconds. */
+    units: List<CounterUnit> = parts.visibleUnits,
 ) {
     val s = LocalStrings.current
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     BoxWithConstraints(modifier) {
         // Measured with the widest digit, so the size stays steady while the seconds tick.
-        val sample = parts.visibleUnits.joinToString("") { unit ->
+        val sample = units.joinToString("") { unit ->
             if (unit == CounterUnit.DAYS) "8".repeat(parts.valueOf(unit).toString().length) else "88"
         }
         val needed = measurer.measure(sample, NixType.counter(valueSize)).size.width +
-            with(density) { (gap * (parts.visibleUnits.size - 1)).toPx() }
+            with(density) { (gap * (units.size - 1)).toPx() }
         val available = constraints.maxWidth.toFloat()
         val fitted = if (constraints.hasBoundedWidth && needed > available) (valueSize * available / needed).toInt() else valueSize
-        CounterBlockRow(parts, color, mutedColor, fitted, gap, s)
+        // Read as one phrase ("3 days, 4 hours, ...") instead of "3, DAYS, 04, HRS". Not a live region, so a
+        // screen reader reads it when focused and never announces every tick.
+        val spoken = s.counterSpoken(
+            parts.valueOf(CounterUnit.DAYS).takeIf { CounterUnit.DAYS in units },
+            parts.valueOf(CounterUnit.HOURS).takeIf { CounterUnit.HOURS in units },
+            parts.valueOf(CounterUnit.MINUTES).takeIf { CounterUnit.MINUTES in units },
+            parts.valueOf(CounterUnit.SECONDS).takeIf { CounterUnit.SECONDS in units },
+        )
+        Box(Modifier.clearAndSetSemantics { contentDescription = spoken }) {
+            CounterBlockRow(parts, units, color, mutedColor, fitted, gap, s)
+        }
     }
 }
 
 @Composable
-private fun CounterBlockRow(parts: CounterParts, color: Color, mutedColor: Color, valueSize: Int, gap: Dp, s: Strings) {
+private fun CounterBlockRow(parts: CounterParts, units: List<CounterUnit>, color: Color, mutedColor: Color, valueSize: Int, gap: Dp, s: Strings) {
     Row(horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.Bottom) {
-        parts.visibleUnits.forEach { unit ->
+        units.forEach { unit ->
             Column {
                 val value = parts.valueOf(unit)
                 Text(
@@ -137,7 +162,7 @@ private fun CounterBlockRow(parts: CounterParts, color: Color, mutedColor: Color
                     color = color,
                     maxLines = 1,
                 )
-                Text(unitLabel(unit, s).uppercase(), style = NixType.Eyebrow.copy(fontSize = 9.sp), color = mutedColor, maxLines = 1)
+                Text(unitLabel(unit, s).uppercase(), style = NixType.Eyebrow, color = mutedColor, maxLines = 1)
             }
         }
     }
@@ -220,13 +245,15 @@ fun BadHabitCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
+    /** "Craving? Talk it through": opens the coach about this habit. Hidden when null. */
+    onCraving: (() -> Unit)? = null,
 ) {
     val s = LocalStrings.current
     val engine = koinInject<CoachEngine>()
     val gradient = habitCardGradient(model)
-    val lightOnCard = gradient.middle.prefersLightContentOnCard()
-    val primary = if (lightOnCard) NixUraPalette.onDarkPrimary else NixUraPalette.onLightPrimary
-    val muted = if (lightOnCard) NixUraPalette.onDarkMuted else NixUraPalette.onLightMuted
+    val ink = gradient.middle.cardInk()
+    val primary = ink.primary
+    val muted = ink.muted
     val shape = RoundedCornerShape(26.dp)
     val category = remember(model.name) { engine.categoryFor(model.name) }
 
@@ -234,8 +261,9 @@ fun BadHabitCard(
         modifier = modifier
             .fillMaxWidth()
             .pressable(pressedScale = 0.98f, onLongClick = onLongClick, onClick = onClick)
+            .habitCardLift(gradient, shape)
             .habitCardFill(gradient, shape)
-            .border(1.dp, if (lightOnCard) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.10f), shape)
+            .border(1.dp, habitCardEdge(gradient), shape)
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -243,22 +271,37 @@ fun BadHabitCard(
             GlyphBadge(model.topic.icon(), primary, primary.copy(alpha = 0.14f))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(model.name, style = NixType.Heading, color = primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(model.name.forDisplay(), style = NixType.Heading, color = primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(category.label, style = NixType.Small, color = muted, maxLines = 1)
             }
-            NixIconView(NixIcon.Chevron, muted, size = 20.dp)
+            if (onLongClick != null) {
+                // The same options as a long press, for people who don't know to hold the card.
+                NixIconButton(
+                    NixIcon.More,
+                    onLongClick,
+                    modifier = Modifier.semantics { contentDescription = s.cardMoreOptions },
+                    tint = primary,
+                    background = primary.copy(alpha = 0.10f),
+                    size = 40.dp,
+                    bordered = false,
+                )
+            } else {
+                NixIconView(NixIcon.Chevron, muted, size = 20.dp)
+            }
         }
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(s.clearFor.uppercase(), style = NixType.Eyebrow, color = muted)
             CounterBlocks(model.activeElapsed.toCounterParts(), primary, muted, valueSize = 30)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
+            val next = MilestoneCalculator.next(model.activeElapsed)
             ProgressStageIndicator(
                 stageCount = model.stageCount,
                 activeStageIndex = model.activeStageIndex,
+                label = s.nextMilestone(s.milestoneName(next.days), s.timeLeft(next.remaining)),
                 labelColor = muted,
                 activeStageColor = primary,
-                inactiveStageColor = muted.copy(alpha = 0.45f),
+                inactiveStageColor = muted,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -272,9 +315,115 @@ fun BadHabitCard(
                 modifier = Modifier.padding(top = 0.dp),
             )
         }
-        Text(s.longestLabel(model.longestStreakLabel), style = NixType.Small, color = muted)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) {
+                if (model.isLongestYet()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        NixIconView(NixIcon.Flame, primary, size = 16.dp)
+                        Spacer(Modifier.width(6.dp))
+                        Text(s.longestYet, style = NixType.SmallStrong, color = primary, maxLines = 2)
+                    }
+                } else {
+                    Text(s.longestLabel(model.longestStreakLabel), style = NixType.Small, color = muted, maxLines = 2)
+                }
+            }
+            if (onCraving != null) {
+                Spacer(Modifier.width(10.dp))
+                CravingChip(primary, onCraving)
+            }
+        }
     }
 }
+
+/**
+ * A quit habit as a short row for Home: the same streak-colored card, with the name, the next milestone, the live
+ * counter and "Craving?". The full card (money, longest streak) stays on the Quit tab.
+ */
+@Composable
+fun QuitHabitRow(
+    model: HabitCardUiModel,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
+    onCraving: (() -> Unit)? = null,
+) {
+    val s = LocalStrings.current
+    val gradient = habitCardGradient(model)
+    val ink = gradient.middle.cardInk()
+    val shape = RoundedCornerShape(22.dp)
+    val next = MilestoneCalculator.next(model.activeElapsed)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .pressable(pressedScale = 0.98f, onLongClick = onLongClick, onClick = onClick)
+            .habitCardLift(gradient, shape)
+            .habitCardFill(gradient, shape)
+            .border(1.dp, habitCardEdge(gradient), shape)
+            .padding(horizontal = 18.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            GlyphBadge(model.topic.icon(), ink.primary, ink.primary.copy(alpha = 0.14f), size = 36.dp)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(model.name.forDisplay(), style = NixType.BodyStrong, color = ink.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    s.nextMilestone(s.milestoneName(next.days), s.timeLeft(next.remaining)),
+                    style = NixType.Small,
+                    color = ink.muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            CounterBlocks(model.activeElapsed.toCounterParts(), ink.primary, ink.muted, valueSize = 24, gap = 14.dp, modifier = Modifier.weight(1f))
+            if (onCraving != null) {
+                Spacer(Modifier.width(10.dp))
+                CravingChip(ink.primary, onCraving)
+            }
+        }
+    }
+}
+
+/** Small "Craving?" button on a quit card; read out as the full "Craving? Talk it through". */
+@Composable
+private fun CravingChip(ink: Color, onClick: () -> Unit) {
+    val s = LocalStrings.current
+    val pill = RoundedCornerShape(50)
+    Row(
+        Modifier
+            .pressable(pressedScale = 0.95f, haptic = true, onClick = onClick)
+            .clearAndSetSemantics { contentDescription = s.cravingAction; role = Role.Button }
+            .heightIn(min = 44.dp)
+            .clip(pill)
+            .background(ink.copy(alpha = 0.14f), pill)
+            .border(1.dp, ink.copy(alpha = 0.22f), pill)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        NixIconView(NixIcon.Sparkle, ink, size = 16.dp)
+        Spacer(Modifier.width(6.dp))
+        Text(s.cravingShort, style = NixType.SmallStrong, color = ink, maxLines = 1)
+    }
+}
+
+/**
+ * Lifts a habit card off the page: a soft shadow whose glow takes the color the card is growing into, so even a
+ * day-0 navy card separates from the navy background (DESIGN.md, Elevation & Depth).
+ */
+fun Modifier.habitCardLift(gradient: CardGradient, shape: Shape): Modifier =
+    softLift(shape, gradient.end)
+
+/** The card's 1dp edge: stronger on the darkest stages, where the card is close to the page color. */
+fun habitCardEdge(gradient: CardGradient): Color = when {
+    !gradient.middle.prefersLightContentOnCard() -> Color.Black.copy(alpha = 0.10f)
+    gradient.middle.relativeLuminance() < 0.05f -> Color.White.copy(alpha = 0.24f)
+    else -> Color.White.copy(alpha = 0.14f)
+}
+
+/** The current streak is the best this habit has had (the longest streak includes the one running now). */
+fun HabitCardUiModel.isLongestYet(): Boolean = activeElapsed > Duration.ZERO && activeElapsed >= longestStreak
 
 // ---------- Good habits: day squares, week strip, month calendar ----------
 
@@ -379,7 +528,7 @@ fun MonthCalendar(
     val s = LocalStrings.current
     val c = Nix.colors
     val firstDay = CivilCalendar.dayIndexFromCivil(year, month, 1)
-    val lead = CivilCalendar.isoWeekday(firstDay) - 1
+    val lead = CivilCalendar.sundayFirstColumn(firstDay)
     val length = CivilCalendar.monthLength(year, month)
     val rows = (lead + length + 6) / 7
 
@@ -391,7 +540,7 @@ fun MonthCalendar(
             NixIconButton(NixIcon.Chevron, { if (canGoNext) onNextMonth() }, size = 36.dp, tint = if (canGoNext) c.textPrimary else c.textMuted.copy(alpha = 0.4f))
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            s.weekdayLetters.forEach {
+            s.weekdayLettersSundayFirst().forEach {
                 Text(it, style = NixType.Small, color = c.textMuted, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
             }
         }
@@ -455,6 +604,7 @@ fun GoodHabitCard(
         onClick = onClick,
         onLongClick = onLongClick,
         paint = look.paint,
+        lift = look.background,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (habit.fillStyle == GoodHabitFillStyle.PRAYER) {
@@ -464,7 +614,7 @@ fun GoodHabitCard(
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(habit.name, style = NixType.Heading, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(habit.name.forDisplay(), style = NixType.Heading, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted)
             }
             val prayer = habit.fillStyle == GoodHabitFillStyle.PRAYER
@@ -498,9 +648,14 @@ fun GoodHabitCard(
             Modifier.fillMaxWidth().pressable(pressedScale = 0.96f, haptic = true) { streakInfo = true }.padding(vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            NixIconView(NixIcon.Flame, if (look.fill >= 0.6f) look.content else c.accentWarm, size = 16.dp)
-            Spacer(Modifier.width(6.dp))
-            Text(if (habit.isWeekly) s.streakWeeks(habit.currentStreak) else s.streakDays(habit.currentStreak), style = NixType.SmallStrong, color = look.content)
+            if (habit.currentStreak > 0) {
+                NixIconView(NixIcon.Flame, if (look.fill >= 0.6f) look.content else c.accentWarm, size = 16.dp)
+                Spacer(Modifier.width(6.dp))
+                Text(if (habit.isWeekly) s.streakWeeks(habit.currentStreak) else s.streakDays(habit.currentStreak), style = NixType.SmallStrong, color = look.content)
+            } else {
+                // No streak yet (or it broke): an invitation, not a bold "0 day streak" with a flame.
+                Text(if (habit.isWeekly) s.streakStartWeek else s.streakStartToday, style = NixType.Small, color = look.contentMuted)
+            }
             Spacer(Modifier.weight(1f))
             Text(if (habit.isWeekly) s.daysDoneTotal(habit.totalTimesDone) else s.timesDoneTotal(habit.totalTimesDone), style = NixType.Small, color = look.contentMuted)
         }
@@ -559,12 +714,12 @@ fun EventCard(
     val remaining = (event.targetAtEpochMillis - nowMillis).milliseconds
     val passed = remaining < Duration.ZERO
     val parts = (if (passed) -remaining else remaining).toCounterParts()
-    NixCard(modifier.fillMaxWidth(), onClick = onClick, onLongClick = onLongClick) {
+    NixCard(modifier.fillMaxWidth(), onClick = onClick, onLongClick = onLongClick, lift = Color.Black) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(s.categoryLabel(event.category).uppercase(), style = NixType.Eyebrow, color = if (passed) c.textMuted else c.accent)
+                Text(s.categoryLabel(event.category).uppercase(), style = NixType.Eyebrow, color = if (passed) c.textMuted else c.textSecondary)
                 Spacer(Modifier.height(4.dp))
-                Text(event.title, style = NixType.Heading, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(event.title.forDisplay(), style = NixType.Heading, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(dateText, style = NixType.Small, color = c.textMuted)
             }
             // Where an imported event comes from (made-in-app events have no badge)
@@ -592,15 +747,30 @@ fun EventCard(
                     Text(event.reminderLeadMillis.size.toString(), style = NixType.SmallStrong, color = c.textSecondary)
                 }
             }
+            if (onLongClick != null) {
+                // The same options as a long press, like the ⋯ on quit cards.
+                Spacer(Modifier.width(6.dp))
+                NixIconButton(
+                    NixIcon.More,
+                    onLongClick,
+                    modifier = Modifier.semantics { contentDescription = s.cardMoreOptions },
+                    tint = c.textSecondary,
+                    background = c.surfaceRaised,
+                    size = 40.dp,
+                    bordered = false,
+                )
+            }
         }
-        Spacer(Modifier.height(14.dp))
-        Text(
-            (if (passed) s.passedSince else s.startsIn).uppercase(),
-            style = NixType.Eyebrow,
-            color = c.textMuted,
-        )
-        Spacer(Modifier.height(6.dp))
-        CounterBlocks(parts, if (passed) c.textSecondary else c.textPrimary, c.textMuted, valueSize = 26)
+        if (passed) {
+            // A past event is history: one quiet line, no ticking counter.
+            Spacer(Modifier.height(8.dp))
+            Text(s.passedAgo(durationText(-remaining)), style = NixType.Small, color = c.textMuted)
+        } else {
+            Spacer(Modifier.height(14.dp))
+            Text(s.startsIn.uppercase(), style = NixType.Eyebrow, color = c.textMuted)
+            Spacer(Modifier.height(6.dp))
+            CounterBlocks(parts, c.textPrimary, c.textMuted, valueSize = 26, units = parts.unitsWithoutFarSeconds)
+        }
     }
 }
 

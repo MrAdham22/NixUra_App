@@ -72,7 +72,7 @@ open class Strings {
     // Bad habits
     open val badEyebrow: String = "Break free"
     open val badTitle: String = "Habits to quit"
-    open val badSubtitle: String = "Every second you stay clear makes you stronger. Your cards lighten as your streak grows."
+    open val badSubtitle: String = "Your cards lighten as your streak grows."
     open val badEmptyTitle: String = "Nothing to quit yet"
     open val badEmptyBody: String = "Tell NixUra about a habit you want to leave behind and the counter starts right away."
     open val badAdd: String = "Add a habit to quit"
@@ -80,6 +80,45 @@ open class Strings {
     open val statBestActive: String = "Best active streak"
     open val clearFor: String = "Clear for"
     open val longestLabel: (String) -> String = { "Longest streak $it" }
+    open val longestYet: String = "Your longest streak yet"
+    open val cravingAction: String = "Craving? Talk it through"
+    open val cravingShort: String = "Craving?"
+    /** A counter read aloud by a screen reader: "3 days, 4 hours, 56 minutes, 12 seconds". */
+    open fun counterSpoken(days: Long?, hours: Long?, minutes: Long?, seconds: Long?): String = listOfNotNull(
+        days?.let { if (it == 1L) "1 day" else "$it days" },
+        hours?.let { if (it == 1L) "1 hour" else "$it hours" },
+        minutes?.let { if (it == 1L) "1 minute" else "$it minutes" },
+        seconds?.let { if (it == 1L) "1 second" else "$it seconds" },
+    ).joinToString(", ")
+    open fun passedAgo(duration: String): String = "$duration ago"
+    open val slipAction: String = "I slipped"
+    open val cardMoreOptions: String = "More options"
+    open fun cravingPrompt(habit: String): String = "I'm having a craving for $habit right now. Help me get through it."
+    open val statNextWin: String = "Next win"
+    open val statSaved: String = "Saved"
+    open val infoNextWin: String = "The closest milestone among your quit habits. Hold on until then: every milestone you reach is a win, and a slip never erases the ones behind you."
+    open fun nextWinLine(habit: String, left: String): String = "$habit · in $left"
+    open fun nextMilestone(milestone: String, left: String): String = "Next: $milestone · $left"
+    open fun stageOf(stage: Int, count: Int): String = "Stage $stage of $count"
+    open fun milestoneName(days: Int): String = when {
+        days == 1 -> "1 day"
+        days < 7 -> "$days days"
+        days == 7 -> "1 week"
+        days < 30 && days % 7 == 0 -> "${days / 7} weeks"
+        days == 30 -> "1 month"
+        days < 365 && days % 30 == 0 -> "${days / 30} months"
+        days == 180 -> "6 months"
+        days == 365 -> "1 year"
+        days % 365 == 0 -> "${days / 365} years"
+        else -> "$days days"
+    }
+    /** Time left, short: "3d 20h", "5h 12m", "12m", "under 1m". */
+    open fun timeLeftShort(days: Long, hours: Long, minutes: Long): String = when {
+        days > 0 -> "${days}d ${hours}h"
+        hours > 0 -> "${hours}h ${minutes}m"
+        minutes > 0 -> "${minutes}m"
+        else -> "under 1m"
+    }
 
     // Bad habit form
     open val newBadHabit: String = "New habit to quit"
@@ -140,7 +179,7 @@ open class Strings {
     // Good habits
     open val goodEyebrow: String = "Level up"
     open val goodTitle: String = "Habits to build"
-    open val goodSubtitle: String = "Small actions, repeated daily. Green squares show the days you showed up."
+    open val goodSubtitle: String = "Small actions, repeated daily."
     open val goodEmptyTitle: String = "No good habits yet"
     open val goodEmptyBody: String = "Add something small — a glass of water, a short walk — and check in every day."
     open val goodAdd: String = "Add a good habit"
@@ -193,6 +232,9 @@ open class Strings {
     open val last4Weeks: String = "Last 4 weeks"
     open val weeksCount: (Int) -> String = { if (it == 1) "1 week" else "$it weeks" }
     open val streakWeeks: (Int) -> String = { if (it == 1) "1 week streak" else "$it week streak" }
+    open val streakStartToday: String = "Start a streak today"
+    open fun alreadyTracking(name: String): String = "You already track “$name”. Adding it again makes a second card."
+    open val streakStartWeek: String = "Start a streak this week"
     open val daysDoneTotal: (Int) -> String = { if (it == 1) "1 day in total" else "$it days in total" }
     open val statDaysDone: String = "Days done"
     open val statWeeksCompleted: String = "Weeks completed"
@@ -205,7 +247,7 @@ open class Strings {
     // Events
     open val eventsEyebrow: String = "Look forward"
     open val eventsTitle: String = "Important events"
-    open val eventsSubtitle: String = "Live countdowns to the moments that matter, with reminders when you want them."
+    open val eventsSubtitle: String = "Countdowns to what matters."
     open val eventsEmptyTitle: String = "No events yet"
     open val eventsEmptyBody: String = "Add a trip, a deadline or a celebration and watch the countdown."
     open val eventsAdd: String = "Add an event"
@@ -223,6 +265,7 @@ open class Strings {
     open val remindMe: String = "Remind me"
     open val customReminder: String = "Custom reminder"
     open val reminderHint: String = "Pick as many reminders as you like. They arrive as notifications on this device."
+    open val addOtherReminder: String = "Another time"
     open val addEvent: String = "Add event"
     open val deleteEvent: String = "Delete event"
     open val atEventTime: String = "At event time"
@@ -384,7 +427,9 @@ open class Strings {
     open val landingTagline: String = "Let's Nix the bad"
     open val landingAuraWord: String = "Aura"
     open val landingBody: String = "Quit what drains you. Build what lifts you. Count down to what matters."
-    open val landingGetStarted: String = "Get Started"
+    open val landingGetStarted: String = "Create account"
+    open val landingHaveAccount: String = "I already have an account"
+    open val landingGuestNote: String = "Everything works offline. Your data stays on this phone."
     open val authCreateAccount: String = "Create account"
     open val authSignIn: String = "Sign in"
     open val authContinueOffline: String = "Continue as guest"
@@ -482,6 +527,8 @@ open class Strings {
     open val accountSignOutAnyway: String = "Sign out anyway"
     open val syncTitle: String = "Cloud sync"
     open val syncNow: String = "Sync now"
+    open val syncComingSoon: String = "Coming soon. For now your habits are saved on this phone."
+    open val syncSavedOnPhone: String = "Saved on this phone"
     open val syncInProgress: String = "Syncing..."
     open val syncNeverYet: String = "Not synced yet"
     open val syncJustNow: String = "Synced just now"
@@ -565,7 +612,7 @@ open class Strings {
     open val guideScoresTitle: String = "Your progress at a glance"
     open val guideScoresBody: String = "These rings fill up as you stay clear and reach your targets. Tap one any time to see how it's worked out."
     open val guideQuitTitle: String = "Quit a bad habit"
-    open val guideQuitBody: String = "Tap + to add one. A live counter starts, and its card gets lighter the longer you stay clear."
+    open val guideQuitBody: String = "Tap + to add one. A live counter starts, and its card gets lighter the longer you stay clear. In a hard moment, tap Craving? on the card."
     open val guideBuildTitle: String = "Build a good habit"
     open val guideBuildBody: String = "Add things like drinking water, then tap + during the day. The card fills with green until you're done."
     open val guideEventsTitle: String = "Count down to what matters"
@@ -640,7 +687,8 @@ open class Strings {
     open val packWord: String = "pack"
 
     // Integrations (Google Calendar, Notion)
-    open val integrationsTitle: String = "Integrations"
+    open val integrationsTitle: String = "Calendars"
+    open val systemMode: String = "Same as phone"
     open val integrationsRow: String = "Calendars"
     open val integrationsRowHint: String = "Import events from Google Calendar or Notion"
     open val integrationsIntro: String = "Linked events appear in Events with their countdown, and stay up to date. NixUra only reads them."
@@ -695,8 +743,9 @@ open class Strings {
     open val aiConsentDecline: String = "Keep the offline coach"
     open val aiSettingTitle: String = "AI coach"
     open val aiSettingHint: String = "Real AI replies and voice notes. Sends your messages and habit data to online AI services. Needs an account."
-    open val coachModeAi: String = "AI coach · online"
-    open fun coachModeAiLeft(left: Int): String = if (left == 1) "AI coach · 1 message left today" else "AI coach · $left messages left today"
+    // The header already says "AI Coach"; the line under it says only what is new.
+    open val coachModeAi: String = "Online"
+    open fun coachModeAiLeft(left: Int): String = if (left == 1) "1 message left today" else "$left messages left today"
     open val coachModeGuest: String = "Offline coach · sign in for the AI coach"
     open val coachNoticeLimit: String = "You've used today's AI messages. The offline coach answers until tomorrow."
     open val coachNoticeResting: String = "The AI coach is resting right now, so the offline coach answered."

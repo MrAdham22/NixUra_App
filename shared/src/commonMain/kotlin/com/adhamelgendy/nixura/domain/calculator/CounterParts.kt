@@ -17,6 +17,10 @@ data class CounterParts(
             else -> listOf(CounterUnit.MINUTES, CounterUnit.SECONDS)
         }
 
+    /** Like [visibleUnits], but a day or more away shows days, hours and minutes only: seconds matter on the last day. */
+    val unitsWithoutFarSeconds: List<CounterUnit>
+        get() = if (days >= 1) listOf(CounterUnit.DAYS, CounterUnit.HOURS, CounterUnit.MINUTES) else visibleUnits
+
     fun valueOf(unit: CounterUnit): Long = when (unit) {
         CounterUnit.DAYS -> days
         CounterUnit.HOURS -> hours.toLong()

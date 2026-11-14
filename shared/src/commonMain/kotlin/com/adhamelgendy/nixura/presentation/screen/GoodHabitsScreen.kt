@@ -76,7 +76,11 @@ fun GoodHabitsScreen(navigator: Navigator) {
                     Text(s.habitsDoneToday(done, state.habits.size), style = NixType.SmallStrong, color = c.textSecondary)
                 }
                 Spacer(Modifier.height(10.dp))
-                NixProgressBar(done.toFloat() / state.habits.size, color = c.positive)
+                // Partial progress counts too: a prayer card at 4 of 5 fills most of its share of the bar.
+                val progress = state.habits.sumOf { h ->
+                    if (h.settledToday) 1.0 else (h.progressCount.toDouble() / h.progressTarget.coerceAtLeast(1)).coerceIn(0.0, 1.0)
+                } / state.habits.size
+                NixProgressBar(progress.toFloat(), color = c.positive)
             }
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 state.habits.forEach { habit ->

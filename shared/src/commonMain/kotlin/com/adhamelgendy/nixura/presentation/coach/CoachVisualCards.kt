@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.coach
 
+import com.adhamelgendy.nixura.presentation.components.ringSweep
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -82,8 +83,9 @@ private fun Ring(progress: Float, size: Dp, stroke: Dp, track: Color, colors: Li
             val inset = Offset(w / 2, w / 2)
             val arc = Size(this.size.width - w, this.size.height - w)
             drawArc(track, -90f, 360f, false, inset, arc, style = Stroke(w))
-            if (progress > 0f) {
-                drawArc(Brush.sweepGradient(colors + colors.first()), -90f, 360f * progress.coerceIn(0f, 1f), false, inset, arc, style = Stroke(w, cap = StrokeCap.Round))
+            val sweep = ringSweep(progress)
+            if (sweep > 0f) {
+                drawArc(Brush.sweepGradient(colors + colors.first()), -90f, sweep, false, inset, arc, style = Stroke(w, cap = StrokeCap.Round))
             }
         }
         center()

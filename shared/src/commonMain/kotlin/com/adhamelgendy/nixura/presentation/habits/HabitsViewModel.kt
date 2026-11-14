@@ -20,6 +20,7 @@ import com.adhamelgendy.nixura.presentation.deletion.hides
 import com.adhamelgendy.nixura.presentation.appearance.StreakColorMapper
 import com.adhamelgendy.nixura.presentation.appearance.StreakColorProgressionConfig
 import com.adhamelgendy.nixura.presentation.util.formatElapsed
+import com.adhamelgendy.nixura.domain.coach.durationText
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -164,7 +165,7 @@ class HabitsViewModel(
             habitId = habit.id,
             name = habit.name,
             activeElapsed = elapsed,
-            longestStreakLabel = formatElapsed(tracking.longestStreakMillis.milliseconds),
+            longestStreakLabel = durationText(tracking.longestStreakMillis.milliseconds),
             activeStageIndex = mapper.stageIndexFor(elapsed),
             stageCount = stageCount,
             colorArgb = habit.colorArgb,

@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.auth
 
+import com.adhamelgendy.nixura.presentation.components.pressable
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -113,9 +114,12 @@ fun passwordProblemText(problem: PasswordProblem, s: Strings): String = when (pr
     PasswordProblem.LowVariety -> s.pwLowVariety
 }
 
-/** The brand's main action: rose-to-orange gradient, a slight press-in, and a spinner while [loading]. */
+/**
+ * The main action of the sign-in screens. Same look as [NixButton]'s primary style (flat rose, near-white text,
+ * 16dp corners, dip-and-spring press), so the app has one primary button; [trailingIcon] sits after the label.
+ */
 @Composable
-fun AuthGradientButton(
+fun AuthPrimaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -123,35 +127,27 @@ fun AuthGradientButton(
     enabled: Boolean = true,
     trailingIcon: NixIcon? = null,
 ) {
-    val shape = RoundedCornerShape(18.dp)
-    val interaction = remember { MutableInteractionSource() }
-    val pressed by interaction.collectIsPressedAsState()
-    val reducedMotion = rememberReducedMotion()
-    val scale by animateFloatAsState(if (pressed && !reducedMotion) 0.97f else 1f, label = "buttonPress")
+    val c = Nix.colors
+    val shape = RoundedCornerShape(16.dp)
     val active = enabled && !loading
     Row(
         modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                alpha = if (enabled) 1f else 0.45f
-            }
-            .heightIn(min = 56.dp)
+            .pressable(enabled = active, onClick = onClick)
+            .heightIn(min = 52.dp)
             .clip(shape)
-            .background(Brush.horizontalGradient(listOf(NixUraPalette.Rose, NixUraPalette.Orange)), shape)
-            .clickable(interactionSource = interaction, indication = null, enabled = active, role = Role.Button, onClick = onClick)
+            .background(if (enabled) c.accent else c.accent.copy(alpha = 0.45f), shape)
             .padding(horizontal = 22.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (loading) {
-            CircularProgressIndicator(color = NixUraPalette.Navy, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+            CircularProgressIndicator(color = c.onAccent, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
         } else {
             // A label too long for one line wraps and the button grows; it is never cut short.
-            Text(text, style = NixType.Button.copy(fontSize = 16.sp), color = NixUraPalette.Navy, textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
+            Text(text, style = NixType.Button, color = if (enabled) c.onAccent else c.onAccent.copy(alpha = 0.6f), textAlign = TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
             if (trailingIcon != null) {
                 Spacer(Modifier.width(8.dp))
-                NixIconView(trailingIcon, NixUraPalette.Navy, size = 18.dp, strokeWidth = 2.4f)
+                NixIconView(trailingIcon, c.onAccent, size = 18.dp, strokeWidth = 2.4f)
             }
         }
     }

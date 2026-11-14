@@ -177,6 +177,7 @@ class PreferencesRepositoryImpl(
             guideCompleted = map[KEY_GUIDE_DONE]?.let { it == "1" } ?: defaults.guideCompleted,
             usageStatsEnabled = map[KEY_USAGE_STATS]?.let { it == "1" } ?: defaults.usageStatsEnabled,
             aiCoachConsent = map[KEY_AI_COACH]?.let { it == "1" },
+            followSystemTheme = map[KEY_FOLLOW_SYSTEM_THEME]?.let { it == "1" } ?: defaults.followSystemTheme,
         )
     }
 
@@ -209,6 +210,7 @@ class PreferencesRepositoryImpl(
         val local = listOf(
             PreferenceEntity(KEY_GUIDE_DONE, if (settings.guideCompleted) "1" else "0"),
             PreferenceEntity(KEY_USAGE_STATS, if (settings.usageStatsEnabled) "1" else "0"),
+            PreferenceEntity(KEY_FOLLOW_SYSTEM_THEME, if (settings.followSystemTheme) "1" else "0"),
         ) + listOfNotNull(settings.aiCoachConsent?.let { PreferenceEntity(KEY_AI_COACH, if (it) "1" else "0") })
         dao.upsertAll(synced + local + marks)
     }
@@ -220,6 +222,7 @@ class PreferencesRepositoryImpl(
         const val KEY_EMAIL = "profile.email"
         const val KEY_AGE = "profile.age"
         const val KEY_DARK = "settings.dark"
+        const val KEY_FOLLOW_SYSTEM_THEME = "settings.follow_system_theme"
         const val KEY_LANGUAGE = "settings.language"
         const val KEY_NOTIFICATIONS = "settings.notifications"
         const val KEY_CHECKIN = "settings.checkin_minutes"

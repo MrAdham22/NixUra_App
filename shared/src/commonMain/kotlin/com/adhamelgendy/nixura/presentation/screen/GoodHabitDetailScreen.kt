@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.util.forDisplay
 import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyle
 import com.adhamelgendy.nixura.domain.recognition.PrayerHabitDetector
 import com.adhamelgendy.nixura.presentation.components.GoodHabitButton
@@ -66,7 +67,7 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
     val currentMonthIndex = todayCivil.year * 12 + todayCivil.month - 1
 
     SubScreen(
-        title = habit?.name ?: "",
+        title = habit?.name?.forDisplay() ?: "",
         onBack = { navigator.back() },
         actions = {
             if (habit != null) {
@@ -117,8 +118,6 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
                 PrayerBeads(habit.todayCount, habit.dailyTarget, look, if (habit.dailyTarget == PrayerHabitDetector.DAILY_PRAYERS) s.prayerNames else emptyList())
             }
         }
-
-        AddToHomeScreenButton(WidgetKind.GOOD_QUICK_LOG, habit.id)
 
         // Stats
         if (weekly) {
@@ -201,5 +200,8 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
                 Text(s.editPastHint, style = NixType.Small, color = c.textMuted)
             }
         }
+
+        // An extra, so it comes after the habit itself.
+        AddToHomeScreenButton(WidgetKind.GOOD_QUICK_LOG, habit.id)
     }
 }

@@ -31,3 +31,9 @@ private const val SECONDS_PER_HOUR = 60L * SECONDS_PER_MINUTE
 private const val SECONDS_PER_DAY = 24L * SECONDS_PER_HOUR
 
 private fun twoDigits(value: Long): String = value.toString().padStart(2, '0')
+
+/** Short time left ("3d 20h", "5h 12m") in the user's language. */
+fun com.adhamelgendy.nixura.presentation.strings.Strings.timeLeft(duration: Duration): String {
+    val total = duration.coerceAtLeast(Duration.ZERO).inWholeMinutes
+    return timeLeftShort(total / (24 * 60), (total / 60) % 24, total % 60)
+}

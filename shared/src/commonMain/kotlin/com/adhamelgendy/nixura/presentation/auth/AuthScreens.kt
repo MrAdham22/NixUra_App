@@ -85,7 +85,7 @@ fun LoginScreen(navigator: Navigator, onGuest: (() -> Unit)? = null) {
         )
         AuthLink(s.authForgotLink, { navigator.push(Route.Auth.ForgotPassword) }, Modifier.align(Alignment.End))
         AuthErrorText(state.error)
-        AuthGradientButton(s.authSignIn, submit, Modifier.fillMaxWidth(), loading = state.loading, enabled = !socialState.loading)
+        AuthPrimaryButton(s.authSignIn, submit, Modifier.fillMaxWidth(), loading = state.loading, enabled = !socialState.loading)
         SocialSignInButtons(social, formBusy = state.loading, onStart = vm::dismissError)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
             Text(s.authNewHere, style = NixType.Body, color = Nix.colors.textSecondary)
@@ -133,7 +133,7 @@ fun RegisterScreen(navigator: Navigator, onGuest: (() -> Unit)? = null) {
             PasswordStrengthBar(password, email)
         }
         AuthErrorText(state.error)
-        AuthGradientButton(s.authCreateAccount, submit, Modifier.fillMaxWidth(), loading = state.loading, enabled = !socialState.loading)
+        AuthPrimaryButton(s.authCreateAccount, submit, Modifier.fillMaxWidth(), loading = state.loading, enabled = !socialState.loading)
         SocialSignInButtons(social, formBusy = state.loading, onStart = vm::dismissError)
         Column {
             Text(s.authAgreeText, style = NixType.Small, color = Nix.colors.textMuted)
@@ -171,7 +171,7 @@ fun VerifyEmailScreen(email: String, navigator: Navigator) {
     AuthScaffold(s.authVerifyTitle, s.authVerifySubtitle(email), onBack = { navigator.back() }) {
         AuthErrorText(state.error)
         if (resent) Text(s.authLinkResent, style = NixType.Small, color = Nix.colors.positive)
-        AuthGradientButton(s.authVerifyButton, { vm.check(email) }, Modifier.fillMaxWidth(), loading = state.loading)
+        AuthPrimaryButton(s.authVerifyButton, { vm.check(email) }, Modifier.fillMaxWidth(), loading = state.loading)
         AuthLink(if (seconds > 0) s.authResendIn(seconds) else s.authResend, { vm.resend(email) }, enabled = seconds == 0)
         Text(s.authVerifyCheckSpam, style = NixType.Small, color = Nix.colors.textMuted)
     }
@@ -195,7 +195,7 @@ fun ForgotPasswordScreen(navigator: Navigator) {
     if (sent) {
         // The link opens Firebase's page to choose the new password; the user then signs in on the Login screen.
         AuthScaffold(s.authForgotSentTitle, s.authForgotSent(AuthValidation.normalizeEmail(email)), onBack = { navigator.back() }) {
-            AuthGradientButton(s.authSignIn, { navigator.back() }, Modifier.fillMaxWidth())
+            AuthPrimaryButton(s.authSignIn, { navigator.back() }, Modifier.fillMaxWidth())
         }
         return
     }
@@ -205,7 +205,7 @@ fun ForgotPasswordScreen(navigator: Navigator) {
             imeAction = ImeAction.Done, onImeAction = submit, error = if (submitted) emailErrorText(email, s) else null,
         )
         AuthErrorText(state.error)
-        AuthGradientButton(s.authSendLink, submit, Modifier.fillMaxWidth(), loading = state.loading)
+        AuthPrimaryButton(s.authSendLink, submit, Modifier.fillMaxWidth(), loading = state.loading)
     }
 }
 

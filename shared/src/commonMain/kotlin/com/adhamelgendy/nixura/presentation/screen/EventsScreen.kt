@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.deletion.SheetAction
 import com.adhamelgendy.nixura.domain.usecase.DeletableItem
 import com.adhamelgendy.nixura.presentation.deletion.rememberDeleteFlow
 import androidx.compose.foundation.layout.Arrangement
@@ -77,7 +78,7 @@ fun EventsScreen(navigator: Navigator) {
                     EventCard(
                         event, now, formatDateTime(event.targetAtEpochMillis, days, s),
                         onClick = { navigator.push(Route.EventForm(event.id)) },
-                        onLongClick = { deleteFlow.open(DeletableItem.Event(event.id), event.title) },
+                        onLongClick = { deleteFlow.open(DeletableItem.Event(event.id), event.title, listOf(SheetAction(s.editEvent, NixIcon.Pencil) { navigator.push(Route.EventForm(event.id)) })) },
                     )
                 }
             }
@@ -89,7 +90,7 @@ fun EventsScreen(navigator: Navigator) {
                     EventCard(
                         event, now, formatDateTime(event.targetAtEpochMillis, days, s),
                         onClick = { navigator.push(Route.EventForm(event.id)) },
-                        onLongClick = { deleteFlow.open(DeletableItem.Event(event.id), event.title) },
+                        onLongClick = { deleteFlow.open(DeletableItem.Event(event.id), event.title, listOf(SheetAction(s.editEvent, NixIcon.Pencil) { navigator.push(Route.EventForm(event.id)) })) },
                     )
                 }
             }

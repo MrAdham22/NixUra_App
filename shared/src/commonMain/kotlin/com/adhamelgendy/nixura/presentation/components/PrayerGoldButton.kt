@@ -125,8 +125,8 @@ fun PrayerGoldButton(
                 // A star at each end, with a fine line running toward the label
                 val starR = 6.dp.toPx()
                 for (cx in listOf(22.dp.toPx(), w - 22.dp.toPx())) {
+                    // A solid star (no hole in the middle), so at this size it reads as a star, not a cog.
                     drawPath(octagramPath(cx, h / 2f, starR), Engraving.copy(alpha = 0.85f))
-                    drawCircle(MetalTop, starR * 0.32f, Offset(cx, h / 2f))
                     val dir = if (cx < w / 2f) 1f else -1f
                     drawLine(
                         Brush.horizontalGradient(
