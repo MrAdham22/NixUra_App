@@ -18,11 +18,11 @@ within 5 working days. We ask for 90 days to fix before public disclosure.
 | Logs | PII leakage | Structured logs without request bodies, emails, codes or tokens; `Authorization` redacted; audit log holds event names and user ids only. |
 | Abuse | Flooding, oversized input | Zod validation on every body, 16 KB body limit, security headers (helmet), CORS closed by default. |
 
-## Known limitations (be honest)
+## Known limitations 
 - Rate limiting is per server process. Running several instances needs a shared limiter (Redis) behind `RateLimiter`.
 - Access tokens use a symmetric (HS256) secret: only this backend can verify them. Rotating `JWT_SECRET` signs everyone out.
 - A refresh response lost in transit (client never saw the new token) will log that device out on the next refresh, because strict reuse detection cannot tell a replay from a retry.
 - No 2FA/passkeys yet; email OTP proves ownership at sign-up and reset only.
 
-## Operational checklist (owner)
+## Operational checklist 
 Managed Postgres with TLS and backups; strong random `JWT_SECRET` / `OTP_PEPPER`; verified sender domain; TLS-terminating proxy with `TRUST_PROXY_HOPS`; monitor audit events `refresh_token_reuse` and `login_failed` spikes; rotate secrets if exposed.
