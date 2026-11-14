@@ -4,6 +4,12 @@
 > which tries five free AI services in order (Gemini, Groq, Cloudflare Workers AI, Mistral, OpenRouter) and the app falls
 > back to the offline coach. Setup, keys and limits: README, "AI coach and voice notes". How it is wired:
 > `docs/PROJECT_CONTEXT.md`, "AI coach and voice notes". The text below is the original guide, kept for background.
+>
+> **The user corrects the AI (2026-11-14).** Whatever the AI understood from a voice note or suggested in the chat is only a
+> proposal. In the review sheet every item has an edit form (kind, name, target or days a week, event title, date/time,
+> category), checked with the add form rules in `domain/coach/ai/CoachActionRules`. The corrected values are what
+> `ApplyCoachActionsUseCase` saves, and an item that breaks a rule (for example an event in the past) is never added
+> until the user fixes it. No change on the Worker: the AI still sends the same action list.
 
 Status today: the coach is **offline and rule-based** (`domain/coach/CoachEngine.kt` +
 `HabitKnowledgeBase.kt`). It is free, private and works without internet. It is bound in

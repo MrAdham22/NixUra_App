@@ -168,7 +168,7 @@ fun appModule() = module {
     viewModel { GoodHabitsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { EventsViewModel(get(), get(), get(), get(), get()) }
     viewModel { CoachViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
-    viewModel { com.adhamelgendy.nixura.presentation.voice.VoiceNoteViewModel(get(), get(), get(), get(), get()) }
+    viewModel { com.adhamelgendy.nixura.presentation.voice.VoiceNoteViewModel(get(), get(), get(), get(), get(), get(), get()) }
     viewModel { ProfileViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { SettingsViewModel(get(), get(), get(), get()) }
 }
