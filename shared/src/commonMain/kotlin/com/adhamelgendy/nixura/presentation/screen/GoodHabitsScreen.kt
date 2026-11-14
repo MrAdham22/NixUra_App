@@ -1,5 +1,8 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.deletion.SheetAction
+import com.adhamelgendy.nixura.domain.widget.WidgetKind
+import com.adhamelgendy.nixura.presentation.components.rememberAddToHomeAction
 import com.adhamelgendy.nixura.domain.usecase.DeletableItem
 import com.adhamelgendy.nixura.presentation.deletion.rememberDeleteFlow
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +43,11 @@ fun GoodHabitsScreen(navigator: Navigator) {
     val s = LocalStrings.current
     val c = Nix.colors
     val deleteFlow = rememberDeleteFlow()
+    val addToHome = rememberAddToHomeAction()
+    // Long-press sheet of a good habit: Edit, Add to Home screen (where widgets exist), then Delete.
+    fun goodHabitSheetActions(id: Long): List<SheetAction> = listOf(
+        SheetAction(s.editHabit, NixIcon.Pencil) { navigator.push(Route.GoodHabitForm(id)) },
+    ) + listOfNotNull(addToHome?.let { pin -> SheetAction(s.widgetAddToHome, NixIcon.Home) { pin(WidgetKind.GOOD_QUICK_LOG, id) } })
 
     TabScreen {
         ScreenHeader(
@@ -90,7 +98,7 @@ fun GoodHabitsScreen(navigator: Navigator) {
                         onClick = { navigator.push(Route.GoodHabitDetail(habit.id)) },
                         onPlus = { vm.onChangeToday(habit.id, +1) },
                         onMinus = { vm.onChangeToday(habit.id, -1) },
-                        onLongClick = { deleteFlow.open(DeletableItem.GoodHabit(habit.id), habit.name) },
+                        onLongClick = { deleteFlow.open(DeletableItem.GoodHabit(habit.id), habit.name, goodHabitSheetActions(habit.id)) },
                     )
                 }
             }

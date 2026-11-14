@@ -45,3 +45,22 @@ fun AddToHomeScreenButton(kind: WidgetKind, targetId: Long?, modifier: Modifier 
         note?.let { Text(it, style = NixType.Smaller, color = Nix.colors.textMuted) }
     }
 }
+
+/**
+ * "Add to Home screen" as an action for a card's sheet. Null on platforms with no [WidgetPinner] (iOS for now), so
+ * callers simply leave the option out. When the launcher cannot pin, a short sheet says how to add it by hand.
+ */
+@Composable
+fun rememberAddToHomeAction(): ((WidgetKind, Long) -> Unit)? {
+    val pinner = remember { runCatching { KoinPlatform.getKoin().getOrNull<WidgetPinner>() }.getOrNull() } ?: return null
+    val text = LocalStrings.current
+    var note by remember { mutableStateOf<String?>(null) }
+    note?.let { InfoSheet(text.widgetAddToHome, null, it, onDismiss = { note = null }) }
+    return { kind, id ->
+        note = when (pinner.requestPin(kind, id)) {
+            WidgetPinResult.REQUESTED -> null // the launcher shows its own "Add to Home screen" dialog
+            WidgetPinResult.UNSUPPORTED -> text.widgetAddToHomeManual
+            WidgetPinResult.FAILED -> text.widgetAddToHomeFailed
+        }
+    }
+}

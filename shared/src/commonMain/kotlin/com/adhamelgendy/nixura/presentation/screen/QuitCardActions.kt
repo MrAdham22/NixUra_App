@@ -1,5 +1,7 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.domain.widget.WidgetKind
+import com.adhamelgendy.nixura.presentation.components.rememberAddToHomeAction
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +37,7 @@ fun rememberQuitCardActions(navigator: Navigator, deleteFlow: DeleteFlow): QuitC
     // The same coach instance the Coach tab shows (one view model per activity).
     val coachVm: CoachViewModel = koinViewModel()
     var slipFor by remember { mutableStateOf<HabitCardUiModel?>(null) }
+    val addToHome = rememberAddToHomeAction()
 
     slipFor?.let { habit ->
         ConfirmDialog(
@@ -59,7 +62,7 @@ fun rememberQuitCardActions(navigator: Navigator, deleteFlow: DeleteFlow): QuitC
                 listOf(
                     SheetAction(s.slipAction, NixIcon.Reset) { slipFor = habit },
                     SheetAction(s.editHabit, NixIcon.Pencil) { navigator.push(Route.BadHabitForm(habit.habitId)) },
-                ),
+                ) + listOfNotNull(addToHome?.let { pin -> SheetAction(s.widgetAddToHome, NixIcon.Home) { pin(WidgetKind.QUIT_COUNTER, habit.habitId) } }),
             )
         },
         craving = { habit ->

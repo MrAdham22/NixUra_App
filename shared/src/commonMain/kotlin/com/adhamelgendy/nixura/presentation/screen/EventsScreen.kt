@@ -1,5 +1,7 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.domain.widget.WidgetKind
+import com.adhamelgendy.nixura.presentation.components.rememberAddToHomeAction
 import com.adhamelgendy.nixura.presentation.deletion.SheetAction
 import com.adhamelgendy.nixura.domain.usecase.DeletableItem
 import com.adhamelgendy.nixura.presentation.deletion.rememberDeleteFlow
@@ -40,6 +42,7 @@ fun EventsScreen(navigator: Navigator) {
     val s = LocalStrings.current
     val c = Nix.colors
     val deleteFlow = rememberDeleteFlow()
+    val addToHome = rememberAddToHomeAction()
 
     val upcoming = state.events.filter { it.targetAtEpochMillis > now }
     val past = state.events.filter { it.targetAtEpochMillis <= now }.sortedByDescending { it.targetAtEpochMillis }
@@ -78,7 +81,7 @@ fun EventsScreen(navigator: Navigator) {
                     EventCard(
                         event, now, formatDateTime(event.targetAtEpochMillis, days, s),
                         onClick = { navigator.push(Route.EventForm(event.id)) },
-                        onLongClick = { deleteFlow.open(DeletableItem.Event(event.id), event.title, listOf(SheetAction(s.editEvent, NixIcon.Pencil) { navigator.push(Route.EventForm(event.id)) })) },
+                        onLongClick = { deleteFlow.open(DeletableItem.Event(event.id), event.title, listOf(SheetAction(s.editEvent, NixIcon.Pencil) { navigator.push(Route.EventForm(event.id)) }) + listOfNotNull(addToHome?.let { pin -> SheetAction(s.widgetAddToHome, NixIcon.Home) { pin(WidgetKind.EVENT, event.id) } })) },
                     )
                 }
             }
@@ -90,7 +93,7 @@ fun EventsScreen(navigator: Navigator) {
                     EventCard(
                         event, now, formatDateTime(event.targetAtEpochMillis, days, s),
                         onClick = { navigator.push(Route.EventForm(event.id)) },
-                        onLongClick = { deleteFlow.open(DeletableItem.Event(event.id), event.title, listOf(SheetAction(s.editEvent, NixIcon.Pencil) { navigator.push(Route.EventForm(event.id)) })) },
+                        onLongClick = { deleteFlow.open(DeletableItem.Event(event.id), event.title, listOf(SheetAction(s.editEvent, NixIcon.Pencil) { navigator.push(Route.EventForm(event.id)) }) + listOfNotNull(addToHome?.let { pin -> SheetAction(s.widgetAddToHome, NixIcon.Home) { pin(WidgetKind.EVENT, event.id) } })) },
                     )
                 }
             }

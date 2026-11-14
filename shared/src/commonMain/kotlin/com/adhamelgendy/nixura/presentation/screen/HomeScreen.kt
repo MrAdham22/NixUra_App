@@ -1,5 +1,7 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.domain.widget.WidgetKind
+import com.adhamelgendy.nixura.presentation.components.rememberAddToHomeAction
 import com.adhamelgendy.nixura.presentation.deletion.SheetAction
 import com.adhamelgendy.nixura.presentation.util.forDisplay
 import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyle
@@ -104,6 +106,11 @@ fun HomeScreen(navigator: Navigator) {
     var scoreSheet by remember { mutableStateOf<ScoreKind?>(null) }
     val voiceVm: com.adhamelgendy.nixura.presentation.voice.VoiceNoteViewModel = koinViewModel()
     val deleteFlow = rememberDeleteFlow()
+    val addToHome = rememberAddToHomeAction()
+    // Long-press sheet of a good habit: Edit, Add to Home screen (where widgets exist), then Delete.
+    fun goodHabitSheetActions(id: Long): List<SheetAction> = listOf(
+        SheetAction(s.editHabit, NixIcon.Pencil) { navigator.push(Route.GoodHabitForm(id)) },
+    ) + listOfNotNull(addToHome?.let { pin -> SheetAction(s.widgetAddToHome, NixIcon.Home) { pin(WidgetKind.GOOD_QUICK_LOG, id) } })
     val quitActions = rememberQuitCardActions(navigator, deleteFlow)
 
     val hour = (days.millisOfDay(now) / 3_600_000L).toInt()
@@ -143,7 +150,7 @@ fun HomeScreen(navigator: Navigator) {
                     TodayRow(
                         habit,
                         onOpen = { navigator.push(Route.GoodHabitDetail(habit.id)) },
-                        onLongClick = { deleteFlow.open(DeletableItem.GoodHabit(habit.id), habit.name) },
+                        onLongClick = { deleteFlow.open(DeletableItem.GoodHabit(habit.id), habit.name, goodHabitSheetActions(habit.id)) },
                         onPlus = { goodVm.onChangeToday(habit.id, +1) },
                     )
                 }
@@ -173,7 +180,7 @@ fun HomeScreen(navigator: Navigator) {
             EventCard(
                 nextEvent, now, formatDateTime(nextEvent.targetAtEpochMillis, days, s),
                 onClick = { navigator.push(Route.EventForm(nextEvent.id)) },
-                onLongClick = { deleteFlow.open(DeletableItem.Event(nextEvent.id), nextEvent.title, listOf(SheetAction(s.editEvent, NixIcon.Pencil) { navigator.push(Route.EventForm(nextEvent.id)) })) },
+                onLongClick = { deleteFlow.open(DeletableItem.Event(nextEvent.id), nextEvent.title, listOf(SheetAction(s.editEvent, NixIcon.Pencil) { navigator.push(Route.EventForm(nextEvent.id)) }) + listOfNotNull(addToHome?.let { pin -> SheetAction(s.widgetAddToHome, NixIcon.Home) { pin(WidgetKind.EVENT, nextEvent.id) } })) },
             )
         }
 
