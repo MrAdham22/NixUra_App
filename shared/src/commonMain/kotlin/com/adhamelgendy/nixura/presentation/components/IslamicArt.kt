@@ -1,5 +1,15 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import com.adhamelgendy.nixura.presentation.appearance.CardInkLight
+import com.adhamelgendy.nixura.presentation.appearance.EmeraldLight
+import com.adhamelgendy.nixura.presentation.appearance.EmeraldMid
+import com.adhamelgendy.nixura.presentation.appearance.EmeraldDeep
+import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyle
 import com.adhamelgendy.nixura.presentation.theme.Nix
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -513,12 +523,15 @@ fun DrawScope.drawPrayerStar(secondary: Boolean, onGold: Boolean, ink: Color, sp
 }
 
 /**
- * The plus / minus / tick button of a good-habit card: the ordinary round button, or the golden star for a prayer
- * habit. [look] says whether the card is already solid gold.
+ * The - and + of a good-habit card, made for the card it sits on (owner request 2026-11-14):
+ * - prayer: the gold star buttons;
+ * - water: frosted, see-through white over the water;
+ * - plain: emerald orbs in the card's own recipe, and a done "+" (the white tick) stays a pale emerald, not plain white.
+ * [background] == the card's content color marks the done state, as the callers pass it.
  */
 @Composable
 fun GoodHabitButton(
-    prayer: Boolean,
+    style: GoodHabitFillStyle,
     look: GoodFill,
     icon: NixIcon,
     onClick: () -> Unit,
@@ -528,13 +541,57 @@ fun GoodHabitButton(
     secondary: Boolean = false,
     haptic: Boolean = false,
 ) {
-    if (prayer) {
+    if (style == GoodHabitFillStyle.PRAYER) {
         PrayerStarButton(icon, onClick, size, onGold = look.fill >= 0.99f, secondary = secondary, ink = look.content, haptic = haptic)
-    } else if (!secondary && background == Nix.colors.accent) {
-        // The rose "+": the cards' look, like every other "+" in the app.
-        GlowIconButton(icon, onClick, size = size, haptic = haptic)
-    } else {
-        NixIconButton(icon, onClick, size = size, tint = tint, background = background, bordered = false, haptic = haptic)
+        return
+    }
+    val done = !secondary && background == look.content
+    val water = style == GoodHabitFillStyle.WATER
+    val shape = CircleShape
+    val paint: Modifier
+    val iconTint: Color
+    when {
+        water -> {
+            // Frosted glass over the water: the liquid shows through.
+            val strength = if (done) 0.42f else if (secondary) 0.14f else 0.24f
+            paint = Modifier
+                .clip(shape)
+                .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = strength + 0.08f), Color.White.copy(alpha = strength - 0.06f))), shape)
+                .border(1.dp, Color.White.copy(alpha = if (done) 0.7f else 0.45f), shape)
+            iconTint = if (done) Nix.colors.waterDeep else Color.White
+        }
+        done -> {
+            // The done tick: pale emerald with a light corner, so it still belongs to the emerald card.
+            paint = Modifier
+                .softLift(shape, EmeraldLight)
+                .clip(shape)
+                .drawBehind {
+                    val area = this.size // the drawing area, not the button's size parameter
+                    drawRect(Brush.linearGradient(listOf(Color(0xFFCFEEDD), Color(0xFFF4FBF7)), Offset.Zero, Offset(area.width, area.height)))
+                    drawRect(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.6f), Color.Transparent), Offset(area.width * 0.85f, 0f), area.maxDimension * 0.7f))
+                }
+                .border(1.dp, EmeraldLight.copy(alpha = 0.45f), shape)
+            iconTint = EmeraldDeep
+        }
+        secondary -> {
+            // The "-": a quieter emerald, tinted rather than solid.
+            paint = Modifier
+                .clip(shape)
+                .background(Brush.linearGradient(listOf(EmeraldLight.copy(alpha = 0.38f), EmeraldMid.copy(alpha = 0.22f))), shape)
+                .border(1.dp, lerp(EmeraldLight, Color.White, 0.4f).copy(alpha = 0.35f), shape)
+            iconTint = look.content
+        }
+        else -> {
+            // The "+": a full emerald orb in the cards' recipe.
+            paint = Modifier.cardGlow(shape, listOf(EmeraldMid, lerp(EmeraldLight, Color(0xFF6FD3A0), 0.35f)))
+            iconTint = CardInkLight
+        }
+    }
+    Box(
+        Modifier.pressable(pressedScale = 0.9f, haptic = haptic, onClick = onClick).size(size).then(paint),
+        contentAlignment = Alignment.Center,
+    ) {
+        NixIconView(icon, iconTint, size = size * 0.5f)
     }
 }
 

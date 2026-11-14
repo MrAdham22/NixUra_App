@@ -347,7 +347,7 @@ private fun TodayRow(habit: GoodHabitUi, onOpen: () -> Unit, onPlus: () -> Unit,
             }
             Spacer(Modifier.width(10.dp))
             GoodHabitButton(
-                habit.fillStyle == GoodHabitFillStyle.PRAYER, look,
+                habit.fillStyle, look,
                 if (habit.doneToday) NixIcon.Tick else NixIcon.Plus,
                 onPlus,
                 size = 40.dp,

@@ -638,10 +638,10 @@ fun GoodHabitCard(
                 Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted)
             }
             val prayer = habit.fillStyle == GoodHabitFillStyle.PRAYER
-            GoodHabitButton(prayer, look, NixIcon.Minus, onMinus, size = 38.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), secondary = true)
+            GoodHabitButton(habit.fillStyle, look, NixIcon.Minus, onMinus, size = 38.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), secondary = true)
             Spacer(Modifier.width(8.dp))
             GoodHabitButton(
-                prayer, look,
+                habit.fillStyle, look,
                 if (habit.doneToday && (habit.dailyTarget == 1 || habit.isWeekly)) NixIcon.Tick else NixIcon.Plus,
                 onPlus,
                 size = 44.dp,

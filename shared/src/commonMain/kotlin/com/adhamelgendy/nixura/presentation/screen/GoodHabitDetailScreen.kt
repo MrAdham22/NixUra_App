@@ -103,10 +103,10 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
                     Text(note, style = NixType.Small, color = look.contentMuted)
                 }
                 val prayer = habit.fillStyle == GoodHabitFillStyle.PRAYER
-                GoodHabitButton(prayer, look, NixIcon.Minus, { vm.onChangeToday(habit.id, -1) }, size = 46.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), secondary = true)
+                GoodHabitButton(habit.fillStyle, look, NixIcon.Minus, { vm.onChangeToday(habit.id, -1) }, size = 46.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), secondary = true)
                 Spacer(Modifier.width(10.dp))
                 GoodHabitButton(
-                    prayer, look,
+                    habit.fillStyle, look,
                     if (weekly && habit.doneToday) NixIcon.Tick else NixIcon.Plus, { vm.onChangeToday(habit.id, +1) }, size = 52.dp,
                     tint = if (habit.doneToday) look.background else c.onAccent,
                     background = if (habit.doneToday) look.content else c.accent,
