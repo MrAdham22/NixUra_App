@@ -268,7 +268,10 @@ internal object WidgetRenderer {
         // The day streak is always visible: in its own row when the plan has room for it, otherwise merged into the
         // sub line under the name (the stacked layout shows its count on the button row, so there the sub line is the streak alone).
         val streakInRow = hasStreak && plan.showStreakRow
-        text(rv, R.id.w_sub, if (streakInRow) progressText else if (stacked) streakText else "$streakText · $progressText", progressColor)
+        // Beside the buttons there is room for one short line: with no streak yet that is the count alone
+        // ("Start a streak today · 1 / 5 today" ended in "Start a ..." on a small prayer widget).
+        val merged = if (st.currentStreakDays > 0) "$streakText · $progressText" else progressText
+        text(rv, R.id.w_sub, if (streakInRow) progressText else if (stacked) streakText else merged, progressColor)
         if (stacked) {
             text(rv, R.id.w_count, "${st.count}/${st.target}", content)
             rv.setTextViewTextSize(R.id.w_count, TypedValue.COMPLEX_UNIT_DIP, if (full) 24f else 20f)
@@ -420,7 +423,7 @@ internal object WidgetRenderer {
             val date = dayCalc?.let {
                 if (plan.variant == WidgetVariant.ROW) formatDateTimeShort(targetAt, it, env.s) else formatDateTime(targetAt, it, env.s, includeYear = false)
             } ?: ""
-            text(rv, R.id.w_eyebrow_cat, env.s.categoryLabel(category).uppercase(), if (passed) muted else ink.primary.copy(alpha = 0.92f).toArgb())
+            text(rv, R.id.w_eyebrow_cat, env.s.categoryLabel(category).uppercase(), if (passed) muted else look.accent.toArgb()) // the category's own colour (owner preference)
             show(rv, R.id.w_eyebrow_cat, plan.variant == WidgetVariant.FULL || plan.showCategory)
             text(rv, R.id.w_date, date, muted)
             show(rv, R.id.w_date, plan.showDate && date.isNotEmpty())
@@ -429,7 +432,7 @@ internal object WidgetRenderer {
             text(rv, R.id.w_eyebrow, (if (passed) env.s.passedSince else env.s.startsIn).uppercase(), muted)
             show(rv, R.id.w_eyebrow, plan.showCounterEyebrow)
         }
-        counter(env, rv, plan, clock, countDown = !passed, valueColor = primary, labelColor = muted)
+        counter(env, rv, plan, clock, countDown = !passed, valueColor = primary, labelColor = c.textMuted) // DAYS / HRS / MIN / SEC as before (owner preference)
         rv.setOnClickPendingIntent(R.id.w_root, WidgetIntents.open(env.context, env.widgetId, WidgetIntents.TYPE_EVENTS))
         return RenderedWidget(rv, nextChange)
     }

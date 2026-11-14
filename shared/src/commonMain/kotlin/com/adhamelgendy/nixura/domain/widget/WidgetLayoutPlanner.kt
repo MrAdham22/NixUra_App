@@ -85,6 +85,8 @@ object WidgetLayoutPlanner {
     private const val MIN_COUNT_DP = 44 // room the "3/8" count needs beside the buttons
     /** Narrowest the name column may get beside the buttons: the "1 / 5 today" line under the name must fit whole. */
     private const val MIN_TEXT_BESIDE_DP = 96
+    /** The line under a stacked good habit's name (12 dp text + its spacing). */
+    private const val SUB_LINE_DP = 18
     /** Prayer star buttons when the controls sit below the name (widget_good_prayer_narrow). */
     private const val PLUS_PRAYER_STACKED_DP = 52
     private const val MINUS_PRAYER_STACKED_DP = 45
@@ -265,7 +267,9 @@ object WidgetLayoutPlanner {
             } else {
                 contentW >= PLUS_STACKED_DP + MINUS_STACKED_DP + MIN_COUNT_DP
             }
-            header = lines * 21 + 8 + (if (prayer) 52 else 40) // name, gap, count + buttons row
+            // name lines, the line under the name ("Start a streak today"), gap, count + buttons row.
+            // (The line under the name was missing here, so the week squares were cut off at 2x2.)
+            header = lines * 22 + SUB_LINE_DP + 8 + (if (prayer) 52 else 48)
             plan = WidgetLayoutPlan(WidgetVariant.FULL, TIGHT_PADDING, showMinus = minus, showBadge = badge, controlsBelow = true, titleMaxLines = lines, counterSizeDp = size)
         }
         // week strip 52 (weekday letters + squares), streak row 28, progress 18 (gap + bar). The week strip has priority:
@@ -422,7 +426,7 @@ object WidgetLayoutPlanner {
             val minus = contentW >= PLUS_STACKED_DP + MINUS_STACKED_DP + MIN_COUNT_DP
             // name lines (21 each) + gap 8 + count/buttons row 40, then week strip 52 first, then streak row 28;
             // when the streak row does not fit it is merged into the sub line
-            val top = lines * 21 + 8 + 40
+            val top = lines * 22 + SUB_LINE_DP + 8 + 48
             val week = h - 2 * pad >= top + 52
             val streak = h - 2 * pad >= top + (if (week) 52 else 0) + 28
             return WidgetLayoutPlan(WidgetVariant.SLIM, pad, showWeek = week, showStreakRow = streak, showMinus = minus, showBadge = false, showProgress = false, controlsBelow = true, titleMaxLines = lines, counterSizeDp = 18)

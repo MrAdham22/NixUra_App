@@ -45,4 +45,12 @@ class WidgetTextFitTest {
         val plan = WidgetLayoutPlanner.plan(WidgetKind.QUIT_COUNTER, 300, 80, days = 0, title = "Junk food")
         assertEquals(1, plan.titleMaxLines)
     }
+
+    @Test
+    fun aTwoByTwoGoodHabitShowsTheWeekOnlyWhenItFitsWhole() {
+        // 2x2 (about 170 x 170): name, "Start a streak today", buttons, then the week squares were cut off.
+        val plan = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 170, 165, title = "Drink water")
+        assertTrue(plan.controlsBelow)
+        assertTrue(plan.usedHeightDp <= 165 - 2 * plan.paddingDp)
+    }
 }

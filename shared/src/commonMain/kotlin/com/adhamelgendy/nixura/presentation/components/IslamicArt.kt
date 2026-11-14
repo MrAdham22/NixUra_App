@@ -137,7 +137,8 @@ fun prayerCardColors(fill: Float): PrayerCardColors {
 /**
  * The shapes of a prayer card of [width] x [height] px (star tiling, mosque, moon, corner stars), built once per size.
  * [maxMosqueHeight] (px) keeps the mosque inside the room left for it: a widget passes the free space under its rows.
- * The mosque is left out when that room is too small for it to still read as a mosque.
+ * When that room is too small, the mosque is still drawn at its natural size as a faint silhouette behind the content
+ * ([mosqueBehind]), so the prayer widget shows it at every size (owner request, 2026-11-14).
  */
 class PrayerCardScene(val width: Float, val height: Float, density: Density, maxMosqueHeight: Float = Float.MAX_VALUE) {
     internal val tiling: Path
@@ -145,6 +146,8 @@ class PrayerCardScene(val width: Float, val height: Float, density: Density, max
     internal val frame: Float
     internal val inset: Float
     internal val mosque: Path?
+    /** True when the mosque stands behind the widget's rows (no free room for it): drawn faint so text stays clear. */
+    internal val mosqueBehind: Boolean
     internal val domeTop: Offset
     internal val moonCenter: Offset
     internal val moon: Path
@@ -163,8 +166,11 @@ class PrayerCardScene(val width: Float, val height: Float, density: Density, max
             val shortRow = h < 120.dp.toPx()
             // On a short row the minaret tips stop just under the top edge (the mosque is ~0.43 x its width tall)
             val natural = if (shortRow) minOf(w * 0.5f, 215.dp.toPx(), h * 2.2f) else minOf(w * 0.46f, 200.dp.toPx())
-            val mosqueWidth = minOf(natural, maxMosqueHeight / MOSQUE_HEIGHT)
-            mosque = if (mosqueWidth >= 64.dp.toPx()) mosquePath((w - mosqueWidth) / 2f, h + 1f, mosqueWidth) else null
+            val fitted = minOf(natural, maxMosqueHeight / MOSQUE_HEIGHT)
+            mosqueBehind = fitted < 64.dp.toPx()
+            // Behind the rows: natural width, but never taller than most of the card.
+            val mosqueWidth = if (mosqueBehind) minOf(natural, h * 0.8f / MOSQUE_HEIGHT) else fitted
+            mosque = if (mosqueWidth >= 40.dp.toPx()) mosquePath((w - mosqueWidth) / 2f, h + 1f, mosqueWidth) else null
             domeTop = Offset(w / 2f, h - mosqueWidth * MOSQUE_DOME_TOP)
             moonCenter = if (shortRow) Offset(w * 0.58f, 14.dp.toPx()) else Offset(w / 2f, 12.dp.toPx())
             moon = crescentPath(moonCenter.x, moonCenter.y, 7.dp.toPx())
@@ -223,8 +229,9 @@ fun DrawScope.drawPrayerCard(scene: PrayerCardScene, fill: Float, shimmer: Float
     }
     // The mosque, a dark silhouette with a golden rim
     if (mosque != null) {
-        drawPath(mosque, lerp(Color(0xFF110B20), PrayerPalette.GoldDeep, done).copy(alpha = 0.78f))
-        drawPath(mosque, lerp(PrayerPalette.Gold, PrayerPalette.Night, done).copy(alpha = 0.45f), style = Stroke(1.dp.toPx()))
+        val faint = if (scene.mosqueBehind) 0.4f else 1f
+        drawPath(mosque, lerp(Color(0xFF110B20), PrayerPalette.GoldDeep, done).copy(alpha = 0.78f * faint))
+        drawPath(mosque, lerp(PrayerPalette.Gold, PrayerPalette.Night, done).copy(alpha = 0.45f * faint), style = Stroke(1.dp.toPx()))
     }
     // Crescent moon
     val moonColor = lerp(PrayerPalette.GoldLight, PrayerPalette.Night, done)

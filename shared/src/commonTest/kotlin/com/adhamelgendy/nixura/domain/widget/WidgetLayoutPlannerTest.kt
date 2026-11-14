@@ -74,18 +74,19 @@ class WidgetLayoutPlannerTest {
     }
 
     @Test fun goodWeekStripNeedsRoom() {
-        // 180 wide stacks the buttons under the name (header 69 dp); the week strip (52) is the first optional row
-        assertFalse(WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 120).showWeek)
-        assertTrue(WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 140).showWeek)
+        // 180 wide stacks the buttons under the name (header 96 dp: name, the line under it, gap, buttons);
+        // the week strip (52) is the first optional row
+        assertFalse(WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 150).showWeek)
+        assertTrue(WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 170).showWeek)
         assertTrue(WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 180).showWeek)
     }
 
     @Test fun goodWeekStripComesBeforeStreakRowAndProgress() {
-        val p = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 140)
+        val p = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 170)
         assertTrue(p.showWeek); assertFalse(p.showStreakRow); assertFalse(p.showProgress)
-        val q = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 170)
+        val q = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 195)
         assertTrue(q.showWeek && q.showStreakRow); assertFalse(q.showProgress)
-        val r = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 190)
+        val r = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 215)
         assertTrue(r.showWeek && r.showStreakRow && r.showProgress)
     }
 
