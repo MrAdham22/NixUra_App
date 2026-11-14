@@ -102,3 +102,7 @@ Starter guide, voice-note sheet (records audio), home-screen widgets (only the e
 2. Phase 1 items 1–2 (P1), then 3–7 in one consistency round.
 3. Home, then Build and Events, then Coach, then Settings/Profile/Integrations, then the auth screens on a device.
 4. Re-run `/impeccable critique` on each screen after its round and record the score here.
+
+## Next (owner, 2026-11-14)
+- Plain good-habit card in the app: a more premium look than the flat green fill (prayer and water cards stay as they are).
+- Arabic language, with right-to-left layouts.

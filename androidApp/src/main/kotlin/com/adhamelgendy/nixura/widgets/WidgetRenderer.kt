@@ -432,7 +432,8 @@ internal object WidgetRenderer {
             text(rv, R.id.w_eyebrow, (if (passed) env.s.passedSince else env.s.startsIn).uppercase(), muted)
             show(rv, R.id.w_eyebrow, plan.showCounterEyebrow)
         }
-        counter(env, rv, plan, clock, countDown = !passed, valueColor = primary, labelColor = c.textMuted) // DAYS / HRS / MIN / SEC as before (owner preference)
+        // DAYS / HRS / MIN / SEC in the category's colour, matching the category name above (owner preference)
+        counter(env, rv, plan, clock, countDown = !passed, valueColor = primary, labelColor = if (passed) muted else look.accent.toArgb())
         rv.setOnClickPendingIntent(R.id.w_root, WidgetIntents.open(env.context, env.widgetId, WidgetIntents.TYPE_EVENTS))
         return RenderedWidget(rv, nextChange)
     }
