@@ -40,7 +40,7 @@
         android:includeFontPadding="false"
         android:text=""
         android:textColor="#FFFFFFFF"
-        android:textSize="17sp"
+        android:textSize="17dp"
         android:fontFamily="sans-serif-medium" />
 <TextView
         android:id="@+id/w_sub"
@@ -52,7 +52,7 @@
         android:includeFontPadding="false"
         android:text=""
         android:textColor="#FFFFFFFF"
-        android:textSize="12sp" />
+        android:textSize="12dp" />
     </LinearLayout>
 <FrameLayout
         android:id="@+id/w_minus"

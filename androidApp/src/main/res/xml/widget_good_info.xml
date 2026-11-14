@@ -6,11 +6,11 @@
     android:minHeight="110dp"
     android:minResizeHeight="40dp"
     android:minResizeWidth="110dp"
-    android:minWidth="110dp"
+    android:minWidth="180dp"
     android:previewImage="@drawable/widget_preview_good"
     android:resizeMode="horizontal|vertical"
     android:targetCellHeight="2"
-    android:targetCellWidth="2"
+    android:targetCellWidth="3"
     android:updatePeriodMillis="0"
     android:widgetCategory="home_screen"
     android:widgetFeatures="reconfigurable" />

@@ -81,6 +81,7 @@ open class Strings {
     open val clearFor: String = "Clear for"
     open val longestLabel: (String) -> String = { "Longest streak $it" }
     open val longestYet: String = "Your longest streak yet"
+    open fun moneySavedShort(amount: String): String = "$amount saved"
     open val cravingAction: String = "Craving? Talk it through"
     open val cravingShort: String = "Craving?"
     /** A counter read aloud by a screen reader: "3 days, 4 hours, 56 minutes, 12 seconds". */

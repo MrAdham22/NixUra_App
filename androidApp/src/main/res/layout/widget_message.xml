@@ -35,7 +35,7 @@
         android:includeFontPadding="false"
         android:text="NixUra"
         android:textColor="#FFFFFFFF"
-        android:textSize="15sp"
+        android:textSize="15dp"
         android:fontFamily="sans-serif-medium" />
 <TextView
         android:id="@+id/w_caption"
@@ -47,6 +47,6 @@
         android:includeFontPadding="false"
         android:text=""
         android:textColor="#FFFFFFFF"
-        android:textSize="12sp" />
+        android:textSize="12dp" />
     </LinearLayout>
 </FrameLayout>

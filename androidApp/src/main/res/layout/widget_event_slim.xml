@@ -35,7 +35,7 @@
         android:includeFontPadding="false"
         android:text=""
         android:textColor="#FFFFFFFF"
-        android:textSize="17sp"
+        android:textSize="17dp"
         android:fontFamily="sans-serif-medium"
         android:gravity="center" />
 <LinearLayout
@@ -61,7 +61,7 @@
         android:includeFontPadding="false"
         android:text="12"
         android:textColor="#FFFFFFFF"
-        android:textSize="30sp"
+        android:textSize="30dp"
         android:textStyle="bold"
         android:fontFeatureSettings="tnum" />
 <TextView
@@ -74,7 +74,7 @@
         android:includeFontPadding="false"
         android:text="days"
         android:textColor="#FFFFFFFF"
-        android:textSize="6.5sp"
+        android:textSize="6.5dp"
         android:fontFamily="sans-serif-medium"
         android:textAllCaps="true"
         android:letterSpacing="0.12" />
@@ -93,7 +93,7 @@
         android:maxLines="1"
         android:letterSpacing="0.1"
         android:textColor="#FFFFFFFF"
-        android:textSize="30sp"
+        android:textSize="30dp"
         android:textStyle="bold"
         android:fontFeatureSettings="tnum" />
 <LinearLayout
@@ -114,7 +114,7 @@
         android:maxLines="1"
         android:includeFontPadding="false"
         android:text="0"
-        android:textSize="30sp"
+        android:textSize="30dp"
         android:textStyle="bold"
         android:letterSpacing="0.1"
         android:fontFeatureSettings="tnum" />
@@ -126,7 +126,7 @@
         android:includeFontPadding="false"
         android:text="hrs"
         android:textColor="#FFFFFFFF"
-        android:textSize="6.5sp"
+        android:textSize="6.5dp"
         android:fontFamily="sans-serif-medium"
         android:textAllCaps="true"
         android:letterSpacing="0.12"
@@ -140,7 +140,7 @@
         android:maxLines="1"
         android:includeFontPadding="false"
         android:text=":"
-        android:textSize="30sp"
+        android:textSize="30dp"
         android:textStyle="bold"
         android:letterSpacing="0.1"
         android:fontFeatureSettings="tnum" />
@@ -155,7 +155,7 @@
         android:maxLines="1"
         android:includeFontPadding="false"
         android:text="00"
-        android:textSize="30sp"
+        android:textSize="30dp"
         android:textStyle="bold"
         android:letterSpacing="0.1"
         android:fontFeatureSettings="tnum" />
@@ -167,7 +167,7 @@
         android:includeFontPadding="false"
         android:text="min"
         android:textColor="#FFFFFFFF"
-        android:textSize="6.5sp"
+        android:textSize="6.5dp"
         android:fontFamily="sans-serif-medium"
         android:textAllCaps="true"
         android:letterSpacing="0.12"
@@ -181,7 +181,7 @@
         android:maxLines="1"
         android:includeFontPadding="false"
         android:text=":"
-        android:textSize="30sp"
+        android:textSize="30dp"
         android:textStyle="bold"
         android:letterSpacing="0.1"
         android:fontFeatureSettings="tnum" />
@@ -196,7 +196,7 @@
         android:maxLines="1"
         android:includeFontPadding="false"
         android:text="00"
-        android:textSize="30sp"
+        android:textSize="30dp"
         android:textStyle="bold"
         android:letterSpacing="0.1"
         android:fontFeatureSettings="tnum" />
@@ -208,7 +208,7 @@
         android:includeFontPadding="false"
         android:text="sec"
         android:textColor="#FFFFFFFF"
-        android:textSize="6.5sp"
+        android:textSize="6.5dp"
         android:fontFamily="sans-serif-medium"
         android:textAllCaps="true"
         android:letterSpacing="0.12"

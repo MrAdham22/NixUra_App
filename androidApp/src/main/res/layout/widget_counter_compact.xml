@@ -29,7 +29,7 @@
             android:maxLines="1"
             android:text=""
             android:textColor="#FFD6CCD6"
-            android:textSize="11sp" />
+            android:textSize="11dp" />
 
         <TextView
             android:id="@+id/w_name"
@@ -39,7 +39,7 @@
             android:maxLines="1"
             android:text="Smoking"
             android:textColor="#FFF6EFEE"
-            android:textSize="13sp"
+            android:textSize="13dp"
             android:textStyle="bold" />
 
         <TextView
@@ -49,7 +49,7 @@
             android:maxLines="1"
             android:text="12d"
             android:textColor="#FFF6EFEE"
-            android:textSize="28sp"
+            android:textSize="28dp"
             android:textStyle="bold" />
 
         <Chronometer
@@ -57,7 +57,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="#FFF6EFEE"
-            android:textSize="15sp" />
+            android:textSize="15dp" />
 
         <TextView
             android:id="@+id/w_caption"
@@ -67,6 +67,6 @@
             android:maxLines="1"
             android:text="since your last slip"
             android:textColor="#FFD6CCD6"
-            android:textSize="11sp" />
+            android:textSize="11dp" />
     </LinearLayout>
 </FrameLayout>

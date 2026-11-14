@@ -73,3 +73,10 @@ fun String.forDisplay(): String = trim().replaceFirstChar { if (it.isLowerCase()
 
 /** Every word capitalized, for a person's name ("adham ahmed" → "Adham Ahmed"). */
 fun String.personForDisplay(): String = trim().split(Regex("\\s+")).joinToString(" ") { it.forDisplay() }
+
+/** "15 Nov · 9:00 AM": no weekday or year, for narrow places such as a 4x1 widget. */
+fun formatDateTimeShort(epochMillis: Long, days: DayCalculator, s: com.adhamelgendy.nixura.presentation.strings.Strings): String {
+    val dayIndex = days.dayIndexOf(epochMillis)
+    val minutes = (days.millisOfDay(epochMillis) / 60_000L).toInt()
+    return "${formatDate(dayIndex, s, includeWeekday = false, includeYear = false)} · ${formatClockMinutes(minutes, s)}"
+}

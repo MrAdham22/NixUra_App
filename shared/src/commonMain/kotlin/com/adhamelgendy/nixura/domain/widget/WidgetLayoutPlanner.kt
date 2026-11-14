@@ -67,7 +67,7 @@ object WidgetLayoutPlanner {
     private const val NAME_FULL_SP = 20
     private const val NAME_ROW_SP = 18
     private const val NAME_COMPACT_SP = 17 // narrow / slim layouts
-    private const val CHAR_EM = 0.56f
+    private const val CHAR_EM = 0.6f // bold names run wider than regular text; a little pessimistic on purpose
     private const val SPACE_EM = 0.28f
 
     // ---- horizontal space taken by the fixed parts of the good layouts (dp, including margins) ----
@@ -83,6 +83,11 @@ object WidgetLayoutPlanner {
     private const val PLUS_STACKED_DP = 46
     private const val MINUS_STACKED_DP = 38
     private const val MIN_COUNT_DP = 44 // room the "3/8" count needs beside the buttons
+    /** Narrowest the name column may get beside the buttons: the "1 / 5 today" line under the name must fit whole. */
+    private const val MIN_TEXT_BESIDE_DP = 96
+    /** Prayer star buttons when the controls sit below the name (widget_good_prayer_narrow). */
+    private const val PLUS_PRAYER_STACKED_DP = 52
+    private const val MINUS_PRAYER_STACKED_DP = 45
 
     // ---- prayer widget (layout widget_good_prayer): bigger star buttons and arch badge, as on the in-app card ----
     private const val BADGE_PRAYER_DP = 56 // 44 + 12
@@ -153,6 +158,16 @@ object WidgetLayoutPlanner {
     }
 
     /**
+     * Size (dp) and lines for an event's name so it shows whole in [widthDp]: the largest size from [maxSp] down to
+     * 15 that fits one line; else two lines when [twoLinesAllowed]; else the smallest size (the rest is ellipsized).
+     */
+    fun fitTitle(title: String, widthDp: Int, twoLinesAllowed: Boolean, maxSp: Int = 20): Pair<Int, Int> {
+        for (sp in maxSp downTo 15) if (titleFitsWhole(title, widthDp, sp, 1)) return sp to 1
+        if (twoLinesAllowed) for (sp in maxSp downTo 14) if (titleFitsWhole(title, widthDp, sp, 2)) return sp to 2
+        return 14 to (if (twoLinesAllowed) 2 else 1)
+    }
+
+    /**
      * [prayerMarks] = number of prayer arches a prayer habit shows (0 for any other habit); a prayer habit gets the
      * layout of the in-app prayer card (arch badge, star buttons, the arches row and room for the mosque).
      */
@@ -196,11 +211,18 @@ object WidgetLayoutPlanner {
             }
             WidgetKind.GOOD_QUICK_LOG -> goodFull(w, budget, contentW, title)
             WidgetKind.EVENT -> {
-                // header 36 (category + title) + gap 10 + counter 34; unit labels 12, date 16, counter eyebrow 20
-                val labels = budget >= 92
-                val date = labels && budget >= 108
-                val eyebrow = date && budget >= 128
-                WidgetLayoutPlan(WidgetVariant.FULL, pad, labels, eyebrow, showDate = date, titleMaxLines = if (eyebrow) 2 else 1, showBadge = false, counterSizeDp = size)
+                // header 36 (category + one title line) + gap 10 + counter 34; unit labels 12, date 16, counter
+                // eyebrow 20. The title must show whole: shrink it to fit one line, or give it a second line (22)
+                // when there is room, before anything else is added.
+                val (titleSp, titleLines) = fitTitle(title, contentW, budget >= 114)
+                val extra = (titleLines - 1) * 22
+                val labels = budget >= 92 + extra
+                val date = labels && budget >= 108 + extra
+                val eyebrow = date && budget >= 128 + extra
+                WidgetLayoutPlan(
+                    WidgetVariant.FULL, pad, labels, eyebrow, showDate = date, titleMaxLines = titleLines,
+                    showBadge = false, counterSizeDp = size, titleSizeDp = titleSp,
+                )
             }
         }
     }
@@ -222,19 +244,28 @@ object WidgetLayoutPlanner {
         val badgeW = if (prayer) BADGE_PRAYER_DP else BADGE_FULL_DP
         val besideWithBadge = estimateTitleLines(title, contentW - controls - badgeW, NAME_FULL_SP)
         val besideNoBadge = estimateTitleLines(title, contentW - controls, NAME_FULL_SP)
+        // The name column beside the buttons also carries "1 / 5 today": it needs a minimum width, not only a name fit.
+        val roomWithBadge = contentW - controls - badgeW >= MIN_TEXT_BESIDE_DP
+        val roomNoBadge = contentW - controls >= MIN_TEXT_BESIDE_DP
 
         val plan: WidgetLayoutPlan
         val header: Int
-        if (w >= 180 && besideNoBadge <= 2) {
-            val badge = badgeAllowed && besideWithBadge <= 2
+        if (w >= 180 && besideNoBadge <= 2 && roomNoBadge && titleFitsWhole(title, contentW - controls, NAME_FULL_SP, 2)) {
+            val badge = badgeAllowed && roomWithBadge && besideWithBadge <= 2 &&
+                titleFitsWhole(title, contentW - controls - badgeW, NAME_FULL_SP, 2)
             val lines = if (badge) besideWithBadge else besideNoBadge
             header = max(if (prayer) 52 else 44, lines * 24 + 16) // name lines + "today" line, or the plus button
             plan = WidgetLayoutPlan(WidgetVariant.FULL, TIGHT_PADDING, showMinus = minusBeside, showBadge = badge, titleMaxLines = lines, counterSizeDp = size)
         } else {
             val badge = badgeAllowed && estimateTitleLines(title, contentW - BADGE_COMPACT_DP, NAME_COMPACT_SP) <= 2
             val lines = estimateTitleLines(title, contentW - (if (badge) BADGE_COMPACT_DP else 0), NAME_COMPACT_SP).coerceAtMost(3)
-            val minus = contentW >= PLUS_STACKED_DP + MINUS_STACKED_DP + MIN_COUNT_DP
-            header = lines * 21 + 8 + 40 // name, gap, count + buttons row
+            // The prayer star buttons are wider: keep room for the "0/5" count or give up the minus star.
+            val minus = if (prayer) {
+                contentW >= PLUS_PRAYER_STACKED_DP + MINUS_PRAYER_STACKED_DP + MIN_COUNT_DP + 16
+            } else {
+                contentW >= PLUS_STACKED_DP + MINUS_STACKED_DP + MIN_COUNT_DP
+            }
+            header = lines * 21 + 8 + (if (prayer) 52 else 40) // name, gap, count + buttons row
             plan = WidgetLayoutPlan(WidgetVariant.FULL, TIGHT_PADDING, showMinus = minus, showBadge = badge, controlsBelow = true, titleMaxLines = lines, counterSizeDp = size)
         }
         // week strip 52 (weekday letters + squares), streak row 28, progress 18 (gap + bar). The week strip has priority:
@@ -256,15 +287,20 @@ object WidgetLayoutPlanner {
         if (kind == WidgetKind.QUIT_COUNTER) return quitRow(w, h, days, title)
         val pad = if (h < 64) 8 else 12
         val budget = h - 2 * pad
-        val counterW = (w - 2 * pad) / 2 // the counter column gets at most half of the width
-        val size = counterSizeDp(counterW, days, if (budget >= 44) 26 else 20)
+        val contentW = w - 2 * pad
+        // The counter takes a bit under half, so the event's name has room to show whole.
+        val size = counterSizeDp(contentW * 9 / 20, days, if (budget >= 44) 24 else 20)
+        val titleW = contentW - counterWidthDp(size, days) - NAME_GAP_DP
+        val (titleSp, titleLines) = fitTitle(title, titleW, budget >= 60, maxSp = 18)
         return WidgetLayoutPlan(
             variant = WidgetVariant.ROW,
             paddingDp = pad,
             showUnitLabels = budget >= 44,
-            showCategory = kind == WidgetKind.EVENT && budget >= 38, // the quit card shows no category
+            showCategory = kind == WidgetKind.EVENT && budget >= 38 + (titleLines - 1) * 20, // the quit card shows no category
             showDate = kind == WidgetKind.EVENT && budget >= 38,
             showMinus = true,
+            titleMaxLines = titleLines,
+            titleSizeDp = titleSp,
             counterSizeDp = size,
         )
     }
@@ -287,7 +323,7 @@ object WidgetLayoutPlanner {
             Triple(false, 16, maxCounter - 2), Triple(false, 15, maxCounter - 4), Triple(false, 14, maxCounter - 6),
             Triple(false, 13, 16),
         )
-        fun build(badge: Boolean, nameSp: Int, cap: Int): Pair<WidgetLayoutPlan, Boolean> {
+        fun build(badge: Boolean, nameSp: Int, cap: Int, maxLines: Int): Pair<WidgetLayoutPlan, Boolean> {
             val size = counterSizeDp(contentW / 2, days, cap)
             val nameW = contentW - counterWidthDp(size, days) - NAME_GAP_DP - if (badge) BADGE_ROW_DP else 0
             val plan = WidgetLayoutPlan(
@@ -295,18 +331,21 @@ object WidgetLayoutPlanner {
                 paddingDp = pad,
                 showUnitLabels = labels,
                 showBadge = badge,
-                titleMaxLines = estimateTitleLines(title, nameW, nameSp).coerceIn(1, lines),
+                titleMaxLines = estimateTitleLines(title, nameW, nameSp).coerceIn(1, maxLines),
                 titleSizeDp = nameSp,
                 counterSizeDp = size,
             )
-            return plan to titleFitsWhole(title, nameW, nameSp, lines)
+            return plan to titleFitsWhole(title, nameW, nameSp, maxLines)
         }
-        for ((badge, sp, cap) in tries) {
-            val (plan, fits) = build(badge, sp, cap)
-            if (fits) return plan
+        // One line first (every option), then two: "Junk food" on one line reads better than "Junk / food" + badge.
+        for (maxLines in 1..lines) {
+            for ((badge, sp, cap) in tries) {
+                val (plan, fits) = build(badge, sp, cap, maxLines)
+                if (fits) return plan
+            }
         }
         val (badge, sp, cap) = tries.last()
-        return build(badge, sp, cap).first
+        return build(badge, sp, cap, lines).first
     }
 
     /**

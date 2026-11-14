@@ -74,17 +74,18 @@ class WidgetLayoutPlannerTest {
     }
 
     @Test fun goodWeekStripNeedsRoom() {
-        // header is 44 dp here; the week strip (52) is the first optional row, inside the 16 dp of padding
-        assertTrue(WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 120).showWeek)
+        // 180 wide stacks the buttons under the name (header 69 dp); the week strip (52) is the first optional row
+        assertFalse(WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 120).showWeek)
+        assertTrue(WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 140).showWeek)
         assertTrue(WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 180).showWeek)
     }
 
     @Test fun goodWeekStripComesBeforeStreakRowAndProgress() {
-        val p = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 120)
+        val p = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 140)
         assertTrue(p.showWeek); assertFalse(p.showStreakRow); assertFalse(p.showProgress)
-        val q = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 150)
+        val q = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 170)
         assertTrue(q.showWeek && q.showStreakRow); assertFalse(q.showProgress)
-        val r = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 170)
+        val r = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 190)
         assertTrue(r.showWeek && r.showStreakRow && r.showProgress)
     }
 
@@ -99,8 +100,11 @@ class WidgetLayoutPlannerTest {
     }
 
     @Test fun eventTitleGetsTwoLinesOnlyWhenRoomy() {
-        assertEquals(1, WidgetLayoutPlanner.plan(WidgetKind.EVENT, 180, 125).titleMaxLines)
-        assertEquals(2, WidgetLayoutPlanner.plan(WidgetKind.EVENT, 180, 170).titleMaxLines)
+        // A second line only for a name that needs it, and only with room for it.
+        val long = "Bablo concert at the Cairo opera house"
+        assertEquals(1, WidgetLayoutPlanner.plan(WidgetKind.EVENT, 180, 125, title = long).titleMaxLines)
+        assertEquals(2, WidgetLayoutPlanner.plan(WidgetKind.EVENT, 180, 170, title = long).titleMaxLines)
+        assertEquals(1, WidgetLayoutPlanner.plan(WidgetKind.EVENT, 180, 170, title = "Gym").titleMaxLines)
     }
 
     @Test fun thinGoodWidgetDropsMinusOnlyWhenNarrow() {
@@ -159,9 +163,11 @@ class WidgetLayoutPlannerTest {
 
     // ---- good habit: the name has priority over the badge and the controls ----
     @Test fun goodBadgeGoesBeforeTheNameIsSqueezed() {
-        // 180 wide: beside the buttons there is room for a short name only once the badge is dropped
+        // 180 wide: the column beside the buttons (66 dp) is too narrow for "1 / 5 today", so the buttons go below
         val short = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 180, 200, title = "Gym")
-        assertFalse(short.showBadge); assertFalse(short.controlsBelow)
+        assertTrue(short.controlsBelow)
+        val medium = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 230, 200, title = "Gym")
+        assertFalse(medium.showBadge); assertFalse(medium.controlsBelow)
         val roomy = WidgetLayoutPlanner.plan(WidgetKind.GOOD_QUICK_LOG, 340, 200, title = "Gym")
         assertTrue(roomy.showBadge)
     }

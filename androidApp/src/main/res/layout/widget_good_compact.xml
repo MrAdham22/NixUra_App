@@ -28,7 +28,7 @@
             android:maxLines="1"
             android:text="Drink water"
             android:textColor="#FFF6EFEE"
-            android:textSize="13sp"
+            android:textSize="13dp"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -46,7 +46,7 @@
                 android:maxLines="1"
                 android:text="3 / 8"
                 android:textColor="#FFF6EFEE"
-                android:textSize="22sp"
+                android:textSize="22dp"
                 android:textStyle="bold" />
 
             <TextView
@@ -60,7 +60,7 @@
                 android:gravity="center"
                 android:text="−"
                 android:textColor="#FFF6EFEE"
-                android:textSize="18sp"
+                android:textSize="18dp"
                 android:textStyle="bold" />
 
             <TextView
@@ -73,7 +73,7 @@
                 android:gravity="center"
                 android:text="+"
                 android:textColor="#FF1D1A39"
-                android:textSize="22sp"
+                android:textSize="22dp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -96,6 +96,6 @@
             android:maxLines="1"
             android:text="5 to go"
             android:textColor="#FFD6CCD6"
-            android:textSize="11sp" />
+            android:textSize="11dp" />
     </LinearLayout>
 </FrameLayout>

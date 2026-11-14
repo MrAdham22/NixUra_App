@@ -1,5 +1,7 @@
 package com.adhamelgendy.nixura.widgets
 
+import com.adhamelgendy.nixura.presentation.util.formatDateTimeShort
+import com.adhamelgendy.nixura.presentation.appearance.cardInk
 import com.adhamelgendy.nixura.presentation.appearance.relativeLuminance
 import com.adhamelgendy.nixura.presentation.appearance.eventCardLook
 import com.adhamelgendy.nixura.domain.coach.durationText
@@ -165,7 +167,8 @@ internal object WidgetRenderer {
             val cost = st.cost
             val showMoney = saved != null && cost != null && plan.showLongest
             if (showMoney) {
-                text(rv, R.id.w_saved, env.s.moneyCardLine(Currencies.formatWhole(saved!!.savedMinor, saved.currency), env.s.unitsAvoided(saved.unitsAvoided, cost!!.unit)), primary)
+                // The full "· 213 cigarettes not smoked" was cut on 2x2 widgets; the amount alone always fits.
+                text(rv, R.id.w_saved, env.s.moneySavedShort(Currencies.formatWhole(saved!!.savedMinor, saved.currency)), primary)
             }
             show(rv, R.id.w_saved, showMoney)
             val longestYet = st.elapsedMillis > 0 && st.elapsedMillis >= st.longestStreakMillis
@@ -388,7 +391,7 @@ internal object WidgetRenderer {
         nextChange: Long,
     ): RenderedWidget {
         val c = env.c
-        val plan = WidgetLayoutPlanner.plan(WidgetKind.EVENT, env.widthDp, env.heightDp, clock.days)
+        val plan = WidgetLayoutPlanner.plan(WidgetKind.EVENT, env.widthDp, env.heightDp, clock.days, title.forDisplay())
         val layout = when (plan.variant) {
             WidgetVariant.FULL -> R.layout.widget_event_full
             WidgetVariant.ROW -> R.layout.widget_event_row
@@ -404,21 +407,29 @@ internal object WidgetRenderer {
         val pad = px(env, plan.paddingDp)
         rv.setViewPadding(R.id.w_content, pad, pad, pad, pad)
 
-        text(rv, R.id.w_name, title.forDisplay(), c.textPrimary)
+        // Text ink picked by contrast on the tinted card (the theme's muted grey was unreadable on orange).
+        val ink = look.start.cardInk()
+        val primary = ink.primary.toArgb()
+        val muted = ink.muted.toArgb()
+        text(rv, R.id.w_name, title.forDisplay(), primary)
         rv.setInt(R.id.w_name, "setMaxLines", plan.titleMaxLines)
+        if (plan.titleSizeDp > 0) rv.setTextViewTextSize(R.id.w_name, TypedValue.COMPLEX_UNIT_DIP, plan.titleSizeDp.toFloat())
         if (plan.variant != WidgetVariant.SLIM) {
             val dayCalc = runCatching { KoinPlatform.getKoin().get<DayCalculator>() }.getOrNull()
-            val date = dayCalc?.let { formatDateTime(targetAt, it, env.s, includeYear = false) } ?: ""
-            text(rv, R.id.w_eyebrow_cat, env.s.categoryLabel(category).uppercase(), if (passed) c.textMuted else look.accent.toArgb())
+            // The row is short on width: "15 Nov · 9:00 AM" there, with the weekday on taller widgets.
+            val date = dayCalc?.let {
+                if (plan.variant == WidgetVariant.ROW) formatDateTimeShort(targetAt, it, env.s) else formatDateTime(targetAt, it, env.s, includeYear = false)
+            } ?: ""
+            text(rv, R.id.w_eyebrow_cat, env.s.categoryLabel(category).uppercase(), if (passed) muted else ink.primary.copy(alpha = 0.92f).toArgb())
             show(rv, R.id.w_eyebrow_cat, plan.variant == WidgetVariant.FULL || plan.showCategory)
-            text(rv, R.id.w_date, date, c.textMuted)
+            text(rv, R.id.w_date, date, muted)
             show(rv, R.id.w_date, plan.showDate && date.isNotEmpty())
         }
         if (plan.variant == WidgetVariant.FULL) {
-            text(rv, R.id.w_eyebrow, (if (passed) env.s.passedSince else env.s.startsIn).uppercase(), c.textMuted)
+            text(rv, R.id.w_eyebrow, (if (passed) env.s.passedSince else env.s.startsIn).uppercase(), muted)
             show(rv, R.id.w_eyebrow, plan.showCounterEyebrow)
         }
-        counter(env, rv, plan, clock, countDown = !passed, valueColor = if (passed) c.textSecondary else c.textPrimary, labelColor = c.textMuted)
+        counter(env, rv, plan, clock, countDown = !passed, valueColor = primary, labelColor = muted)
         rv.setOnClickPendingIntent(R.id.w_root, WidgetIntents.open(env.context, env.widgetId, WidgetIntents.TYPE_EVENTS))
         return RenderedWidget(rv, nextChange)
     }
