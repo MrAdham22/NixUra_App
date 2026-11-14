@@ -11,6 +11,7 @@ NixUra is an offline-first habit app for **Android and iOS** (Kotlin Multiplatfo
 | [docs/PHASE2_ARCHITECTURE.md](docs/PHASE2_ARCHITECTURE.md) | Original architecture (see addendum at the end for what changed) |
 | [docs/AI_COACH_UPGRADE.md](docs/AI_COACH_UPGRADE.md) | How to replace the offline coach with a real AI |
 | [README.md](README.md) | Developer overview, features, build/test commands |
+| [PRODUCT.md](PRODUCT.md) | Product record for design work: users, positioning, principles, brand rules (owner-confirmed 2026-11-14) |
 
 **Always inspect the repository and git status** before acting. Do not trust chat history alone.
 
