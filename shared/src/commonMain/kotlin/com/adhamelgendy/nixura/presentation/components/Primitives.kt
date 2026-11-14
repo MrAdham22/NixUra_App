@@ -1,5 +1,7 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -58,12 +60,15 @@ fun NixCard(
     /** Custom painting inside the card's shape (a liquid fill, say), drawn instead of [color]. */
     paint: Modifier? = null,
     onLongClick: (() -> Unit)? = null,
+    /** Lifts the card off the page with a soft shadow whose glow takes this color (DESIGN.md, Elevation & Depth). */
+    lift: Color? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(shapeRadius)
     Column(
         modifier = modifier
             .then(if (onClick != null) Modifier.pressable(pressedScale = 0.98f, onLongClick = onLongClick, onClick = onClick) else Modifier)
+            .then(if (lift != null) Modifier.softLift(shape, lift) else Modifier)
             .clip(shape)
             .then(paint ?: Modifier.background(color, shape))
             .border(1.dp, borderColor, shape)
@@ -416,3 +421,18 @@ fun Stepper(
         NixIconButton(NixIcon.Plus, { onChange((value + step).coerceAtMost(max)) }, size = 40.dp)
     }
 }
+
+/**
+ * Degrees of a progress ring's arc. Any progress above zero draws at least [MIN_RING_SWEEP] so a small value reads
+ * as a short arc, not as a lone round dot; zero draws nothing (the track shows the empty ring).
+ */
+fun ringSweep(progress: Float): Float {
+    val p = progress.coerceIn(0f, 1f)
+    return if (p <= 0f) 0f else maxOf(360f * p, MIN_RING_SWEEP)
+}
+
+const val MIN_RING_SWEEP = 14f
+
+/** The app's one card shadow: 12dp, black ambient, a spot shadow tinted [glow] (DESIGN.md, Elevation & Depth). */
+fun Modifier.softLift(shape: Shape, glow: Color): Modifier =
+    shadow(elevation = 12.dp, shape = shape, clip = false, ambientColor = Color.Black, spotColor = glow)

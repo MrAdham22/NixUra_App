@@ -15,6 +15,8 @@ Done already: the **Quit tab** (critique 26 → 32/40, then lift, compact cravin
 
 ## Phase 1: fixes that touch many screens at once
 
+**Done 2026-11-14** (all eight items; checked on the owner's phone, 497 tests pass). Weeks start on Sunday everywhere (owner decision).
+
 | # | Flaw (where) | Fix | Sev |
 |---|---|---|---|
 | 1 | **Rings show a lone dot at low values**: Home "Momentum" outer ring (Breaking free 3%) and the coach's progress card (2%) draw only a round cap at the top, which reads as a glitch. | Give the arc a visible minimum, or hide the cap under ~3%; keep the number as the main signal. | P1 |

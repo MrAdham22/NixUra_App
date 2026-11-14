@@ -46,6 +46,9 @@ object CivilCalendar {
     /** ISO weekday: Monday = 1 … Sunday = 7. */
     fun isoWeekday(dayIndex: Long): Int = ((dayIndex + 3L).mod(7L)).toInt() + 1
 
+    /** Column of [dayIndex] in a week that starts on Sunday: 0 = Sunday ... 6 = Saturday (all NixUra weeks). */
+    fun sundayFirstColumn(dayIndex: Long): Int = isoWeekday(dayIndex) % 7
+
     fun addMonths(year: Int, month: Int, delta: Int): Pair<Int, Int> {
         val total = year * 12 + (month - 1) + delta
         return total.floorDiv(12) to (total.mod(12) + 1)

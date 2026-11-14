@@ -1,10 +1,12 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import com.adhamelgendy.nixura.domain.coach.durationText
+import com.adhamelgendy.nixura.presentation.util.forDisplay
+import com.adhamelgendy.nixura.presentation.util.weekdayLettersSundayFirst
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.adhamelgendy.nixura.presentation.appearance.relativeLuminance
-import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -118,37 +120,39 @@ fun CounterBlocks(
     valueSize: Int,
     modifier: Modifier = Modifier,
     gap: Dp = 16.dp,
+    /** Which units to show; quit counters show every unit, far-off events drop the seconds. */
+    units: List<CounterUnit> = parts.visibleUnits,
 ) {
     val s = LocalStrings.current
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     BoxWithConstraints(modifier) {
         // Measured with the widest digit, so the size stays steady while the seconds tick.
-        val sample = parts.visibleUnits.joinToString("") { unit ->
+        val sample = units.joinToString("") { unit ->
             if (unit == CounterUnit.DAYS) "8".repeat(parts.valueOf(unit).toString().length) else "88"
         }
         val needed = measurer.measure(sample, NixType.counter(valueSize)).size.width +
-            with(density) { (gap * (parts.visibleUnits.size - 1)).toPx() }
+            with(density) { (gap * (units.size - 1)).toPx() }
         val available = constraints.maxWidth.toFloat()
         val fitted = if (constraints.hasBoundedWidth && needed > available) (valueSize * available / needed).toInt() else valueSize
         // Read as one phrase ("3 days, 4 hours, ...") instead of "3, DAYS, 04, HRS". Not a live region, so a
         // screen reader reads it when focused and never announces every tick.
         val spoken = s.counterSpoken(
-            parts.valueOf(CounterUnit.DAYS).takeIf { CounterUnit.DAYS in parts.visibleUnits },
-            parts.valueOf(CounterUnit.HOURS).takeIf { CounterUnit.HOURS in parts.visibleUnits },
-            parts.valueOf(CounterUnit.MINUTES).takeIf { CounterUnit.MINUTES in parts.visibleUnits },
-            parts.valueOf(CounterUnit.SECONDS),
+            parts.valueOf(CounterUnit.DAYS).takeIf { CounterUnit.DAYS in units },
+            parts.valueOf(CounterUnit.HOURS).takeIf { CounterUnit.HOURS in units },
+            parts.valueOf(CounterUnit.MINUTES).takeIf { CounterUnit.MINUTES in units },
+            parts.valueOf(CounterUnit.SECONDS).takeIf { CounterUnit.SECONDS in units },
         )
         Box(Modifier.clearAndSetSemantics { contentDescription = spoken }) {
-            CounterBlockRow(parts, color, mutedColor, fitted, gap, s)
+            CounterBlockRow(parts, units, color, mutedColor, fitted, gap, s)
         }
     }
 }
 
 @Composable
-private fun CounterBlockRow(parts: CounterParts, color: Color, mutedColor: Color, valueSize: Int, gap: Dp, s: Strings) {
+private fun CounterBlockRow(parts: CounterParts, units: List<CounterUnit>, color: Color, mutedColor: Color, valueSize: Int, gap: Dp, s: Strings) {
     Row(horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.Bottom) {
-        parts.visibleUnits.forEach { unit ->
+        units.forEach { unit ->
             Column {
                 val value = parts.valueOf(unit)
                 Text(
@@ -267,7 +271,7 @@ fun BadHabitCard(
             GlyphBadge(model.topic.icon(), primary, primary.copy(alpha = 0.14f))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(model.name, style = NixType.Heading, color = primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(model.name.forDisplay(), style = NixType.Heading, color = primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(category.label, style = NixType.Small, color = muted, maxLines = 1)
             }
             if (onLongClick != null) {
@@ -358,7 +362,7 @@ private fun CravingChip(ink: Color, onClick: () -> Unit) {
  * day-0 navy card separates from the navy background (DESIGN.md, Elevation & Depth).
  */
 fun Modifier.habitCardLift(gradient: CardGradient, shape: Shape): Modifier =
-    shadow(elevation = 12.dp, shape = shape, clip = false, ambientColor = Color.Black, spotColor = gradient.end)
+    softLift(shape, gradient.end)
 
 /** The card's 1dp edge: stronger on the darkest stages, where the card is close to the page color. */
 fun habitCardEdge(gradient: CardGradient): Color = when {
@@ -473,7 +477,7 @@ fun MonthCalendar(
     val s = LocalStrings.current
     val c = Nix.colors
     val firstDay = CivilCalendar.dayIndexFromCivil(year, month, 1)
-    val lead = CivilCalendar.isoWeekday(firstDay) - 1
+    val lead = CivilCalendar.sundayFirstColumn(firstDay)
     val length = CivilCalendar.monthLength(year, month)
     val rows = (lead + length + 6) / 7
 
@@ -485,7 +489,7 @@ fun MonthCalendar(
             NixIconButton(NixIcon.Chevron, { if (canGoNext) onNextMonth() }, size = 36.dp, tint = if (canGoNext) c.textPrimary else c.textMuted.copy(alpha = 0.4f))
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            s.weekdayLetters.forEach {
+            s.weekdayLettersSundayFirst().forEach {
                 Text(it, style = NixType.Small, color = c.textMuted, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
             }
         }
@@ -549,6 +553,7 @@ fun GoodHabitCard(
         onClick = onClick,
         onLongClick = onLongClick,
         paint = look.paint,
+        lift = look.background,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (habit.fillStyle == GoodHabitFillStyle.PRAYER) {
@@ -558,7 +563,7 @@ fun GoodHabitCard(
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(habit.name, style = NixType.Heading, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(habit.name.forDisplay(), style = NixType.Heading, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted)
             }
             val prayer = habit.fillStyle == GoodHabitFillStyle.PRAYER
@@ -653,12 +658,12 @@ fun EventCard(
     val remaining = (event.targetAtEpochMillis - nowMillis).milliseconds
     val passed = remaining < Duration.ZERO
     val parts = (if (passed) -remaining else remaining).toCounterParts()
-    NixCard(modifier.fillMaxWidth(), onClick = onClick, onLongClick = onLongClick) {
+    NixCard(modifier.fillMaxWidth(), onClick = onClick, onLongClick = onLongClick, lift = Color.Black) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(s.categoryLabel(event.category).uppercase(), style = NixType.Eyebrow, color = if (passed) c.textMuted else c.accent)
+                Text(s.categoryLabel(event.category).uppercase(), style = NixType.Eyebrow, color = if (passed) c.textMuted else c.textSecondary)
                 Spacer(Modifier.height(4.dp))
-                Text(event.title, style = NixType.Heading, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(event.title.forDisplay(), style = NixType.Heading, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(dateText, style = NixType.Small, color = c.textMuted)
             }
             // Where an imported event comes from (made-in-app events have no badge)
@@ -687,14 +692,16 @@ fun EventCard(
                 }
             }
         }
-        Spacer(Modifier.height(14.dp))
-        Text(
-            (if (passed) s.passedSince else s.startsIn).uppercase(),
-            style = NixType.Eyebrow,
-            color = c.textMuted,
-        )
-        Spacer(Modifier.height(6.dp))
-        CounterBlocks(parts, if (passed) c.textSecondary else c.textPrimary, c.textMuted, valueSize = 26)
+        if (passed) {
+            // A past event is history: one quiet line, no ticking counter.
+            Spacer(Modifier.height(8.dp))
+            Text(s.passedAgo(durationText(-remaining)), style = NixType.Small, color = c.textMuted)
+        } else {
+            Spacer(Modifier.height(14.dp))
+            Text(s.startsIn.uppercase(), style = NixType.Eyebrow, color = c.textMuted)
+            Spacer(Modifier.height(6.dp))
+            CounterBlocks(parts, c.textPrimary, c.textMuted, valueSize = 26, units = parts.unitsWithoutFarSeconds)
+        }
     }
 }
 

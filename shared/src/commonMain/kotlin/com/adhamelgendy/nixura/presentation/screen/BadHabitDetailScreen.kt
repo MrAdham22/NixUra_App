@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.util.forDisplay
 import com.adhamelgendy.nixura.presentation.components.habitCardEdge
 import com.adhamelgendy.nixura.presentation.components.habitCardLift
 import com.adhamelgendy.nixura.domain.usecase.DeletableItem
@@ -104,7 +105,7 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
     var clearInfo by remember { mutableStateOf(false) }
 
     SubScreen(
-        title = model?.name ?: "",
+        title = model?.name?.forDisplay() ?: "",
         onBack = { navigator.back() },
         actions = {
             if (model != null) {
@@ -143,7 +144,7 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
                 GlyphBadge(model.topic.icon(), primary, primary.copy(alpha = 0.14f), size = 46.dp)
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text(model.name, style = NixType.Title, color = primary)
+                    Text(model.name.forDisplay(), style = NixType.Title, color = primary)
                     Text(category.label, style = NixType.Small, color = muted)
                 }
             }

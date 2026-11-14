@@ -84,12 +84,13 @@ open class Strings {
     open val cravingAction: String = "Craving? Talk it through"
     open val cravingShort: String = "Craving?"
     /** A counter read aloud by a screen reader: "3 days, 4 hours, 56 minutes, 12 seconds". */
-    open fun counterSpoken(days: Long?, hours: Long?, minutes: Long?, seconds: Long): String = listOfNotNull(
+    open fun counterSpoken(days: Long?, hours: Long?, minutes: Long?, seconds: Long?): String = listOfNotNull(
         days?.let { if (it == 1L) "1 day" else "$it days" },
         hours?.let { if (it == 1L) "1 hour" else "$it hours" },
         minutes?.let { if (it == 1L) "1 minute" else "$it minutes" },
-        if (seconds == 1L) "1 second" else "$seconds seconds",
+        seconds?.let { if (it == 1L) "1 second" else "$it seconds" },
     ).joinToString(", ")
+    open fun passedAgo(duration: String): String = "$duration ago"
     open val slipAction: String = "I slipped"
     open val cardMoreOptions: String = "More options"
     open fun cravingPrompt(habit: String): String = "I'm having a craving for $habit right now. Help me get through it."
@@ -178,7 +179,7 @@ open class Strings {
     // Good habits
     open val goodEyebrow: String = "Level up"
     open val goodTitle: String = "Habits to build"
-    open val goodSubtitle: String = "Small actions, repeated daily. Green squares show the days you showed up."
+    open val goodSubtitle: String = "Small actions, repeated daily."
     open val goodEmptyTitle: String = "No good habits yet"
     open val goodEmptyBody: String = "Add something small — a glass of water, a short walk — and check in every day."
     open val goodAdd: String = "Add a good habit"
@@ -243,7 +244,7 @@ open class Strings {
     // Events
     open val eventsEyebrow: String = "Look forward"
     open val eventsTitle: String = "Important events"
-    open val eventsSubtitle: String = "Live countdowns to the moments that matter, with reminders when you want them."
+    open val eventsSubtitle: String = "Countdowns to what matters."
     open val eventsEmptyTitle: String = "No events yet"
     open val eventsEmptyBody: String = "Add a trip, a deadline or a celebration and watch the countdown."
     open val eventsAdd: String = "Add an event"

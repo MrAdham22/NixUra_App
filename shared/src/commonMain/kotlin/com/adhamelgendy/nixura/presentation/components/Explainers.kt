@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import com.adhamelgendy.nixura.presentation.util.forDisplay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -53,7 +54,7 @@ fun ScoreSheet(kind: ScoreKind, stats: ProfileStats, onDismiss: () -> Unit) {
         ScoreKind.Momentum -> stats.momentum
     }
     val color = when (kind) {
-        ScoreKind.BreakingFree -> c.accent
+        ScoreKind.BreakingFree -> c.accentWarm
         ScoreKind.Discipline -> c.positive
         ScoreKind.Momentum -> c.accentWarm
     }
@@ -81,7 +82,7 @@ fun ScoreSheet(kind: ScoreKind, stats: ProfileStats, onDismiss: () -> Unit) {
                 ScoreKind.BreakingFree -> stats.quitLines.forEach { ScoreLine(it, color) }
                 ScoreKind.Discipline -> stats.disciplineLines.forEach { ScoreLine(it, color) }
                 ScoreKind.Momentum -> {
-                    stats.quitScore?.let { ScoreLine(HabitScoreLine(s.quitScoreTitle, it), c.accent) }
+                    stats.quitScore?.let { ScoreLine(HabitScoreLine(s.quitScoreTitle, it), c.accentWarm) }
                     stats.disciplineScore?.let { ScoreLine(HabitScoreLine(s.disciplineScoreTitle, it), c.positive) }
                 }
             }
@@ -96,7 +97,7 @@ private fun ScoreLine(line: HabitScoreLine, color: Color) {
     val c = Nix.colors
     Column(Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(line.name, style = NixType.BodyStrong, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            Text(line.name.forDisplay(), style = NixType.BodyStrong, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             Spacer(Modifier.width(10.dp))
             Text("${line.percent}%", style = NixType.BodyStrong, color = c.textSecondary)
         }

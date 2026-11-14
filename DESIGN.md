@@ -211,7 +211,7 @@ A six-colour night-to-dawn ramp on navy, with rose doing the work and a few docu
 - **Dawn Rose** (`rose`): the action colour in dark theme. Primary buttons, selected chips, switch tracks, progress bars, the active nav icon, eyebrow labels and the text cursor. In light theme the same role moves to **Deep Plum** (`plum`) for contrast.
 
 ### Secondary
-- **Sunrise Orange** (`orange`): warmth. The second stop of the avatar gradient and warm accents (`accentWarm`). Light theme uses the deeper **Burnt Orange** (`light-accent-warm`).
+- **Sunrise Orange** (`orange`): warmth and progress toward the light. The second stop of the avatar gradient, warm accents (`accentWarm`), and the "Breaking free" score and its ring (Home, Profile, score sheets), which used to be rose. Light theme uses the deeper **Burnt Orange** (`light-accent-warm`).
 - **First-Light Blush** (`blush`): the softest, lightest point of the ramp. The last streak stop, soft accents and text on Material containers.
 
 ### Tertiary
@@ -271,7 +271,7 @@ Screens respect the safe area on both phones (`WindowInsets.safeDrawing`). The c
 
 **Today (in the code):** depth comes from colour layers, not shadows. Navy background, then Dusk Surface cards, then Raised Dusk fields and panels, each edged with a 1dp hairline. Habit cards add their own light: a diagonal gradient plus a soft glow in the top corner, so they never read as flat blocks. The only real shadow is Material's on the bottom sheet.
 
-**Direction (owner, 2026-11-14): add soft shadows.** Cards should lift a little off the night with gentle, low-contrast shadows. On navy a black shadow barely shows, so a lifted card should pair a soft dark shadow with its hairline and, on streak cards, a faint glow tinted by the card's own colour. **First shipped (quit cards and the quit detail hero, 2026-11-14):** `habitCardLift` = a 12dp shadow with a black ambient shadow and a spot shadow tinted by the colour the card is growing into (the gradient's end), so even a day-0 navy card gets a faint purple lift; checked on a phone in dark and light theme. The card edge (`habitCardEdge`) is white at 24% on the darkest stages (luminance under 0.05), white at 14% on other light-ink cards and black at 10% on dark-ink cards. Other surfaces stay flat until they adopt the same lift.
+**Direction (owner, 2026-11-14): add soft shadows.** Cards should lift a little off the night with gentle, low-contrast shadows. On navy a black shadow barely shows, so a lifted card should pair a soft dark shadow with its hairline and, on streak cards, a faint glow tinted by the card's own colour. **First shipped (quit cards and the quit detail hero, 2026-11-14):** `habitCardLift` = a 12dp shadow with a black ambient shadow and a spot shadow tinted by the colour the card is growing into (the gradient's end), so even a day-0 navy card gets a faint purple lift; checked on a phone in dark and light theme. The card edge (`habitCardEdge`) is white at 24% on the darkest stages (luminance under 0.05), white at 14% on other light-ink cards and black at 10% on dark-ink cards. Since Phase 1 of the polish plan the same lift (`softLift`, `NixCard(lift = ...)`) is on good-habit cards and Home's today rows (glow = the card's fill colour) and event cards (neutral black). Other cards stay flat.
 
 ### Named Rules
 **The Lit From Within Rule.** Habit cards get their depth from their own light (gradient and corner glow) first. A shadow only supports it; it never replaces it.
@@ -287,6 +287,7 @@ Signature shapes are drawn in code: the stretching droplet of the nav bar, the s
 ## Components
 
 ### Buttons
+One primary style everywhere, including the sign-in screens (`AuthPrimaryButton` matches `NixButton` Primary; the old rose-to-orange gradient button with navy text is gone).
 Playful and physical: they dip under the finger and spring back, with no ripple.
 - **Shape:** gently rounded (16dp), at least 50dp tall, 20dp side padding, optional 18dp icon 8dp before the label.
 - **Primary:** rose with near-white text. **Secondary:** Raised Dusk with a hairline. **Ghost:** transparent with Haze text. **Danger:** red at 14% with a red hairline at 35% and red text.
@@ -324,6 +325,13 @@ The card fills with liquid as today's target is reached: green for plain habits,
 
 ### Prayer card (signature)
 A night-sky card with an eight-pointed star tiling, a golden dawn, a mosque and a crescent, edged with a double gold frame. A diagonal band of light slides across it. Each counted prayer sends a burst of gold stars, and the card turns solid gold when every prayer of the day is done. Star-shaped buttons: gold and slowly turning for "+", a quiet outline for "-".
+
+## Calendars and time
+
+- Every week starts on **Sunday**: week strips, the month calendar, the date picker and weekly goals (owner decision 2026-11-14; `CivilCalendar.sundayFirstColumn`).
+- Progress rings draw at least a short arc (14°) for any value above zero, so a small value never looks like a lone dot; the track alone shows zero.
+- Event countdowns more than a day away show days, hours and minutes (no seconds); past events show one quiet line ("2 days ago").
+- Names the user typed are shown with a capital first letter (`forDisplay`, people's names `personForDisplay`); what is saved stays as typed.
 
 ## Do's and Don'ts
 

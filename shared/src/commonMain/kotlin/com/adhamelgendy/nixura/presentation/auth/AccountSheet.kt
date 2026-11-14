@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.auth
 
+import com.adhamelgendy.nixura.presentation.util.personForDisplay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -62,7 +63,7 @@ fun AccountSheet(displayName: String, navigator: Navigator, onDismiss: () -> Uni
             Avatar(displayName.ifBlank { u?.email ?: "N" }, size = 52.dp)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(displayName.ifBlank { if (u == null) s.accountGuestName else s.profileNoName }, style = NixType.Heading, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(displayName.personForDisplay().ifBlank { if (u == null) s.accountGuestName else s.profileNoName }, style = NixType.Heading, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
                     u?.email ?: s.accountGuestBody,
                     style = NixType.Small,

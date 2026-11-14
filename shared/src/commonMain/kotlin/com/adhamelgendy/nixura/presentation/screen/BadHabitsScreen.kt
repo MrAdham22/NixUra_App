@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.util.forDisplay
 import com.adhamelgendy.nixura.domain.usecase.DeletableItem
 import com.adhamelgendy.nixura.presentation.deletion.rememberDeleteFlow
 import androidx.compose.foundation.layout.Arrangement
@@ -93,7 +94,7 @@ fun BadHabitsScreen(navigator: Navigator) {
                             val (habit, milestone) = nextWin
                             Text(s.milestoneName(milestone.days), style = NixType.counter(28), color = c.textPrimary, maxLines = 1)
                             Text(
-                                s.nextWinLine(habit.name, s.timeLeft(milestone.remaining)),
+                                s.nextWinLine(habit.name.forDisplay(), s.timeLeft(milestone.remaining)),
                                 style = NixType.Small,
                                 color = c.textSecondary,
                                 maxLines = 1,
@@ -137,7 +138,7 @@ fun BadHabitsScreen(navigator: Navigator) {
         val next = state.habits.map { it to MilestoneCalculator.next(it.activeElapsed) }.minByOrNull { it.second.remaining }
         InfoSheet(
             s.statNextWin,
-            next?.let { (habit, m) -> "${s.milestoneName(m.days)} · ${s.nextWinLine(habit.name, s.timeLeft(m.remaining))}" },
+            next?.let { (habit, m) -> "${s.milestoneName(m.days)} · ${s.nextWinLine(habit.name.forDisplay(), s.timeLeft(m.remaining))}" },
             s.infoNextWin,
             onDismiss = { bestInfo = false },
         )

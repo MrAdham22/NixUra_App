@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.util.forDisplay
 import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyle
 import com.adhamelgendy.nixura.domain.recognition.PrayerHabitDetector
 import com.adhamelgendy.nixura.presentation.components.GoodHabitButton
@@ -66,7 +67,7 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
     val currentMonthIndex = todayCivil.year * 12 + todayCivil.month - 1
 
     SubScreen(
-        title = habit?.name ?: "",
+        title = habit?.name?.forDisplay() ?: "",
         onBack = { navigator.back() },
         actions = {
             if (habit != null) {

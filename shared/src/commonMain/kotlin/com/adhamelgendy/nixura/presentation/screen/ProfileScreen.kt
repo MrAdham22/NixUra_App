@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.util.personForDisplay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -74,7 +75,7 @@ fun ProfileScreen(navigator: Navigator) {
                 Avatar(state.name.ifBlank { "N" }, size = 72.dp)
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    state.name.ifBlank { s.profileNoName },
+                    state.name.personForDisplay().ifBlank { s.profileNoName },
                     style = NixType.Title, color = c.textPrimary, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis,
                 )
                 if (state.email.isNotBlank()) {
@@ -110,7 +111,7 @@ fun ProfileScreen(navigator: Navigator) {
 
         SectionLabel(s.yourProgress)
         Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ScoreCard(s.quitScoreTitle, s.quitScoreBody, stats.quitScore, c.accent, s.noBadHabitsYet, Modifier.weight(1f).fillMaxHeight()) { scoreSheet = ScoreKind.BreakingFree }
+            ScoreCard(s.quitScoreTitle, s.quitScoreBody, stats.quitScore, c.accentWarm, s.noBadHabitsYet, Modifier.weight(1f).fillMaxHeight()) { scoreSheet = ScoreKind.BreakingFree }
             ScoreCard(s.disciplineScoreTitle, s.disciplineScoreBody, stats.disciplineScore, c.positive, if (stats.goodHabitCount > 0) s.disciplineWaiting else s.noGoodHabitsYet, Modifier.weight(1f).fillMaxHeight()) { scoreSheet = ScoreKind.Discipline }
         }
 

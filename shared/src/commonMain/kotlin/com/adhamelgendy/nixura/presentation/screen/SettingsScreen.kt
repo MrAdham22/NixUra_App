@@ -103,10 +103,14 @@ fun SettingsScreen(navigator: Navigator) {
                     Text(s.languageHint, style = NixType.Small, color = c.textMuted)
                 }
                 Spacer(Modifier.width(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    availableLanguages.forEach { lang ->
-                        NixChip(lang.nativeName, selected = settings.languageCode == lang.code, onClick = { vm.onLanguage(lang.code) })
+                if (availableLanguages.size > 1) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        availableLanguages.forEach { lang ->
+                            NixChip(lang.nativeName, selected = settings.languageCode == lang.code, onClick = { vm.onLanguage(lang.code) })
+                        }
                     }
+                } else {
+                    availableLanguages.firstOrNull()?.let { Text(it.nativeName, style = NixType.BodyStrong, color = c.textSecondary) }
                 }
             }
         }

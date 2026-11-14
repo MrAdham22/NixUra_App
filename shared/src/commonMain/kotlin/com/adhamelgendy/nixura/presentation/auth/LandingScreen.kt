@@ -79,7 +79,7 @@ fun LandingScreen(navigator: Navigator, onGuest: (() -> Unit)?) {
                 modifier = Modifier.riseIn(400),
             )
             Spacer(Modifier.weight(1.2f))
-            AuthGradientButton(
+            AuthPrimaryButton(
                 s.landingGetStarted,
                 { navigator.push(Route.Auth.Login) },
                 Modifier.fillMaxWidth().riseIn(540),

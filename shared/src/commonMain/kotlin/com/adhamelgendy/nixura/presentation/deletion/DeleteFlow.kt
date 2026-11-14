@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.deletion
 
+import com.adhamelgendy.nixura.presentation.util.forDisplay
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -78,7 +79,7 @@ fun rememberDeleteFlow(onDeleted: () -> Unit = {}): DeleteFlow {
     val req = flow.request ?: return flow
     if (!flow.confirming) {
         NixSheet(onDismiss = { flow.request = null }) {
-            Text(req.name, style = NixType.Heading, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(req.name.forDisplay(), style = NixType.Heading, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(14.dp))
             req.actions.forEach { action ->
                 Row(

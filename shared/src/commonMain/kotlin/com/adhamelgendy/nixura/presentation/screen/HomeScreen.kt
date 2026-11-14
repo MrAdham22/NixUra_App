@@ -1,7 +1,9 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.util.forDisplay
 import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyle
 import com.adhamelgendy.nixura.domain.recognition.PrayerHabitDetector
+import com.adhamelgendy.nixura.presentation.components.ringSweep
 import com.adhamelgendy.nixura.presentation.components.GoodHabitButton
 import com.adhamelgendy.nixura.presentation.components.PrayerBeads
 import com.adhamelgendy.nixura.presentation.components.MAX_PRAYER_BEADS
@@ -116,7 +118,7 @@ fun HomeScreen(navigator: Navigator) {
     TabScreen {
         Text(
             // First name only: a full name wraps the title onto two lines
-            if (profile.name.isBlank()) greeting else "$greeting, ${profile.name.trim().substringBefore(' ')}",
+            if (profile.name.isBlank()) greeting else "$greeting, ${profile.name.trim().substringBefore(' ').forDisplay()}",
             style = NixType.Title,
             color = c.textPrimary,
         )
@@ -264,7 +266,7 @@ private fun ProgressCard(stats: ProfileStats, onOpen: (ScoreKind) -> Unit) {
             }
             Spacer(Modifier.width(18.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                ScoreLegend(s.quitScoreTitle, stats.quitScore, c.accent) { onOpen(ScoreKind.BreakingFree) }
+                ScoreLegend(s.quitScoreTitle, stats.quitScore, c.accentWarm) { onOpen(ScoreKind.BreakingFree) }
                 ScoreLegend(s.disciplineScoreTitle, stats.disciplineScore, c.positive) { onOpen(ScoreKind.Discipline) }
                 stats.disciplineDelta?.let {
                     Text(s.momentumDelta(it), style = NixType.Small, color = c.textMuted, modifier = Modifier.padding(top = 4.dp))
@@ -295,7 +297,7 @@ private fun ScoreRings(quit: Int?, discipline: Int?, modifier: Modifier = Modifi
     val settle = spring<Float>(dampingRatio = 0.85f, stiffness = Spring.StiffnessVeryLow)
     val outer by animateFloatAsState((quit ?: 0) / 100f, settle, label = "quitRing")
     val inner by animateFloatAsState((discipline ?: 0) / 100f, settle, label = "disciplineRing")
-    val accent = c.accent
+    val accent = c.accentWarm
     val positive = c.positive
     Canvas(modifier) {
         val width = stroke.toPx()
@@ -309,9 +311,10 @@ private fun DrawScope.ring(color: Color, progress: Float, width: Float, inset: F
     val diameter = size.minDimension - inset * 2
     val topLeft = Offset(inset, inset)
     val arc = Size(diameter, diameter)
-    drawArc(color.copy(alpha = 0.16f), 0f, 360f, false, topLeft, arc, style = Stroke(width))
-    // A hint of the ring even at 0%, so a fresh start does not look broken.
-    drawArc(color, -90f, (360f * progress).coerceAtLeast(1f), false, topLeft, arc, style = Stroke(width, cap = StrokeCap.Round))
+    // The track is the "empty" state, strong enough to read as a ring on its own.
+    drawArc(color.copy(alpha = 0.26f), 0f, 360f, false, topLeft, arc, style = Stroke(width))
+    val sweep = ringSweep(progress)
+    if (sweep > 0f) drawArc(color, -90f, sweep, false, topLeft, arc, style = Stroke(width, cap = StrokeCap.Round))
 }
 
 /** One line per good habit: it fills with green as you tap +, like its full card. */
@@ -325,12 +328,13 @@ private fun TodayRow(habit: GoodHabitUi, onOpen: () -> Unit, onPlus: () -> Unit,
         onClick = onOpen,
         onLongClick = onLongClick,
         paint = look.paint,
+        lift = look.background,
         padding = PaddingValues(start = 16.dp, end = 10.dp, top = 10.dp, bottom = 10.dp),
         shapeRadius = 18.dp,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(habit.name, style = NixType.BodyStrong, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(habit.name.forDisplay(), style = NixType.BodyStrong, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted, maxLines = 1)
             }
             Spacer(Modifier.width(10.dp))

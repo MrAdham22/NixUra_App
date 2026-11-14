@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import com.adhamelgendy.nixura.presentation.util.weekdayLettersSundayFirst
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -105,7 +106,7 @@ fun DateTimePickerDialog(
     val year = monthIndex.floorDiv(12)
     val month = monthIndex.mod(12) + 1
     val firstDay = CivilCalendar.dayIndexFromCivil(year, month, 1)
-    val lead = CivilCalendar.isoWeekday(firstDay) - 1
+    val lead = CivilCalendar.sundayFirstColumn(firstDay)
     val length = CivilCalendar.monthLength(year, month)
     val rows = (lead + length + 6) / 7
 
@@ -119,7 +120,7 @@ fun DateTimePickerDialog(
             }
             Spacer(Modifier.height(10.dp))
             Row(Modifier.fillMaxWidth()) {
-                s.weekdayLetters.forEach {
+                s.weekdayLettersSundayFirst().forEach {
                     Text(it, style = NixType.Small, color = c.textMuted, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
                 }
             }
