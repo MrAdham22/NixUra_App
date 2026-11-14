@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.auth
 
+import com.adhamelgendy.nixura.domain.sync.CloudSync
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -95,14 +96,20 @@ fun AccountScreen(navigator: Navigator) {
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(s.syncTitle, style = NixType.BodyStrong, color = c.textPrimary)
-                        val failed = syncStatus is SyncStatus.Failed
-                        Text(syncStatusText(syncStatus, clock.nowEpochMillis()), style = NixType.Small, color = if (failed) c.danger else c.textMuted)
+                        if (CloudSync.AVAILABLE) {
+                            val failed = syncStatus is SyncStatus.Failed
+                            Text(syncStatusText(syncStatus, clock.nowEpochMillis()), style = NixType.Small, color = if (failed) c.danger else c.textMuted)
+                        } else {
+                            Text(s.syncComingSoon, style = NixType.Small, color = c.textMuted)
+                        }
                     }
-                    Spacer(Modifier.width(8.dp))
-                    if (syncStatus is SyncStatus.Syncing) {
-                        CircularProgressIndicator(color = c.accent, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
-                    } else {
-                        AuthLink(s.syncNow, vm::syncNow)
+                    if (CloudSync.AVAILABLE) {
+                        Spacer(Modifier.width(8.dp))
+                        if (syncStatus is SyncStatus.Syncing) {
+                            CircularProgressIndicator(color = c.accent, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                        } else {
+                            AuthLink(s.syncNow, vm::syncNow)
+                        }
                     }
                 }
             }

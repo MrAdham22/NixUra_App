@@ -47,7 +47,7 @@ import com.adhamelgendy.nixura.domain.auth.SessionManager
 import com.adhamelgendy.nixura.domain.auth.SessionState
 import com.adhamelgendy.nixura.domain.time.DayCalculator
 import com.adhamelgendy.nixura.presentation.coach.CoachViewModel
-import com.adhamelgendy.nixura.presentation.components.BadHabitCard
+import com.adhamelgendy.nixura.presentation.components.QuitHabitRow
 import com.adhamelgendy.nixura.presentation.components.EventCard
 import com.adhamelgendy.nixura.presentation.components.NixButton
 import com.adhamelgendy.nixura.presentation.components.NixCard
@@ -153,9 +153,9 @@ fun HomeScreen(navigator: Navigator) {
             SectionLabel(s.quittingSection) {
                 Text(s.seeAll, style = NixType.SmallStrong, color = c.accent, modifier = Modifier.pressable { navigator.selectTab(Route.BadHabits) })
             }
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                habits.habits.take(2).forEach {
-                    BadHabitCard(
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                habits.habits.take(MAX_QUIT_ROWS).forEach {
+                    QuitHabitRow(
                         it,
                         onClick = { navigator.push(Route.BadHabitDetail(it.habitId)) },
                         onLongClick = { quitActions.openOptions(it) },
@@ -350,3 +350,6 @@ private fun TodayRow(habit: GoodHabitUi, onOpen: () -> Unit, onPlus: () -> Unit,
         }
     }
 }
+
+/** Quit habits shown on Home as short rows; the Quit tab has them all as full cards. */
+private const val MAX_QUIT_ROWS = 3

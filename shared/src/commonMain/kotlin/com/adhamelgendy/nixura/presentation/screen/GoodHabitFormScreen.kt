@@ -2,6 +2,7 @@
 
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.theme.ProvideNixColors
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -98,6 +99,10 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
 
     Box(Modifier.fillMaxSize()) {
     PrayerGoldWash(prayer)
+    // In the prayer look, selections (chips, "Every day", the stepper, the cursor) are gold like the gold button,
+    // instead of the app's rose: one world on the page.
+    val base = Nix.colors
+    ProvideNixColors(if (prayer) base.copy(accent = PrayerPalette.Gold, onAccent = PrayerPalette.Night) else base) {
     SubScreen(title = if (editing) s.editHabit else s.newGoodHabit, onBack = { navigator.back() }) {
         state.errorMessage?.let { ErrorBanner(it, vm::onDismissError) }
 
@@ -189,6 +194,7 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
                 modifier = Modifier.fillMaxWidth(),
             )
         }
+    }
     }
     }
 }

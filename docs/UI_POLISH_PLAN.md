@@ -11,7 +11,7 @@ Done already: the **Quit tab** (critique 26 → 32/40, then lift, compact cravin
 | Screen | Flaw | Fix |
 |---|---|---|
 | Privacy Policy / Terms (`Legal`) | Users see draft text: "Draft prepared with the app. Have it reviewed by a lawyer", "Last updated: [date]", "[your legal name or company]". It also says passwords are stored as "Argon2id" hashes, which was the old Node backend; accounts are now on Firebase. Register links here. | Fill in the real details (owner input needed: legal name, contact, date) and update the data section to Firebase, the Worker, AI providers and opt-in analytics. Until then, hide the draft banner from users. |
-| Account | "Cloud sync · Offline. Not synced yet · **Sync now**" while sync is paused. The button promises a feature that doesn't run. | Hide the row, or show "Cloud sync is coming soon" with no button, until Firestore sync exists. |
+| Account (**done 2026-11-14**: hidden behind `CloudSync.AVAILABLE` until Firestore sync) | "Cloud sync · Offline. Not synced yet · **Sync now**" while sync is paused. The button promises a feature that doesn't run. | Hide the row, or show "Cloud sync is coming soon" with no button, until Firestore sync exists. |
 
 ## Phase 1: fixes that touch many screens at once
 
@@ -31,6 +31,7 @@ Done already: the **Quit tab** (critique 26 → 32/40, then lift, compact cravin
 ## Phase 2: screen by screen
 
 ### Home
+- **Done 2026-11-14:** compact quit rows on Home (`QuitHabitRow`).
 - **P1** Very long: voice card, score card, today's habits, then every quit card at full size (the same cards as the Quit tab), then next event and the thought. It takes ~3 screens to reach the event. Fix: compact quit rows on Home (name, live time, next milestone, craving), full cards stay on the Quit tab.
 - **P2** "Breaking free 3%" right after a slip feels like a punishment. Consider showing the best active streak or next win instead of an average that drops to almost zero.
 
@@ -82,6 +83,13 @@ Done already: the **Quit tab** (critique 26 → 32/40, then lift, compact cravin
 ### Sign in, Create account, Verify email, Forgot password (code review only)
 - **P2** Gradient primary button (Phase 1 #5). Create account links to the draft legal pages (Phase 0).
 - To check on a device: error messages, the glass card on small phones, keyboard covering the button.
+
+### Good-habit form, prayer look (audited 2026-11-14)
+- **Done:** chips, "Every day", the stepper and cursor are gold in the prayer look (they were rose next to a gold button).
+- **P2** Adding "Pray" again when a prayer habit already exists gives no warning (two prayer cards).
+- **P3** The decorative stars drift over the name field's edge and between chips; keep them in the margins.
+- **P3** The moon sits in a round, button-shaped circle in the header but does nothing when tapped.
+- **P3** The small 8-pointed stars on the gold button read as settings gears at that size.
 
 ### Not reviewed yet
 Starter guide, voice-note sheet (records audio), home-screen widgets (only the earlier version was owner-checked). These need a separate pass.

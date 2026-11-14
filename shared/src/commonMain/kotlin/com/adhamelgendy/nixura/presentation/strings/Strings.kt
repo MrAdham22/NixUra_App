@@ -521,6 +521,8 @@ open class Strings {
     open val accountSignOutAnyway: String = "Sign out anyway"
     open val syncTitle: String = "Cloud sync"
     open val syncNow: String = "Sync now"
+    open val syncComingSoon: String = "Coming soon. For now your habits are saved on this phone."
+    open val syncSavedOnPhone: String = "Saved on this phone"
     open val syncInProgress: String = "Syncing..."
     open val syncNeverYet: String = "Not synced yet"
     open val syncJustNow: String = "Synced just now"

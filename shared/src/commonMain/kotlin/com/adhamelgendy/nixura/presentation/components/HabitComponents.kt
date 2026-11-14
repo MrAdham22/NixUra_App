@@ -335,6 +335,57 @@ fun BadHabitCard(
     }
 }
 
+/**
+ * A quit habit as a short row for Home: the same streak-colored card, with the name, the next milestone, the live
+ * counter and "Craving?". The full card (money, longest streak) stays on the Quit tab.
+ */
+@Composable
+fun QuitHabitRow(
+    model: HabitCardUiModel,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
+    onCraving: (() -> Unit)? = null,
+) {
+    val s = LocalStrings.current
+    val gradient = habitCardGradient(model)
+    val ink = gradient.middle.cardInk()
+    val shape = RoundedCornerShape(22.dp)
+    val next = MilestoneCalculator.next(model.activeElapsed)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .pressable(pressedScale = 0.98f, onLongClick = onLongClick, onClick = onClick)
+            .habitCardLift(gradient, shape)
+            .habitCardFill(gradient, shape)
+            .border(1.dp, habitCardEdge(gradient), shape)
+            .padding(horizontal = 18.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            GlyphBadge(model.topic.icon(), ink.primary, ink.primary.copy(alpha = 0.14f), size = 36.dp)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(model.name.forDisplay(), style = NixType.BodyStrong, color = ink.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    s.nextMilestone(s.milestoneName(next.days), s.timeLeft(next.remaining)),
+                    style = NixType.Small,
+                    color = ink.muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            CounterBlocks(model.activeElapsed.toCounterParts(), ink.primary, ink.muted, valueSize = 24, gap = 14.dp, modifier = Modifier.weight(1f))
+            if (onCraving != null) {
+                Spacer(Modifier.width(10.dp))
+                CravingChip(ink.primary, onCraving)
+            }
+        }
+    }
+}
+
 /** Small "Craving?" button on a quit card; read out as the full "Craving? Talk it through". */
 @Composable
 private fun CravingChip(ink: Color, onClick: () -> Unit) {

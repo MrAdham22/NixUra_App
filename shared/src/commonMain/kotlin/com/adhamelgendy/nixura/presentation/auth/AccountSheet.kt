@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.auth
 
+import com.adhamelgendy.nixura.domain.sync.CloudSync
 import com.adhamelgendy.nixura.presentation.util.personForDisplay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -71,7 +72,9 @@ fun AccountSheet(displayName: String, navigator: Navigator, onDismiss: () -> Uni
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                if (u != null) {
+                if (u != null && !CloudSync.AVAILABLE) {
+                    Text(s.syncSavedOnPhone, style = NixType.Small, color = c.textMuted, maxLines = 1)
+                } else if (u != null) {
                     val failed = syncStatus is SyncStatus.Failed
                     Text(syncStatusText(syncStatus, clock.nowEpochMillis()), style = NixType.Small, color = if (failed) c.danger else c.textMuted, maxLines = 1)
                 }
