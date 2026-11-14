@@ -202,8 +202,6 @@ fun SettingsScreen(navigator: Navigator) {
         }
         NixCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                NixIconView(NixIcon.Leaf, c.accent, size = 22.dp)
-                Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text("NixUra", style = NixType.BodyStrong, color = c.textPrimary)
                     Text(s.versionLabel, style = NixType.Small, color = c.textMuted)

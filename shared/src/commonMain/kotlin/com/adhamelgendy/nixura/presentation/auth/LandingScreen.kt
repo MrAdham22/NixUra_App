@@ -56,8 +56,6 @@ fun LandingScreen(navigator: Navigator, onGuest: (() -> Unit)?) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.weight(1f))
-            BrandMark(Modifier.riseIn(0), size = 72.dp)
-            Spacer(Modifier.height(24.dp))
             Text(
                 "NixUra",
                 style = TextStyle(fontSize = 58.sp, lineHeight = 64.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-1.8).sp, brush = titleBrush),

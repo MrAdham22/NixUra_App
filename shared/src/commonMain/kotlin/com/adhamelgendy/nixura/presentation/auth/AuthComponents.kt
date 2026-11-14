@@ -113,16 +113,6 @@ fun passwordProblemText(problem: PasswordProblem, s: Strings): String = when (pr
     PasswordProblem.LowVariety -> s.pwLowVariety
 }
 
-/** The leaf tile used on the landing and account screens. */
-@Composable
-fun BrandMark(modifier: Modifier = Modifier, size: Dp = 56.dp) {
-    Box(
-        modifier.size(size).clip(RoundedCornerShape(size * 0.32f))
-            .background(Brush.linearGradient(listOf(NixUraPalette.Rose, NixUraPalette.Orange))),
-        contentAlignment = Alignment.Center,
-    ) { NixIconView(NixIcon.Leaf, NixUraPalette.Navy, size = size * 0.57f) }
-}
-
 /** The brand's main action: rose-to-orange gradient, a slight press-in, and a spinner while [loading]. */
 @Composable
 fun AuthGradientButton(
@@ -187,8 +177,6 @@ fun AuthScaffold(
                 if (onBack != null) NixIconButton(NixIcon.Back, onBack)
                 Spacer(Modifier.weight(1f))
                 Text("NixUra", style = NixType.Heading, color = c.textSecondary)
-                Spacer(Modifier.width(10.dp))
-                BrandMark(size = 34.dp)
             }
             Spacer(Modifier.height(30.dp))
             Text(title, style = NixType.Display, color = c.textPrimary, modifier = Modifier.riseIn(80).semantics { heading() })

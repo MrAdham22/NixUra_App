@@ -128,6 +128,10 @@ class CoachRepositoryImpl(
 
     override suspend fun hasMessages(conversationId: Long): Boolean = dao.messageCount(conversationId) > 0
 
+    override suspend fun refreshGreeting(conversationId: Long, text: String) {
+        dao.refreshUnusedGreeting(conversationId, text)
+    }
+
     override suspend fun createConversation(): Long {
         val now = clock.nowEpochMillis()
         return dao.insertConversation(CoachConversationEntity(title = "", createdAtEpochMillis = now, updatedAtEpochMillis = now))
