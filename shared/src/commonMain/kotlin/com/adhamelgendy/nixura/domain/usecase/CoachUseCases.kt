@@ -106,8 +106,14 @@ class EnsureCoachGreetingUseCase(
         id
     }
 
+    /**
+     * A chat is often created before the user has habits or a name (the coach is prepared at start-up), so the greeting of a
+     * chat nobody has written in yet is rewritten every time it is opened. Once the user writes, the chat stays as it was.
+     */
     private suspend fun greetIfEmpty(id: Long) {
-        if (!repository.hasMessages(id)) repository.append(id, CoachRole.COACH, responder.greeting(buildSnapshot()))
+        val greeting = responder.greeting(buildSnapshot())
+        if (repository.hasMessages(id)) repository.refreshGreeting(id, greeting)
+        else repository.append(id, CoachRole.COACH, greeting)
     }
 }
 
