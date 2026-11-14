@@ -35,7 +35,8 @@ NixUra helps people **break bad habits**, **build good ones** and **look forward
 
 All screenshots are from the Android app running on a Pixel 9 emulator, with demo data.
 
-| Home dashboard | Habits to quit | Quit habit analysis |
+| Home dashboard | Habits to quit | Polish (2026-11-14) | Home shows quit habits as compact rows; Settings has Dark / Light / Same as phone; the coach's focus follows the habit a chat is about; landing shows the official icon with Create account, Continue as guest and Sign in. |
+| Quit habit analysis |
 |:---:|:---:|:---:|
 | <img src="docs/screenshots/home.png" width="250" alt="Home dashboard" /> | <img src="docs/screenshots/quit.png" width="250" alt="Habits to quit" /> | <img src="docs/screenshots/quit-detail.png" width="250" alt="Quit habit analysis" /> |
 | **Habits to build** | **Prayer habit card** | **Good habit analysis** |

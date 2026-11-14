@@ -167,8 +167,6 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
             }
         }
 
-        AddToHomeScreenButton(WidgetKind.QUIT_COUNTER, model.habitId)
-
         // Stats
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatTile(s.statCurrent, durationText(model.activeElapsed), Modifier.weight(1f), info = s.infoClearFor)
@@ -218,6 +216,9 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
 
         NixButton(s.recordRelapse, { confirmRelapse = true }, style = NixButtonStyle.Danger, icon = NixIcon.Reset, modifier = Modifier.fillMaxWidth())
         Text(s.relapseHint, style = NixType.Smaller, color = c.textMuted)
+
+        // An extra, so it comes after the habit itself.
+        AddToHomeScreenButton(WidgetKind.QUIT_COUNTER, model.habitId)
     }
 
     if (clearInfo && model != null) {

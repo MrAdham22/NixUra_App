@@ -232,6 +232,9 @@ open class Strings {
     open val last4Weeks: String = "Last 4 weeks"
     open val weeksCount: (Int) -> String = { if (it == 1) "1 week" else "$it weeks" }
     open val streakWeeks: (Int) -> String = { if (it == 1) "1 week streak" else "$it week streak" }
+    open val streakStartToday: String = "Start a streak today"
+    open fun alreadyTracking(name: String): String = "You already track “$name”. Adding it again makes a second card."
+    open val streakStartWeek: String = "Start a streak this week"
     open val daysDoneTotal: (Int) -> String = { if (it == 1) "1 day in total" else "$it days in total" }
     open val statDaysDone: String = "Days done"
     open val statWeeksCompleted: String = "Weeks completed"
@@ -262,6 +265,7 @@ open class Strings {
     open val remindMe: String = "Remind me"
     open val customReminder: String = "Custom reminder"
     open val reminderHint: String = "Pick as many reminders as you like. They arrive as notifications on this device."
+    open val addOtherReminder: String = "Another time"
     open val addEvent: String = "Add event"
     open val deleteEvent: String = "Delete event"
     open val atEventTime: String = "At event time"
@@ -423,7 +427,9 @@ open class Strings {
     open val landingTagline: String = "Let's Nix the bad"
     open val landingAuraWord: String = "Aura"
     open val landingBody: String = "Quit what drains you. Build what lifts you. Count down to what matters."
-    open val landingGetStarted: String = "Get Started"
+    open val landingGetStarted: String = "Create account"
+    open val landingHaveAccount: String = "I already have an account"
+    open val landingGuestNote: String = "Everything works offline. Your data stays on this phone."
     open val authCreateAccount: String = "Create account"
     open val authSignIn: String = "Sign in"
     open val authContinueOffline: String = "Continue as guest"
@@ -606,7 +612,7 @@ open class Strings {
     open val guideScoresTitle: String = "Your progress at a glance"
     open val guideScoresBody: String = "These rings fill up as you stay clear and reach your targets. Tap one any time to see how it's worked out."
     open val guideQuitTitle: String = "Quit a bad habit"
-    open val guideQuitBody: String = "Tap + to add one. A live counter starts, and its card gets lighter the longer you stay clear."
+    open val guideQuitBody: String = "Tap + to add one. A live counter starts, and its card gets lighter the longer you stay clear. In a hard moment, tap Craving? on the card."
     open val guideBuildTitle: String = "Build a good habit"
     open val guideBuildBody: String = "Add things like drinking water, then tap + during the day. The card fills with green until you're done."
     open val guideEventsTitle: String = "Count down to what matters"
@@ -681,7 +687,8 @@ open class Strings {
     open val packWord: String = "pack"
 
     // Integrations (Google Calendar, Notion)
-    open val integrationsTitle: String = "Integrations"
+    open val integrationsTitle: String = "Calendars"
+    open val systemMode: String = "Same as phone"
     open val integrationsRow: String = "Calendars"
     open val integrationsRowHint: String = "Import events from Google Calendar or Notion"
     open val integrationsIntro: String = "Linked events appear in Events with their countdown, and stay up to date. NixUra only reads them."
@@ -736,8 +743,9 @@ open class Strings {
     open val aiConsentDecline: String = "Keep the offline coach"
     open val aiSettingTitle: String = "AI coach"
     open val aiSettingHint: String = "Real AI replies and voice notes. Sends your messages and habit data to online AI services. Needs an account."
-    open val coachModeAi: String = "AI coach · online"
-    open fun coachModeAiLeft(left: Int): String = if (left == 1) "AI coach · 1 message left today" else "AI coach · $left messages left today"
+    // The header already says "AI Coach"; the line under it says only what is new.
+    open val coachModeAi: String = "Online"
+    open fun coachModeAiLeft(left: Int): String = if (left == 1) "1 message left today" else "$left messages left today"
     open val coachModeGuest: String = "Offline coach · sign in for the AI coach"
     open val coachNoticeLimit: String = "You've used today's AI messages. The offline coach answers until tomorrow."
     open val coachNoticeResting: String = "The AI coach is resting right now, so the offline coach answered."

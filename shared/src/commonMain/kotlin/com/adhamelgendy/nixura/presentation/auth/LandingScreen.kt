@@ -1,5 +1,14 @@
 package com.adhamelgendy.nixura.presentation.auth
 
+import com.adhamelgendy.nixura.presentation.components.NixButtonStyle
+import com.adhamelgendy.nixura.presentation.components.NixButton
+import nixura.shared.generated.resources.nixura_icon
+import nixura.shared.generated.resources.Res
+import org.jetbrains.compose.resources.painterResource
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,6 +65,13 @@ fun LandingScreen(navigator: Navigator, onGuest: (() -> Unit)?) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.weight(1f))
+            // The official icon (owner decision 2026-11-14): the chain broken by a glowing gold "i".
+            Image(
+                painterResource(Res.drawable.nixura_icon),
+                contentDescription = null,
+                modifier = Modifier.riseIn(40).size(88.dp).clip(RoundedCornerShape(22.dp)),
+            )
+            Spacer(Modifier.height(18.dp))
             Text(
                 "NixUra",
                 style = TextStyle(fontSize = 58.sp, lineHeight = 64.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-1.8).sp, brush = titleBrush),
@@ -79,21 +95,27 @@ fun LandingScreen(navigator: Navigator, onGuest: (() -> Unit)?) {
                 modifier = Modifier.riseIn(400),
             )
             Spacer(Modifier.weight(1.2f))
+            // New people start by creating an account; the guest path is a full button too, because NixUra works
+            // entirely offline (PRODUCT.md: private comes first).
             AuthPrimaryButton(
                 s.landingGetStarted,
-                { navigator.push(Route.Auth.Login) },
+                { navigator.push(Route.Auth.Register) },
                 Modifier.fillMaxWidth().riseIn(540),
                 trailingIcon = NixIcon.Chevron,
             )
             if (onGuest != null) {
-                Spacer(Modifier.height(6.dp))
-                AuthLink(
+                Spacer(Modifier.height(10.dp))
+                NixButton(
                     s.authContinueOffline,
                     onGuest,
-                    Modifier.riseIn(660),
-                    color = c.textSecondary,
+                    style = NixButtonStyle.Secondary,
+                    modifier = Modifier.fillMaxWidth().riseIn(620),
                 )
+                Spacer(Modifier.height(4.dp))
+                Text(s.landingGuestNote, style = NixType.Small, color = c.textMuted, textAlign = TextAlign.Center, modifier = Modifier.riseIn(660))
             }
+            Spacer(Modifier.height(6.dp))
+            AuthLink(s.landingHaveAccount, { navigator.push(Route.Auth.Login) }, Modifier.riseIn(700), color = c.textSecondary)
         }
     }
 }

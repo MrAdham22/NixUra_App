@@ -119,8 +119,6 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
             }
         }
 
-        AddToHomeScreenButton(WidgetKind.GOOD_QUICK_LOG, habit.id)
-
         // Stats
         if (weekly) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -202,5 +200,8 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
                 Text(s.editPastHint, style = NixType.Small, color = c.textMuted)
             }
         }
+
+        // An extra, so it comes after the habit itself.
+        AddToHomeScreenButton(WidgetKind.GOOD_QUICK_LOG, habit.id)
     }
 }

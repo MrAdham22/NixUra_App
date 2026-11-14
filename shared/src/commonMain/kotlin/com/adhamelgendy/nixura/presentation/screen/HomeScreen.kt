@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.deletion.SheetAction
 import com.adhamelgendy.nixura.presentation.util.forDisplay
 import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyle
 import com.adhamelgendy.nixura.domain.recognition.PrayerHabitDetector
@@ -172,7 +173,7 @@ fun HomeScreen(navigator: Navigator) {
             EventCard(
                 nextEvent, now, formatDateTime(nextEvent.targetAtEpochMillis, days, s),
                 onClick = { navigator.push(Route.EventForm(nextEvent.id)) },
-                onLongClick = { deleteFlow.open(DeletableItem.Event(nextEvent.id), nextEvent.title) },
+                onLongClick = { deleteFlow.open(DeletableItem.Event(nextEvent.id), nextEvent.title, listOf(SheetAction(s.editEvent, NixIcon.Pencil) { navigator.push(Route.EventForm(nextEvent.id)) })) },
             )
         }
 

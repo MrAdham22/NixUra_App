@@ -118,13 +118,15 @@ fun EventRemindersSection(
             }
         }
         NixButton(
-            s.addReminder,
+            // Next to the quick-add chips this is the "any other time" choice, not a second "add".
+            if (missing.isNotEmpty()) s.addOtherReminder else s.addReminder,
             { adding = true },
             style = NixButtonStyle.Secondary,
             icon = NixIcon.Plus,
             modifier = Modifier.fillMaxWidth(),
         )
-        Text(s.reminderHint, style = NixType.Small, color = c.textMuted)
+        // The empty state already explains reminders; the hint is for when some are set.
+        if (sorted.isNotEmpty()) Text(s.reminderHint, style = NixType.Small, color = c.textMuted)
     }
 
     if (adding) {

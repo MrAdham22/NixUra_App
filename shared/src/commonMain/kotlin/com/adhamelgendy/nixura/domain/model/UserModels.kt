@@ -8,6 +8,8 @@ data class UserProfile(
 
 data class AppSettings(
     val darkTheme: Boolean = true,
+    /** Follow the phone's light/dark setting instead of [darkTheme]. Per device, never synced. */
+    val followSystemTheme: Boolean = false,
     val languageCode: String = "en",
     val notificationsEnabled: Boolean = true,
     /** Minutes after local midnight for the daily check-in notification. */

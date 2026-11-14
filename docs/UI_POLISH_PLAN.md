@@ -30,6 +30,8 @@ Done already: the **Quit tab** (critique 26 → 32/40, then lift, compact cravin
 
 ## Phase 2: screen by screen
 
+**Done 2026-11-14 except where noted below as open.** Still open: Phase 0 legal text (needs the owner's details), Home "Breaking free" after a slip (a product decision for the owner), the landing wordmark gradient (owner decision), and an on-device check of the landing, sign-in and widgets.
+
 ### Home
 - **Done 2026-11-14:** compact quit rows on Home (`QuitHabitRow`).
 - **P1** Very long: voice card, score card, today's habits, then every quit card at full size (the same cards as the Quit tab), then next event and the thought. It takes ~3 screens to reach the event. Fix: compact quit rows on Home (name, live time, next milestone, craving), full cards stay on the Quit tab.

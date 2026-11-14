@@ -496,7 +496,7 @@ private fun FocusPicker(
             Text(body, style = NixType.Small, color = c.textPrimary)
             if (habits.isNotEmpty()) {
                 Spacer(Modifier.height(10.dp))
-                Text(pickHint, style = NixType.Eyebrow, color = c.textMuted)
+                Text(pickHint, style = NixType.SmallStrong, color = c.textMuted)
                 Spacer(Modifier.height(6.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     habits.forEach { habit ->

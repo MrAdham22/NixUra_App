@@ -326,6 +326,11 @@ The card fills with liquid as today's target is reached: green for plain habits,
 ### Prayer card (signature)
 A night-sky card with an eight-pointed star tiling, a golden dawn, a mosque and a crescent, edged with a double gold frame. A diagonal band of light slides across it. Each counted prayer sends a burst of gold stars, and the card turns solid gold when every prayer of the day is done. Star-shaped buttons: gold and slowly turning for "+", a quiet outline for "-".
 
+## Brand marks
+
+- The official icon (`composeResources/drawable/nixura_icon.png`, from the Android launcher artwork) appears on the landing screen (88dp, 22dp corners) and in the top bar beside "NixUra" (30dp, 8dp corners).
+- Prayer look: selections are gold (`PrayerPalette.Gold` with night text) instead of rose; decorative stars stay in the side margins; the moon has a soft glow, never a button-shaped circle.
+
 ## Calendars and time
 
 - Every week starts on **Sunday**: week strips, the month calendar, the date picker and weekly goals (owner decision 2026-11-14; `CivilCalendar.sundayFirstColumn`).

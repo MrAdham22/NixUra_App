@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.coach
 
+import com.adhamelgendy.nixura.domain.coach.ChatFocus
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.adhamelgendy.nixura.domain.coach.BadHabitSnapshot
@@ -79,6 +80,9 @@ class CoachViewModel(
     /** Habit the user explicitly picked; `null` until they choose one. Sent with every message. */
     private var selectedHabitId: Long? = null
 
+    /** The open chat's messages, to read which habit it is about when nothing was picked (see [ChatFocus]). */
+    private var latestMessages: List<CoachMessage> = emptyList()
+
     private val messages = activeChat.flatMapLatest { id -> if (id == null) flowOf(emptyList()) else observeMessages(id) }
 
     private val aiMode = observeAiMode()
@@ -96,6 +100,9 @@ class CoachViewModel(
         // Progress cards: whenever the chat shows a card, read its numbers fresh.
         viewModelScope.launch {
             messages.collect { list ->
+                latestMessages = list
+                // A chat (re)opened with nothing picked: its messages say which habit it is about.
+                if (selectedHabitId == null && list.isNotEmpty()) refreshContext()
                 val keys = list.flatMap { it.visuals }.toSet()
                 transient.update { it.copy(visuals = buildVisuals(keys)) }
             }
@@ -118,6 +125,8 @@ class CoachViewModel(
     }
 
     fun onOpenChat(id: Long) {
+        // Another chat may be about another habit: it is read from that chat once its messages load.
+        selectedHabitId = null
         activeChat.value = id
     }
 
@@ -194,6 +203,10 @@ class CoachViewModel(
     }
 
     private suspend fun refreshContext() {
+        if (selectedHabitId == null) {
+            // Nothing picked (e.g. after a restart): keep the focus on the habit this chat talks about.
+            selectedHabitId = ChatFocus.inferred(latestMessages, getContext(null).habits)
+        }
         val context = getContext(selectedHabitId)
         // If the picked habit was archived or deleted, forget the pick.
         if (selectedHabitId != null && context.habits.none { it.id == selectedHabitId }) selectedHabitId = null

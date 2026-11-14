@@ -403,6 +403,14 @@ class HabitRecognizerTest {
     }
 
     @Test
+    fun aRealShortWordIsNotReadAsALongerHabitWithDroppedVowels() {
+        // "card" and "cardio" share the consonants c-r-d; that alone must not suggest "cardio" or a good habit.
+        val r = recognizer.recognize("Test stage card")
+        kotlin.test.assertNotEquals("cardio", r.suggestedCorrection)
+        kotlin.test.assertNotEquals(HabitPolarity.GOOD, r.polarity)
+    }
+
+    @Test
     fun tableSizesStayAboveTheRequiredMinimum() {
         assertTrue(categoryCases.size + polarityCases.size >= 150, "need at least 150 table-driven cases")
     }

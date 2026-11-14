@@ -648,9 +648,14 @@ fun GoodHabitCard(
             Modifier.fillMaxWidth().pressable(pressedScale = 0.96f, haptic = true) { streakInfo = true }.padding(vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            NixIconView(NixIcon.Flame, if (look.fill >= 0.6f) look.content else c.accentWarm, size = 16.dp)
-            Spacer(Modifier.width(6.dp))
-            Text(if (habit.isWeekly) s.streakWeeks(habit.currentStreak) else s.streakDays(habit.currentStreak), style = NixType.SmallStrong, color = look.content)
+            if (habit.currentStreak > 0) {
+                NixIconView(NixIcon.Flame, if (look.fill >= 0.6f) look.content else c.accentWarm, size = 16.dp)
+                Spacer(Modifier.width(6.dp))
+                Text(if (habit.isWeekly) s.streakWeeks(habit.currentStreak) else s.streakDays(habit.currentStreak), style = NixType.SmallStrong, color = look.content)
+            } else {
+                // No streak yet (or it broke): an invitation, not a bold "0 day streak" with a flame.
+                Text(if (habit.isWeekly) s.streakStartWeek else s.streakStartToday, style = NixType.Small, color = look.contentMuted)
+            }
             Spacer(Modifier.weight(1f))
             Text(if (habit.isWeekly) s.daysDoneTotal(habit.totalTimesDone) else s.timesDoneTotal(habit.totalTimesDone), style = NixType.Small, color = look.contentMuted)
         }
@@ -741,6 +746,19 @@ fun EventCard(
                     Spacer(Modifier.width(5.dp))
                     Text(event.reminderLeadMillis.size.toString(), style = NixType.SmallStrong, color = c.textSecondary)
                 }
+            }
+            if (onLongClick != null) {
+                // The same options as a long press, like the ⋯ on quit cards.
+                Spacer(Modifier.width(6.dp))
+                NixIconButton(
+                    NixIcon.More,
+                    onLongClick,
+                    modifier = Modifier.semantics { contentDescription = s.cardMoreOptions },
+                    tint = c.textSecondary,
+                    background = c.surfaceRaised,
+                    size = 40.dp,
+                    bordered = false,
+                )
             }
         }
         if (passed) {

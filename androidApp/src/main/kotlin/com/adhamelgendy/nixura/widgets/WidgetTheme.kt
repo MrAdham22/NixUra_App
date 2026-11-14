@@ -54,12 +54,13 @@ internal object WidgetTheme {
     fun of(darkTheme: Boolean): WidgetColors = if (darkTheme) Dark else Light
 
     // Quit card text, from NixUraPalette (light text on dark shades, dark text on light shades).
-    const val ON_DARK_CARD_PRIMARY = 0xFFE8BCB9.toInt()
-    const val ON_DARK_CARD_MUTED = 0xFFE8BCB9.toInt() // drawn with alpha 0.72 -> see MUTED_ON_DARK_ALPHA
+    // Same ink as the in-app card (`cardInk()` in StreakColorMapper.kt): warm near-white or navy, chosen by contrast.
+    const val ON_DARK_CARD_PRIMARY = 0xFFFFF7F5.toInt()
+    const val ON_DARK_CARD_MUTED = 0xFFFFF7F5.toInt() // drawn with alpha 0.86 -> see MUTED_ON_DARK_ALPHA
     const val ON_LIGHT_CARD_PRIMARY = 0xFF1D1A39.toInt()
-    const val ON_LIGHT_CARD_MUTED = 0xFF862549.toInt() // drawn with alpha 0.85
-    const val MUTED_ON_DARK_ALPHA = 184
-    const val MUTED_ON_LIGHT_ALPHA = 217
+    const val ON_LIGHT_CARD_MUTED = 0xFF1D1A39.toInt() // drawn with alpha 0.80
+    const val MUTED_ON_DARK_ALPHA = 219
+    const val MUTED_ON_LIGHT_ALPHA = 204
 
     fun withAlpha(color: Int, alpha: Int): Int = (alpha.coerceIn(0, 255) shl 24) or (color and 0x00FFFFFF)
 }

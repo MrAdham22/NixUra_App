@@ -90,8 +90,9 @@ fun SettingsScreen(navigator: Navigator) {
         SectionLabel(s.appearance)
         NixCard {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                ThemeOption(s.darkMode, NixIcon.Moon, settings.darkTheme, Modifier.weight(1f)) { vm.onDarkTheme(true) }
-                ThemeOption(s.lightMode, NixIcon.Sun, !settings.darkTheme, Modifier.weight(1f)) { vm.onDarkTheme(false) }
+                ThemeOption(s.darkMode, NixIcon.Moon, !settings.followSystemTheme && settings.darkTheme, Modifier.weight(1f)) { vm.onDarkTheme(true) }
+                ThemeOption(s.lightMode, NixIcon.Sun, !settings.followSystemTheme && !settings.darkTheme, Modifier.weight(1f)) { vm.onDarkTheme(false) }
+                ThemeOption(s.systemMode, NixIcon.Phone, settings.followSystemTheme, Modifier.weight(1f)) { vm.onFollowSystemTheme() }
             }
         }
         NixCard {

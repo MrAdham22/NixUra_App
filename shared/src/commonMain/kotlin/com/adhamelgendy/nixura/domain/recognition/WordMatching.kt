@@ -85,7 +85,8 @@ internal object WordMatch {
             if (d in 1..tol) return TRUNCATED
         }
         // Dropped vowels ("smkng", "cigrt").
-        if (!k.arabic && !t.arabic && t.text.length >= 4 && k.vowels > t.vowels && k.skel.length >= 3) {
+        // A 3-consonant skeleton is too common to trust ("card" and "cardio" are both "crd"), so it needs 4.
+        if (!k.arabic && !t.arabic && t.text.length >= 4 && k.vowels > t.vowels && k.skel.length >= 4) {
             if (t.skel == k.skel) return SKELETON
             if (k.skel.length >= 4 && t.skel.startsWith(k.skel) && t.skel.length - k.skel.length <= 2) return SKELETON
         }

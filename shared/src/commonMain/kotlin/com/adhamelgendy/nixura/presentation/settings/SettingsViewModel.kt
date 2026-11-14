@@ -39,7 +39,8 @@ class SettingsViewModel(
         initialValue = SettingsUiState(),
     )
 
-    fun onDarkTheme(enabled: Boolean) = update { it.copy(darkTheme = enabled) }
+    fun onDarkTheme(enabled: Boolean) = update { it.copy(darkTheme = enabled, followSystemTheme = false) }
+    fun onFollowSystemTheme() = update { it.copy(followSystemTheme = true) }
 
     fun onNotifications(enabled: Boolean) = update { it.copy(notificationsEnabled = enabled) }
 
