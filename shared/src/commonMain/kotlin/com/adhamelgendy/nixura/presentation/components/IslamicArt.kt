@@ -551,14 +551,23 @@ fun GoodHabitButton(
     val paint: Modifier
     val iconTint: Color
     when {
-        water -> {
-            // Frosted glass over the water: the liquid shows through.
-            val strength = if (done) 0.42f else if (secondary) 0.14f else 0.24f
+        water && secondary -> {
+            // The "-" over the water: frosted, so the liquid shows through.
             paint = Modifier
                 .clip(shape)
-                .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = strength + 0.08f), Color.White.copy(alpha = strength - 0.06f))), shape)
-                .border(1.dp, Color.White.copy(alpha = if (done) 0.7f else 0.45f), shape)
-            iconTint = if (done) Nix.colors.waterDeep else Color.White
+                .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.08f))), shape)
+                .border(1.dp, Color.White.copy(alpha = 0.45f), shape)
+            iconTint = Color.White
+        }
+        water -> {
+            // The "+" over the water: a more solid blue drop, still a little see-through (owner, 2026-11-14).
+            val c = Nix.colors
+            paint = Modifier
+                .softLift(shape, c.waterDeep)
+                .clip(shape)
+                .background(Brush.linearGradient(listOf(lerp(c.water, Color.White, 0.18f).copy(alpha = 0.92f), c.waterDeep.copy(alpha = 0.88f))), shape)
+                .border(1.dp, Color.White.copy(alpha = 0.55f), shape)
+            iconTint = Color.White
         }
         done -> {
             // The done tick: pale emerald with a light corner, so it still belongs to the emerald card.
@@ -574,16 +583,23 @@ fun GoodHabitButton(
             iconTint = EmeraldDeep
         }
         secondary -> {
-            // The "-": a quieter emerald, tinted rather than solid.
+            // The "-": quiet and tinted by the card: the card's own tone while it is empty, emerald as it fills.
+            val t = (look.fill / 0.4f).coerceIn(0f, 1f)
+            val tone = lerp(look.content, EmeraldLight, t)
             paint = Modifier
                 .clip(shape)
-                .background(Brush.linearGradient(listOf(EmeraldLight.copy(alpha = 0.38f), EmeraldMid.copy(alpha = 0.22f))), shape)
-                .border(1.dp, lerp(EmeraldLight, Color.White, 0.4f).copy(alpha = 0.35f), shape)
+                .background(Brush.linearGradient(listOf(tone.copy(alpha = 0.12f + 0.26f * t), tone.copy(alpha = 0.08f + 0.14f * t))), shape)
+                .border(1.dp, tone.copy(alpha = 0.22f + 0.13f * t), shape)
             iconTint = look.content
         }
         else -> {
-            // The "+": a full emerald orb in the cards' recipe.
-            paint = Modifier.cardGlow(shape, listOf(EmeraldMid, lerp(EmeraldLight, Color(0xFF6FD3A0), 0.35f)))
+            // The "+" follows the card (owner, 2026-11-14): on an empty, night-coloured card it is the app's rose
+            // action in the cards' recipe; as the card fills with emerald it turns emerald with it.
+            val c = Nix.colors
+            val t = (look.fill / 0.4f).coerceIn(0f, 1f)
+            val from = listOf(c.accent, lerp(c.accent, c.accentWarm, 0.45f))
+            val to = listOf(EmeraldMid, lerp(EmeraldLight, Color(0xFF6FD3A0), 0.35f))
+            paint = Modifier.cardGlow(shape, listOf(lerp(from[0], to[0], t), lerp(from[1], to[1], t)))
             iconTint = CardInkLight
         }
     }
