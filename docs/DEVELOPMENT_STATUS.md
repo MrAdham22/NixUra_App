@@ -19,6 +19,14 @@
   7. iOS: nothing of the last weeks is compiled or run on a Mac.
 - **Owner's working rules:** explain simply (beginner developer); never put AI names in commits, PRs, code or docs; ask before assuming; after a notable fix add a beginner "interview story" to `D:\Career_development\Claude_app_dev\Interview Talks` (stories 1 to 6 exist); keep replies and tool use short to save tokens.
 
+## Edit voice note items before adding (2026-11-14, branch `claude/sharp-payne-50d044`)
+
+- **Built:** in the "Here's what I understood" sheet (voice notes and chat suggestions) each item has a pencil button. It opens an edit form inside the sheet, built from the add forms' pieces: quit or build chips, the name field, every day / days a week with the stepper, and for events the title, category chips and the date and time picker. "Keep changes" saves the corrected item into the list (and ticks it); the list's "Add" button then saves the corrected values.
+- **Rules:** `domain/coach/ai/CoachActionRules` (same as the add forms: a name of at most 80 characters, event title at most 60, 1 to 99 a day, 1 to 7 days a week, a real date, and an event still in the future; an event with no time counts as 9:00). Items that break a rule show "Needs a fix"; tapping "Add" opens the form on the first one instead of adding. This also fixes a hidden gap: the AI could send an event title of 61 to 80 characters, which the event use case then refused.
+- **Model change:** `CoachAction.Event` got a `category` (default Event, which is what was saved before). No database change.
+- **Verified:** `:shared:testAndroidHostTest` passes (475 tests, new `CoachActionRulesTest` and `ApplyCoachActionsUseCaseTest`) and `:androidApp:assembleDebug` builds.
+- **Not verified:** nothing was seen running. The only device attached was an emulator (not the owner's phone) that stopped answering adb, so `installDebug` could not finish. The owner checks on the phone: record a voice note, tap the pencil, change the count, the date and the category, keep, add, and see the corrected habit and event saved. iOS not compiled (no Mac; the code is all in `commonMain`).
+
 ## Prayer habit card (2026-11-12, branch `claude/islamic-prayer-habit-card-eff051`)
 
 - **Built:** a good habit named like a prayer gets 5 a day automatically, the add form turns gold from the prayer word downward, and the card is a gold Islamic-art card with star buttons, five lighting stars and a burst on every count (see README, "Prayer habit").

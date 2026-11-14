@@ -11,9 +11,9 @@ import com.adhamelgendy.nixura.domain.coach.ai.AiQuota
 import com.adhamelgendy.nixura.domain.coach.ai.AiResult
 import com.adhamelgendy.nixura.domain.coach.ai.AiVoiceReply
 import com.adhamelgendy.nixura.domain.coach.ai.CoachAction
+import com.adhamelgendy.nixura.domain.coach.ai.CoachActionRules
 import com.adhamelgendy.nixura.domain.coach.ai.CoachVisual
 import com.adhamelgendy.nixura.domain.coach.ai.VoiceClip
-import com.adhamelgendy.nixura.domain.model.EventCategory
 import com.adhamelgendy.nixura.domain.model.HabitEventType
 import com.adhamelgendy.nixura.domain.repository.EventRepository
 import com.adhamelgendy.nixura.domain.repository.GoodHabitRepository
@@ -140,18 +140,14 @@ class ApplyCoachActionsUseCase(
                 is CoachAction.Event -> saveEvent(
                     id = null,
                     title = action.title,
-                    category = EventCategory.EVENT,
-                    targetAtEpochMillis = days.epochMillisOf(action.year, action.month, action.day, action.hour ?: DEFAULT_EVENT_HOUR, action.minute ?: 0),
+                    category = action.category,
+                    targetAtEpochMillis = CoachActionRules.eventMillis(action, days),
                     reminderLeadMillis = emptyList(),
                 )
             }
             if (result.isSuccess) added++
         }
         return Outcome(added, actions.size - added)
-    }
-
-    private companion object {
-        const val DEFAULT_EVENT_HOUR = 9
     }
 }
 

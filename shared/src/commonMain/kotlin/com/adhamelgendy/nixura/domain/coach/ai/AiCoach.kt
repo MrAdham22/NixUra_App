@@ -1,5 +1,7 @@
 package com.adhamelgendy.nixura.domain.coach.ai
 
+import com.adhamelgendy.nixura.domain.model.EventCategory
+
 /** Something the AI understood the user wants to add. Nothing is created until the user confirms it. */
 sealed interface CoachAction {
     data class Quit(val name: String) : CoachAction
@@ -7,8 +9,16 @@ sealed interface CoachAction {
     /** [daysPerWeek] null = every day, [perDay] times a day; 1..6 = a weekly habit. */
     data class Build(val name: String, val perDay: Int, val daysPerWeek: Int?) : CoachAction
 
-    /** A local date and, when [hour] is set, a local time. */
-    data class Event(val title: String, val year: Int, val month: Int, val day: Int, val hour: Int?, val minute: Int?) : CoachAction
+    /** A local date and, when [hour] is set, a local time. The AI leaves [category] at Event; the user can change it. */
+    data class Event(
+        val title: String,
+        val year: Int,
+        val month: Int,
+        val day: Int,
+        val hour: Int?,
+        val minute: Int?,
+        val category: EventCategory = EventCategory.EVENT,
+    ) : CoachAction
 }
 
 /** What is left of today's free AI uses for this account. */

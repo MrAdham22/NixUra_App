@@ -37,15 +37,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.adhamelgendy.nixura.domain.coach.ai.CoachAction
+import com.adhamelgendy.nixura.domain.model.EventCategory
 import com.adhamelgendy.nixura.domain.time.CivilCalendar
 import com.adhamelgendy.nixura.presentation.components.NixButton
 import com.adhamelgendy.nixura.presentation.components.NixButtonStyle
 import com.adhamelgendy.nixura.presentation.components.NixCard
 import com.adhamelgendy.nixura.presentation.components.NixIcon
+import com.adhamelgendy.nixura.presentation.components.NixIconButton
 import com.adhamelgendy.nixura.presentation.components.NixIconView
 import com.adhamelgendy.nixura.presentation.components.NixSheet
 import com.adhamelgendy.nixura.presentation.components.pressable
@@ -82,7 +86,8 @@ fun VoiceNoteHost(navigator: Navigator) {
     NixSheet(onDismiss = vm::onClose) {
         AnimatedContent(
             targetState = stage,
-            contentKey = { it::class },
+            // The edit form fades in over the list like a new step.
+            contentKey = { if (it is VoiceStage.Review && it.editing != null) "edit" else it::class },
             transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(120)) },
             label = "voice",
         ) { current ->
@@ -223,6 +228,11 @@ private fun MicOrb(level: Float, busy: Boolean, icon: NixIcon, onClick: (() -> U
 @Composable
 private fun ReviewList(review: VoiceStage.Review, vm: VoiceNoteViewModel, s: Strings) {
     val c = Nix.colors
+    val editing = review.editing?.let { review.items.getOrNull(it) }
+    if (editing != null) {
+        VoiceItemEditor(editing.action, vm::problemOf, vm::onSaveEdit, vm::onCancelEdit, s)
+        return
+    }
     Text(if (review.transcript.isBlank()) s.voiceSuggestTitle else s.voiceReviewTitle, style = NixType.Heading, color = c.textPrimary)
     if (review.transcript.isNotBlank()) {
         Spacer(Modifier.height(8.dp))
@@ -249,8 +259,20 @@ private fun ReviewList(review: VoiceStage.Review, vm: VoiceNoteViewModel, s: Str
                         Text(kind.uppercase(), style = NixType.Eyebrow, color = c.accentWarm)
                         Text(title, style = NixType.BodyStrong, color = if (item.checked) c.textPrimary else c.textMuted)
                         Text(detail, style = NixType.Small, color = c.textSecondary)
+                        if (item.problem != null) {
+                            Text(s.voiceNeedsFix, style = NixType.SmallStrong, color = c.accentWarm)
+                        }
                     }
-                    Spacer(Modifier.width(10.dp))
+                    Spacer(Modifier.width(8.dp))
+                    NixIconButton(
+                        NixIcon.Pencil,
+                        { vm.onEdit(index) },
+                        Modifier.semantics { contentDescription = s.voiceEditItem },
+                        tint = c.textSecondary,
+                        background = c.surfaceRaised,
+                        size = 34.dp,
+                    )
+                    Spacer(Modifier.width(8.dp))
                     Box(
                         Modifier.size(26.dp).clip(CircleShape).background(if (item.checked) c.accent else c.surfaceRaised),
                         contentAlignment = Alignment.Center,
@@ -279,7 +301,8 @@ private fun describe(action: CoachAction, s: Strings): ActionText = when (action
     is CoachAction.Event -> {
         val date = formatDate(CivilCalendar.dayIndexFromCivil(action.year, action.month, action.day), s, includeWeekday = true)
         val time = action.hour?.let { formatClockMinutes(it * 60 + (action.minute ?: 0), s) }
-        ActionText(NixIcon.Calendar, s.actionEvent, action.title, if (time != null) "$date · $time" else date)
+        val category = if (action.category == EventCategory.EVENT) "" else " · ${s.categoryLabel(action.category)}"
+        ActionText(NixIcon.Calendar, s.actionEvent, action.title, (if (time != null) "$date · $time" else date) + category)
     }
 }
 
