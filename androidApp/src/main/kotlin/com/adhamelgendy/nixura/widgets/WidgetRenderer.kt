@@ -342,7 +342,9 @@ internal object WidgetRenderer {
             // the target was reached); today gets a real outline (dedicated drawable, tinted with the content color)
             val onLightContent = !backgroundC.prefersLightContentOnCard()
             val todayFrame = if (onLightContent) R.drawable.widget_square_today_on_light else R.drawable.widget_square_today_on_dark
-            val idle = contentC.copy(alpha = 0.10f).compositeOver(backgroundC)
+            // Stronger than the card's 10%: a widget sits on any wallpaper and is seen small, so the empty
+            // squares were barely visible (owner, 2026-11-14).
+            val idle = contentC.copy(alpha = 0.24f).compositeOver(backgroundC)
             val letters = env.s.weekdayLetters
             val sq = intArrayOf(R.id.w_wk_sq0, R.id.w_wk_sq1, R.id.w_wk_sq2, R.id.w_wk_sq3, R.id.w_wk_sq4, R.id.w_wk_sq5, R.id.w_wk_sq6)
             val bd = intArrayOf(R.id.w_wk_bd0, R.id.w_wk_bd1, R.id.w_wk_bd2, R.id.w_wk_bd3, R.id.w_wk_bd4, R.id.w_wk_bd5, R.id.w_wk_bd6)
