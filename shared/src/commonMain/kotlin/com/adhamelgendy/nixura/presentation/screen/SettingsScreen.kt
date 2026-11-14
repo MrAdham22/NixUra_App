@@ -1,5 +1,8 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -89,10 +92,11 @@ fun SettingsScreen(navigator: Navigator) {
 
         SectionLabel(s.appearance)
         NixCard {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                ThemeOption(s.darkMode, NixIcon.Moon, !settings.followSystemTheme && settings.darkTheme, Modifier.weight(1f)) { vm.onDarkTheme(true) }
-                ThemeOption(s.lightMode, NixIcon.Sun, !settings.followSystemTheme && !settings.darkTheme, Modifier.weight(1f)) { vm.onDarkTheme(false) }
-                ThemeOption(s.systemMode, NixIcon.Phone, settings.followSystemTheme, Modifier.weight(1f)) { vm.onFollowSystemTheme() }
+            // Same height for all three, even when "Same as phone" wraps.
+            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ThemeOption(s.darkMode, NixIcon.Moon, !settings.followSystemTheme && settings.darkTheme, Modifier.weight(1f).fillMaxHeight()) { vm.onDarkTheme(true) }
+                ThemeOption(s.lightMode, NixIcon.Sun, !settings.followSystemTheme && !settings.darkTheme, Modifier.weight(1f).fillMaxHeight()) { vm.onDarkTheme(false) }
+                ThemeOption(s.systemMode, NixIcon.Phone, settings.followSystemTheme, Modifier.weight(1f).fillMaxHeight()) { vm.onFollowSystemTheme() }
             }
         }
         NixCard {
@@ -252,7 +256,7 @@ private fun ThemeOption(label: String, icon: NixIcon, selected: Boolean, modifie
         borderColor = if (selected) c.accent else c.border,
         padding = androidx.compose.foundation.layout.PaddingValues(14.dp),
     ) {
-        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically)) {
             NixIconView(icon, if (selected) c.accent else c.textSecondary, size = 26.dp)
             Text(label, style = NixType.SmallStrong, color = if (selected) c.textPrimary else c.textSecondary)
         }
