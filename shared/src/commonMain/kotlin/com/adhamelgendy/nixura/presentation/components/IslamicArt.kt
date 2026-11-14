@@ -552,22 +552,25 @@ fun GoodHabitButton(
     val iconTint: Color
     when {
         water && secondary -> {
-            // The "-" over the water: frosted, so the liquid shows through.
+            // The "-": a quiet tint of the empty card, turning into frosted white as the water rises.
+            val t = (look.fill / 0.4f).coerceIn(0f, 1f)
+            val tone = lerp(look.content, Color.White, t)
             paint = Modifier
                 .clip(shape)
-                .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.08f))), shape)
-                .border(1.dp, Color.White.copy(alpha = 0.45f), shape)
-            iconTint = Color.White
+                .background(Brush.verticalGradient(listOf(tone.copy(alpha = 0.12f + 0.10f * t), tone.copy(alpha = 0.08f))), shape)
+                .border(1.dp, tone.copy(alpha = 0.22f + 0.23f * t), shape)
+            iconTint = look.content
         }
         water -> {
-            // The "+" over the water: a more solid blue drop, still a little see-through (owner, 2026-11-14).
+            // The "+": the rose action of the other cards while the glass is empty, turning gradually into a solid
+            // blue drop as the water rises (owner, 2026-11-14).
             val c = Nix.colors
-            paint = Modifier
-                .softLift(shape, c.waterDeep)
-                .clip(shape)
-                .background(Brush.linearGradient(listOf(lerp(c.water, Color.White, 0.18f).copy(alpha = 0.92f), c.waterDeep.copy(alpha = 0.88f))), shape)
-                .border(1.dp, Color.White.copy(alpha = 0.55f), shape)
-            iconTint = Color.White
+            val t = (look.fill / 0.4f).coerceIn(0f, 1f)
+            // Exactly the other cards' "+" (same cardGlow recipe) at empty; only its two colors move to blue.
+            val rose = listOf(c.accent, lerp(c.accent, c.accentWarm, 0.45f))
+            val blue = listOf(lerp(c.water, c.waterDeep, 0.45f), lerp(c.water, Color.White, 0.18f))
+            paint = Modifier.cardGlow(shape, listOf(lerp(rose[0], blue[0], t), lerp(rose[1], blue[1], t)))
+            iconTint = CardInkLight
         }
         done -> {
             // The done tick: pale emerald with a light corner, so it still belongs to the emerald card.
