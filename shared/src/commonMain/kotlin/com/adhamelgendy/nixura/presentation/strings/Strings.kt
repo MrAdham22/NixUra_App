@@ -203,7 +203,7 @@ open class Strings {
     open val habitsDoneToday: (Int, Int) -> String = { done, total -> "$done of $total done" }
     open val todayProgress: (Int, Int) -> String = { count, target -> "$count / $target today" }
     open val streakDays: (Int) -> String = { if (it == 1) "1 day streak" else "$it day streak" }
-    open val timesDoneTotal: (Int) -> String = { "$it times in total" }
+    open val timesDoneTotal: (Int) -> String = { if (it == 1) "1 time in total" else "$it times in total" }
     open val goalReached: String = "Daily goal reached"
     open val timesToGo: (Int) -> String = { if (it == 1) "1 more to go" else "$it more to go" }
     open val statCurrentStreak: String = "Current streak"

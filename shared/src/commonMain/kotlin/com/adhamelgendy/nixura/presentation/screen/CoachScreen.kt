@@ -485,7 +485,7 @@ private fun FocusPicker(
             NixIconView(NixIcon.Sparkle, c.accent, size = 16.dp)
             Spacer(Modifier.width(8.dp))
             Text(
-                label.uppercase() + " · " + title,
+                label.uppercase() + " · " + title.forDisplay(),
                 style = NixType.Eyebrow,
                 color = c.accent,
                 maxLines = 1,

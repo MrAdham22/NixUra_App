@@ -759,31 +759,6 @@ fun EventCard(
                 Text(event.title.forDisplay(), style = NixType.Heading, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(dateText, style = NixType.Small, color = c.textMuted)
             }
-            // Where an imported event comes from (made-in-app events have no badge)
-            val sourceName = when (event.source) {
-                EventSource.GOOGLE -> s.sourceGoogle
-                EventSource.NOTION -> s.sourceNotion
-                EventSource.LOCAL -> null
-            }
-            if (sourceName != null) {
-                Text(
-                    sourceName,
-                    style = NixType.SmallStrong,
-                    color = c.textSecondary,
-                    modifier = Modifier.clip(RoundedCornerShape(50)).background(c.surfaceRaised).padding(horizontal = 10.dp, vertical = 6.dp),
-                )
-                if (event.reminderLeadMillis.isNotEmpty()) Spacer(Modifier.width(6.dp))
-            }
-            if (event.reminderLeadMillis.isNotEmpty()) {
-                Row(
-                    Modifier.clip(RoundedCornerShape(50)).background(c.surfaceRaised).padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    NixIconView(NixIcon.Bell, c.accentWarm, size = 14.dp)
-                    Spacer(Modifier.width(5.dp))
-                    Text(event.reminderLeadMillis.size.toString(), style = NixType.SmallStrong, color = c.textSecondary)
-                }
-            }
             if (onLongClick != null) {
                 // The same options as a long press, like the ⋯ on quit cards.
                 Spacer(Modifier.width(6.dp))
@@ -791,11 +766,42 @@ fun EventCard(
                     NixIcon.More,
                     onLongClick,
                     modifier = Modifier.semantics { contentDescription = s.cardMoreOptions },
-                    tint = c.textSecondary,
-                    background = c.surfaceRaised,
+                    tint = look.accent,
+                    background = look.accent.copy(alpha = 0.14f),
                     size = 40.dp,
                     bordered = false,
                 )
+            }
+        }
+        // Where an imported event comes from and how many reminders it has: small chips beside the countdown, so
+        // the title and date keep the full width.
+        val chipsRow: @Composable () -> Unit = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val sourceName = when (event.source) {
+                    EventSource.GOOGLE -> s.sourceGoogle
+                    EventSource.NOTION -> s.sourceNotion
+                    EventSource.LOCAL -> null // made-in-app events have no badge
+                }
+                val chipBg = look.accent.copy(alpha = 0.14f)
+                if (sourceName != null) {
+                    Text(
+                        sourceName,
+                        style = NixType.SmallStrong,
+                        color = c.textSecondary,
+                        modifier = Modifier.clip(RoundedCornerShape(50)).background(chipBg).padding(horizontal = 10.dp, vertical = 6.dp),
+                    )
+                    if (event.reminderLeadMillis.isNotEmpty()) Spacer(Modifier.width(6.dp))
+                }
+                if (event.reminderLeadMillis.isNotEmpty()) {
+                    Row(
+                        Modifier.clip(RoundedCornerShape(50)).background(chipBg).padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        NixIconView(NixIcon.Bell, look.accent, size = 14.dp)
+                        Spacer(Modifier.width(5.dp))
+                        Text(event.reminderLeadMillis.size.toString(), style = NixType.SmallStrong, color = c.textSecondary)
+                    }
+                }
             }
         }
         if (passed) {
@@ -806,7 +812,10 @@ fun EventCard(
             Spacer(Modifier.height(14.dp))
             Text(s.startsIn.uppercase(), style = NixType.Eyebrow, color = c.textSecondary)
             Spacer(Modifier.height(6.dp))
-            CounterBlocks(parts, c.textPrimary, c.textMuted, valueSize = 26, units = parts.unitsWithoutFarSeconds)
+            Row(verticalAlignment = Alignment.Bottom) {
+                CounterBlocks(parts, c.textPrimary, c.textMuted, valueSize = 26, units = parts.unitsWithoutFarSeconds, modifier = Modifier.weight(1f))
+                chipsRow()
+            }
         }
     }
 }
