@@ -9,7 +9,7 @@
 - **Live server:** one Cloudflare Worker, `nixura-notion`, at `https://nixura-notion.nixura-notion-worker.workers.dev` (code in `workers/notion`; Notion link + AI coach). It is deployed from `feat/ai-coach`. Deploy with `npx wrangler deploy` in that folder (Wrangler is logged in on the owner's PC). Secrets set: the Notion ones, `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`. Not set: `MISTRAL_API_KEY` (Mistral's console kept its "create key" button greyed out; probably needs the free plan chosen or a phone number verified).
 - **Owner's phone** runs the `feat/ai-coach` debug build (Room v7). A build from an older branch must not be installed over it: Room cannot downgrade.
 - **Tested on the phone by the owner (2026-11-11):** AI chat, a voice note, and after the model change a second chat and voice note that Gemini answered with no fallback.
-- **Product record (2026-11-14):** `PRODUCT.md` at the root records users, positioning, principles and brand rules for design work, confirmed by the owner. No code changed. There is no `DESIGN.md` yet.
+- **Product record (2026-11-14):** `PRODUCT.md` at the root records users, positioning, principles and brand rules for design work, confirmed by the owner. `DESIGN.md` (with `.impeccable/design.json`) records the current visual system from the theme and components, plus two owner directions not built yet: livelier motion and soft card shadows (shadow values provisional). No code changed.
 - **Next steps, in order:**
   1. Owner: open and merge the `feat/ai-coach` pull request.
   2. Owner: untick "Update content", "Insert content", "Insert comments" and pick "No user information" on the Notion connection (NixUra only reads).

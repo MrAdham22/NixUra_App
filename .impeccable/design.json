@@ -1,0 +1,452 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-14T01:42:01.107310+00:00",
+  "title": "Design System: NixUra",
+  "extensions": {
+    "colorMeta": {
+      "navy": {
+        "role": "neutral",
+        "displayName": "Night Navy",
+        "canonical": "#1D1A39",
+        "tonalRamp": [
+          "#201E2F",
+          "#353155",
+          "#48427F",
+          "#584FAC",
+          "#817ABB",
+          "#A8A4CB",
+          "#CECCDE",
+          "#F0F0F4"
+        ],
+        "streakRamp": [
+          "#1D1A39",
+          "#451952",
+          "#862549",
+          "#AE445A",
+          "#F39F5A",
+          "#E8BCB9"
+        ]
+      },
+      "purple": {
+        "role": "tertiary",
+        "displayName": "Midnight Purple",
+        "canonical": "#451952",
+        "tonalRamp": [
+          "#2D1A32",
+          "#512A5D",
+          "#78358C",
+          "#A23BC0",
+          "#B46CC9",
+          "#C79CD4",
+          "#DCC8E2",
+          "#F4EFF5"
+        ]
+      },
+      "plum": {
+        "role": "tertiary",
+        "displayName": "Deep Plum",
+        "canonical": "#862549",
+        "tonalRamp": [
+          "#331A23",
+          "#5F283C",
+          "#8F3254",
+          "#C4376B",
+          "#CC698E",
+          "#D69AB0",
+          "#E3C7D1",
+          "#F6EFF1"
+        ]
+      },
+      "rose": {
+        "role": "primary",
+        "displayName": "Dawn Rose",
+        "canonical": "#AE445A",
+        "tonalRamp": [
+          "#301D21",
+          "#592E37",
+          "#853C4B",
+          "#B4475E",
+          "#C17584",
+          "#CFA1AB",
+          "#E0CACF",
+          "#F5F0F1"
+        ]
+      },
+      "orange": {
+        "role": "secondary",
+        "displayName": "Sunrise Orange",
+        "canonical": "#F39F5A",
+        "tonalRamp": [
+          "#392413",
+          "#6D3F1A",
+          "#A85A19",
+          "#E97312",
+          "#E6934F",
+          "#E5B48B",
+          "#EBD3BF",
+          "#F7F2ED"
+        ]
+      },
+      "blush": {
+        "role": "secondary",
+        "displayName": "First-Light Blush",
+        "canonical": "#E8BCB9",
+        "tonalRamp": [
+          "#311C1B",
+          "#5C2E2B",
+          "#8A3C37",
+          "#BD473F",
+          "#C7746F",
+          "#D2A19E",
+          "#E2CAC8",
+          "#F5F0EF"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Dusk Surface",
+        "canonical": "#262248",
+        "tonalRamp": [
+          "#201E2E",
+          "#363255",
+          "#49437E",
+          "#5A51AA",
+          "#827CBA",
+          "#A9A5CB",
+          "#CECCDE",
+          "#F1F0F4"
+        ]
+      },
+      "surface-raised": {
+        "role": "neutral",
+        "displayName": "Raised Dusk",
+        "canonical": "#312C5A",
+        "tonalRamp": [
+          "#201F2E",
+          "#363354",
+          "#4A447D",
+          "#5C53A8",
+          "#837DB9",
+          "#AAA6CA",
+          "#CECDDE",
+          "#F1F0F4"
+        ]
+      },
+      "text-primary": {
+        "role": "neutral",
+        "displayName": "Moon White",
+        "canonical": "#F6EFEE",
+        "tonalRamp": [
+          "#2D211F",
+          "#523835",
+          "#7A4E47",
+          "#A46157",
+          "#B68780",
+          "#C8ACA8",
+          "#DDCFCD",
+          "#F4F1F0"
+        ]
+      },
+      "text-secondary": {
+        "role": "neutral",
+        "displayName": "Haze",
+        "canonical": "#D6CCD6",
+        "tonalRamp": [
+          "#292429",
+          "#493E49",
+          "#695869",
+          "#8B708B",
+          "#A491A4",
+          "#BEB2BE",
+          "#D8D2D8",
+          "#F3F2F3"
+        ]
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Fog",
+        "canonical": "#9B94B0",
+        "tonalRamp": [
+          "#25232A",
+          "#403C4B",
+          "#5A546D",
+          "#746B90",
+          "#948EA8",
+          "#B4B0C0",
+          "#D3D1D9",
+          "#F2F1F3"
+        ]
+      },
+      "positive": {
+        "role": "meaning",
+        "displayName": "Done Green",
+        "canonical": "#4CC38A",
+        "tonalRamp": [
+          "#1B3127",
+          "#2B5B44",
+          "#378A62",
+          "#40BC80",
+          "#6FC69D",
+          "#9ED2B9",
+          "#C9E2D6",
+          "#EFF5F2"
+        ]
+      },
+      "danger": {
+        "role": "meaning",
+        "displayName": "Alert Red",
+        "canonical": "#FF6B6B",
+        "tonalRamp": [
+          "#3C1010",
+          "#741313",
+          "#B30E0E",
+          "#FA0101",
+          "#F24444",
+          "#EC8484",
+          "#EEBCBC",
+          "#F8ECEC"
+        ]
+      },
+      "water": {
+        "role": "meaning",
+        "displayName": "Water Blue",
+        "canonical": "#5BB6EC",
+        "tonalRamp": [
+          "#152B38",
+          "#1D4D6A",
+          "#1F71A2",
+          "#1B97E0",
+          "#56ACE0",
+          "#8FC3E1",
+          "#C1DAE9",
+          "#EEF3F7"
+        ]
+      },
+      "prayer-gold": {
+        "role": "meaning",
+        "displayName": "Prayer Gold",
+        "canonical": "#E3B24C",
+        "tonalRamp": [
+          "#362C16",
+          "#675020",
+          "#9D7624",
+          "#D99E23",
+          "#DBB15B",
+          "#DEC592",
+          "#E7DCC3",
+          "#F7F4EE"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Starlight Hairline",
+        "canonical": "rgba(255, 255, 255, 0.12)"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Biggest moments: hero numbers, welcome lines."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Screen titles under the eyebrow."
+      },
+      "heading": {
+        "displayName": "Heading",
+        "purpose": "Card and section titles."
+      },
+      "eyebrow": {
+        "displayName": "Eyebrow",
+        "purpose": "Uppercase label above titles and sections."
+      },
+      "counter": {
+        "displayName": "Counter",
+        "purpose": "Live ticking numbers, tabular figures."
+      }
+    },
+    "shadows": [
+      {
+        "name": "lift-low",
+        "value": "0 4px 16px rgba(8, 6, 24, 0.35)",
+        "purpose": "PROVISIONAL (owner direction 2026-11-14, not in the code yet): resting lift for cards on navy."
+      },
+      {
+        "name": "lift-glow",
+        "value": "0 8px 28px <the card's own colour at 25%>",
+        "purpose": "PROVISIONAL: tinted glow under streak cards."
+      },
+      {
+        "name": "lift-press",
+        "value": "0 2px 8px rgba(8, 6, 24, 0.30)",
+        "purpose": "PROVISIONAL: lower lift while a card is pressed."
+      }
+    ],
+    "motion": [
+      {
+        "name": "nix-easing",
+        "value": "cubic-bezier(0.32, 0.72, 0, 1)",
+        "purpose": "The one easing curve for moving things: leaves quickly, settles softly (NixEasing)."
+      },
+      {
+        "name": "press-spring",
+        "value": "spring(dampingRatio 0.65, stiffness Medium); scale 0.97 (cards 0.98, chips 0.94, icon buttons 0.9); alpha 0.82",
+        "purpose": "Touch response on every tappable thing (Modifier.pressable)."
+      },
+      {
+        "name": "chip-fade",
+        "value": "tween 150ms",
+        "purpose": "Chip selection colour."
+      },
+      {
+        "name": "switch-slide",
+        "value": "tween 160ms",
+        "purpose": "Switch thumb and track."
+      },
+      {
+        "name": "progress-fill",
+        "value": "tween 500ms",
+        "purpose": "Progress bars."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "rememberReducedMotion()",
+        "purpose": "Every effect has a still version when remove-animations is on."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one action colour. Dips and springs back on press.",
+      "html": "<button class=\"ds-btn-primary\">Start tracking</button>",
+      "css": ".ds-btn-primary { background: #AE445A; color: #FFF7F5; font: 600 15px/20px system-ui, sans-serif; min-height: 50px; padding: 8px 20px; border: 1px solid transparent; border-radius: 16px; cursor: pointer; transition: transform .25s cubic-bezier(0.32, 0.72, 0, 1), opacity .2s; } .ds-btn-primary:hover { filter: brightness(1.06); } .ds-btn-primary:active { transform: scale(.97); opacity: .82; } .ds-btn-primary:focus-visible { outline: 2px solid #E8BCB9; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Quiet second choice on a raised surface.",
+      "html": "<button class=\"ds-btn-secondary\">Edit history</button>",
+      "css": ".ds-btn-secondary { background: #312C5A; color: #F6EFEE; font: 600 15px/20px system-ui, sans-serif; min-height: 50px; padding: 8px 20px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px; cursor: pointer; transition: transform .25s cubic-bezier(0.32, 0.72, 0, 1), opacity .2s; } .ds-btn-secondary:hover { filter: brightness(1.06); } .ds-btn-secondary:active { transform: scale(.97); opacity: .82; } .ds-btn-secondary:focus-visible { outline: 2px solid #AE445A; outline-offset: 2px; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive actions only.",
+      "html": "<button class=\"ds-btn-danger\">Erase all data</button>",
+      "css": ".ds-btn-danger { background: rgba(255, 107, 107, .14); color: #FF6B6B; font: 600 15px/20px system-ui, sans-serif; min-height: 50px; padding: 8px 20px; border: 1px solid rgba(255, 107, 107, .35); border-radius: 16px; cursor: pointer; transition: transform .25s cubic-bezier(0.32, 0.72, 0, 1), opacity .2s; } .ds-btn-danger:hover { filter: brightness(1.06); } .ds-btn-danger:active { transform: scale(.97); opacity: .82; } .ds-btn-danger:focus-visible { outline: 2px solid #FF6B6B; outline-offset: 2px; }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Pill filter or choice; rose when selected.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip ds-chip-on\">Daily</button><button class=\"ds-chip\"><span class=\"ds-dot\"></span>Weekly</button></div>",
+      "css": ".ds-chips { display: flex; gap: 8px; } .ds-chip { display: inline-flex; align-items: center; gap: 8px; background: #312C5A; color: #D6CCD6; font: 600 13px/18px system-ui, sans-serif; padding: 9px 14px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 999px; cursor: pointer; transition: background .15s, transform .2s cubic-bezier(0.32, 0.72, 0, 1); } .ds-chip:active { transform: scale(.94); } .ds-chip-on { background: #AE445A; color: #FFF7F5; border-color: transparent; } .ds-dot { width: 10px; height: 10px; border-radius: 50%; background: #F39F5A; } .ds-chip:focus-visible { outline: 2px solid #AE445A; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "text-field",
+      "description": "Raised field with the label above.",
+      "html": "<label class=\"ds-field\"><span>Habit name</span><input placeholder=\"e.g. Smoking\"></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 6px; font: 600 13px/18px system-ui, sans-serif; color: #D6CCD6; } .ds-field input { background: #312C5A; color: #F6EFEE; font: 400 15px/21px system-ui, sans-serif; padding: 14px 16px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; caret-color: #AE445A; outline: none; } .ds-field input::placeholder { color: #9B94B0; } .ds-field input:focus-visible { border-color: #AE445A; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The basic surface: Dusk Surface, 22dp corners, hairline.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-eyebrow\">Today</div><div class=\"ds-h\">Drink water</div><p>3 / 8 today</p></div>",
+      "css": ".ds-card { background: #262248; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 22px; padding: 18px; color: #F6EFEE; font: 400 15px/21px system-ui, sans-serif; transition: transform .25s cubic-bezier(0.32, 0.72, 0, 1); } .ds-card:active { transform: scale(.98); } .ds-eyebrow { font: 600 11px/14px system-ui, sans-serif; letter-spacing: 1px; text-transform: uppercase; color: #9B94B0; } .ds-h { font: 600 17px/22px system-ui, sans-serif; margin-top: 6px; } .ds-card p { margin: 6px 0 0; color: #D6CCD6; }"
+    },
+    {
+      "name": "Quit-habit Card",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Signature: streak-coloured gradient, corner glow, live tabular counter, stage marker.",
+      "html": "<div class=\"ds-quit\"><div class=\"ds-qh\">No smoking</div><div class=\"ds-count\">12d 04h 11m 33s</div><div class=\"ds-stage\">Stage 4 of 6 · 7+ days</div></div>",
+      "css": ".ds-quit { position: relative; overflow: hidden; border-radius: 22px; padding: 20px; color: #FFF7F5; font: 400 15px/21px system-ui, sans-serif; background: linear-gradient(135deg, #862549, #AE445A); border: 1px solid rgba(255, 255, 255, 0.12); } .ds-quit::before { content: \"\"; position: absolute; top: -40%; right: -20%; width: 70%; height: 90%; background: radial-gradient(circle, rgba(255, 255, 255, .22), transparent 70%); } .ds-qh { position: relative; font: 600 17px/22px system-ui, sans-serif; } .ds-count { position: relative; font: 700 30px/33px system-ui, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -.5px; margin: 12px 0; } .ds-stage { position: relative; font: 600 13px/18px system-ui, sans-serif; opacity: .85; }"
+    },
+    {
+      "name": "Droplet Nav Bar",
+      "kind": "nav",
+      "refersTo": "nav-bar",
+      "description": "Floating pill nav; the selected item sits on a liquid droplet that stretches between tabs.",
+      "html": "<nav class=\"ds-nav\"><a class=\"on\">Home</a><a>Habits</a><a>Events</a><a>Coach</a></nav>",
+      "css": ".ds-nav { display: flex; gap: 4px; background: #262248; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 24px; padding: 6px; } .ds-nav a { flex: 1; text-align: center; min-height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 18px; font: 400 11px/14px system-ui, sans-serif; color: #9B94B0; cursor: pointer; transition: background .3s cubic-bezier(0.32, 0.72, 0, 1), color .2s; } .ds-nav a:hover { color: #D6CCD6; } .ds-nav a.on { background: rgba(174, 68, 90, .22); color: #AE445A; font-weight: 600; } .ds-nav a:focus-visible { outline: 2px solid #AE445A; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Night Into Dawn",
+    "overview": "NixUra starts in the dark and lets progress bring the light. The app lives on a deep navy night (`navy`). Every quit-habit card begins in the same darkness and warms through purple, plum and rose to orange and blush as the streak grows, so a month of holding out literally looks like sunrise. Light is earned, never decoration: the brighter something is, the more it means.\n\nThe interface is playful and lively on top of that calm night (owner direction, 2026-11-14). Things respond to the finger: they dip and spring back, liquid rises in a good-habit card with a splash, the nav bar's droplet stretches between tabs, a reached target bounces with a firm tap, and a counted prayer sends a burst of gold stars. Motion celebrates the user's own actions and progress. It always honours \"remove animations\".\n\nDensity is comfortable, not sparse: one column, generous 20dp gutters, cards that carry real numbers (a live counter ticking every second, a calendar, a 7-day row) rather than empty space. One NixUra look runs on Android and iPhone alike. Only native details change (safe areas, back gestures, status bar).",
+    "keyCharacteristics": [
+      "Dark navy night as the default world. Light theme is the alternative, not the reference.",
+      "Brightness is earned: streak cards move from dark to light (0/1/3/7/14/30 days).",
+      "Rose (`rose`) is the single action colour. Orange is warmth, blush is softness.",
+      "Playful, physical motion on touch and on achievements, with a reduced-motion path for every effect.",
+      "Soft, rounded forms everywhere (16 to 28dp corners, pills for chips and switches).",
+      "Everything is drawn in code (liquid, droplet, stars, mosque). No image files for UI art."
+    ],
+    "rules": [
+      {
+        "name": "The Earned Light Rule",
+        "body": "On a habit card, brightness is earned by streak time. Never start a new card light, and never brighten a card for decoration. The colour is worked out from the active streak (`StreakColorMapper` or the user's `ShadeRamp`), never stored.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Action Colour Rule",
+        "body": "Rose (plum in light theme) is the only colour for \"do this\". Orange, blush, green and gold never mark a primary action.",
+        "section": "colors"
+      },
+      {
+        "name": "The Not Colour Alone Rule",
+        "body": "Every colour that carries meaning (streak stage, done day, error) also has text or a marker next to it.",
+        "section": "colors"
+      },
+      {
+        "name": "The Steady Digits Rule",
+        "body": "Any number that changes while the user watches uses the counter style with tabular figures.",
+        "section": "typography"
+      },
+      {
+        "name": "The Eyebrow Rule",
+        "body": "A screen title always sits under an uppercase eyebrow. The eyebrow is rose on a screen header and muted on a section.",
+        "section": "typography"
+      },
+      {
+        "name": "The Lit From Within Rule",
+        "body": "Habit cards get their depth from their own light (gradient and corner glow) first. A shadow only supports it; it never replaces it.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Same Depth Rule",
+        "body": "Things at the same level share the same shadow. Don't give one card in a list more lift than its neighbours unless it is being touched or dragged.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** use the six brand colours and the semantic tokens in `NixColors.kt`. Add a new colour only as a documented meaning colour.",
+      "**Do** keep rose (plum in light theme) as the one action colour.",
+      "**Do** make every tappable thing respond with the `pressable` dip-and-spring, not a ripple.",
+      "**Do** celebrate the user's own progress with motion (fills, bounces, bursts, the droplet) and give each effect a reduced-motion version.",
+      "**Do** use tabular counter digits for anything that ticks.",
+      "**Do** put text or a marker next to every colour that carries meaning.",
+      "**Do** keep corners soft (14 to 28dp) and edge surfaces with the 1dp hairline.",
+      "**Do** draw UI art in code so it looks the same on Android, iOS and the widgets."
+    ],
+    "donts": [
+      "**Don't** start a habit card bright, or brighten one for decoration. Light is earned by streak time.",
+      "**Don't** use orange, blush, green or gold for a primary action.",
+      "**Don't** use prayer gold anywhere outside the prayer habit.",
+      "**Don't** use red for anything except errors and destructive actions.",
+      "**Don't** add motion that plays on its own without a reason. Motion answers a touch or marks progress (the prayer card's sliding light is the one ambient effect).",
+      "**Don't** let one look split by platform: no Material-only or Apple-only styling beyond safe areas, back gestures and the status bar.",
+      "**Don't** hard-code text in screens. It goes through `Strings.kt`."
+    ]
+  }
+}
