@@ -101,6 +101,7 @@ fun HomeScreen(navigator: Navigator) {
     var scoreSheet by remember { mutableStateOf<ScoreKind?>(null) }
     val voiceVm: com.adhamelgendy.nixura.presentation.voice.VoiceNoteViewModel = koinViewModel()
     val deleteFlow = rememberDeleteFlow()
+    val quitActions = rememberQuitCardActions(navigator, deleteFlow)
 
     val hour = (days.millisOfDay(now) / 3_600_000L).toInt()
     val greeting = when {
@@ -152,7 +153,12 @@ fun HomeScreen(navigator: Navigator) {
             }
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 habits.habits.take(2).forEach {
-                    BadHabitCard(it, onClick = { navigator.push(Route.BadHabitDetail(it.habitId)) }, onLongClick = { deleteFlow.open(DeletableItem.BadHabit(it.habitId), it.name) })
+                    BadHabitCard(
+                        it,
+                        onClick = { navigator.push(Route.BadHabitDetail(it.habitId)) },
+                        onLongClick = { quitActions.openOptions(it) },
+                        onCraving = { quitActions.craving(it) },
+                    )
                 }
             }
         }

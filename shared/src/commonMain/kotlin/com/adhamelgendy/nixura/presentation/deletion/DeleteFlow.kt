@@ -40,7 +40,10 @@ import com.adhamelgendy.nixura.presentation.theme.NixType
 import org.koin.compose.koinInject
 
 /** What a long-pressed card asks to delete. */
-internal data class DeleteRequest(val item: DeletableItem, val name: String)
+internal data class DeleteRequest(val item: DeletableItem, val name: String, val actions: List<SheetAction> = emptyList())
+
+/** An extra action in a card's long-press sheet, shown above "Delete" (e.g. "I slipped", "Edit habit"). */
+data class SheetAction(val label: String, val icon: NixIcon, val onClick: () -> Unit)
 
 /** Opens the delete option for a card. Get one with [rememberDeleteFlow]. */
 @Stable
@@ -48,9 +51,9 @@ class DeleteFlow internal constructor() {
     internal var request by mutableStateOf<DeleteRequest?>(null)
     internal var confirming by mutableStateOf(false)
 
-    /** Long-press handler: offers "Delete" for [item], then asks for confirmation naming [name]. */
-    fun open(item: DeletableItem, name: String) {
-        request = DeleteRequest(item, name)
+    /** Long-press handler: offers [actions] and "Delete" for [item], then asks for confirmation naming [name]. */
+    fun open(item: DeletableItem, name: String, actions: List<SheetAction> = emptyList()) {
+        request = DeleteRequest(item, name, actions)
         confirming = false
     }
 
@@ -77,6 +80,19 @@ fun rememberDeleteFlow(onDeleted: () -> Unit = {}): DeleteFlow {
         NixSheet(onDismiss = { flow.request = null }) {
             Text(req.name, style = NixType.Heading, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(14.dp))
+            req.actions.forEach { action ->
+                Row(
+                    Modifier.fillMaxWidth().pressable(haptic = true) {
+                        flow.request = null
+                        action.onClick()
+                    }.padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    NixIconView(action.icon, c.textPrimary, size = 22.dp)
+                    Spacer(Modifier.width(14.dp))
+                    Text(action.label, style = NixType.BodyStrong, color = c.textPrimary)
+                }
+            }
             Row(
                 Modifier.fillMaxWidth().pressable(haptic = true) { flow.confirming = true }.padding(vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,

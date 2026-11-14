@@ -170,6 +170,19 @@ class CoachViewModel(
 
     fun onDismissNotice() = transient.update { it.copy(notice = null) }
 
+    /**
+     * "Craving?" on a quit card: talk about that habit and send [text] straight away, so help starts the moment the
+     * coach opens.
+     */
+    fun onCraving(habitId: Long, text: String) {
+        viewModelScope.launch {
+            if (activeChat.value == null) activeChat.value = ensureGreeting(null)
+            selectedHabitId = habitId
+            refreshContext()
+            onSend(text)
+        }
+    }
+
     /** The user picked which quit habit to talk about; the coach uses its data from now on. */
     fun onSelectHabit(habitId: Long) {
         selectedHabitId = habitId

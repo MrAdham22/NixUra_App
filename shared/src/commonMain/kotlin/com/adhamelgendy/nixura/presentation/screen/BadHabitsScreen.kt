@@ -49,6 +49,7 @@ fun BadHabitsScreen(navigator: Navigator) {
     val c = Nix.colors
     var bestInfo by remember { mutableStateOf(false) }
     val deleteFlow = rememberDeleteFlow()
+    val quitActions = rememberQuitCardActions(navigator, deleteFlow)
 
     TabScreen {
         ScreenHeader(
@@ -125,7 +126,8 @@ fun BadHabitsScreen(navigator: Navigator) {
                     BadHabitCard(
                         habit,
                         onClick = { navigator.push(Route.BadHabitDetail(habit.habitId)) },
-                        onLongClick = { deleteFlow.open(DeletableItem.BadHabit(habit.habitId), habit.name) },
+                        onLongClick = { quitActions.openOptions(habit) },
+                        onCraving = { quitActions.craving(habit) },
                     )
                 }
             }

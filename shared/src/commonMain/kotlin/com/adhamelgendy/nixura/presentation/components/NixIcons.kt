@@ -25,7 +25,7 @@ import kotlin.math.sin
 enum class NixIcon {
     Home, Shield, CircleCheck, Calendar, Sparkle, User, Gear, Plus, Back, Chevron, Bell, Trash,
     Pencil, Flame, Send, Close, Tick, Minus, Reset, Archive, Moon, Sun, Globe, Clock, Info, Leaf,
-    Eye, EyeOff, Mail, Lock, Mic, Stop,
+    Eye, EyeOff, Mail, Lock, Mic, Stop, More,
 
     // Habit-category glyphs (path data in TopicIcons.kt)
     Cigarette, WineGlass, Cup, Soda, Candy, Burger, Phone, Gamepad, Tv, Pill, Money, Dice, Thought, Chair, Speech,
@@ -156,6 +156,7 @@ private fun DrawScope.drawNixIcon(icon: NixIcon, c: Color, s: Float, st: Stroke)
         NixIcon.Close -> { line(c, s, w, 6f, 6f, 18f, 18f); line(c, s, w, 18f, 6f, 6f, 18f) }
         NixIcon.Tick -> poly(c, s, st, false, 5f, 12.5f, 10f, 17.5f, 19f, 7f)
         NixIcon.Minus -> line(c, s, w, 5f, 12f, 19f, 12f)
+        NixIcon.More -> listOf(6f, 12f, 18f).forEach { x -> drawCircle(c, 1.7f * s, Offset(x * s, 12f * s)) }
         NixIcon.Reset -> {
             drawArc(c, -50f, 280f, false, Offset(4.5f * s, 4.5f * s), Size(15f * s, 15f * s), style = st)
             poly(c, s, st, false, 7.2f, 2.8f, 7.2f, 6.4f, 10.8f, 6.4f)

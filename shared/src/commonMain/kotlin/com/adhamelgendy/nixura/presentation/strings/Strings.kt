@@ -81,6 +81,10 @@ open class Strings {
     open val clearFor: String = "Clear for"
     open val longestLabel: (String) -> String = { "Longest streak $it" }
     open val longestYet: String = "Your longest streak yet"
+    open val cravingAction: String = "Craving? Talk it through"
+    open val slipAction: String = "I slipped"
+    open val cardMoreOptions: String = "More options"
+    open fun cravingPrompt(habit: String): String = "I'm having a craving for $habit right now. Help me get through it."
     open val statNextWin: String = "Next win"
     open val statSaved: String = "Saved"
     open val infoNextWin: String = "The closest milestone among your quit habits. Hold on until then: every milestone you reach is a win, and a slip never erases the ones behind you."

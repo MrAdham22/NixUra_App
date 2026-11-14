@@ -1,5 +1,8 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.adhamelgendy.nixura.presentation.util.timeLeft
 import com.adhamelgendy.nixura.domain.calculator.MilestoneCalculator
 import com.adhamelgendy.nixura.domain.recognition.PrayerHabitDetector
@@ -223,6 +226,8 @@ fun BadHabitCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
+    /** "Craving? Talk it through": opens the coach about this habit. Hidden when null. */
+    onCraving: (() -> Unit)? = null,
 ) {
     val s = LocalStrings.current
     val engine = koinInject<CoachEngine>()
@@ -250,7 +255,20 @@ fun BadHabitCard(
                 Text(model.name, style = NixType.Heading, color = primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(category.label, style = NixType.Small, color = muted, maxLines = 1)
             }
-            NixIconView(NixIcon.Chevron, muted, size = 20.dp)
+            if (onLongClick != null) {
+                // The same options as a long press, for people who don't know to hold the card.
+                NixIconButton(
+                    NixIcon.More,
+                    onLongClick,
+                    modifier = Modifier.semantics { contentDescription = s.cardMoreOptions },
+                    tint = primary,
+                    background = primary.copy(alpha = 0.10f),
+                    size = 40.dp,
+                    bordered = false,
+                )
+            } else {
+                NixIconView(NixIcon.Chevron, muted, size = 20.dp)
+            }
         }
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(s.clearFor.uppercase(), style = NixType.Eyebrow, color = muted)
@@ -280,12 +298,29 @@ fun BadHabitCard(
         }
         if (model.isLongestYet()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                NixIconView(NixIcon.Sparkle, primary, size = 16.dp)
+                NixIconView(NixIcon.Flame, primary, size = 16.dp)
                 Spacer(Modifier.width(6.dp))
                 Text(s.longestYet, style = NixType.SmallStrong, color = primary)
             }
         } else {
             Text(s.longestLabel(model.longestStreakLabel), style = NixType.Small, color = muted)
+        }
+        if (onCraving != null) {
+            val pill = RoundedCornerShape(50)
+            Row(
+                Modifier
+                    .pressable(pressedScale = 0.95f, haptic = true, onClick = onCraving)
+                    .heightIn(min = 44.dp)
+                    .clip(pill)
+                    .background(primary.copy(alpha = 0.14f), pill)
+                    .border(1.dp, primary.copy(alpha = 0.22f), pill)
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                NixIconView(NixIcon.Sparkle, primary, size = 18.dp)
+                Spacer(Modifier.width(8.dp))
+                Text(s.cravingAction, style = NixType.SmallStrong, color = primary, maxLines = 1)
+            }
         }
     }
 }

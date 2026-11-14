@@ -51,6 +51,7 @@ Premium, warm, hierarchical; not minimal-empty; not cluttered. Semantic tokens f
 - Deterministic; survives recompute after edits; resets visually on relapse.
 - Text + stage indicator — not color alone. The stage marker shows the next milestone and the time left (`domain/calculator/MilestoneCalculator`: 1/3/7/14/30/60/90/180/365 days, then yearly).
 - On-card text (2026-11-14): `prefersLightContentOnCard()` picks light (`CardInkLight` #FFF7F5) or dark (navy) ink by WCAG contrast, not a brightness cut-off; `cardInk()` gives primary + muted (86% / 80%). Tested in `CardInkContrastTest` (primary ≥ 3.9:1, about the best two inks can do on a mid-tone card; muted ≥ 3:1).
+- Quit-card actions (2026-11-14), shared by Home and the Quit tab in `screen/QuitCardActions.kt`: the long-press sheet (`DeleteFlow.open` now takes extra `SheetAction`s) offers I slipped / Edit habit / Delete, also reachable from a visible ⋯ button (`NixIcon.More`); "Craving?" calls `CoachViewModel.onCraving(habitId, text)` (picks the habit, sends the message) and selects the Coach tab. The coach view model is one instance per activity, so the Coach tab shows that chat.
 - Quit tab stat card: "Next win" (closest milestone across habits) + total saved, replacing "Best active streak".
 
 ## 7. Technical architecture
