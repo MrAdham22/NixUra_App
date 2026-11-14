@@ -227,6 +227,7 @@ A six-colour night-to-dawn ramp on navy, with rose doing the work and a few docu
 
 ### Meaning colours (exceptions to the six-colour set)
 - **Done Green** (`positive`, `light-positive`): good-habit progress and done days. Its soft form is the same green at 16 to 18%.
+- **Emerald** (`EmeraldDeep` `#0F5A42`, `EmeraldMid` `#1B7F5B`, `EmeraldLight` `#248A61`, in `GoodFillColors.kt`): the plain good-habit card. It is a diagonal gradient with a corner glow, like the quit cards (lit from within), deepening from the surface as today's count grows and ending on deep emerald with warm-white text. Text takes the ink that reads best on the whole gradient (`GoodFillContrastTest`). Done Green stays for small marks (progress bars, the "Today" bar, unfinished day squares). Water and prayer cards keep their own looks.
 - **Alert Red** (`danger`, `light-danger`): errors and destructive buttons only.
 - **Water Blue** (`water` to `water-deep`): the liquid inside water habits.
 - **Prayer Gold** (`prayer-*`): only the prayer habit's card, buttons and gold wash: a night sky, golden dawn and cream text.

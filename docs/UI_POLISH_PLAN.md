@@ -104,5 +104,5 @@ Starter guide, voice-note sheet (records audio), home-screen widgets (only the e
 4. Re-run `/impeccable critique` on each screen after its round and record the score here.
 
 ## Next (owner, 2026-11-14)
-- Plain good-habit card in the app: a more premium look than the flat green fill (prayer and water cards stay as they are).
+- **Done 2026-11-14:** plain good-habit card in an emerald gradient with glow (prayer and water unchanged).
 - Arabic language, with right-to-left layouts.

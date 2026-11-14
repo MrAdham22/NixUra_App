@@ -241,7 +241,20 @@ fun rememberGoodFill(todayCount: Int, dailyTarget: Int, style: GoodHabitFillStyl
     val paint = if (water) {
         Modifier.liquidFill(target, LiquidColors(empty = c.surface, surface = colors.liquidSurface, depth = colors.liquidDepth))
     } else {
-        Modifier.background(colors.background)
+        // A diagonal emerald gradient with a soft light in the top corner, as on the quit cards, instead of one flat
+        // green: it deepens as the count grows and glows a little more once the day is done.
+        Modifier.drawWithCache {
+            val diagonal = Brush.linearGradient(listOf(colors.gradientStart, colors.background, colors.gradientEnd), Offset.Zero, Offset(size.width, size.height))
+            val glow = Brush.radialGradient(
+                listOf(Color.White.copy(alpha = 0.05f + 0.10f * fill), Color.Transparent),
+                center = Offset(size.width * 0.9f, 0f),
+                radius = size.maxDimension * 0.75f,
+            )
+            onDrawBehind {
+                drawRect(diagonal)
+                drawRect(glow)
+            }
+        }
     }
     return GoodFill(fill, colors.background, colors.content, colors.contentMuted, colors.doneSquare, paint)
 }
