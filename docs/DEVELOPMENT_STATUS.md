@@ -2,6 +2,14 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## Sessions 2 and 3 of 4 (2026-11-17): Add-form animations, water goal, themed calendar
+
+Ran in parallel (branches `claude/s2-form-animations-e6598c`, `claude/s3-calendar-water-d163b7`), merged into `claude/nixora-bugs-features-plan-9a1220`. Details per session in `HANDOFF.md`.
+
+- **Built:** theme animations behind the Add/Edit Good Habit form (water pour, fill, bubbles, fish, ripple, tilt, drain, haptics; footprints, energy, pages, night sky, prayer rays); the daily water goal card (Liters/Cups, goal, cup size); calendar days, week strip and 7/30-day bars in the theme colour with intensity steps and a legend; Saturday-first, right-to-left calendar in RTL; water progress "1.25 / 2 L" or "5 / 8 cups" with a quick-add button on cards, the Home row and details.
+- **Owner changes after testing (2026-11-17):** no light beams in the water scene; footprints walk top to bottom in several pairs with distinct left and right feet; Undo and "Change goal" removed; 7/30-day bars take the theme colour; litres shown to two decimals (1.25 L).
+- **Verified:** the merged build, `:shared:testAndroidHostTest` (all pass), installed on the owner's phone: gold and blue bars, no Undo / Change goal, water fill without beams, the footprint trail. **Not verified:** RTL on a device (until Session 4), tilt by hand, "remove animations" on a device, frame timing, iOS (Windows).
+
 ## Session 1 of 4 (2026-11-17): bugs, habit themes, Home loading
 
 Branch `claude/nixora-bugs-features-plan-9a1220`. Plan and ownership for all four sessions: [HANDOFF.md](../HANDOFF.md).
