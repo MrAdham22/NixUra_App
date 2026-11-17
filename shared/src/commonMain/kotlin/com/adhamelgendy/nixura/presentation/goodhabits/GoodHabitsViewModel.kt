@@ -28,6 +28,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.adhamelgendy.nixura.domain.theme.HabitTheme
+import com.adhamelgendy.nixura.domain.theme.HabitThemeDetector
+import com.adhamelgendy.nixura.domain.theme.WaterGoal
 
 data class GoodHabitUi(
     val id: Long,
@@ -57,6 +61,10 @@ data class GoodHabitUi(
     val weekGoalMet: Boolean = false,
     /** First day (Sunday) of the current week. */
     val weekStartIndex: Long = 0,
+    /** Stored theme: colour, icon and animation through [com.adhamelgendy.nixura.presentation.appearance.HabitThemes]. */
+    val theme: HabitTheme = HabitTheme.DEFAULT,
+    /** Daily water habits only: the goal in ml. A day's count is cups of [WaterGoal.servingMl]. */
+    val water: WaterGoal? = null,
 ) {
     val isWeekly: Boolean get() = weeklyTarget != null
 
@@ -86,6 +94,7 @@ class GoodHabitsViewModel(
     private val dayCalculator: DayCalculator,
     pendingDeletions: PendingDeletions,
     private val topics: HabitTopicDetector? = null,
+    private val themes: HabitThemeDetector? = null,
 ) : ViewModel() {
 
     private val transient = MutableStateFlow(GoodHabitsUiState())
@@ -136,11 +145,18 @@ class GoodHabitsViewModel(
         }
     }
 
-    /** [weeklyTarget] `null` = daily habit. */
-    fun onCreate(name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int? = null, onSuccess: () -> Unit) {
+    /**
+     * The theme a name would get if saved now, for the form's live preview (water section, background animation).
+     * Off the main thread; saving detects again, so the stored theme always matches the saved name.
+     */
+    suspend fun previewTheme(name: String): HabitTheme =
+        themes?.let { t -> withContext(Dispatchers.Default) { t.themeFor(name) } } ?: HabitTheme.DEFAULT
+
+    /** [weeklyTarget] `null` = daily habit. [water]: the goal chosen on the form, for a daily water habit. */
+    fun onCreate(name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int? = null, water: WaterGoal? = null, onSuccess: () -> Unit) {
         viewModelScope.launch {
             transient.update { it.copy(isSaving = true, errorMessage = null) }
-            val result = createGoodHabit(name, dailyTarget, colorArgb, weeklyTarget)
+            val result = createGoodHabit(name, dailyTarget, colorArgb, weeklyTarget, water)
             transient.update { state ->
                 state.copy(isSaving = false, errorMessage = result.exceptionOrNull()?.message)
             }
@@ -148,10 +164,11 @@ class GoodHabitsViewModel(
         }
     }
 
-    fun onUpdate(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int? = null, onSuccess: () -> Unit) {
+    /** Pass [water] on every save of a water habit: `null` resets it to N cups of 250 ml from [dailyTarget]. */
+    fun onUpdate(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int? = null, water: WaterGoal? = null, onSuccess: () -> Unit) {
         viewModelScope.launch {
             transient.update { it.copy(isSaving = true, errorMessage = null) }
-            val result = updateGoodHabit(id, name, dailyTarget, colorArgb, weeklyTarget)
+            val result = updateGoodHabit(id, name, dailyTarget, colorArgb, weeklyTarget, water)
             transient.update { state ->
                 state.copy(isSaving = false, errorMessage = result.exceptionOrNull()?.message)
             }
@@ -188,6 +205,8 @@ class GoodHabitsViewModel(
             progressTarget = stats.progressTarget,
             weekGoalMet = stats.weekGoalMet,
             weekStartIndex = WeeklyGoalCalculator.weekStartOf(today),
+            theme = habit.theme,
+            water = habit.water,
         )
     }
 }

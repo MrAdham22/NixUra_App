@@ -1,8 +1,23 @@
 # Handoff: 2 bug fixes + 5 features (2026-11-17)
 
-The work is split into four sessions that run **one after another** (never at the same time).
-Each session reads this file first, works only in the files it owns, and updates its own section
-("Status") before it ends.
+Session 1 ran first. **Sessions 2 and 3 run at the same time** (owner decision 2026-11-17), each in its own
+worktree and branch cut from `claude/nixora-bugs-features-plan-9a1220`; the lead session merges both back into that
+branch. Session 4 starts only after that merge. Each session reads this file first, works only in the files it owns,
+and updates its own section ("Status") before it ends.
+
+### Rules while Sessions 2 and 3 run in parallel
+
+- Touch only the files your section owns. If you need a change in a file you do not own, stop and say so in your
+  final report instead of editing it.
+- New strings go **only between your own markers** in `Strings.kt` and `ArabicStrings.kt`
+  ("---- Session 2 ..." / "---- Session 3 ..."), so the two branches merge without conflicts.
+- Shared docs (`README.md`, `docs/*.md`, `AGENTS.md`): **do not edit**. Write what changed, how to test it and
+  what is verified in **your own Status block in this file**; the lead session copies it into the docs at merge.
+- No Room schema change (the v8 columns are all you need). If one seems needed, stop and report.
+- `GoodHabitsViewModel` is shared and already has what both need (`GoodHabitUi.theme`, `GoodHabitUi.water`,
+  `previewTheme(name)`, `onCreate`/`onUpdate(..., water)`, `onChangeToday(id, ±1)`). Do not edit it; if it lacks
+  something, add the logic in a new file of your own (a small helper or use case) and report it.
+- Installing on the phone is fine (both builds are Room v8); the phone shows whichever branch was installed last.
 
 ## Rules for every session
 
@@ -72,8 +87,8 @@ tilt, haptics; walk footprints, workout particles, reading pages, sleep stars, p
 in under the name field, also used when editing.
 
 **Owns:** `presentation/screen/GoodHabitFormScreen.kt`, `presentation/components/themeanim/*` (new),
-platform haptics/tilt `expect`/`actual` (new files), the save path of good habits (`GoodHabitUseCases.kt`
-create/update parameters).
+platform haptics/tilt `expect`/`actual` (new files under `presentation/platform/` in common, android and ios source
+sets), any new file under `presentation/goodhabits/form/` (new). The save path is already done in Session 1.
 
 **Must not touch:** detail screen, calendar, cards, Home.
 
@@ -86,9 +101,11 @@ create/update parameters).
 "1.2 / 2 L" / "5 / 8 cups" with +1 cup / +250 ml and undo on the card, the Home row and the details screen.
 
 **Owns:** `presentation/screen/GoodHabitDetailScreen.kt`, `MonthCalendar` (in `presentation/components`),
-good-habit card/row composables, `presentation/screen/GoodHabitsScreen.kt`, the Home good-habit row.
+good-habit card/row composables, `presentation/screen/GoodHabitsScreen.kt`, the `TodayRow` composable in
+`HomeScreen.kt` (that function only), `presentation/appearance/HabitThemeVisuals.kt` (to refine shades),
+`presentation/appearance/GoodFillColors.kt`, any new file under `presentation/goodhabits/water/` (new).
 
-**Depends on:** S1 foundation, S2 save path.
+**Depends on:** S1 foundation only (it does not need Session 2).
 
 ## Session 4: Arabic + RTL (Feature 4), last
 

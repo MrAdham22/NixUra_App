@@ -12,4 +12,12 @@ object ArabicStrings : Strings() {
 
     // Home
     override val homeLoading: String = "جارٍ تحميل عاداتك"
+
+    // ---- Session 2 (Add/Edit form). Only Session 2 adds lines here. ----
+
+    // ---- end of Session 2 ----
+
+    // ---- Session 3 (details, calendar, cards). Only Session 3 adds lines here. ----
+
+    // ---- end of Session 3 ----
 }

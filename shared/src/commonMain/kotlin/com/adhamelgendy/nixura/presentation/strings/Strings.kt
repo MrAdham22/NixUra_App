@@ -818,6 +818,14 @@ open class Strings {
     open val visualLongestClean: String = "Longest clean streak"
     open val visualQuitting: String = "Habits you're quitting"
     open val visualDoneToday: String = "Good habits done today"
+
+    // ---- Session 2 (Add/Edit form: theme animations, water goal section). Only Session 2 adds lines here. ----
+
+    // ---- end of Session 2 ----
+
+    // ---- Session 3 (details, calendar, cards: theme colours, water progress). Only Session 3 adds lines here. ----
+
+    // ---- end of Session 3 ----
 }
 
 data class AppLanguage(val code: String, val nativeName: String)
