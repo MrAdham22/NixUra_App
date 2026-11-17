@@ -7,9 +7,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import com.adhamelgendy.nixura.presentation.appearance.DayIntensity
 import com.adhamelgendy.nixura.presentation.appearance.HabitThemes
 import com.adhamelgendy.nixura.presentation.goodhabits.water.WaterAddButton
-import com.adhamelgendy.nixura.presentation.goodhabits.water.WaterProgressLine
 import com.adhamelgendy.nixura.presentation.goodhabits.water.dayProgress
-import com.adhamelgendy.nixura.presentation.goodhabits.water.rememberWaterUndo
 import com.adhamelgendy.nixura.presentation.goodhabits.water.waterProgressTextOrNull
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
@@ -656,7 +654,6 @@ fun GoodHabitCard(
     val look = rememberGoodFill(habit.progressCount, habit.progressTarget, habit.fillStyle)
     val pulse = rememberCompletionPulse(habit.goalReached)
     var streakInfo by remember { mutableStateOf(false) }
-    val undo = rememberWaterUndo()
     NixCard(
         modifier.fillMaxWidth().graphicsLayer { scaleX = pulse.value; scaleY = pulse.value },
         onClick = onClick,
@@ -673,17 +670,13 @@ fun GoodHabitCard(
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(habit.name.forDisplay(), style = NixType.Heading, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (habit.water != null) {
-                    WaterProgressLine(goodProgressText(habit, s), undo, onMinus, look.contentMuted, look.content)
-                } else {
-                    Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted)
-                }
+                Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted)
             }
             GoodHabitButton(habit.fillStyle, look, NixIcon.Minus, onMinus, size = 38.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), secondary = true)
             Spacer(Modifier.width(8.dp))
             val water = habit.water
-            // A water habit adds one serving with a labelled button ("+1 cup" / "+250 ml") and can undo it.
-            if (water != null) WaterAddButton(water, look, { onPlus(); undo.added() }) else GoodHabitButton(
+            // A water habit adds one serving with a labelled button ("+1 cup" / "+250 ml").
+            if (water != null) WaterAddButton(water, look, onPlus) else GoodHabitButton(
                 habit.fillStyle, look,
                 if (habit.doneToday && (habit.dailyTarget == 1 || habit.isWeekly)) NixIcon.Tick else NixIcon.Plus,
                 onPlus,

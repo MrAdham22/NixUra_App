@@ -835,9 +835,6 @@ open class Strings {
     /** Quick add of one serving when the goal is shown in litres: "+250 ml". */
     open val waterAddMl: (Int) -> String = { "+$it ml" }
     open val waterAddA11y: (Int) -> String = { "Add a cup of $it ml" }
-    open val waterUndo: String = "Undo"
-    open val waterUndoA11y: String = "Undo the last cup"
-    open val waterChangeGoal: String = "Change goal"
     open val calendarLess: String = "Less"
     open val calendarMore: String = "More"
     open val calendarLegendA11y: String = "Colour shows how much of each day was done, from less to more"

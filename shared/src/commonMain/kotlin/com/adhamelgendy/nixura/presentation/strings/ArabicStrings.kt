@@ -25,9 +25,6 @@ object ArabicStrings : Strings() {
     override val waterAddCup: String = "+1 كوب"
     override val waterAddMl: (Int) -> String = { "+$it مل" }
     override val waterAddA11y: (Int) -> String = { "أضف كوبًا بحجم $it مل" }
-    override val waterUndo: String = "تراجع"
-    override val waterUndoA11y: String = "تراجع عن آخر كوب"
-    override val waterChangeGoal: String = "تغيير الهدف"
     override val calendarLess: String = "أقل"
     override val calendarMore: String = "أكثر"
     override val calendarLegendA11y: String = "يدلّ اللون على مقدار ما أُنجز في كل يوم، من الأقل إلى الأكثر"

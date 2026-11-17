@@ -48,15 +48,10 @@ import com.adhamelgendy.nixura.presentation.theme.Nix
 import com.adhamelgendy.nixura.presentation.theme.NixType
 import com.adhamelgendy.nixura.presentation.util.formatDate
 import org.koin.compose.viewmodel.koinViewModel
-import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.text.style.TextDecoration
 import com.adhamelgendy.nixura.presentation.appearance.HabitThemes
-import com.adhamelgendy.nixura.presentation.components.pressable
 import com.adhamelgendy.nixura.presentation.goodhabits.water.WaterAddButton
 import com.adhamelgendy.nixura.presentation.goodhabits.water.WaterProgress
-import com.adhamelgendy.nixura.presentation.goodhabits.water.WaterProgressLine
 import com.adhamelgendy.nixura.presentation.goodhabits.water.dayProgress
-import com.adhamelgendy.nixura.presentation.goodhabits.water.rememberWaterUndo
 
 @Composable
 fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
@@ -97,7 +92,6 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
         val look = rememberGoodFill(habit.progressCount, habit.progressTarget, habit.fillStyle)
         val pulse = rememberCompletionPulse(habit.goalReached)
         val water = habit.water
-        val undo = rememberWaterUndo()
         val accent = HabitThemes.visualFor(habit.theme, c).accent
         NixCard(Modifier.graphicsLayer { scaleX = pulse.value; scaleY = pulse.value }, paint = look.paint) {
             Text((if (weekly) s.thisWeekLabel else s.todayLabel).uppercase(), style = NixType.Eyebrow, color = look.contentMuted)
@@ -107,10 +101,7 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
                     if (water != null) {
                         // "1.2 / 2 L" or "5 / 8 cups": the goal's own unit.
                         Text(WaterProgress.text(water, habit.todayCount, s), style = NixType.counter(32), color = look.content, maxLines = 1)
-                        WaterProgressLine(
-                            WaterProgress.leftText(water, habit.todayCount, s) ?: s.goalReached,
-                            undo, { vm.onChangeToday(habit.id, -1) }, look.contentMuted, look.content,
-                        )
+                        Text(WaterProgress.leftText(water, habit.todayCount, s) ?: s.goalReached, style = NixType.Small, color = look.contentMuted)
                     } else {
                         Text("${habit.progressCount} / ${habit.progressTarget}", style = NixType.counter(40), color = look.content)
                         val left = habit.progressTarget - habit.progressCount
@@ -125,7 +116,7 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
                 }
                 GoodHabitButton(habit.fillStyle, look, NixIcon.Minus, { vm.onChangeToday(habit.id, -1) }, size = 46.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), secondary = true)
                 Spacer(Modifier.width(10.dp))
-                if (water != null) WaterAddButton(water, look, { vm.onChangeToday(habit.id, +1); undo.added() }, height = 52.dp) else GoodHabitButton(
+                if (water != null) WaterAddButton(water, look, { vm.onChangeToday(habit.id, +1) }, height = 52.dp) else GoodHabitButton(
                     habit.fillStyle, look,
                     if (weekly && habit.doneToday) NixIcon.Tick else NixIcon.Plus, { vm.onChangeToday(habit.id, +1) }, size = 52.dp,
                     tint = if (habit.doneToday) look.background else c.onAccent,
@@ -136,16 +127,6 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
             if (habit.fillStyle == GoodHabitFillStyle.PRAYER && !weekly && habit.dailyTarget in 2..MAX_PRAYER_BEADS) {
                 Spacer(Modifier.height(14.dp))
                 PrayerBeads(habit.todayCount, habit.dailyTarget, look, if (habit.dailyTarget == PrayerHabitDetector.DAILY_PRAYERS) s.prayerNames else emptyList())
-            }
-            if (water != null) {
-                // The goal itself is edited on the habit's form.
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    s.waterChangeGoal,
-                    style = NixType.SmallStrong.copy(textDecoration = TextDecoration.Underline),
-                    color = look.content,
-                    modifier = Modifier.pressable { navigator.push(Route.GoodHabitForm(habitId)) }.padding(vertical = 6.dp),
-                )
             }
         }
 
