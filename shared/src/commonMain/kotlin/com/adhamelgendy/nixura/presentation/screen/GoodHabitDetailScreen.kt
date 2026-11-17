@@ -156,14 +156,15 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
                 Text("${(habit.completion7 * 100).toInt()}%", style = NixType.BodyStrong, color = c.textPrimary)
             }
             Spacer(Modifier.height(8.dp))
-            NixProgressBar(habit.completion7, color = c.positive)
+            // Same colour as a reached day on this habit's calendar.
+            NixProgressBar(habit.completion7, color = accent)
             Spacer(Modifier.height(14.dp))
             Row {
                 Text(if (weekly) s.last4Weeks else s.last30Days, style = NixType.BodyStrong, color = c.textSecondary, modifier = Modifier.weight(1f))
                 Text("${(habit.completion30 * 100).toInt()}%", style = NixType.BodyStrong, color = c.textPrimary)
             }
             Spacer(Modifier.height(8.dp))
-            NixProgressBar(habit.completion30, color = c.positive)
+            NixProgressBar(habit.completion30, color = accent)
         }
 
         // Calendar
