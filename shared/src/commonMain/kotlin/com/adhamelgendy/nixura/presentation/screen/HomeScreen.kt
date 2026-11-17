@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.goodhabits.water.WaterAddButton
 import com.adhamelgendy.nixura.domain.widget.WidgetKind
 import com.adhamelgendy.nixura.presentation.components.rememberAddToHomeAction
 import com.adhamelgendy.nixura.presentation.deletion.SheetAction
@@ -346,6 +347,7 @@ private fun TodayRow(habit: GoodHabitUi, onOpen: () -> Unit, onPlus: () -> Unit,
     val s = LocalStrings.current
     val look = rememberGoodFill(habit.progressCount, habit.progressTarget, habit.fillStyle)
     val pulse = rememberCompletionPulse(habit.goalReached)
+    val water = habit.water
     NixCard(
         Modifier.fillMaxWidth().graphicsLayer { scaleX = pulse.value; scaleY = pulse.value },
         onClick = onOpen,
@@ -361,7 +363,8 @@ private fun TodayRow(habit: GoodHabitUi, onOpen: () -> Unit, onPlus: () -> Unit,
                 Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted, maxLines = 1)
             }
             Spacer(Modifier.width(10.dp))
-            GoodHabitButton(
+            // Water: "+1 cup" / "+250 ml" (one serving).
+            if (water != null) WaterAddButton(water, look, onPlus, height = 40.dp) else GoodHabitButton(
                 habit.fillStyle, look,
                 if (habit.doneToday) NixIcon.Tick else NixIcon.Plus,
                 onPlus,

@@ -2,6 +2,7 @@ package com.adhamelgendy.nixura.presentation.appearance
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import com.adhamelgendy.nixura.domain.theme.HabitTheme
 import com.adhamelgendy.nixura.presentation.theme.NixColors
 import com.adhamelgendy.nixura.presentation.theme.NixUraPalette
 
@@ -61,7 +62,8 @@ fun goodFillColors(fill: Float, water: Boolean, c: NixColors): GoodFillColors {
     // On water the blush text loses contrast against blue, so light text there is near-white.
     val content = if (onDark) WaterInk else NixUraPalette.onLightPrimary
     val muted = content.copy(alpha = if (onDark) 0.78f else 0.66f)
-    val done = if (f >= 0.6f) content else c.water
+    // Same blue as the calendar's water days (deeper on the light theme, so a day square reads on white).
+    val done = if (f >= 0.6f) content else HabitThemes.accentFor(HabitTheme.WATER, c)
     return GoodFillColors(background, content, muted, done, c.water, c.waterDeep)
 }
 

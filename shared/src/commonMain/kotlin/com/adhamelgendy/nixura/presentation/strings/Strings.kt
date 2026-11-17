@@ -840,6 +840,20 @@ open class Strings {
     // ---- end of Session 2 ----
 
     // ---- Session 3 (details, calendar, cards: theme colours, water progress). Only Session 3 adds lines here. ----
+    /** Water progress: "1.2 / 2 L". Amounts arrive already formatted. */
+    open val waterProgressLiters: (String, String) -> String = { drunk, goal -> "$drunk / $goal L" }
+    /** Water progress: "5 / 8 cups". The Int is the goal rounded, to pick the plural. */
+    open val waterProgressCups: (String, String, Int) -> String = { drunk, goal, n -> "$drunk / $goal ${if (n == 1) "cup" else "cups"}" }
+    open val waterLeftLiters: (String) -> String = { "$it L to go" }
+    open val waterLeftCups: (String, Int) -> String = { amount, n -> "$amount ${if (n == 1) "cup" else "cups"} to go" }
+    /** Quick add of one serving when the goal is shown in cups. */
+    open val waterAddCup: String = "+1 cup"
+    /** Quick add of one serving when the goal is shown in litres: "+250 ml". */
+    open val waterAddMl: (Int) -> String = { "+$it ml" }
+    open val waterAddA11y: (Int) -> String = { "Add a cup of $it ml" }
+    open val calendarLess: String = "Less"
+    open val calendarMore: String = "More"
+    open val calendarLegendA11y: String = "Colour shows how much of each day was done, from less to more"
 
     // ---- end of Session 3 ----
 }
