@@ -54,13 +54,23 @@ class ThemeAnimMathTest {
         assertEquals(ThemeAnimMath.page(5, 9f), ThemeAnimMath.page(5, 9f))
     }
 
-    @Test fun footprintTrailAlternatesFeetAndWalksUpThePage() {
+    @Test fun footprintTrailAlternatesFeetAndWalksDownThePage() {
         val trail = ThemeAnimMath.footprintTrail(width = 1080f, height = 2400f, top = 0f, stride = 90f, gait = 20f)
         assertTrue(trail.size > 20)
         trail.forEachIndexed { i, print -> assertEquals(i % 2 == 0, print.left) }
-        assertTrue(trail.first().y > 2000f) // starts at the bottom
-        assertTrue(trail.last().y < 200f) // leaves at the top
-        assertTrue(trail.first().x < trail.last().x) // from the start side to the end side
+        assertTrue(trail.first().y < 200f) // starts at the top
+        assertTrue(trail.last().y > 2000f) // leaves at the bottom
+        assertTrue(trail.first().x > trail.last().x) // from the end side to the start side
+    }
+
+    @Test fun secondLaneIsTheMirrorImageAndCrossesTheFirst() {
+        val first = ThemeAnimMath.footprintTrail(1080f, 2400f, 0f, 90f, 20f)
+        val second = ThemeAnimMath.footprintTrail(1080f, 2400f, 0f, 90f, 20f, mirrored = true)
+        assertTrue(second.first().y < 200f && second.last().y > 2000f)
+        assertTrue(second.first().x < second.last().x) // from the start side to the end side
+        assertTrue(abs(first.size - second.size) <= 1)
+        // Mirrored: the same prints reflected, so a left print stays on the walker's left.
+        assertEquals(first[5].left, second[5].left)
     }
 
     @Test fun footprintStepsAreEvenAndFeetSitEitherSideOfThePath() {
@@ -73,10 +83,18 @@ class ThemeAnimMathTest {
             // Consecutive prints: one stride along the path, plus at most the step across between the feet.
             assertTrue(d > 90f - 15f && d < 90f + 2 * gait + 5f, "step $i is $d px")
         }
-        // Walking straight up (heading 0 degrees), the left foot is left of the right foot.
-        val upward = trail.zipWithNext().first { (a, b) -> abs(a.angle) < 25f && abs(b.angle) < 25f }
-        val (l, r) = if (upward.first.left) upward else upward.second to upward.first
-        assertTrue(l.x < r.x)
+        // Walking straight down (toes at about 180 degrees), the walker's left foot is on the screen's right.
+        val downward = trail.zipWithNext().first { (a, b) -> abs(abs(a.angle) - 180f) < 25f && abs(abs(b.angle) - 180f) < 25f }
+        val (l, r) = if (downward.first.left) downward else downward.second to downward.first
+        assertTrue(l.x > r.x)
+    }
+
+    @Test fun feetTurnOutwards() {
+        val straight = ThemeAnimMath.footprintTrail(1080f, 2400f, 0f, 90f, 20f, splay = 0f)
+        val splayed = ThemeAnimMath.footprintTrail(1080f, 2400f, 0f, 90f, 20f)
+        val turn = ThemeAnimMath.FOOT_SPLAY_DEG
+        assertTrue(abs(splayed[0].angle - (straight[0].angle - turn)) < 0.01f) // left foot: anticlockwise
+        assertTrue(abs(splayed[1].angle - (straight[1].angle + turn)) < 0.01f) // right foot: clockwise
     }
 
     @Test fun printsPressInHoldThenFade() {

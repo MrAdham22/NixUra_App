@@ -74,35 +74,49 @@ internal object ThemeAnimMath {
         return Droplet(dx, dy, (1f - p).coerceIn(0f, 1f))
     }
 
-    /** One print of a walk, in pixels: its centre, whether it is a left foot, and its heading in degrees (0 = up). */
+    /**
+     * One print of a walk, in pixels: its centre, whether it is a left foot, and the way its toes point in degrees
+     * (0 = up, 180 = down): the walking direction plus a slight outward turn of each foot.
+     */
     data class Footprint(val x: Float, val y: Float, val left: Boolean, val angle: Float)
 
-    /** A point on the walk's S curve, 0..1 of the page: from the bottom start corner up to the top end corner. */
-    fun walkPoint(s: Float): Pair<Float, Float> {
+    /**
+     * A point on the walk's S curve, 0..1 of the page: from the top end corner beside the title, down behind the form,
+     * then across the open bottom of the page to the bottom start corner. [mirrored] walks the same curve reflected
+     * left to right, for a second lane that crosses the first.
+     */
+    fun walkPoint(s: Float, mirrored: Boolean = false): Pair<Float, Float> {
         val t = s.coerceIn(0f, 1f)
         val u = 1f - t
         val a = u * u * u
         val b = 3f * u * u * t
         val c = 3f * u * t * t
         val d = t * t * t
-        // Bottom start, swing along the open bottom of the page, cross behind the form, leave through the top end
-        // corner beside the title, where the page is empty.
-        val x = a * 0.10f + b * 0.85f + c * 0.30f + d * 0.85f
-        val y = a * 1.04f + b * 0.95f + c * 0.20f + d * -0.04f
-        return x to y
+        val x = a * 0.85f + b * 0.30f + c * 0.85f + d * 0.10f
+        val y = a * -0.04f + b * 0.20f + c * 0.95f + d * 1.04f
+        return (if (mirrored) 1f - x else x) to y
     }
 
     /**
      * The prints of one walk along [walkPoint] on a page of [width] × [height] px starting at [top]: one every
-     * [stride] px along the path, left and right feet [gait] px either side of it, each turned to the heading.
-     * Left-to-right layout; the caller mirrors it for RTL.
+     * [stride] px along the path, left and right feet [gait] px either side of it, toes along the walking direction
+     * and turned out by [splay] degrees. Left-to-right layout; the caller mirrors it for RTL.
      */
-    fun footprintTrail(width: Float, height: Float, top: Float, stride: Float, gait: Float, samples: Int = 240): List<Footprint> {
+    fun footprintTrail(
+        width: Float,
+        height: Float,
+        top: Float,
+        stride: Float,
+        gait: Float,
+        mirrored: Boolean = false,
+        splay: Float = FOOT_SPLAY_DEG,
+        samples: Int = 240,
+    ): List<Footprint> {
         if (width <= 0f || height <= 0f || stride <= 0f) return emptyList()
         val xs = FloatArray(samples + 1)
         val ys = FloatArray(samples + 1)
         for (i in 0..samples) {
-            val (px, py) = walkPoint(i.toFloat() / samples)
+            val (px, py) = walkPoint(i.toFloat() / samples, mirrored)
             xs[i] = px * width
             ys[i] = top + py * height
         }
@@ -119,15 +133,15 @@ internal object ThemeAnimMath {
                 val f = (next - travelled) / len
                 val cx = xs[i - 1] + dx * f
                 val cy = ys[i - 1] + dy * f
-                // Unit heading and its left-hand normal (screen y grows downwards).
+                // Unit heading; the walker's left-hand side is (hy, -hx) on screen (y grows downwards).
                 val hx = dx / len
                 val hy = dy / len
                 val left = step % 2 == 0
-                val side = if (left) -1f else 1f
-                val nx = -hy * side
-                val ny = hx * side
-                val angle = (kotlin.math.atan2(hx, -hy) * 180f / PI.toFloat())
-                prints += Footprint(cx + nx * gait, cy + ny * gait, left, angle)
+                val side = if (left) 1f else -1f
+                val heading = kotlin.math.atan2(hx, -hy) * 180f / PI.toFloat()
+                // Feet turn slightly outwards: the left foot anticlockwise, the right foot clockwise.
+                val angle = heading + if (left) -splay else splay
+                prints += Footprint(cx + hy * side * gait, cy - hx * side * gait, left, angle)
                 step++
                 next += stride
             }
@@ -135,6 +149,8 @@ internal object ThemeAnimMath {
         }
         return prints
     }
+
+    const val FOOT_SPLAY_DEG = 9f
 
     /**
      * How visible a print is [age] seconds after it was stepped: a quick press in, a short hold, then a slow fade.
@@ -148,8 +164,8 @@ internal object ThemeAnimMath {
     }
 
     const val PRINT_IN_S = 0.18f
-    const val PRINT_HOLD_S = 1.6f
-    const val PRINT_FADE_S = 2.2f
+    const val PRINT_HOLD_S = 2.6f
+    const val PRINT_FADE_S = 2.6f
 
     /** An energy particle rising from the bottom: 0..1 position and its life (1 = just born, 0 = gone). */
     data class Spark(val x: Float, val y: Float, val life: Float)
