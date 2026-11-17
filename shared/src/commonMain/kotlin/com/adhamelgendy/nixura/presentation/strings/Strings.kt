@@ -582,6 +582,8 @@ open class Strings {
     // Dashboard
     open val guestBannerTitle: String = "You're using NixUra as a guest"
     open val guestBannerBody: String = "Your data is only on this phone. Sign in to back it up."
+    /** Read by screen readers while Home shows its loading placeholders. */
+    open val homeLoading: String = "Loading your habits"
     open val homeStartTitle: String = "Start with one thing"
     open val homeStartQuit: String = "Something to quit"
     open val homeStartBuild: String = "A habit to build"

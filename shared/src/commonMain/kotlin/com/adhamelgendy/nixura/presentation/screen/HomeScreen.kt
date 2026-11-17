@@ -12,9 +12,11 @@ import com.adhamelgendy.nixura.presentation.components.PrayerBeads
 import com.adhamelgendy.nixura.presentation.components.MAX_PRAYER_BEADS
 import com.adhamelgendy.nixura.domain.usecase.DeletableItem
 import com.adhamelgendy.nixura.presentation.deletion.rememberDeleteFlow
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -70,6 +72,7 @@ import com.adhamelgendy.nixura.presentation.goodhabits.GoodHabitUi
 import com.adhamelgendy.nixura.presentation.goodhabits.GoodHabitsViewModel
 import com.adhamelgendy.nixura.presentation.guide.GuideTarget
 import com.adhamelgendy.nixura.presentation.guide.guideTarget
+import com.adhamelgendy.nixura.presentation.platform.rememberReducedMotion
 import com.adhamelgendy.nixura.presentation.habits.HabitsViewModel
 import com.adhamelgendy.nixura.presentation.navigation.Navigator
 import com.adhamelgendy.nixura.presentation.navigation.Route
@@ -101,6 +104,7 @@ fun HomeScreen(navigator: Navigator) {
     val session by koinInject<SessionManager>().state.collectAsStateWithLifecycle()
     val now by rememberNowMillis()
     val days = koinInject<DayCalculator>()
+    val reducedMotion = rememberReducedMotion()
     val s = LocalStrings.current
     val c = Nix.colors
     var scoreSheet by remember { mutableStateOf<ScoreKind?>(null) }
@@ -135,53 +139,64 @@ fun HomeScreen(navigator: Navigator) {
 
         if (voiceVm.supported) com.adhamelgendy.nixura.presentation.voice.VoiceCard(onClick = voiceVm::open)
 
-        if (nothingYet) {
-            StartCard(navigator)
-        } else {
-            ProgressCard(stats, onOpen = { scoreSheet = it })
-        }
+        // Loading, empty or ready, from the ViewModels' own state. A skeleton only after 300 ms, then a crossfade.
+        val phase = homePhase(habits.isLoading, good.isLoading, events.isLoading, hasAnything = !nothingYet)
+        val showSkeleton = rememberShowSkeleton(phase == HomePhase.Loading)
+        val shown: HomePhase? = if (phase != HomePhase.Loading) phase else HomePhase.Loading.takeIf { showSkeleton }
+        Crossfade(shown, animationSpec = tween(if (reducedMotion) 0 else 260), label = "homeContent") { current ->
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                when (current) {
+                    null -> Unit
+                    HomePhase.Loading -> HomeSkeleton()
+                    HomePhase.Empty -> StartCard(navigator)
+                    HomePhase.Ready -> {
+                        ProgressCard(stats, onOpen = { scoreSheet = it })
 
-        if (good.habits.isNotEmpty()) {
-            SectionLabel(s.homeToday) {
-                Text(s.seeAll, style = NixType.SmallStrong, color = c.accent, modifier = Modifier.pressable { navigator.selectTab(Route.GoodHabits) })
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                good.habits.take(MAX_TODAY_ROWS).forEach { habit ->
-                    TodayRow(
-                        habit,
-                        onOpen = { navigator.push(Route.GoodHabitDetail(habit.id)) },
-                        onLongClick = { deleteFlow.open(DeletableItem.GoodHabit(habit.id), habit.name, goodHabitSheetActions(habit.id)) },
-                        onPlus = { goodVm.onChangeToday(habit.id, +1) },
-                    )
+                        if (good.habits.isNotEmpty()) {
+                            SectionLabel(s.homeToday) {
+                                Text(s.seeAll, style = NixType.SmallStrong, color = c.accent, modifier = Modifier.pressable { navigator.selectTab(Route.GoodHabits) })
+                            }
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                good.habits.take(MAX_TODAY_ROWS).forEach { habit ->
+                                    TodayRow(
+                                        habit,
+                                        onOpen = { navigator.push(Route.GoodHabitDetail(habit.id)) },
+                                        onLongClick = { deleteFlow.open(DeletableItem.GoodHabit(habit.id), habit.name, goodHabitSheetActions(habit.id)) },
+                                        onPlus = { goodVm.onChangeToday(habit.id, +1) },
+                                    )
+                                }
+                            }
+                        }
+
+                        if (habits.habits.isNotEmpty()) {
+                            SectionLabel(s.quittingSection) {
+                                Text(s.seeAll, style = NixType.SmallStrong, color = c.accent, modifier = Modifier.pressable { navigator.selectTab(Route.BadHabits) })
+                            }
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                habits.habits.take(MAX_QUIT_ROWS).forEach {
+                                    QuitHabitRow(
+                                        it,
+                                        onClick = { navigator.push(Route.BadHabitDetail(it.habitId)) },
+                                        onLongClick = { quitActions.openOptions(it) },
+                                        onCraving = { quitActions.craving(it) },
+                                    )
+                                }
+                            }
+                        }
+
+                        if (nextEvent != null) {
+                            SectionLabel(s.nextEventSection) {
+                                Text(s.seeAll, style = NixType.SmallStrong, color = c.accent, modifier = Modifier.pressable { navigator.selectTab(Route.Events) })
+                            }
+                            EventCard(
+                                nextEvent, now, formatDateTime(nextEvent.targetAtEpochMillis, days, s),
+                                onClick = { navigator.push(Route.EventForm(nextEvent.id)) },
+                                onLongClick = { deleteFlow.open(DeletableItem.Event(nextEvent.id), nextEvent.title, listOf(SheetAction(s.editEvent, NixIcon.Pencil) { navigator.push(Route.EventForm(nextEvent.id)) }) + listOfNotNull(addToHome?.let { pin -> SheetAction(s.widgetAddToHome, NixIcon.Home) { pin(WidgetKind.EVENT, nextEvent.id) } })) },
+                            )
+                        }
+                    }
                 }
             }
-        }
-
-        if (habits.habits.isNotEmpty()) {
-            SectionLabel(s.quittingSection) {
-                Text(s.seeAll, style = NixType.SmallStrong, color = c.accent, modifier = Modifier.pressable { navigator.selectTab(Route.BadHabits) })
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                habits.habits.take(MAX_QUIT_ROWS).forEach {
-                    QuitHabitRow(
-                        it,
-                        onClick = { navigator.push(Route.BadHabitDetail(it.habitId)) },
-                        onLongClick = { quitActions.openOptions(it) },
-                        onCraving = { quitActions.craving(it) },
-                    )
-                }
-            }
-        }
-
-        if (nextEvent != null) {
-            SectionLabel(s.nextEventSection) {
-                Text(s.seeAll, style = NixType.SmallStrong, color = c.accent, modifier = Modifier.pressable { navigator.selectTab(Route.Events) })
-            }
-            EventCard(
-                nextEvent, now, formatDateTime(nextEvent.targetAtEpochMillis, days, s),
-                onClick = { navigator.push(Route.EventForm(nextEvent.id)) },
-                onLongClick = { deleteFlow.open(DeletableItem.Event(nextEvent.id), nextEvent.title, listOf(SheetAction(s.editEvent, NixIcon.Pencil) { navigator.push(Route.EventForm(nextEvent.id)) }) + listOfNotNull(addToHome?.let { pin -> SheetAction(s.widgetAddToHome, NixIcon.Home) { pin(WidgetKind.EVENT, nextEvent.id) } })) },
-            )
         }
 
         coach.insight?.let { insight ->

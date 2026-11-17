@@ -10,4 +10,6 @@ object ArabicStrings : Strings() {
     override val guideStartHereTitle: String = "ابدأ من هنا"
     override val guideStartHereBody: String = "اختر شيئًا واحدًا تبدأ به: عادة تتركها، أو عادة تبنيها، أو مناسبة تعدّ الأيام حتى موعدها. ستظهر هنا حلقات تقدّمك بعد أن تضيفه."
 
+    // Home
+    override val homeLoading: String = "جارٍ تحميل عاداتك"
 }
