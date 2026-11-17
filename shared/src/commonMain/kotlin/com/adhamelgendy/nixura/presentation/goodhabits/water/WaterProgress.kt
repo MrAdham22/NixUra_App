@@ -9,10 +9,16 @@ import kotlin.math.roundToInt
 /** Text of a water habit's progress, in the unit its goal is shown in. Pure, so it is unit-tested. */
 object WaterProgress {
 
-    /** "2", "1.2", "6.7": at most one decimal, none when it is whole. */
+    /** "2", "1.2", "1.25", "2.25": at most two decimals, trailing zeros dropped (never "1.30"). */
     fun formatAmount(value: Double): String {
-        val tenths = (value * 10).roundToInt().coerceAtLeast(0)
-        return if (tenths % 10 == 0) "${tenths / 10}" else "${tenths / 10}.${tenths % 10}"
+        val hundredths = (value * 100).roundToInt().coerceAtLeast(0)
+        val whole = hundredths / 100
+        val fraction = hundredths % 100
+        return when {
+            fraction == 0 -> "$whole"
+            fraction % 10 == 0 -> "$whole.${fraction / 10}"
+            else -> "$whole.${fraction.toString().padStart(2, '0')}"
+        }
     }
 
     /** "1.2 / 2 L" or "5 / 8 cups" for a day with [count] servings. */
