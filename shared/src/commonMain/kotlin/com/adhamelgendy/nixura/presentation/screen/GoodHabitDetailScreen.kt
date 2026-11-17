@@ -48,6 +48,8 @@ import com.adhamelgendy.nixura.presentation.theme.Nix
 import com.adhamelgendy.nixura.presentation.theme.NixType
 import com.adhamelgendy.nixura.presentation.util.formatDate
 import org.koin.compose.viewmodel.koinViewModel
+import com.adhamelgendy.nixura.presentation.appearance.HabitThemes
+import com.adhamelgendy.nixura.presentation.goodhabits.water.dayProgress
 
 @Composable
 fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
@@ -87,6 +89,7 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
         val weekly = habit.isWeekly
         val look = rememberGoodFill(habit.progressCount, habit.progressTarget, habit.fillStyle)
         val pulse = rememberCompletionPulse(habit.goalReached)
+        val accent = HabitThemes.visualFor(habit.theme, c).accent
         NixCard(Modifier.graphicsLayer { scaleX = pulse.value; scaleY = pulse.value }, paint = look.paint) {
             Text((if (weekly) s.thisWeekLabel else s.todayLabel).uppercase(), style = NixType.Eyebrow, color = look.contentMuted)
             Spacer(Modifier.height(8.dp))
@@ -163,7 +166,8 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
                     year = shownYear,
                     month = shownMonth,
                     countsByDay = habit.countsByDay,
-                    target = if (weekly) 1 else habit.dailyTarget,
+                    progressOf = habit::dayProgress,
+                    accent = accent,
                     todayIndex = state.todayIndex,
                     createdDayIndex = habit.createdDayIndex,
                     selectedDay = selectedDay,

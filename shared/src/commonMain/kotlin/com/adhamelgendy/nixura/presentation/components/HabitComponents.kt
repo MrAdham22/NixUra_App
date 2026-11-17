@@ -1,6 +1,12 @@
 package com.adhamelgendy.nixura.presentation.components
 
 import kotlin.time.Duration.Companion.days
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import com.adhamelgendy.nixura.presentation.appearance.DayIntensity
+import com.adhamelgendy.nixura.presentation.appearance.HabitThemes
+import com.adhamelgendy.nixura.presentation.goodhabits.water.dayProgress
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.animateFloat
@@ -445,13 +451,15 @@ fun habitCardEdge(gradient: CardGradient): Color = when {
 /** The current streak is the best this habit has had (the longest streak includes the one running now). */
 fun HabitCardUiModel.isLongestYet(): Boolean = activeElapsed > Duration.ZERO && activeElapsed >= longestStreak
 
-// ---------- Good habits: day squares, week strip, month calendar ----------
+/// ---------- Good habits: day squares, week strip, month calendar ----------
 
-/** One day. The more of the target was reached, the more colored the square is, up to solid when done. */
+/**
+ * One day, coloured by how much of it was done in a few steps ([DayIntensity]): the idle square at level 0, the
+ * habit's theme colour ([doneColor]) at full.
+ */
 @Composable
 fun DaySquare(
-    count: Int,
-    target: Int,
+    level: Int,
     modifier: Modifier = Modifier,
     label: String? = null,
     isToday: Boolean = false,
@@ -464,9 +472,8 @@ fun DaySquare(
 ) {
     val c = Nix.colors
     val shape = RoundedCornerShape(9.dp)
-    val status = GoodHabitStatsCalculator.statusOf(count, target)
-    val ratio = (count.toFloat() / target.coerceAtLeast(1)).coerceIn(0f, 1f)
-    val bg by animateColorAsState(if (enabled) lerp(idleColor, doneColor, ratio) else Color.Transparent, tween(350), label = "daySquare")
+    val shade = DayIntensity.shade(level, doneColor, idleColor)
+    val bg by animateColorAsState(if (enabled) shade else Color.Transparent, tween(350), label = "daySquare")
     val borderColor = when {
         selected -> c.accent
         isToday -> todayBorder
@@ -475,8 +482,9 @@ fun DaySquare(
     }
     val textColor = when {
         !enabled -> c.textMuted.copy(alpha = 0.5f)
-        status == DayStatus.DONE || ratio >= 0.6f -> Color(0xFF0E2A1D)
-        else -> c.textMuted
+        level == 0 -> c.textMuted
+        // Ink picked against the square's opaque tone (on the card behind it).
+        else -> DayIntensity.inkOn(shade.compositeOver(c.surface))
     }
     Box(
         modifier = modifier
@@ -493,12 +501,12 @@ fun DaySquare(
 
 /**
  * Last 7 days, oldest first, ending today. With [weekStartIndex] it shows that week instead (Sunday to Saturday, for a
- * weekly habit), with the days still to come dimmed.
+ * weekly habit), with the days still to come dimmed. [progressOf] turns a day's count into 0..1, as on the calendar.
  */
 @Composable
 fun WeekStrip(
     countsByDay: Map<Long, Int>,
-    target: Int,
+    progressOf: (Int) -> Float,
     todayIndex: Long,
     createdDayIndex: Long,
     modifier: Modifier = Modifier,
@@ -516,8 +524,7 @@ fun WeekStrip(
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Text(s.weekdayLetters[CivilCalendar.isoWeekday(day) - 1], style = NixType.Small, color = labelColor)
                 DaySquare(
-                    count = countsByDay[day] ?: 0,
-                    target = target,
+                    level = DayIntensity.level(progressOf(countsByDay[day] ?: 0)),
                     modifier = Modifier.fillMaxWidth(),
                     isToday = day == todayIndex,
                     enabled = if (weekStartIndex != null) day <= todayIndex else day >= createdDayIndex - 6,
@@ -530,12 +537,17 @@ fun WeekStrip(
     }
 }
 
+/**
+ * A month of days coloured by the habit's theme ([accent]) at the intensity of each day ([progressOf] of its count).
+ * The week starts on Sunday, or Saturday in Arabic ([weekStart]); in a right-to-left layout the grid runs right to left.
+ */
 @Composable
 fun MonthCalendar(
     year: Int,
     month: Int,
     countsByDay: Map<Long, Int>,
-    target: Int,
+    progressOf: (Int) -> Float,
+    accent: Color,
     todayIndex: Long,
     createdDayIndex: Long,
     selectedDay: Long?,
@@ -544,23 +556,28 @@ fun MonthCalendar(
     onNextMonth: () -> Unit,
     canGoNext: Boolean,
     modifier: Modifier = Modifier,
+    weekStart: WeekStart = rememberWeekStart(),
 ) {
     val s = LocalStrings.current
     val c = Nix.colors
     val firstDay = CivilCalendar.dayIndexFromCivil(year, month, 1)
-    val lead = CivilCalendar.sundayFirstColumn(firstDay)
+    val lead = weekStart.columnOf(firstDay)
     val length = CivilCalendar.monthLength(year, month)
     val rows = (lead + length + 6) / 7
+    // The arrows are drawn pointing left / right; in RTL "previous" points right, so both are mirrored.
+    val mirror = if (LocalLayoutDirection.current == LayoutDirection.Rtl) Modifier.graphicsLayer { scaleX = -1f } else Modifier
 
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("${s.monthNames[month - 1]} $year", style = NixType.Heading, color = c.textPrimary, modifier = Modifier.weight(1f))
-            NixIconButton(NixIcon.Back, onPrevMonth, size = 36.dp)
+            Box(mirror) { NixIconButton(NixIcon.Back, onPrevMonth, size = 36.dp) }
             Spacer(Modifier.width(8.dp))
-            NixIconButton(NixIcon.Chevron, { if (canGoNext) onNextMonth() }, size = 36.dp, tint = if (canGoNext) c.textPrimary else c.textMuted.copy(alpha = 0.4f))
+            Box(mirror) {
+                NixIconButton(NixIcon.Chevron, { if (canGoNext) onNextMonth() }, size = 36.dp, tint = if (canGoNext) c.textPrimary else c.textMuted.copy(alpha = 0.4f))
+            }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            s.weekdayLettersSundayFirst().forEach {
+            weekStart.reorder(s.weekdayLetters).forEach {
                 Text(it, style = NixType.Small, color = c.textMuted, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
             }
         }
@@ -574,33 +591,45 @@ fun MonthCalendar(
                         val day = firstDay + dayOfMonth - 1
                         val selectable = day <= todayIndex
                         DaySquare(
-                            count = countsByDay[day] ?: 0,
-                            target = target,
+                            level = DayIntensity.level(progressOf(countsByDay[day] ?: 0)),
                             modifier = Modifier.weight(1f),
                             label = dayOfMonth.toString(),
                             isToday = day == todayIndex,
                             selected = day == selectedDay,
                             enabled = selectable,
+                            doneColor = accent,
                             onClick = { onSelectDay(day) },
                         )
                     }
                 }
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            LegendDot(c.positive, s.legendDone)
-            LegendDot(c.positiveSoft, s.legendPartial)
-            LegendDot(c.surfaceRaised, s.legendMissed)
-        }
+        IntensityLegend(accent)
     }
 }
 
+/** "Less ▢▢▢▢▢▢ More": the calendar's steps, from nothing to a full day. */
 @Composable
-private fun LegendDot(color: Color, label: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(color).border(1.dp, Nix.colors.border, RoundedCornerShape(3.dp)))
-        Spacer(Modifier.width(6.dp))
-        Text(label, style = NixType.Small, color = Nix.colors.textMuted)
+fun IntensityLegend(accent: Color, modifier: Modifier = Modifier) {
+    val s = LocalStrings.current
+    val c = Nix.colors
+    Row(
+        modifier.padding(top = 2.dp).clearAndSetSemantics { contentDescription = s.calendarLegendA11y },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(s.calendarLess, style = NixType.Small, color = c.textMuted)
+        Spacer(Modifier.width(2.dp))
+        DayIntensity.legendLevels.forEach { level ->
+            val shape = RoundedCornerShape(3.dp)
+            Box(
+                Modifier.size(12.dp).clip(shape)
+                    .background(DayIntensity.shade(level, accent, c.surfaceRaised))
+                    .border(1.dp, c.border.copy(alpha = if (level == 0) 1f else 0.4f), shape),
+            )
+        }
+        Spacer(Modifier.width(2.dp))
+        Text(s.calendarMore, style = NixType.Small, color = c.textMuted)
     }
 }
 
@@ -637,7 +666,6 @@ fun GoodHabitCard(
                 Text(habit.name.forDisplay(), style = NixType.Heading, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted)
             }
-            val prayer = habit.fillStyle == GoodHabitFillStyle.PRAYER
             GoodHabitButton(habit.fillStyle, look, NixIcon.Minus, onMinus, size = 38.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), secondary = true)
             Spacer(Modifier.width(8.dp))
             GoodHabitButton(
@@ -656,7 +684,7 @@ fun GoodHabitCard(
         }
         Spacer(Modifier.height(14.dp))
         WeekStrip(
-            habit.countsByDay, if (habit.isWeekly) 1 else habit.dailyTarget, todayIndex, habit.createdDayIndex,
+            habit.countsByDay, habit::dayProgress, todayIndex, habit.createdDayIndex,
             labelColor = look.contentMuted,
             doneColor = look.doneSquare,
             idleColor = look.content.copy(alpha = 0.10f),
@@ -694,7 +722,7 @@ fun GoodHabitCard(
 /** Most stars a prayer card shows one by one; above this it relies on the counter alone. */
 const val MAX_PRAYER_BEADS = 8
 
-/** "3 / 8 today" for a daily habit, "2 / 3 days this week" for a weekly one. */
+/** "3 / 8 today" for a daily habit, "2 / 3 days this week" for a weekly one */
 fun goodProgressText(habit: GoodHabitUi, s: Strings): String =
     if (habit.isWeekly) s.weekProgress(habit.progressCount, habit.progressTarget) else s.todayProgress(habit.todayCount, habit.dailyTarget)
 

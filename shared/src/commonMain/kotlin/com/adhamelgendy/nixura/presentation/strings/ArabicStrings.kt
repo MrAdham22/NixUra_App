@@ -18,6 +18,8 @@ object ArabicStrings : Strings() {
     // ---- end of Session 2 ----
 
     // ---- Session 3 (details, calendar, cards). Only Session 3 adds lines here. ----
-
+    override val calendarLess: String = "أقل"
+    override val calendarMore: String = "أكثر"
+    override val calendarLegendA11y: String = "يدلّ اللون على مقدار ما أُنجز في كل يوم، من الأقل إلى الأكثر"
     // ---- end of Session 3 ----
 }

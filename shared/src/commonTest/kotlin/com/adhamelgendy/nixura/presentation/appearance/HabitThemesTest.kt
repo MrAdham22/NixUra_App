@@ -12,7 +12,8 @@ class HabitThemesTest {
     @Test
     fun waterIsBluePrayerIsGoldTheRestKeepTheGreen() {
         listOf(DarkNixColors, LightNixColors).forEach { c ->
-            assertEquals(c.water, HabitThemes.visualFor(HabitTheme.WATER, c).accent)
+            // Dark theme: the water colour itself; light theme: the deeper blue, so done days read on white.
+            assertEquals(if (c.isDark) c.water else c.waterDeep, HabitThemes.visualFor(HabitTheme.WATER, c).accent)
             assertNotEquals(c.positive, HabitThemes.visualFor(HabitTheme.PRAYER, c).accent)
             listOf(HabitTheme.WALK, HabitTheme.WORKOUT, HabitTheme.READING, HabitTheme.SLEEP, HabitTheme.DEFAULT)
                 .forEach { assertEquals(c.positive, HabitThemes.visualFor(it, c).accent, it.name) }

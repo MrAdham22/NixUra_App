@@ -824,7 +824,9 @@ open class Strings {
     // ---- end of Session 2 ----
 
     // ---- Session 3 (details, calendar, cards: theme colours, water progress). Only Session 3 adds lines here. ----
-
+    open val calendarLess: String = "Less"
+    open val calendarMore: String = "More"
+    open val calendarLegendA11y: String = "Colour shows how much of each day was done, from less to more"
     // ---- end of Session 3 ----
 }
 
