@@ -4,66 +4,100 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
-import kotlin.math.floor
 
 /**
- * Walking: footprints appear one by one across the page, from the bottom start corner to the top end corner, and fade
- * behind. Mirrored in RTL so the walk follows the reading direction. Still frame: a few prints of one walk.
+ * Walking: a trail of footprints walks up the page, left and right feet in turn, each print pressed in and then
+ * fading behind. The path starts in the open bottom of the page, passes behind the form and leaves through the empty
+ * top end corner beside the title. Mirrored in RTL. With "remove animations": the whole trail, still and soft.
  */
 internal object FootprintsScene : ThemeScene {
 
-    private const val STEPS_PER_WALK = 14
-    private const val STEP_S = 0.55f
-    private const val VISIBLE = 7
+    /** Seconds between two steps: an easy walking pace. */
+    private const val STEP_S = 0.42f
+
+    /** Pause after a walk before the next one starts. */
+    private const val REST_S = 0.8f
 
     @Composable
     override fun Content(params: ThemeSceneParams) {
         val presence = rememberPresence(params)
-        val time = rememberSceneTime(params.running, stillAt = STEP_S * 8)
+        val time = rememberSceneTime(params.running)
         val color = params.accent
+        val peak = if (params.colors.isDark) 0.55f else 0.65f
+        val still = params.reducedMotion
         val rtl = params.rtl
+        val bleed = params.bleed
         Spacer(
-            Modifier.fillMaxSize().drawBehind {
-                val p = presence.value
-                if (p <= 0f) return@drawBehind
-                val now = time.value / STEP_S
-                val newest = floor(now).toInt()
-                for (k in 0 until VISIBLE) {
-                    val step = newest - k
-                    if (step < 0) break
-                    val age = (now - step) / VISIBLE
-                    val alpha = (1f - age).coerceIn(0f, 1f) * 0.30f * p
-                    val print = ThemeAnimMath.footprint(step, STEPS_PER_WALK)
-                    val x = if (rtl) 1f - print.x else print.x
-                    val angle = if (rtl) -print.angle else print.angle
-                    drawFoot(Offset(x * size.width, print.y * size.height), angle, print.left != rtl, color.copy(alpha = alpha))
+            Modifier.fillMaxSize().drawWithCache {
+                val left = -bleed.left
+                val top = -bleed.top
+                val w = size.width + bleed.left + bleed.right
+                val h = size.height + bleed.top + bleed.bottom
+                val trail = ThemeAnimMath.footprintTrail(w, h, top, stride = 34.dp.toPx(), gait = 8.dp.toPx())
+                val leftFoot = footPath(this, leftFoot = true)
+                val rightFoot = footPath(this, leftFoot = false)
+                val cycle = trail.size * STEP_S + ThemeAnimMath.PRINT_HOLD_S + ThemeAnimMath.PRINT_FADE_S + REST_S
+                onDrawBehind {
+                    val p = presence.value
+                    if (p <= 0f || trail.isEmpty()) return@onDrawBehind
+                    val now = if (still) 0f else time.value % cycle
+                    // RTL: the same walk seen in a mirror, so it starts at the bottom right and leaves top left.
+                    scale(scaleX = if (rtl) -1f else 1f, scaleY = 1f, pivot = Offset(left + w / 2f, top + h / 2f)) {
+                        trail.forEachIndexed { i, print ->
+                            val a = if (still) 0.6f else ThemeAnimMath.printAlpha(now - i * STEP_S)
+                            if (a <= 0f) return@forEachIndexed
+                            translate(left + print.x, print.y) {
+                                rotate(print.angle, pivot = Offset.Zero) {
+                                    drawPath(if (print.left) leftFoot else rightFoot, color.copy(alpha = peak * a * p))
+                                }
+                            }
+                        }
+                    }
                 }
             },
         )
     }
 
-    private fun DrawScope.drawFoot(at: Offset, angle: Float, left: Boolean, color: Color) {
-        if (color.alpha <= 0f) return
-        rotate(angle, pivot = at) {
-            val w = 12.dp.toPx()
-            val h = 22.dp.toPx()
-            // Sole and heel
-            drawOval(color, topLeft = Offset(at.x - w / 2f, at.y - h / 2f), size = Size(w, h * 0.7f))
-            drawOval(color, topLeft = Offset(at.x - w * 0.4f, at.y + h * 0.25f), size = Size(w * 0.8f, h * 0.38f))
-            // Toes, the big toe on the inner side of each foot.
-            val inner = if (left) 1f else -1f
-            for (i in 0 until 4) {
-                val r = (2.4f - i * 0.35f).dp.toPx()
-                val x = at.x + inner * (1.2f - i) * 3.dp.toPx()
-                drawCircle(color, r, Offset(x, at.y - h * 0.62f + i * 1.1.dp.toPx()))
+    /**
+     * A bare footprint centred on (0, 0), toes up: forefoot, a narrow arch on the outer side, the heel, five toes
+     * with the big toe on the inner side. 30 × 13 dp.
+     */
+    private fun footPath(density: Density, leftFoot: Boolean): Path = with(density) {
+        val length = 30.dp.toPx()
+        val width = 13.dp.toPx()
+        // Inner side: right for a left foot, left for a right foot.
+        val inner = if (leftFoot) 1f else -1f
+        Path().apply {
+            // Forefoot (ball of the foot), a little towards the inner side.
+            addOval(Rect(center = Offset(inner * width * 0.06f, -length * 0.12f), radius = 0f).inflateTo(width * 0.5f, length * 0.24f))
+            // Outer edge of the arch, joining forefoot and heel.
+            addOval(Rect(center = Offset(-inner * width * 0.16f, length * 0.12f), radius = 0f).inflateTo(width * 0.26f, length * 0.2f))
+            // Heel
+            addOval(Rect(center = Offset(0f, length * 0.33f), radius = 0f).inflateTo(width * 0.4f, length * 0.16f))
+            // Toes, big toe first on the inner side, getting smaller towards the outer side.
+            val toes = listOf(
+                Triple(0.30f, -0.46f, 0.15f),
+                Triple(0.06f, -0.49f, 0.11f),
+                Triple(-0.13f, -0.46f, 0.10f),
+                Triple(-0.30f, -0.41f, 0.09f),
+                Triple(-0.44f, -0.34f, 0.08f),
+            )
+            for ((tx, ty, r) in toes) {
+                val radius = width * r
+                addOval(Rect(center = Offset(inner * tx * width, ty * length), radius = radius))
             }
         }
     }
+
+    private fun Rect.inflateTo(halfWidth: Float, halfHeight: Float): Rect =
+        Rect(center.x - halfWidth, center.y - halfHeight, center.x + halfWidth, center.y + halfHeight)
 }

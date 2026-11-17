@@ -74,23 +74,82 @@ internal object ThemeAnimMath {
         return Droplet(dx, dy, (1f - p).coerceIn(0f, 1f))
     }
 
-    /**
-     * Footprint [step] of a walk across the page: position as 0..1 of width and height, and whether it is a left
-     * foot. The walk goes from the bottom start corner to the top end corner in a gentle S, mirrored in RTL by the
-     * caller.
-     */
+    /** One print of a walk, in pixels: its centre, whether it is a left foot, and its heading in degrees (0 = up). */
     data class Footprint(val x: Float, val y: Float, val left: Boolean, val angle: Float)
 
-    fun footprint(step: Int, stepsPerWalk: Int): Footprint {
-        val t = (step % stepsPerWalk).toFloat() / (stepsPerWalk - 1).coerceAtLeast(1)
-        val y = 0.95f - t * 0.9f
-        val centre = 0.18f + t * 0.64f + sin(t * TWO_PI) * 0.08f
-        val left = step % 2 == 0
-        val x = centre + if (left) -0.035f else 0.035f
-        // Heading: mostly up, leaning towards the end side as the S bends.
-        val angle = 20f + kotlin.math.cos(t * TWO_PI) * 12f
-        return Footprint(x, y, left, angle)
+    /** A point on the walk's S curve, 0..1 of the page: from the bottom start corner up to the top end corner. */
+    fun walkPoint(s: Float): Pair<Float, Float> {
+        val t = s.coerceIn(0f, 1f)
+        val u = 1f - t
+        val a = u * u * u
+        val b = 3f * u * u * t
+        val c = 3f * u * t * t
+        val d = t * t * t
+        // Bottom start, swing along the open bottom of the page, cross behind the form, leave through the top end
+        // corner beside the title, where the page is empty.
+        val x = a * 0.10f + b * 0.85f + c * 0.30f + d * 0.85f
+        val y = a * 1.04f + b * 0.95f + c * 0.20f + d * -0.04f
+        return x to y
     }
+
+    /**
+     * The prints of one walk along [walkPoint] on a page of [width] × [height] px starting at [top]: one every
+     * [stride] px along the path, left and right feet [gait] px either side of it, each turned to the heading.
+     * Left-to-right layout; the caller mirrors it for RTL.
+     */
+    fun footprintTrail(width: Float, height: Float, top: Float, stride: Float, gait: Float, samples: Int = 240): List<Footprint> {
+        if (width <= 0f || height <= 0f || stride <= 0f) return emptyList()
+        val xs = FloatArray(samples + 1)
+        val ys = FloatArray(samples + 1)
+        for (i in 0..samples) {
+            val (px, py) = walkPoint(i.toFloat() / samples)
+            xs[i] = px * width
+            ys[i] = top + py * height
+        }
+        val prints = ArrayList<Footprint>()
+        var travelled = 0f
+        var next = stride / 2f
+        var step = 0
+        for (i in 1..samples) {
+            val dx = xs[i] - xs[i - 1]
+            val dy = ys[i] - ys[i - 1]
+            val len = kotlin.math.sqrt(dx * dx + dy * dy)
+            if (len <= 0f) continue
+            while (travelled + len >= next) {
+                val f = (next - travelled) / len
+                val cx = xs[i - 1] + dx * f
+                val cy = ys[i - 1] + dy * f
+                // Unit heading and its left-hand normal (screen y grows downwards).
+                val hx = dx / len
+                val hy = dy / len
+                val left = step % 2 == 0
+                val side = if (left) -1f else 1f
+                val nx = -hy * side
+                val ny = hx * side
+                val angle = (kotlin.math.atan2(hx, -hy) * 180f / PI.toFloat())
+                prints += Footprint(cx + nx * gait, cy + ny * gait, left, angle)
+                step++
+                next += stride
+            }
+            travelled += len
+        }
+        return prints
+    }
+
+    /**
+     * How visible a print is [age] seconds after it was stepped: a quick press in, a short hold, then a slow fade.
+     * 0 before it appears and after it faded.
+     */
+    fun printAlpha(age: Float): Float {
+        if (age < 0f) return 0f
+        val pressIn = (age / PRINT_IN_S).coerceIn(0f, 1f)
+        val fade = 1f - ((age - PRINT_HOLD_S) / PRINT_FADE_S).coerceIn(0f, 1f)
+        return pressIn * fade
+    }
+
+    const val PRINT_IN_S = 0.18f
+    const val PRINT_HOLD_S = 1.6f
+    const val PRINT_FADE_S = 2.2f
 
     /** An energy particle rising from the bottom: 0..1 position and its life (1 = just born, 0 = gone). */
     data class Spark(val x: Float, val y: Float, val life: Float)

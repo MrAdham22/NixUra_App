@@ -53,6 +53,8 @@ private fun BackdropPreview(theme: HabitTheme, name: String, dark: Boolean, rtl:
 @Preview @Composable private fun WaterBackdropDarkRtl() = BackdropPreview(HabitTheme.WATER, "اشرب مياه", dark = true, rtl = true)
 @Preview @Composable private fun WaterBackdropLightRtl() = BackdropPreview(HabitTheme.WATER, "اشرب مياه", dark = false, rtl = true)
 @Preview @Composable private fun WalkBackdropDark() = BackdropPreview(HabitTheme.WALK, "Walk 30 minutes", dark = true, rtl = false)
+@Preview @Composable private fun WalkBackdropLight() = BackdropPreview(HabitTheme.WALK, "Walk 30 minutes", dark = false, rtl = false)
+@Preview @Composable private fun WalkBackdropDarkRtl() = BackdropPreview(HabitTheme.WALK, "المشي", dark = true, rtl = true)
 @Preview @Composable private fun WalkBackdropLightRtl() = BackdropPreview(HabitTheme.WALK, "المشي", dark = false, rtl = true)
 @Preview @Composable private fun WorkoutBackdropDark() = BackdropPreview(HabitTheme.WORKOUT, "Workout", dark = true, rtl = false)
 @Preview @Composable private fun ReadingBackdropLight() = BackdropPreview(HabitTheme.READING, "Read 10 pages", dark = false, rtl = false)
