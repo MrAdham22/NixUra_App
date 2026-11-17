@@ -4,6 +4,13 @@ package com.adhamelgendy.nixura.presentation.screen
 
 import com.adhamelgendy.nixura.presentation.util.forDisplay
 import com.adhamelgendy.nixura.presentation.theme.ProvideNixColors
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,8 +36,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.adhamelgendy.nixura.domain.calculator.WeeklyGoalCalculator
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
+import com.adhamelgendy.nixura.domain.theme.WaterUnit
 import com.adhamelgendy.nixura.presentation.appearance.HabitThemes
 import com.adhamelgendy.nixura.presentation.components.themeanim.HabitThemeBackdrop
+import com.adhamelgendy.nixura.presentation.goodhabits.form.WaterGoalForm
+import com.adhamelgendy.nixura.presentation.goodhabits.form.WaterGoalSection
+import com.adhamelgendy.nixura.presentation.platform.rememberReducedMotion
 import kotlinx.coroutines.delay
 import com.adhamelgendy.nixura.domain.recognition.HabitNameHandoff
 import com.adhamelgendy.nixura.domain.recognition.HabitPolarity
@@ -87,7 +98,20 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
         }
     }
 
+    // Water goal, always in ml (see WaterGoalForm). Kept as plain values so it survives rotation.
+    var waterGoalMl by rememberSaveable { mutableStateOf(WaterGoalForm().goalMl) }
+    var waterServingMl by rememberSaveable { mutableStateOf(WaterGoalForm().servingMl) }
+    var waterUnitKey by rememberSaveable { mutableStateOf(WaterGoalForm().unit.storageKey) }
+    var savedServingMl by rememberSaveable { mutableStateOf<Int?>(null) }
     var editFillLevel by rememberSaveable { mutableStateOf(1f) }
+    val waterForm = WaterGoalForm(waterGoalMl, waterServingMl, WaterUnit.fromStorageKey(waterUnitKey) ?: WaterUnit.CUPS)
+    val setWaterForm: (WaterGoalForm) -> Unit = {
+        waterGoalMl = it.goalMl
+        waterServingMl = it.servingMl
+        waterUnitKey = it.unit.storageKey
+    }
+    // A daily water habit: the goal section replaces the "daily target" stepper.
+    val water = previewed == HabitTheme.WATER && !weekly
 
     // A prayer habit ("pray", "Salah", "صلاة"...): five a day, and the whole page turns gold from the word down.
     val prayer = remember(name) { PrayerHabitDetector.isPrayer(name) }
@@ -114,6 +138,8 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
                 it.weeklyTarget?.let { days -> daysPerWeek = days }
                 previewKey = it.theme.storageKey
                 it.water?.let { goal ->
+                    setWaterForm(WaterGoalForm.from(goal))
+                    savedServingMl = goal.servingMl
                     // The page fills as far as today's progress (a little water even at zero, so the theme shows).
                     editFillLevel = 0.15f + 0.85f * goal.progress(it.todayCount)
                 }
@@ -122,6 +148,7 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
         }
     }
 
+    val reducedMotion = rememberReducedMotion()
     val base = Nix.colors
     val visual = HabitThemes.visualFor(previewed, base)
     Box(Modifier.fillMaxSize()) {
@@ -172,6 +199,18 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
             )
         }
 
+        AnimatedVisibility(
+            visible = water,
+            enter = if (reducedMotion) EnterTransition.None else expandVertically() + fadeIn(),
+            exit = if (reducedMotion) ExitTransition.None else shrinkVertically() + fadeOut(),
+        ) {
+            WaterGoalSection(
+                form = waterForm,
+                onChange = setWaterForm,
+                cupSizeChanged = editing && savedServingMl != null && savedServingMl != waterServingMl,
+            )
+        }
+
         if (!editing) {
             SectionLabel(s.quickPicks, color = if (prayer) PrayerPalette.GoldLight else c.textMuted)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -197,6 +236,7 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
                 NixChip(s.frequencyDaily, selected = !weekly, onClick = { weekly = false })
                 NixChip(s.frequencyWeekly, selected = weekly, onClick = { weekly = true })
             }
+            if (!water) {
             Spacer(Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
@@ -210,12 +250,16 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
                     Stepper(target, { target = it }, min = 1, max = 99)
                 }
             }
+            }
         }
 
         val save = {
             val weeklyTarget = if (weekly) daysPerWeek else null
-            if (editId != null) vm.onUpdate(editId, name, target, null, weeklyTarget) { navigator.back() }
-            else vm.onCreate(name, target, null, weeklyTarget) { navigator.back() }
+            // Every save of a water habit carries its goal (null would reset a custom cup size).
+            val goal = if (water) waterForm.toGoal() else null
+            val dailyTarget = goal?.servingsPerDay ?: target
+            if (editId != null) vm.onUpdate(editId, name, dailyTarget, null, weeklyTarget, water = goal) { navigator.back() }
+            else vm.onCreate(name, dailyTarget, null, weeklyTarget, water = goal) { navigator.back() }
         }
         if (prayer) {
             PrayerGoldButton(

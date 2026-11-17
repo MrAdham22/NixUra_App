@@ -820,6 +820,21 @@ open class Strings {
     open val visualDoneToday: String = "Good habits done today"
 
     // ---- Session 2 (Add/Edit form: theme animations, water goal section). Only Session 2 adds lines here. ----
+    open val waterGoalTitle: String = "Daily water goal"
+    open val waterGoalHint: String = "Set it in liters or cups. Switching never changes the goal."
+    open val waterUnitLiters: String = "Liters"
+    open val waterUnitCups: String = "Cups"
+    open fun waterLiters(amount: String): String = "$amount L"
+    /** [amount] may have a decimal ("6.7"); [wholeCups] picks the plural form. */
+    open fun waterCups(amount: String, wholeCups: Int): String = if (amount == "1") "1 cup" else "$amount cups"
+    open val waterCupSize: String = "Cup size"
+    open val waterCupSizeHint: String = "Each tap on the card adds one cup."
+    open fun waterMl(ml: Int): String = "$ml ml"
+    open fun waterGoalSummary(cups: Int, servingMl: Int): String =
+        if (cups == 1) "1 cup of $servingMl ml a day" else "$cups cups of $servingMl ml a day"
+    open val waterCupSizeChanged: String = "Days you already logged will be counted with the new cup size."
+    open val waterGoalDecrease: String = "Lower the goal"
+    open val waterGoalIncrease: String = "Raise the goal"
 
     // ---- end of Session 2 ----
 
