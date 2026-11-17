@@ -1,5 +1,8 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.goodhabits.water.WaterAddButton
+import com.adhamelgendy.nixura.presentation.goodhabits.water.WaterProgressLine
+import com.adhamelgendy.nixura.presentation.goodhabits.water.rememberWaterUndo
 import com.adhamelgendy.nixura.domain.widget.WidgetKind
 import com.adhamelgendy.nixura.presentation.components.rememberAddToHomeAction
 import com.adhamelgendy.nixura.presentation.deletion.SheetAction
@@ -163,6 +166,7 @@ fun HomeScreen(navigator: Navigator) {
                                         onOpen = { navigator.push(Route.GoodHabitDetail(habit.id)) },
                                         onLongClick = { deleteFlow.open(DeletableItem.GoodHabit(habit.id), habit.name, goodHabitSheetActions(habit.id)) },
                                         onPlus = { goodVm.onChangeToday(habit.id, +1) },
+                                        onUndo = { goodVm.onChangeToday(habit.id, -1) },
                                     )
                                 }
                             }
@@ -342,10 +346,12 @@ private fun DrawScope.ring(color: Color, progress: Float, width: Float, inset: F
 
 /** One line per good habit: it fills with green as you tap +, like its full card. */
 @Composable
-private fun TodayRow(habit: GoodHabitUi, onOpen: () -> Unit, onPlus: () -> Unit, onLongClick: () -> Unit) {
+private fun TodayRow(habit: GoodHabitUi, onOpen: () -> Unit, onPlus: () -> Unit, onLongClick: () -> Unit, onUndo: () -> Unit = {}) {
     val s = LocalStrings.current
     val look = rememberGoodFill(habit.progressCount, habit.progressTarget, habit.fillStyle)
     val pulse = rememberCompletionPulse(habit.goalReached)
+    val undo = rememberWaterUndo()
+    val water = habit.water
     NixCard(
         Modifier.fillMaxWidth().graphicsLayer { scaleX = pulse.value; scaleY = pulse.value },
         onClick = onOpen,
@@ -358,10 +364,15 @@ private fun TodayRow(habit: GoodHabitUi, onOpen: () -> Unit, onPlus: () -> Unit,
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(habit.name.forDisplay(), style = NixType.BodyStrong, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted, maxLines = 1)
+                if (water != null) {
+                    WaterProgressLine(goodProgressText(habit, s), undo, onUndo, look.contentMuted, look.content)
+                } else {
+                    Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted, maxLines = 1)
+                }
             }
             Spacer(Modifier.width(10.dp))
-            GoodHabitButton(
+            // Water: "+1 cup" / "+250 ml" (one serving), with a short-lived Undo beside the progress.
+            if (water != null) WaterAddButton(water, look, { onPlus(); undo.added() }, height = 40.dp) else GoodHabitButton(
                 habit.fillStyle, look,
                 if (habit.doneToday) NixIcon.Tick else NixIcon.Plus,
                 onPlus,

@@ -6,7 +6,11 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.adhamelgendy.nixura.presentation.appearance.DayIntensity
 import com.adhamelgendy.nixura.presentation.appearance.HabitThemes
+import com.adhamelgendy.nixura.presentation.goodhabits.water.WaterAddButton
+import com.adhamelgendy.nixura.presentation.goodhabits.water.WaterProgressLine
 import com.adhamelgendy.nixura.presentation.goodhabits.water.dayProgress
+import com.adhamelgendy.nixura.presentation.goodhabits.water.rememberWaterUndo
+import com.adhamelgendy.nixura.presentation.goodhabits.water.waterProgressTextOrNull
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.animateFloat
@@ -648,6 +652,7 @@ fun GoodHabitCard(
     val look = rememberGoodFill(habit.progressCount, habit.progressTarget, habit.fillStyle)
     val pulse = rememberCompletionPulse(habit.goalReached)
     var streakInfo by remember { mutableStateOf(false) }
+    val undo = rememberWaterUndo()
     NixCard(
         modifier.fillMaxWidth().graphicsLayer { scaleX = pulse.value; scaleY = pulse.value },
         onClick = onClick,
@@ -664,11 +669,17 @@ fun GoodHabitCard(
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(habit.name.forDisplay(), style = NixType.Heading, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted)
+                if (habit.water != null) {
+                    WaterProgressLine(goodProgressText(habit, s), undo, onMinus, look.contentMuted, look.content)
+                } else {
+                    Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted)
+                }
             }
             GoodHabitButton(habit.fillStyle, look, NixIcon.Minus, onMinus, size = 38.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), secondary = true)
             Spacer(Modifier.width(8.dp))
-            GoodHabitButton(
+            val water = habit.water
+            // A water habit adds one serving with a labelled button ("+1 cup" / "+250 ml") and can undo it.
+            if (water != null) WaterAddButton(water, look, { onPlus(); undo.added() }) else GoodHabitButton(
                 habit.fillStyle, look,
                 if (habit.doneToday && (habit.dailyTarget == 1 || habit.isWeekly)) NixIcon.Tick else NixIcon.Plus,
                 onPlus,
@@ -722,9 +733,9 @@ fun GoodHabitCard(
 /** Most stars a prayer card shows one by one; above this it relies on the counter alone. */
 const val MAX_PRAYER_BEADS = 8
 
-/** "3 / 8 today" for a daily habit, "2 / 3 days this week" for a weekly one */
+/** "3 / 8 today" for a daily habit, "2 / 3 days this week" for a weekly one, "1.2 / 2 L" or "5 / 8 cups" for water. */
 fun goodProgressText(habit: GoodHabitUi, s: Strings): String =
-    if (habit.isWeekly) s.weekProgress(habit.progressCount, habit.progressTarget) else s.todayProgress(habit.todayCount, habit.dailyTarget)
+    habit.waterProgressTextOrNull(s) ?: if (habit.isWeekly) s.weekProgress(habit.progressCount, habit.progressTarget) else s.todayProgress(habit.todayCount, habit.dailyTarget)
 
 /** A small celebratory bounce, with a firm tap, the moment a habit's target is reached. */
 @Composable
