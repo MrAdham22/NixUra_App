@@ -94,6 +94,67 @@ sets), any new file under `presentation/goodhabits/form/` (new). The save path i
 
 **Depends on:** S1's `HabitTheme`, `HabitThemeDetector`, `WaterGoal`, the v8 columns.
 
+**Status (2026-11-17): done, checked on the owner's phone and on an emulator.** Branch `claude/s2-form-animations-e6598c`.
+
+- Files (all new unless marked):
+  - `presentation/components/themeanim/`: `HabitThemeAnimation.kt` (`HabitThemeBackdrop`, `ThemeScene`, the one
+    mapping `sceneFor(kind)`, scene clock that pauses when the page is not shown, fade helper), `WaterScene.kt`,
+    `FootprintsScene.kt`, `EnergyScene.kt`, `PagesScene.kt`, `NightSkyScene.kt`, `GoldenRaysScene.kt`,
+    `ThemeAnimMath.kt` (pure wave/particle math). A new theme = one scene file + one line in `sceneFor`.
+  - `presentation/platform/ThemeHaptics.kt` + `.android.kt` + `.ios.kt` (pour tick, "full" confirm);
+    `presentation/platform/DeviceTilt.kt` + `.android.kt` (accelerometer at `SENSOR_DELAY_UI`, only while resumed)
+    + `.ios.kt` (CoreMotion at 10 Hz).
+  - `presentation/goodhabits/form/`: `WaterGoalForm.kt` (pure state: ml goal, unit, cup size, steps, limits),
+    `WaterGoalSection.kt` (the card + 4 previews), `ThemeBackdropPreviews.kt` (still frame of every theme, dark/light,
+    LTR/RTL).
+  - Changed: `presentation/screen/GoodHabitFormScreen.kt`; strings between the Session 2 markers in `Strings.kt` and
+    `ArabicStrings.kt` (water goal texts only; the animations have no text).
+  - Tests: `commonTest/.../components/themeanim/ThemeAnimMathTest.kt`, `commonTest/.../goodhabits/form/WaterGoalFormTest.kt`.
+- How it works: the form calls `vm.previewTheme(name)` 400 ms after typing stops and plays
+  `HabitThemes.visualFor(theme, colors).animation` behind the whole form (no name matching in the screen). Water:
+  stream from the top centre with a splash → the page fills (two sine layers, 2.4 s) → stream stops, haptic, bubbles,
+  one fish (swims the other way in RTL); no light rays (removed on owner feedback); tap = ripple; slight tilt; another name drains it (0.9 s).
+  Editing a water habit fills to 15 % + 85 % of today's progress. Prayer keeps `PrayerGoldWash` and gets the rays on
+  top. Taps are only observed (initial pass, never consumed). "Remove animations" draws a still frame. Every moving
+  value is read in the draw phase, so frames redraw without recomposing.
+- Water goal: daily water habit (preview = WATER, not weekly) → the goal card slides in under the name and replaces
+  the "Daily target" stepper. Liters/Cups (goal kept in ml; switching never changes it), goal 250 ml–6 L in 250 ml
+  steps (litres) or whole cups, cup size 100–1000 ml in 50 ml steps, defaults 2 L / 250 ml / cups. Every save of a water
+  habit passes `water = goal` and `dailyTarget = goal.servingsPerDay`. Editing prefills from `GoodHabitUi.water`; if
+  the cup size changes, a note says logged days will be counted with the new size (S1's design).
+- How to test: Build → + → type "drink water", "watr", "اشرب مياه" (page fills; inputs, chips, steppers and the
+  keyboard keep working; tap the water for a ripple); delete the name (water drains); "walk the dog", "workout",
+  "read", "sleep early", "pray" for the other themes; switch Liters/Cups and step the goal; turn on "Remove
+  animations" (still water). Edit a water habit: goal and cup size come back, page fills only partly.
+- Verified: `:androidApp:assembleDebug` OK; `:shared:testAndroidHostTest` 578 tests, 0 failures (16 new).
+  `:androidApp:installDebug` on the owner's phone (CPH2531, Android 15) and an emulator (Pixel 9 AVD, Android 17).
+  On the phone: "drink water", "watr" and "اشرب مياه" (typed on the Arabic keyboard) fill the page; the field, chips,
+  steppers and keyboard stay usable; tap ripple works; left without saving (no data changed). On the emulator: pour,
+  fill, drain, footprints, the Liters/Cups toggle and steppers, edit prefill, and save → reopen keeps 2.25 L / 300 ml.
+- Not verified: iOS (haptics and tilt `actual`s written but not compiled: run `:shared:compileKotlinIosSimulatorArm64`
+  and `:shared:linkDebugFrameworkIosSimulatorArm64` on a Mac); tilt by hand (emulator and phone were flat on a desk);
+  a frame-time measurement (looked smooth on the phone, not profiled); the workout/reading/sleep/prayer-rays scenes on
+  the phone (checked in previews and code only); "Remove animations" on a device; the Compose previews in the IDE.
+- Notes for the README / docs at merge: Features: "Add Good Habit: themed background animations (water fills the
+  screen, walk, workout, reading, sleep, prayer) and a daily water goal in litres or cups with a cup size".
+  Architecture: `presentation/components/themeanim` (scenes) and `presentation/goodhabits/form` (water goal form);
+  new platform ports `ThemeHaptics` and `DeviceTilt` (Android + iOS). No Room change. `GoodHabitsViewModel` unchanged.
+- Round 2 (owner feedback, 2026-11-17): water light rays removed (`8484d12`); the walk footprints redesigned
+  (`108a9fe`): bare footprints walk an S path from the open bottom of the page, behind the form, out past the title;
+  one print every 34 dp, left/right feet either side of the path and turned to its heading; each presses in, holds,
+  fades; stronger on both themes (0.55 dark / 0.65 light); mirrored in RTL; whole still trail with "remove animations".
+  The water summary line now uses the deeper blue on the light theme (`43b76be`). Verified: assembleDebug OK,
+  testAndroidHostTest 580 tests / 0 failures; on the emulator only (not the phone, by the lead's request): water without
+  rays (dark and light), footprints in dark and light. RTL footprints checked in code and previews only (the app stays
+  LTR on a device until Session 4 turns on the Arabic layout).
+- Round 3 (owner feedback on the footprints, 2026-11-17, `b837c9e`): the trail walks **down** the page, toes first,
+  from the top end corner beside the title, behind the form, out through the open bottom. Two walkers: the second is the
+  mirror image and starts 5.5 s later, so the trails cross. Each print presses in, stays 2.6 s and fades over 2.6 s
+  (about 6 pairs per walker on screen). Left and right feet are mirror-image sole outlines (arch and big toe on the inner
+  side) turned 9° outwards. Still frame = one moment of both walks; RTL mirror and draw-phase reads unchanged.
+  Verified: assembleDebug OK, testAndroidHostTest 582 / 0 failures; on the emulator (dark theme): direction, several
+  pairs, two lanes, distinct left/right prints. Not on the phone (lead installs the merged build).
+
 ## Session 3: details, calendar, cards (Feature 3 + Feature 5 display part)
 
 **Goal:** calendar days coloured by `HabitThemes.visualFor(theme)` with intensity = count / target (water:
