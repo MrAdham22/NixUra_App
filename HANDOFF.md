@@ -108,7 +108,8 @@ good-habit card/row composables, `presentation/screen/GoodHabitsScreen.kt`, the 
 **Depends on:** S1 foundation only (it does not need Session 2).
 
 **Status (2026-11-17): done; checked on an emulator, not yet on the owner's phone.**
-Branch `claude/s3-calendar-water-d163b7`: `76a6ad1` (calendar), `17ca1a9` (water display), `381f21d` (calendar step shades).
+Branch `claude/s3-calendar-water-d163b7`: `76a6ad1` (calendar), `17ca1a9` (water display), `381f21d` (calendar step shades),
+`69f33fb` (owner feedback: Undo and Change goal removed), `affa189` (owner feedback: themed completion bars).
 
 - **Feature 3, coloured calendar:** done days take `HabitThemes.visualFor(theme, colors).accent` (water blue, prayer
   gold, the rest green) in discrete steps: `DayIntensity.level(progress)` = 0 (nothing), 1–4 (part of the target),
@@ -125,22 +126,26 @@ Branch `claude/s3-calendar-water-d163b7`: `76a6ad1` (calendar), `17ca1a9` (water
   done-square now uses the same blue (deeper on light theme); the home-screen widget calls it too and still builds.
 - **Feature 5, water display:** card, Home row and details show `WaterProgress.text` ("1.2 / 2 L", "5 / 8 cups"),
   a labelled quick-add (`WaterAddButton`: "+1 cup", or "+250 ml" in litres; both add one serving via
-  `onChangeToday(id, +1)`) and an "Undo" beside the progress for 5 s (`rememberWaterUndo`, takes back one with
-  `onChangeToday(id, -1)`). Details: big "1.2 / 2 L", "0.8 L to go", a "Change goal" link to the edit form, and the
-  selected-day panel in the goal's unit. Water fill level unchanged (follows today's count).
+  `onChangeToday(id, +1)`); the existing "−" takes one back. Details: big "1.2 / 2 L", "0.8 L to go" and the
+  selected-day panel in the goal's unit; the goal is changed with the pencil (edit form). Water fill level unchanged.
+- **Owner feedback (2026-11-17):** the water Undo and the details "Change goal" link were removed with their state,
+  strings and the Home row callback (nothing left behind). The details "Last 7 / 30 days" bars take the theme accent
+  (`HabitThemes.visualFor(habit.theme, colors).accent`, the colour of a reached calendar day): gold, blue or green.
 - **Files:** `appearance/HabitThemeVisuals.kt`, `appearance/GoodFillColors.kt`, `components/HabitComponents.kt`
   (DaySquare, WeekStrip, MonthCalendar, IntensityLegend, GoodHabitCard, `goodProgressText`), new
   `components/CalendarWeek.kt` (next to MonthCalendar; not in the owned list but new, so no merge risk),
-  `screen/GoodHabitDetailScreen.kt`, `screen/GoodHabitsScreen.kt` (unchanged), `screen/HomeScreen.kt` (`TodayRow`
-  plus **one line at its call site**: `onUndo = { goodVm.onChangeToday(habit.id, -1) }`), new
+  `screen/GoodHabitDetailScreen.kt`, `screen/GoodHabitsScreen.kt` (unchanged), `screen/HomeScreen.kt` (`TodayRow` only), new
   `goodhabits/water/` (`DayProgress.kt`, `WaterProgress.kt`, `WaterQuickAdd.kt`, `WaterAndCalendarPreviews.kt`),
   strings between the Session 3 markers, tests `HabitThemeShadesTest`, `WeekStartTest`, `WaterProgressTest`, and
   one line of Session 1's `HabitThemesTest` (light-theme water accent is now the deeper blue).
 - **Previews:** water / prayer / plain calendars and the water card, dark + light, LTR + RTL (RTL uses Arabic strings).
 - **Verified:** `:androidApp:assembleDebug` OK and `:shared:testAndroidHostTest` 581 tests OK (2026-11-17), at each
-  commit. **Checked on the emulator (`emulator-5554`, Android 16):** water card "0 / 2.3 L" with "+300 ml" (a 2.25 L
-  goal of 300 ml cups from Session 2's form), quick add 0 → 0.9 L, Undo after an add takes back one cup, Undo hides
-  after 5 s; Home row "+300 ml" + Undo; details "0 / 2.3 L", "2.3 L to go", Change goal; water calendar (1/3/5/7/8/2
+  commit. After the owner feedback, checked on the emulator: no Undo on card / Home / details, no Change goal, and the
+  details bars blue on a water habit (100% after reaching today's goal; logs put back to 0 afterwards). The bar on the
+  light theme was not looked at on a device; its track is `surfaceRaised`, which a full accent beats by ≥ 3:1
+  (`HabitThemeShadesTest`). Not installed on the owner's phone (the lead session installs the merged build). **Checked on the emulator (`emulator-5554`, Android 16):** water card "0 / 2.3 L" with "+300 ml" (a 2.25 L
+  goal of 300 ml cups from Session 2's form), quick add 0 → 0.9 L; Home row "+300 ml"; details "0 / 2.3 L",
+  "2.3 L to go"; water calendar (1/3/5/7/8/2
   cups → blue steps) and prayer calendar (1..5 → five gold steps) in dark and light theme, legend, card week strip.
   Test prayer habit deleted afterwards; the emulator's "Drink water" (Session 2's test habit) keeps the past days
   logged for this test (11–16 Nov). **Not verified:** RTL on a device (the emulator ignored "force RTL"; covered by
