@@ -28,6 +28,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.adhamelgendy.nixura.domain.calculator.WeeklyGoalCalculator
+import com.adhamelgendy.nixura.domain.theme.HabitTheme
+import com.adhamelgendy.nixura.presentation.appearance.HabitThemes
+import com.adhamelgendy.nixura.presentation.components.themeanim.HabitThemeBackdrop
+import kotlinx.coroutines.delay
 import com.adhamelgendy.nixura.domain.recognition.HabitNameHandoff
 import com.adhamelgendy.nixura.domain.recognition.HabitPolarity
 import com.adhamelgendy.nixura.domain.recognition.HabitRecognizer
@@ -70,6 +74,21 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
     var loadedEdit by rememberSaveable { mutableStateOf(false) }
     val nameFocus = remember { FocusRequester() }
 
+    // The theme the name would get if saved now (debounced, detected off the main thread by the view model). It picks
+    // the background animation and shows the water goal section; the screen never matches names itself.
+    var previewKey by rememberSaveable { mutableStateOf(HabitTheme.DEFAULT.storageKey) }
+    val previewed = HabitTheme.fromStorageKey(previewKey) ?: HabitTheme.DEFAULT
+    LaunchedEffect(name) {
+        if (name.isBlank()) {
+            previewKey = HabitTheme.DEFAULT.storageKey
+        } else {
+            delay(THEME_PREVIEW_DEBOUNCE_MS)
+            previewKey = vm.previewTheme(name).storageKey
+        }
+    }
+
+    var editFillLevel by rememberSaveable { mutableStateOf(1f) }
+
     // A prayer habit ("pray", "Salah", "صلاة"...): five a day, and the whole page turns gold from the word down.
     val prayer = remember(name) { PrayerHabitDetector.isPrayer(name) }
     var prayerApplied by rememberSaveable { mutableStateOf(false) }
@@ -93,16 +112,30 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
                 target = it.dailyTarget
                 weekly = it.isWeekly
                 it.weeklyTarget?.let { days -> daysPerWeek = days }
+                previewKey = it.theme.storageKey
+                it.water?.let { goal ->
+                    // The page fills as far as today's progress (a little water even at zero, so the theme shows).
+                    editFillLevel = 0.15f + 0.85f * goal.progress(it.todayCount)
+                }
                 loadedEdit = true
             }
         }
     }
 
+    val base = Nix.colors
+    val visual = HabitThemes.visualFor(previewed, base)
     Box(Modifier.fillMaxSize()) {
     PrayerGoldWash(prayer)
+    // The theme's animation sits behind the whole form; it only watches taps, so every field and button works as before.
+    HabitThemeBackdrop(
+        kind = visual.animation,
+        accent = visual.accent,
+        colors = base,
+        modifier = Modifier.fillMaxSize(),
+        fillLevel = if (editing) editFillLevel else 1f,
+    ) {
     // In the prayer look, selections (chips, "Every day", the stepper, the cursor) are gold like the gold button,
     // instead of the app's rose: one world on the page.
-    val base = Nix.colors
     ProvideNixColors(if (prayer) base.copy(accent = PrayerPalette.Gold, onAccent = PrayerPalette.Night) else base) {
     SubScreen(title = if (editing) s.editHabit else s.newGoodHabit, onBack = { navigator.back() }) {
         state.errorMessage?.let { ErrorBanner(it, vm::onDismissError) }
@@ -204,9 +237,11 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
     }
     }
     }
+    }
 }
 
 private const val DEFAULT_DAYS_PER_WEEK = 3
+private const val THEME_PREVIEW_DEBOUNCE_MS = 400L
 
 /** True when [typed] names this habit: the same words ignoring case and spaces, or both are prayer habits. */
 private fun com.adhamelgendy.nixura.presentation.goodhabits.GoodHabitUi.isSameHabitAs(typed: String): Boolean {
