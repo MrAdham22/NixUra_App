@@ -28,6 +28,7 @@ object ArabicStrings : Strings() {
     override fun waterGoalSummary(cups: Int, servingMl: Int): String =
         ArabicPlurals.format(cups.toLong(), "%d كوب", "كوب واحد", "كوبان", "%d أكواب", "%d كوبًا", "%d كوب") + " بحجم $servingMl مل يوميًا"
     override val waterCupSizeChanged: String = "الأيام التي سجّلتها ستُحسب بحجم الكوب الجديد."
+    override val waterGoalPerDay: String = "في اليوم"
     override val waterGoalDecrease: String = "خفّض الهدف"
     override val waterGoalIncrease: String = "ارفع الهدف"
 

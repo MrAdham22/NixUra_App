@@ -833,6 +833,7 @@ open class Strings {
     open fun waterGoalSummary(cups: Int, servingMl: Int): String =
         if (cups == 1) "1 cup of $servingMl ml a day" else "$cups cups of $servingMl ml a day"
     open val waterCupSizeChanged: String = "Days you already logged will be counted with the new cup size."
+    open val waterGoalPerDay: String = "Per day"
     open val waterGoalDecrease: String = "Lower the goal"
     open val waterGoalIncrease: String = "Raise the goal"
 

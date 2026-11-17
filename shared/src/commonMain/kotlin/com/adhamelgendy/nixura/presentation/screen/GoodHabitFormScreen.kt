@@ -229,7 +229,7 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
             }
         }
 
-        NixCard {
+        NixCard(Modifier.fillMaxWidth()) {
             Text(s.habitFrequency, style = NixType.BodyStrong, color = c.textPrimary)
             Spacer(Modifier.height(10.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

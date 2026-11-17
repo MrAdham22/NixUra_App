@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -52,7 +53,7 @@ fun WaterGoalSection(
 ) {
     val s = LocalStrings.current
     val c = Nix.colors
-    NixCard(modifier) {
+    NixCard(modifier.fillMaxWidth()) {
         Text(s.waterGoalTitle, style = NixType.BodyStrong, color = c.textPrimary)
         Spacer(Modifier.height(2.dp))
         Text(s.waterGoalHint, style = NixType.Small, color = c.textMuted)
@@ -67,7 +68,7 @@ fun WaterGoalSection(
             WaterUnit.CUPS -> s.waterCups(form.cupsText(), form.servingsPerDay)
         }
         ValueStepper(
-            label = s.waterGoalTitle,
+            label = s.waterGoalPerDay,
             value = goalText,
             onDecrease = { onChange(form.stepGoal(up = false)) },
             onIncrease = { onChange(form.stepGoal(up = true)) },
@@ -75,7 +76,6 @@ fun WaterGoalSection(
             canIncrease = form.canIncreaseGoal,
             decreaseLabel = s.waterGoalDecrease,
             increaseLabel = s.waterGoalIncrease,
-            hideLabel = true,
         )
         Spacer(Modifier.height(14.dp))
         ValueStepper(
@@ -109,12 +109,11 @@ private fun ValueStepper(
     decreaseLabel: String,
     increaseLabel: String,
     hint: String? = null,
-    hideLabel: Boolean = false,
 ) {
     val c = Nix.colors
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            if (!hideLabel) Text(label, style = NixType.BodyStrong, color = c.textPrimary)
+            Text(label, style = NixType.BodyStrong, color = c.textPrimary)
             if (hint != null) {
                 Spacer(Modifier.height(2.dp))
                 Text(hint, style = NixType.Small, color = c.textMuted)
