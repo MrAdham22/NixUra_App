@@ -113,7 +113,7 @@ sets), any new file under `presentation/goodhabits/form/` (new). The save path i
 - How it works: the form calls `vm.previewTheme(name)` 400 ms after typing stops and plays
   `HabitThemes.visualFor(theme, colors).animation` behind the whole form (no name matching in the screen). Water:
   stream from the top centre with a splash → the page fills (two sine layers, 2.4 s) → stream stops, haptic, bubbles,
-  light rays, one fish (swims the other way in RTL); tap = ripple; slight tilt; another name drains it (0.9 s).
+  one fish (swims the other way in RTL); no light rays (removed on owner feedback); tap = ripple; slight tilt; another name drains it (0.9 s).
   Editing a water habit fills to 15 % + 85 % of today's progress. Prayer keeps `PrayerGoldWash` and gets the rays on
   top. Taps are only observed (initial pass, never consumed). "Remove animations" draws a still frame. Every moving
   value is read in the draw phase, so frames redraw without recomposing.
@@ -139,8 +139,14 @@ sets), any new file under `presentation/goodhabits/form/` (new). The save path i
   screen, walk, workout, reading, sleep, prayer) and a daily water goal in litres or cups with a cup size".
   Architecture: `presentation/components/themeanim` (scenes) and `presentation/goodhabits/form` (water goal form);
   new platform ports `ThemeHaptics` and `DeviceTilt` (Android + iOS). No Room change. `GoodHabitsViewModel` unchanged.
-- For Session 3 / the lead: footprints are faint and mostly hidden behind the cards; raise their alpha if the owner
-  wants them more visible (`FootprintsScene`, `0.30f`).
+- Round 2 (owner feedback, 2026-11-17): water light rays removed (`8484d12`); the walk footprints redesigned
+  (`108a9fe`): bare footprints walk an S path from the open bottom of the page, behind the form, out past the title;
+  one print every 34 dp, left/right feet either side of the path and turned to its heading; each presses in, holds,
+  fades; stronger on both themes (0.55 dark / 0.65 light); mirrored in RTL; whole still trail with "remove animations".
+  The water summary line now uses the deeper blue on the light theme (`43b76be`). Verified: assembleDebug OK,
+  testAndroidHostTest 580 tests / 0 failures; on the emulator only (not the phone, by the lead's request): water without
+  rays (dark and light), footprints in dark and light. RTL footprints checked in code and previews only (the app stays
+  LTR on a device until Session 4 turns on the Arabic layout).
 
 ## Session 3: details, calendar, cards (Feature 3 + Feature 5 display part)
 
