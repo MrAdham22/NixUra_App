@@ -9,7 +9,7 @@ internal object GoodHabitLexicon {
     class GoodEntry(val id: String, val keywords: List<String>)
 
     val entries: List<GoodEntry> = listOf(
-        GoodEntry("water", listOf("water", "hydrate", "hydration", "drink water", "drinking water", "glass of water", "ماء", "مياه", "شرب الماء", "شرب ماء", "شرب المياه")),
+        GoodEntry("water", listOf("water", "hydrate", "hydration", "drink water", "drinking water", "glass of water", "ماء", "مياه", "شرب الماء", "شرب ماء", "شرب المياه", "ميه", "مية", "اشرب ميه", "اشرب مياه", "اشرب ماء")),
         GoodEntry("workout", listOf("workout", "workouts", "work out", "exercise", "exercises", "exercising", "excercise", "excersize", "excersise", "gym", "training", "train", "fitness", "cardio", "رياضه", "تمرين", "تمارين", "جيم", "نادي رياضي", "تمرن")),
         GoodEntry("walk", listOf("walk", "walking", "steps", "10k steps", "stroll", "مشي", "المشي", "امشي", "تمشيه")),
         GoodEntry("run", listOf("run", "running", "jog", "jogging", "جري", "الجري", "ركض", "اجري")),

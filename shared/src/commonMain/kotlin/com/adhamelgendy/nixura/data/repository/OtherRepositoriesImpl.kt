@@ -13,6 +13,7 @@ import com.adhamelgendy.nixura.data.local.entity.GoodHabitEntity
 import com.adhamelgendy.nixura.data.local.entity.GoodHabitLogEntity
 import com.adhamelgendy.nixura.data.local.entity.PreferenceEntity
 import com.adhamelgendy.nixura.data.mapper.encodeReminders
+import com.adhamelgendy.nixura.data.mapper.storedTheme
 import com.adhamelgendy.nixura.data.mapper.toDomain
 import com.adhamelgendy.nixura.domain.clock.Clock
 import com.adhamelgendy.nixura.domain.model.AppSettings
@@ -29,40 +30,81 @@ import com.adhamelgendy.nixura.domain.repository.DataMaintenanceRepository
 import com.adhamelgendy.nixura.domain.repository.EventRepository
 import com.adhamelgendy.nixura.domain.repository.GoodHabitRepository
 import com.adhamelgendy.nixura.domain.repository.PreferencesRepository
+import com.adhamelgendy.nixura.domain.theme.HabitTheme
+import com.adhamelgendy.nixura.domain.theme.HabitThemeDetector
+import com.adhamelgendy.nixura.domain.theme.WaterGoal
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class GoodHabitRepositoryImpl(
     private val goodHabitDao: GoodHabitDao,
     private val logDao: GoodHabitLogDao,
     private val clock: Clock,
+    private val themes: HabitThemeDetector,
 ) : GoodHabitRepository {
 
+    private val backfill = Mutex()
+    private var backfilled = false
+
     override fun observeGoodHabits(): Flow<List<GoodHabitWithLogs>> =
-        goodHabitDao.observeActive().combine(logDao.observeAll()) { habits, logs ->
-            val byHabit = logs.groupBy { it.goodHabitId }
-            habits.map { entity ->
-                GoodHabitWithLogs(
-                    habit = entity.toDomain(),
-                    logs = byHabit[entity.id].orEmpty().map { it.toDomain() },
-                )
+        goodHabitDao.observeActive()
+            .onStart { backfillThemes() }
+            .combine(logDao.observeAll()) { habits, logs ->
+                val byHabit = logs.groupBy { it.goodHabitId }
+                habits.map { entity ->
+                    GoodHabitWithLogs(
+                        // A row without a theme only exists between a sync from an older build and the next backfill.
+                        habit = entity.toDomain(entity.storedTheme() ?: themes.themeFor(entity.name)),
+                        logs = byHabit[entity.id].orEmpty().map { it.toDomain() },
+                    )
+                }
             }
-        }
 
-    override suspend fun create(name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?): Long =
-        goodHabitDao.insert(
-            GoodHabitEntity(
-                name = name,
-                dailyTarget = dailyTarget,
-                colorArgb = colorArgb,
-                createdAtEpochMillis = clock.nowEpochMillis(),
-                weeklyTarget = weeklyTarget,
-            ),
-        )
+    /** Detects and stores the theme of habits saved before themes existed. Once per app run, on Room's own thread. */
+    private suspend fun backfillThemes() = backfill.withLock {
+        if (backfilled) return@withLock
+        goodHabitDao.withoutTheme().forEach { goodHabitDao.setDetectedTheme(it.id, themes.themeFor(it.name).storageKey) }
+        backfilled = true
+    }
 
-    override suspend fun update(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?) =
-        goodHabitDao.updateDetails(id, name, dailyTarget, colorArgb, weeklyTarget, clock.nowEpochMillis())
+    override suspend fun create(
+        name: String,
+        dailyTarget: Int,
+        colorArgb: Long?,
+        weeklyTarget: Int?,
+        theme: HabitTheme,
+        water: WaterGoal?,
+    ): Long = goodHabitDao.insert(
+        GoodHabitEntity(
+            name = name,
+            dailyTarget = dailyTarget,
+            colorArgb = colorArgb,
+            createdAtEpochMillis = clock.nowEpochMillis(),
+            weeklyTarget = weeklyTarget,
+            theme = theme.storageKey,
+            waterGoalMl = water?.goalMl,
+            waterServingMl = water?.servingMl,
+            waterUnit = water?.unit?.storageKey,
+        ),
+    )
+
+    override suspend fun update(
+        id: Long,
+        name: String,
+        dailyTarget: Int,
+        colorArgb: Long?,
+        weeklyTarget: Int?,
+        theme: HabitTheme,
+        water: WaterGoal?,
+    ) = goodHabitDao.updateDetails(
+        id, name, dailyTarget, colorArgb, weeklyTarget,
+        theme.storageKey, water?.goalMl, water?.servingMl, water?.unit?.storageKey,
+        clock.nowEpochMillis(),
+    )
 
     override suspend fun archive(id: Long) = goodHabitDao.archive(id, clock.nowEpochMillis())
 

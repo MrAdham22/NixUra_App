@@ -13,6 +13,9 @@ import com.adhamelgendy.nixura.domain.model.EventCategory
 import com.adhamelgendy.nixura.domain.model.EventSource
 import com.adhamelgendy.nixura.domain.model.GoodHabit
 import com.adhamelgendy.nixura.domain.model.GoodHabitLog
+import com.adhamelgendy.nixura.domain.theme.HabitTheme
+import com.adhamelgendy.nixura.domain.theme.WaterGoal
+import com.adhamelgendy.nixura.domain.theme.WaterUnit
 import com.adhamelgendy.nixura.domain.model.Habit
 import com.adhamelgendy.nixura.domain.model.HabitEvent
 import com.adhamelgendy.nixura.domain.model.HabitEventType
@@ -64,7 +67,8 @@ fun HabitEventEntity.toDomain(): HabitEvent = HabitEvent(
 
 fun HabitEventType.toStorageValue(): String = name
 
-fun GoodHabitEntity.toDomain(): GoodHabit = GoodHabit(
+/** [theme] is the stored one, or the one detected for a row that has none yet. */
+fun GoodHabitEntity.toDomain(theme: HabitTheme): GoodHabit = GoodHabit(
     id = id,
     name = name,
     dailyTarget = dailyTarget,
@@ -72,7 +76,19 @@ fun GoodHabitEntity.toDomain(): GoodHabit = GoodHabit(
     createdAtEpochMillis = createdAtEpochMillis,
     archivedAtEpochMillis = archivedAtEpochMillis,
     weeklyTarget = weeklyTarget,
+    theme = theme,
+    water = if (theme == HabitTheme.WATER && weeklyTarget == null) storedWaterGoal() ?: WaterGoal.defaultFor(dailyTarget) else null,
 )
+
+/** The stored goal, or null when there is none or it is out of range (e.g. a hand-edited synced record). */
+private fun GoodHabitEntity.storedWaterGoal(): WaterGoal? {
+    val goal = waterGoalMl ?: return null
+    return runCatching {
+        WaterGoal(goal, waterServingMl ?: WaterGoal.DEFAULT_SERVING_ML, WaterUnit.fromStorageKey(waterUnit) ?: WaterUnit.CUPS)
+    }.getOrNull()
+}
+
+fun GoodHabitEntity.storedTheme(): HabitTheme? = HabitTheme.fromStorageKey(theme)
 
 fun GoodHabitLogEntity.toDomain(): GoodHabitLog = GoodHabitLog(goodHabitId, dayIndex, count)
 

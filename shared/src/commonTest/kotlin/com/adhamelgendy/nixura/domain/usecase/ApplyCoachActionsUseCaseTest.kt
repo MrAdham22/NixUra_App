@@ -12,7 +12,6 @@ import com.adhamelgendy.nixura.domain.repository.GoodHabitRepository
 import com.adhamelgendy.nixura.domain.repository.HabitTrackingRepository
 import com.adhamelgendy.nixura.domain.time.DayCalculator
 import com.adhamelgendy.nixura.domain.time.TimeZoneOffsetProvider
-import com.adhamelgendy.nixura.domain.widget.runSuspend
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlin.test.Test
@@ -40,11 +39,11 @@ class ApplyCoachActionsUseCaseTest {
     private class Goods : GoodHabitRepository {
         val created = mutableListOf<Triple<String, Int, Int?>>()
         override fun observeGoodHabits(): Flow<List<GoodHabitWithLogs>> = emptyFlow()
-        override suspend fun create(name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?): Long {
+        override suspend fun create(name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?, theme: com.adhamelgendy.nixura.domain.theme.HabitTheme, water: com.adhamelgendy.nixura.domain.theme.WaterGoal?): Long {
             created += Triple(name, dailyTarget, weeklyTarget)
             return created.size.toLong()
         }
-        override suspend fun update(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?) = error("unused")
+        override suspend fun update(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?, theme: com.adhamelgendy.nixura.domain.theme.HabitTheme, water: com.adhamelgendy.nixura.domain.theme.WaterGoal?) = error("unused")
         override suspend fun archive(id: Long) = error("unused")
         override suspend fun setCount(id: Long, dayIndex: Long, count: Int) = error("unused")
     }
@@ -65,14 +64,14 @@ class ApplyCoachActionsUseCaseTest {
     private val events = Events()
     private val apply = ApplyCoachActionsUseCase(
         CreateHabitAndStartTrackingUseCase(quits),
-        CreateGoodHabitUseCase(goods),
+        CreateGoodHabitUseCase(goods, com.adhamelgendy.nixura.domain.theme.HabitThemeDetector(com.adhamelgendy.nixura.domain.coach.HabitKnowledgeBase())),
         SaveEventUseCase(events),
         clock,
         days,
     )
 
     @Test
-    fun correctedValuesAreSaved() = runSuspend {
+    fun correctedValuesAreSaved() = kotlinx.coroutines.test.runTest {
         // The AI heard "15 cups of water" and a meeting with no category; the user fixed both.
         val outcome = apply(
             listOf(
@@ -89,7 +88,7 @@ class ApplyCoachActionsUseCaseTest {
     }
 
     @Test
-    fun eventWithoutTimeOrCategoryUsesTheDefaults() = runSuspend {
+    fun eventWithoutTimeOrCategoryUsesTheDefaults() = kotlinx.coroutines.test.runTest {
         apply(listOf(CoachAction.Event("Trip", 2026, 12, 1, null, null)))
         assertEquals(listOf(Triple("Trip", EventCategory.EVENT, days.epochMillisOf(2026, 12, 1, 9, 0))), events.created)
     }

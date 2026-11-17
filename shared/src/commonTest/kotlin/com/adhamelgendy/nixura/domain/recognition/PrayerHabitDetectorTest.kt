@@ -35,9 +35,9 @@ class PrayerHabitDetectorTest {
     }
 
     @Test
-    fun fillStyleDetectorPicksPrayerFirst() {
-        val detector = GoodHabitFillStyleDetector(com.adhamelgendy.nixura.domain.coach.HabitKnowledgeBase())
-        assertEquals(GoodHabitFillStyle.PRAYER, detector.styleFor("pray"))
-        assertEquals(GoodHabitFillStyle.WATER, detector.styleFor("drink water"))
+    fun themeDetectorPicksPrayerFirst() {
+        val detector = com.adhamelgendy.nixura.domain.theme.HabitThemeDetector(com.adhamelgendy.nixura.domain.coach.HabitKnowledgeBase())
+        assertEquals(GoodHabitFillStyle.PRAYER, detector.themeFor("pray").fillStyle)
+        assertEquals(GoodHabitFillStyle.WATER, detector.themeFor("drink water").fillStyle)
     }
 }

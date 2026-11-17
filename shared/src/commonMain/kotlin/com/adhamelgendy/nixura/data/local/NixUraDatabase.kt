@@ -34,7 +34,7 @@ import com.adhamelgendy.nixura.data.local.entity.PreferenceEntity
         CoachMessageEntity::class,
         PreferenceEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 @ConstructedBy(NixUraDatabaseConstructor::class)

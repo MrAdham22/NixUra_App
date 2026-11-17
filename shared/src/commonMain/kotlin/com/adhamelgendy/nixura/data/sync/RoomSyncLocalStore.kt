@@ -64,6 +64,11 @@ internal data class GoodHabitPayload(
     val archivedAt: Long? = null,
     /** Absent in records from builds before weekly habits: those are daily. */
     val weeklyTarget: Int? = null,
+    /** Absent in records from builds before themes: the app detects it from the name. */
+    val theme: String? = null,
+    val waterGoalMl: Int? = null,
+    val waterServingMl: Int? = null,
+    val waterUnit: String? = null,
 )
 
 @Serializable
@@ -112,7 +117,7 @@ internal class RoomSyncLocalStore(
             out += record(SyncType.Habit, it.syncId, it.updatedAtEpochMillis, it.deletedAtEpochMillis, HabitPayload.serializer(), HabitPayload(it.name, it.createdAtEpochMillis, it.archivedAtEpochMillis, it.colorArgb, it.costPayload()))
         }
         if (room() > 0) dao.dirtyGoodHabits(room()).forEach {
-            out += record(SyncType.GoodHabit, it.syncId, it.updatedAtEpochMillis, it.deletedAtEpochMillis, GoodHabitPayload.serializer(), GoodHabitPayload(it.name, it.dailyTarget, it.colorArgb, it.createdAtEpochMillis, it.archivedAtEpochMillis, it.weeklyTarget))
+            out += record(SyncType.GoodHabit, it.syncId, it.updatedAtEpochMillis, it.deletedAtEpochMillis, GoodHabitPayload.serializer(), GoodHabitPayload(it.name, it.dailyTarget, it.colorArgb, it.createdAtEpochMillis, it.archivedAtEpochMillis, it.weeklyTarget, it.theme, it.waterGoalMl, it.waterServingMl, it.waterUnit))
         }
         if (room() > 0) dao.dirtyHabitEvents(room()).forEach {
             val parent = dao.habitById(it.habitId)
@@ -250,11 +255,11 @@ internal class RoomSyncLocalStore(
             }?.copy(syncId = r.id)
         }
         if (existing == null) {
-            if (!r.deleted) dao.insertGoodHabit(GoodHabitEntity(name = p.name, dailyTarget = p.dailyTarget, weeklyTarget = p.weeklyTarget?.coerceIn(1, 7), colorArgb = p.colorArgb, createdAtEpochMillis = p.createdAt, archivedAtEpochMillis = p.archivedAt, syncId = r.id, updatedAtEpochMillis = r.updatedAt, dirty = false))
+            if (!r.deleted) dao.insertGoodHabit(GoodHabitEntity(name = p.name, dailyTarget = p.dailyTarget, weeklyTarget = p.weeklyTarget?.coerceIn(1, 7), colorArgb = p.colorArgb, theme = p.theme, waterGoalMl = p.waterGoalMl, waterServingMl = p.waterServingMl, waterUnit = p.waterUnit, createdAtEpochMillis = p.createdAt, archivedAtEpochMillis = p.archivedAt, syncId = r.id, updatedAtEpochMillis = r.updatedAt, dirty = false))
             return
         }
         if (!SyncRules.remoteWins(existing.dirty, existing.updatedAtEpochMillis, r.updatedAt)) return
-        val updated = existing.copy(name = p.name, dailyTarget = p.dailyTarget, weeklyTarget = p.weeklyTarget?.coerceIn(1, 7), colorArgb = p.colorArgb, createdAtEpochMillis = p.createdAt, archivedAtEpochMillis = p.archivedAt, updatedAtEpochMillis = r.updatedAt, deletedAtEpochMillis = deletedAt(r), dirty = false)
+        val updated = existing.copy(name = p.name, dailyTarget = p.dailyTarget, weeklyTarget = p.weeklyTarget?.coerceIn(1, 7), colorArgb = p.colorArgb, theme = p.theme, waterGoalMl = p.waterGoalMl, waterServingMl = p.waterServingMl, waterUnit = p.waterUnit, createdAtEpochMillis = p.createdAt, archivedAtEpochMillis = p.archivedAt, updatedAtEpochMillis = r.updatedAt, deletedAtEpochMillis = deletedAt(r), dirty = false)
         if (updated != existing) dao.updateGoodHabit(updated)
     }
 

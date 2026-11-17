@@ -17,7 +17,6 @@ import com.adhamelgendy.nixura.domain.coach.RuleBasedCoachResponder
 import com.adhamelgendy.nixura.domain.notification.NotificationPlanner
 import com.adhamelgendy.nixura.domain.notification.NotificationSyncService
 import com.adhamelgendy.nixura.domain.money.CountableHabits
-import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyleDetector
 import com.adhamelgendy.nixura.domain.recognition.HabitTopicDetector
 import com.adhamelgendy.nixura.domain.recognition.HabitNameHandoff
 import com.adhamelgendy.nixura.domain.recognition.HabitRecognizer
@@ -93,7 +92,7 @@ fun appModule() = module {
     single<HabitTrackingRepository> {
         HabitTrackingRepositoryImpl(habitDao = get(), habitEventDao = get(), habitWriteDao = get(), clock = get())
     }
-    single<GoodHabitRepository> { GoodHabitRepositoryImpl(get(), get(), get()) }
+    single<GoodHabitRepository> { GoodHabitRepositoryImpl(get(), get(), get(), get()) }
     single<EventRepository> { EventRepositoryImpl(get(), get()) }
     single<CoachRepository> { CoachRepositoryImpl(get(), get()) }
     single<PreferencesRepository> { PreferencesRepositoryImpl(get(), get()) }
@@ -103,7 +102,7 @@ fun appModule() = module {
     single { HabitKnowledgeBase() }
     single { HabitRecognizer(get()) }
     single { HabitNameHandoff() }
-    single { GoodHabitFillStyleDetector(get()) }
+    single { com.adhamelgendy.nixura.domain.theme.HabitThemeDetector(get()) }
     single { HabitTopicDetector(get()) }
     single { CountableHabits(get()) }
     single { CoachEngine(get()) }
@@ -120,8 +119,8 @@ fun appModule() = module {
     factory { UpdateHabitUseCase(get()) }
     // Use cases — good habits
     factory { ObserveGoodHabitsUseCase(get()) }
-    factory { CreateGoodHabitUseCase(get()) }
-    factory { UpdateGoodHabitUseCase(get()) }
+    factory { CreateGoodHabitUseCase(get(), get()) }
+    factory { UpdateGoodHabitUseCase(get(), get()) }
     factory { SetGoodHabitCountUseCase(get()) }
     // Use cases — events
     factory { ObserveEventsUseCase(get()) }
@@ -165,7 +164,7 @@ fun appModule() = module {
             topics = get(),
         )
     }
-    viewModel { GoodHabitsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { GoodHabitsViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { EventsViewModel(get(), get(), get(), get(), get()) }
     viewModel { CoachViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { com.adhamelgendy.nixura.presentation.voice.VoiceNoteViewModel(get(), get(), get(), get(), get(), get(), get()) }

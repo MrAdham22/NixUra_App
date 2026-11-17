@@ -143,3 +143,17 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
         connection.execSQL("ALTER TABLE `coach_messages` ADD COLUMN `visuals` TEXT")
     }
 }
+
+/**
+ * v7 → v8, additive only: the habit theme (water, prayer, walk...) stored with each good habit, and the daily water
+ * goal. Existing rows get null here; the good-habit repository detects their theme from the name once, off the main
+ * thread, and water habits read their old "N times a day" as N cups of 250 ml, so no logged day changes meaning.
+ */
+val MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `theme` TEXT")
+        connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `water_goal_ml` INTEGER")
+        connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `water_serving_ml` INTEGER")
+        connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `water_unit` TEXT")
+    }
+}

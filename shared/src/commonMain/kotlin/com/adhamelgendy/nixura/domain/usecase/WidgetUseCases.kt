@@ -4,7 +4,6 @@ import com.adhamelgendy.nixura.domain.recognition.HabitTopic
 import com.adhamelgendy.nixura.domain.recognition.HabitTopicDetector
 import com.adhamelgendy.nixura.domain.clock.Clock
 import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyle
-import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyleDetector
 import com.adhamelgendy.nixura.domain.repository.EventRepository
 import com.adhamelgendy.nixura.domain.repository.GoodHabitRepository
 import com.adhamelgendy.nixura.domain.repository.HabitTrackingRepository
@@ -75,7 +74,6 @@ class LoadWidgetStateUseCase(
     private val preferences: PreferencesRepository,
     private val clock: Clock,
     private val days: DayCalculator,
-    private val fillStyles: GoodHabitFillStyleDetector? = null,
     private val topics: HabitTopicDetector? = null,
 ) {
     suspend fun quit(habitId: Long?): QuitWidgetState =
@@ -83,15 +81,18 @@ class LoadWidgetStateUseCase(
             topics?.quitTopic(name) ?: HabitTopic.OTHER_QUIT
         }
 
-    suspend fun good(habitId: Long?): GoodWidgetState =
-        WidgetStateMapper.good(
+    suspend fun good(habitId: Long?): GoodWidgetState {
+        val all = goodHabits.observeGoodHabits().first()
+        val styles = all.associate { it.habit.name to it.habit.theme.fillStyle }
+        return WidgetStateMapper.good(
             habitId,
-            goodHabits.observeGoodHabits().first(),
+            all,
             clock.nowEpochMillis(),
             days,
-            fillStyleOf = { name -> fillStyles?.styleFor(name) ?: GoodHabitFillStyle.PLAIN },
+            fillStyleOf = { name -> styles[name] ?: GoodHabitFillStyle.PLAIN },
             topicOf = { name -> topics?.buildTopic(name) ?: HabitTopic.OTHER_BUILD },
         )
+    }
 
     /** [eventId] `null` = nearest event. */
     suspend fun event(eventId: Long?): EventWidgetState =

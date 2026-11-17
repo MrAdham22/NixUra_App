@@ -1,26 +1,8 @@
 package com.adhamelgendy.nixura.domain.recognition
 
-import com.adhamelgendy.nixura.domain.coach.HabitKnowledgeBase
-
 /**
  * How a good-habit card shows today's progress. [WATER] habits fill with rising water; everything else uses the plain
- * green fill; [PRAYER] habits get the gold Islamic-art card. New measurable kinds (steps, pages...) get their own value here and reuse the same liquid visual.
+ * green fill; [PRAYER] habits get the gold Islamic-art card. It follows from the habit's stored
+ * [com.adhamelgendy.nixura.domain.theme.HabitTheme] (`theme.fillStyle`), never from the name.
  */
 enum class GoodHabitFillStyle { WATER, PRAYER, PLAIN }
-
-/**
- * Picks the fill style from the habit's free-typed name with the same recognizer the forms use, so typos, synonyms
- * and Arabic ("drink watr", "hydration", "شرب الماء") work too. Stateless and per-keystroke fast, so safe from any thread.
- */
-class GoodHabitFillStyleDetector(private val knowledge: HabitKnowledgeBase) {
-
-    fun styleFor(name: String): GoodHabitFillStyle {
-        if (PrayerHabitDetector.isPrayer(name)) return GoodHabitFillStyle.PRAYER
-        val goodId = knowledge.outcomeFor(name.trim()).good?.id
-        return if (goodId in WATER_IDS) GoodHabitFillStyle.WATER else GoodHabitFillStyle.PLAIN
-    }
-
-    private companion object {
-        val WATER_IDS = setOf("water", "hydrate_lemon")
-    }
-}

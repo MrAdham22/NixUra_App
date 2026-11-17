@@ -8,7 +8,6 @@ import com.adhamelgendy.nixura.domain.calculator.GoodHabitStatsCalculator
 import com.adhamelgendy.nixura.domain.clock.Clock
 import com.adhamelgendy.nixura.domain.model.GoodHabitWithLogs
 import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyle
-import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyleDetector
 import com.adhamelgendy.nixura.domain.time.DayCalculator
 import com.adhamelgendy.nixura.domain.usecase.CreateGoodHabitUseCase
 import com.adhamelgendy.nixura.domain.usecase.ObserveGoodHabitsUseCase
@@ -85,15 +84,12 @@ class GoodHabitsViewModel(
     private val setCount: SetGoodHabitCountUseCase,
     private val clock: Clock,
     private val dayCalculator: DayCalculator,
-    private val fillStyles: GoodHabitFillStyleDetector,
     pendingDeletions: PendingDeletions,
     private val topics: HabitTopicDetector? = null,
 ) : ViewModel() {
 
     private val transient = MutableStateFlow(GoodHabitsUiState())
 
-    /** Habit name → fill style. Only touched inside the one uiState flow, which runs sequentially. */
-    private val styleCache = HashMap<String, GoodHabitFillStyle>()
     private val topicCache = HashMap<String, HabitTopic>()
     private val tick = MutableStateFlow(0L)
     private val initialState = GoodHabitsUiState(todayIndex = dayCalculator.dayIndexOf(clock.nowEpochMillis()))
@@ -185,7 +181,7 @@ class GoodHabitsViewModel(
             completion30 = stats.completionLast30,
             countsByDay = GoodHabitStatsCalculator.countsByDay(this),
             createdDayIndex = createdDay,
-            fillStyle = styleCache.getOrPut(habit.name) { fillStyles.styleFor(habit.name) },
+            fillStyle = habit.theme.fillStyle,
             topic = topics?.let { t -> topicCache.getOrPut(habit.name) { t.buildTopic(habit.name) } } ?: HabitTopic.OTHER_BUILD,
             weeklyTarget = habit.weeklyTarget,
             progressCount = stats.progressCount,

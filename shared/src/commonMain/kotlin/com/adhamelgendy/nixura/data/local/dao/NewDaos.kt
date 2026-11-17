@@ -22,8 +22,34 @@ interface GoodHabitDao {
     @Insert
     suspend fun insert(habit: GoodHabitEntity): Long
 
-    @Query("UPDATE good_habits SET name = :name, daily_target = :dailyTarget, color_argb = :colorArgb, weekly_target = :weeklyTarget, updated_at = :updatedAt, dirty = 1 WHERE id = :id")
-    suspend fun updateDetails(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?, updatedAt: Long)
+    @Query(
+        "UPDATE good_habits SET name = :name, daily_target = :dailyTarget, color_argb = :colorArgb, weekly_target = :weeklyTarget, " +
+            "theme = :theme, water_goal_ml = :waterGoalMl, water_serving_ml = :waterServingMl, water_unit = :waterUnit, " +
+            "updated_at = :updatedAt, dirty = 1 WHERE id = :id",
+    )
+    suspend fun updateDetails(
+        id: Long,
+        name: String,
+        dailyTarget: Int,
+        colorArgb: Long?,
+        weeklyTarget: Int?,
+        theme: String,
+        waterGoalMl: Int?,
+        waterServingMl: Int?,
+        waterUnit: String?,
+        updatedAt: Long,
+    )
+
+    /** Good habits saved before themes existed (or synced from an older build), to detect their theme once. */
+    @Query("SELECT * FROM good_habits WHERE theme IS NULL AND deleted_at IS NULL")
+    suspend fun withoutTheme(): List<GoodHabitEntity>
+
+    /**
+     * Stores a detected theme without marking the row as edited: it is derived from the name, so it needs no sync of
+     * its own (other devices detect the same theme), and the edit time stays the user's.
+     */
+    @Query("UPDATE good_habits SET theme = :theme WHERE id = :id AND theme IS NULL")
+    suspend fun setDetectedTheme(id: Long, theme: String)
 
     @Query("UPDATE good_habits SET archived_at = :archivedAt, updated_at = :archivedAt, dirty = 1 WHERE id = :id")
     suspend fun archive(id: Long, archivedAt: Long)

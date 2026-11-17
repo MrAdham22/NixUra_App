@@ -8,13 +8,34 @@ import com.adhamelgendy.nixura.domain.model.Event
 import com.adhamelgendy.nixura.domain.model.EventCategory
 import com.adhamelgendy.nixura.domain.model.GoodHabitWithLogs
 import com.adhamelgendy.nixura.domain.model.UserProfile
+import com.adhamelgendy.nixura.domain.theme.HabitTheme
+import com.adhamelgendy.nixura.domain.theme.WaterGoal
 import kotlinx.coroutines.flow.Flow
 
 interface GoodHabitRepository {
     fun observeGoodHabits(): Flow<List<GoodHabitWithLogs>>
-    /** [weeklyTarget] `null` = daily habit; otherwise days a week (then [dailyTarget] is 1). */
-    suspend fun create(name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int? = null): Long
-    suspend fun update(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int? = null)
+    /**
+     * [weeklyTarget] `null` = daily habit; otherwise days a week (then [dailyTarget] is 1). [water] only for a daily
+     * [HabitTheme.WATER] habit.
+     */
+    suspend fun create(
+        name: String,
+        dailyTarget: Int,
+        colorArgb: Long?,
+        weeklyTarget: Int? = null,
+        theme: HabitTheme = HabitTheme.DEFAULT,
+        water: WaterGoal? = null,
+    ): Long
+
+    suspend fun update(
+        id: Long,
+        name: String,
+        dailyTarget: Int,
+        colorArgb: Long?,
+        weeklyTarget: Int? = null,
+        theme: HabitTheme = HabitTheme.DEFAULT,
+        water: WaterGoal? = null,
+    )
     suspend fun archive(id: Long)
 
     /** Sets the number of times the habit was done on [dayIndex]. `count <= 0` clears that day. */
