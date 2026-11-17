@@ -109,7 +109,7 @@ good-habit card/row composables, `presentation/screen/GoodHabitsScreen.kt`, the 
 
 **Status (2026-11-17): done; checked on an emulator, not yet on the owner's phone.**
 Branch `claude/s3-calendar-water-d163b7`: `76a6ad1` (calendar), `17ca1a9` (water display), `381f21d` (calendar step shades),
-`69f33fb` (owner feedback: Undo and Change goal removed), `affa189` (owner feedback: themed completion bars).
+`69f33fb` (owner feedback: Undo and Change goal removed), `affa189` (owner feedback: themed completion bars), `99325a8` (two-decimal litres).
 
 - **Feature 3, coloured calendar:** done days take `HabitThemes.visualFor(theme, colors).accent` (water blue, prayer
   gold, the rest green) in discrete steps: `DayIntensity.level(progress)` = 0 (nothing), 1–4 (part of the target),
@@ -157,8 +157,11 @@ Branch `claude/s3-calendar-water-d163b7`: `76a6ad1` (calendar), `17ca1a9` (water
   `progressOf` + `accent` instead of `target`; `DaySquare` takes a `level`; `WeekStrip` takes `progressOf`.
 - **For Session 4:** `rememberWeekStart()` reads only the layout direction; pass the app language to
   `WeekStart.forLocale` once it is selectable. Amounts are formatted with Western digits and a "." decimal.
-- **Small finds, not changed:** `WaterGoal.goalInUnit` rounds to one decimal, so a 2.25 L goal reads "2.3 L"
-  (Session 1 model; maybe show two decimals). "Last 7 / 30 days" stayed 0% with past days logged before the habit's
+- **Two-decimal litres (owner, 2026-11-17):** `WaterProgress.formatAmount` shows up to two decimals without
+  trailing zeros ("2", "1.2", "1.25", "2.25"). The lead session changes `WaterGoal.goalInUnit` / `drunkInUnit` to
+  centilitres at merge; until then this branch alone still shows "2.3 L" for 2.25 L. `WaterProgressTest` uses counts
+  that read the same before and after that change.
+- **Small finds, not changed:** "Last 7 / 30 days" stayed 0% with past days logged before the habit's
   creation day (existing stats rule, not this session's code).
 
 ## Session 4: Arabic + RTL (Feature 4), last
