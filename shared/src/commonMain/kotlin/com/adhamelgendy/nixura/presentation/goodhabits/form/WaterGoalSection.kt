@@ -90,7 +90,7 @@ fun WaterGoalSection(
             increaseLabel = s.waterCupSize,
         )
         Spacer(Modifier.height(12.dp))
-        Text(s.waterGoalSummary(form.servingsPerDay, form.servingMl), style = NixType.SmallStrong, color = c.water)
+        Text(s.waterGoalSummary(form.servingsPerDay, form.servingMl), style = NixType.SmallStrong, color = if (c.isDark) c.water else c.waterDeep)
         if (cupSizeChanged) {
             Spacer(Modifier.height(6.dp))
             Text(s.waterCupSizeChanged, style = NixType.Small, color = c.accentWarm)
