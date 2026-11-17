@@ -147,6 +147,13 @@ sets), any new file under `presentation/goodhabits/form/` (new). The save path i
   testAndroidHostTest 580 tests / 0 failures; on the emulator only (not the phone, by the lead's request): water without
   rays (dark and light), footprints in dark and light. RTL footprints checked in code and previews only (the app stays
   LTR on a device until Session 4 turns on the Arabic layout).
+- Round 3 (owner feedback on the footprints, 2026-11-17, `b837c9e`): the trail walks **down** the page, toes first,
+  from the top end corner beside the title, behind the form, out through the open bottom. Two walkers: the second is the
+  mirror image and starts 5.5 s later, so the trails cross. Each print presses in, stays 2.6 s and fades over 2.6 s
+  (about 6 pairs per walker on screen). Left and right feet are mirror-image sole outlines (arch and big toe on the inner
+  side) turned 9° outwards. Still frame = one moment of both walks; RTL mirror and draw-phase reads unchanged.
+  Verified: assembleDebug OK, testAndroidHostTest 582 / 0 failures; on the emulator (dark theme): direction, several
+  pairs, two lanes, distinct left/right prints. Not on the phone (lead installs the merged build).
 
 ## Session 3: details, calendar, cards (Feature 3 + Feature 5 display part)
 
