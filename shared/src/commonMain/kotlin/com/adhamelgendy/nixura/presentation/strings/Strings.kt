@@ -39,6 +39,11 @@ open class Strings {
     open val seeAll: String = "See all"
     open val reached: String = "Reached"
     open val habitNotFound: String = "This habit is no longer available."
+    /**
+     * An error message for the screen. Use cases and repositories fail with English messages (they are pure
+     * Kotlin, with no access to the UI language); each language turns the ones it knows into its own words.
+     */
+    open fun errorText(message: String): String = message
     open val am: String = "AM"
     open val pm: String = "PM"
 
@@ -55,6 +60,19 @@ open class Strings {
     )
     open val monthShort: List<String> = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
     open val daysCount: (Int) -> String = { if (it == 1) "1 day" else "$it days" }
+    /** A length in words, largest unit: "3 days", "5 hours", "12 minutes". */
+    open fun durationWords(duration: kotlin.time.Duration): String = com.adhamelgendy.nixura.domain.coach.durationText(duration)
+    /** A date in this language's order: "Tue, 20 Oct 2026", "20 Oct". [weekday] / [year] are null when not shown. */
+    open fun dateText(weekday: String?, day: Int, month: String, year: Int?): String {
+        val base = if (year != null) "$day $month $year" else "$day $month"
+        return if (weekday != null) "$weekday, $base" else base
+    }
+    /** A time of day: "8:30 PM". */
+    open fun clockText(hour12: Int, minute: String, suffix: String): String = "$hour12:$minute $suffix"
+    /** "Tue, 20 Oct 2026 · 8:30 PM". */
+    open fun dateTimeText(date: String, time: String): String = "$date · $time"
+    /** The month above a calendar: "November 2026". */
+    open fun monthYear(month: String, year: Int): String = "$month $year"
 
     // Onboarding
 
@@ -560,6 +578,8 @@ open class Strings {
     open val delConfirmBody: String = "This cannot be undone."
     open val legalPrivacyTitle: String = "Privacy Policy"
     open val legalTermsTitle: String = "Terms of Use"
+    /** Shown above the legal text in languages it is not translated into yet (empty in English). */
+    open val legalEnglishOnly: String = ""
     open val legalDraftNotice: String = "Draft: the owner must fill in the bracketed details and have this reviewed before release."
 
     // Score and streak explanations
@@ -876,7 +896,7 @@ val availableLanguages: List<AppLanguage> = listOf(
 val EnglishStrings: Strings = Strings()
 
 /** Text for a resolved language ("en" or "ar"; also accepts tags such as "ar-EG"). Unknown → English. */
-fun stringsFor(code: String): Strings = when (com.adhamelgendy.nixura.presentation.locale.AppLocales.primary(code)) {
+fun stringsFor(code: String): Strings = when (com.adhamelgendy.nixura.domain.locale.AppLocales.primary(code)) {
     "ar" -> ArabicStrings
     else -> EnglishStrings
 }

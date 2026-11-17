@@ -1,7 +1,7 @@
 package com.adhamelgendy.nixura.widgets
 
 import com.adhamelgendy.nixura.domain.model.DigitStyle
-import com.adhamelgendy.nixura.presentation.locale.AppLocales
+import com.adhamelgendy.nixura.domain.locale.AppLocales
 import com.adhamelgendy.nixura.presentation.locale.Digits
 import com.adhamelgendy.nixura.presentation.platform.systemLanguageTag
 import com.adhamelgendy.nixura.presentation.util.formatDateTimeShort

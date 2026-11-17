@@ -22,7 +22,7 @@ import com.adhamelgendy.nixura.domain.widget.WidgetKind
 import com.adhamelgendy.nixura.presentation.strings.EnglishStrings
 import com.adhamelgendy.nixura.presentation.strings.Strings
 import com.adhamelgendy.nixura.presentation.strings.stringsFor
-import com.adhamelgendy.nixura.presentation.locale.AppLocales
+import com.adhamelgendy.nixura.domain.locale.AppLocales
 import com.adhamelgendy.nixura.presentation.locale.Digits
 import com.adhamelgendy.nixura.presentation.platform.systemLanguageTag
 import kotlinx.coroutines.flow.first

@@ -4,40 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.text.font.FontFamily
 import com.adhamelgendy.nixura.domain.model.DigitStyle
-import com.adhamelgendy.nixura.domain.model.LANGUAGE_SYSTEM
-
-/**
- * Which language the app shows. The saved choice is "system", "en" or "ar"; [resolve] turns it into the language
- * actually shown ("en" or "ar"). Pure logic, shared with iOS.
- */
-object AppLocales {
-    const val ENGLISH = "en"
-    const val ARABIC = "ar"
-    val supported: List<String> = listOf(ENGLISH, ARABIC)
-
-    /**
-     * The language to show for a saved [choice]. "system" (or anything unknown) follows [systemTag] (the phone's
-     * language, e.g. "ar-EG", "en_US", "ar-XB"), and falls back to English when the phone's language is not one of ours.
-     */
-    fun resolve(choice: String?, systemTag: String?): String {
-        val chosen = primary(choice)
-        if (chosen in supported) return chosen
-        val system = primary(systemTag)
-        return if (system in supported) system else ENGLISH
-    }
-
-    /** "ar-EG" → "ar", "en_US" → "en", null → "". */
-    fun primary(tag: String?): String =
-        tag?.trim()?.lowercase()?.replace('_', '-')?.substringBefore('-').orEmpty()
-
-    fun isRtl(language: String): Boolean = primary(language) == ARABIC
-
-    /** The tag handed to the OS as the app's own language, or null to follow the phone. */
-    fun osTag(choice: String): String? = primary(choice).takeIf { it in supported }
-
-    /** The saved choice for a tag read back from the OS: an empty or unknown tag means "follow the phone". */
-    fun choiceFromOs(tag: String?): String = primary(tag).takeIf { it in supported } ?: LANGUAGE_SYSTEM
-}
+import com.adhamelgendy.nixura.domain.locale.AppLocales
 
 /** Western ↔ Arabic-Indic digits for text on screen. Never used on stored data. */
 object Digits {

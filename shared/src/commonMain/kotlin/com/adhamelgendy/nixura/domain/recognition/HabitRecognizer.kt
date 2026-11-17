@@ -43,7 +43,7 @@ class HabitRecognizer(private val knowledge: HabitKnowledgeBase) {
             normalizedText = a.coreText,
             polarity = polarity.polarity,
             polarityConfidence = polarity.confidence,
-            category = outcome.category?.category,
+            category = outcome.category?.category?.let(knowledge::localize),
             categoryConfidence = outcome.category?.confidence ?: 0f,
             suggestedCorrection = if (corrected != null) suggestion else null,
             correctedText = corrected,

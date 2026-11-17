@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.locale
 
+import com.adhamelgendy.nixura.domain.locale.AppLocales
 import android.os.Build
 import android.os.Handler
 import android.os.Looper

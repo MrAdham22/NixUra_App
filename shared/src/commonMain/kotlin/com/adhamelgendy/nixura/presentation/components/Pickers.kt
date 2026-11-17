@@ -113,7 +113,7 @@ fun DateTimePickerDialog(
     Dialog(onDismissRequest = onDismiss) {
         NixCard(padding = PaddingValues(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("${s.monthNames[month - 1]} $year", style = NixType.Heading, color = c.textPrimary, modifier = Modifier.weight(1f))
+                Text(s.monthYear(s.monthNames[month - 1], year), style = NixType.Heading, color = c.textPrimary, modifier = Modifier.weight(1f))
                 NixIconButton(NixIcon.Back, { monthIndex -= 1 }, size = 34.dp)
                 Spacer(Modifier.width(8.dp))
                 NixIconButton(NixIcon.Chevron, { monthIndex += 1 }, size = 34.dp)

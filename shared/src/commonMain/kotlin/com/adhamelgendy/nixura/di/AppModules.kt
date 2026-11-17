@@ -99,18 +99,20 @@ fun appModule() = module {
     single<DataMaintenanceRepository> { DataMaintenanceRepositoryImpl(get()) }
 
     // Coach (offline, rule-based). Swap RuleBasedCoachResponder for an AI-backed one later.
-    single { HabitKnowledgeBase() }
+    // The language of coach, notification and catalog texts; the UI keeps it in step with Settings → Language.
+    single { com.adhamelgendy.nixura.domain.locale.ContentLanguage { com.adhamelgendy.nixura.presentation.platform.systemLanguageTag() } }
+    single { HabitKnowledgeBase(get<com.adhamelgendy.nixura.domain.locale.ContentLanguage>()) }
     single { HabitRecognizer(get()) }
     single { HabitNameHandoff() }
     single { com.adhamelgendy.nixura.domain.theme.HabitThemeDetector(get()) }
     single { HabitTopicDetector(get()) }
     single { CountableHabits(get()) }
-    single { CoachEngine(get()) }
+    single { CoachEngine(get(), get()) }
     single<CoachResponder> { RuleBasedCoachResponder(get(), get()) }
 
     // Notifications
-    single { NotificationPlanner(get(), get()) }
-    single { NotificationSyncService(get(), get(), get(), get(), get(), get(), get()) }
+    single { NotificationPlanner(get(), get(), get()) }
+    single { NotificationSyncService(get(), get(), get(), get(), get(), get(), get(), get()) }
 
     // Use cases — bad habits
     factory { ObserveActiveHabitTrackingUseCase(get()) }

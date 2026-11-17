@@ -1,4 +1,4 @@
-package com.adhamelgendy.nixura.presentation.strings
+package com.adhamelgendy.nixura.domain.locale
 
 /** The six plural forms Arabic uses (CLDR): ٠ أيام، يوم، يومان، ٣ أيام، ١١ يومًا، ١٠٠ يوم. */
 enum class PluralCategory { ZERO, ONE, TWO, FEW, MANY, OTHER }

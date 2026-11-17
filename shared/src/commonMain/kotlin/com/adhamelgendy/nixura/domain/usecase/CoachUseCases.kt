@@ -220,7 +220,7 @@ class GetCoachContextUseCase(
         val focus = picked ?: snapshot.badHabits.minByOrNull { it.elapsed }
         val insight = when {
             focus != null -> com.adhamelgendy.nixura.domain.coach.CoachNote(
-                title = "${engine.displayName(focus.name)} · ${com.adhamelgendy.nixura.domain.coach.durationText(focus.elapsed)}",
+                title = "${engine.displayName(focus.name)} · ${engine.durationWords(focus.elapsed)}",
                 body = engine.motivation(focus.name, focus.elapsed, seed),
             )
             else -> null

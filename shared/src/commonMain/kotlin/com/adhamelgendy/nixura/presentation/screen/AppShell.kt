@@ -64,8 +64,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.adhamelgendy.nixura.presentation.locale.AppLocale
+import com.adhamelgendy.nixura.domain.locale.ContentLanguage
 import com.adhamelgendy.nixura.presentation.locale.AppLocaleGateway
-import com.adhamelgendy.nixura.presentation.locale.AppLocales
+import com.adhamelgendy.nixura.domain.locale.AppLocales
 import com.adhamelgendy.nixura.presentation.locale.LocalAppLocale
 import com.adhamelgendy.nixura.presentation.locale.rememberArabicFontFamily
 import com.adhamelgendy.nixura.presentation.platform.systemLanguageTag
@@ -180,6 +181,9 @@ fun AppRoot() {
         if (state.loaded) localeGateway.apply(state.settings.languageCode)
     }
     val language = AppLocales.resolve(state.settings.languageCode, systemTag)
+    // Coach replies, notifications and the habit catalog (domain text) follow the same language.
+    val contentLanguage = koinInject<ContentLanguage>()
+    remember(state.settings.languageCode, systemTag) { contentLanguage.update(state.settings.languageCode) }
     val arabicFont = rememberArabicFontFamily()
     val appLocale = remember(language, state.settings.digitStyle, arabicFont) {
         AppLocale(language = language, digitStyle = state.settings.digitStyle, arabicFont = arabicFont)

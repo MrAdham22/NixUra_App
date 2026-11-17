@@ -1,5 +1,7 @@
 package com.adhamelgendy.nixura.presentation.strings
 
+import com.adhamelgendy.nixura.domain.locale.ArabicPlurals
+import com.adhamelgendy.nixura.domain.locale.PluralCategory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

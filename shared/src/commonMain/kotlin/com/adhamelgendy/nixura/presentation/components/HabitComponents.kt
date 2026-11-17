@@ -352,7 +352,7 @@ fun BadHabitCard(
                         Text(s.longestYet, style = NixType.SmallStrong, color = primary, maxLines = 2)
                     }
                 } else {
-                    Text(s.longestLabel(model.longestStreakLabel), style = NixType.Small, color = muted, maxLines = 2)
+                    Text(s.longestLabel(s.durationWords(model.longestStreak)), style = NixType.Small, color = muted, maxLines = 2)
                 }
             }
             if (onCraving != null) {
@@ -573,7 +573,7 @@ fun MonthCalendar(
 
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("${s.monthNames[month - 1]} $year", style = NixType.Heading, color = c.textPrimary, modifier = Modifier.weight(1f))
+            Text(s.monthYear(s.monthNames[month - 1], year), style = NixType.Heading, color = c.textPrimary, modifier = Modifier.weight(1f))
             NixIconButton(NixIcon.Back, onPrevMonth, size = 36.dp)
             Spacer(Modifier.width(8.dp))
             NixIconButton(NixIcon.Chevron, { if (canGoNext) onNextMonth() }, size = 36.dp, tint = if (canGoNext) c.textPrimary else c.textMuted.copy(alpha = 0.4f))
@@ -853,7 +853,7 @@ fun EventCard(
         if (passed) {
             // A past event is history: one quiet line, no ticking counter.
             Spacer(Modifier.height(8.dp))
-            Text(s.passedAgo(durationText(-remaining)), style = NixType.Small, color = c.textMuted)
+            Text(s.passedAgo(s.durationWords(-remaining)), style = NixType.Small, color = c.textMuted)
         } else {
             Spacer(Modifier.height(14.dp))
             Text(s.startsIn.uppercase(), style = NixType.Eyebrow, color = c.textSecondary)

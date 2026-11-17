@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.locale
 
+import com.adhamelgendy.nixura.domain.locale.AppLocales
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
 import com.adhamelgendy.nixura.domain.model.DigitStyle

@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import com.adhamelgendy.nixura.presentation.strings.LocalStrings
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.drawBehind
@@ -330,7 +331,8 @@ fun ErrorBanner(message: String, onDismiss: () -> Unit, modifier: Modifier = Mod
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(message, style = NixType.Body, color = c.danger, modifier = Modifier.weight(1f))
+        // Errors from the domain arrive as English text; the language turns the known ones into its own words.
+        Text(LocalStrings.current.errorText(message), style = NixType.Body, color = c.danger, modifier = Modifier.weight(1f))
         NixIconView(NixIcon.Close, c.danger, size = 18.dp)
     }
 }

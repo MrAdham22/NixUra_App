@@ -34,21 +34,25 @@ fun formatClockMinutes(minutesOfDay: Int, s: Strings): String {
         0 -> 12
         else -> h
     }
-    return "$hour12:${minute.toString().padStart(2, '0')} $suffix"
+    return s.clockText(hour12, minute.toString().padStart(2, '0'), suffix)
 }
 
 /** e.g. "Tue, 20 Oct 2026 · 8:30 PM"; with [includeYear] = false (home-screen widgets): "Tue, 20 Oct · 8:30 PM". */
 fun formatDateTime(epochMillis: Long, days: DayCalculator, s: Strings, includeYear: Boolean = true): String {
     val dayIndex = days.dayIndexOf(epochMillis)
     val minutes = (days.millisOfDay(epochMillis) / 60_000L).toInt()
-    return "${formatDate(dayIndex, s, includeWeekday = true, includeYear = includeYear)} · ${formatClockMinutes(minutes, s)}"
+    return s.dateTimeText(formatDate(dayIndex, s, includeWeekday = true, includeYear = includeYear), formatClockMinutes(minutes, s))
 }
 
 fun formatDate(dayIndex: Long, s: Strings, includeWeekday: Boolean = false, includeYear: Boolean = true): String {
     val civil = CivilCalendar.civilFromDayIndex(dayIndex)
-    val weekday = s.weekdayShort[CivilCalendar.isoWeekday(dayIndex) - 1]
-    val base = if (includeYear) "${civil.day} ${s.monthShort[civil.month - 1]} ${civil.year}" else "${civil.day} ${s.monthShort[civil.month - 1]}"
-    return if (includeWeekday) "$weekday, $base" else base
+    // The order, separators and names come from the language (Strings.dateText), never a fixed pattern.
+    return s.dateText(
+        weekday = if (includeWeekday) s.weekdayShort[CivilCalendar.isoWeekday(dayIndex) - 1] else null,
+        day = civil.day,
+        month = s.monthShort[civil.month - 1],
+        year = if (includeYear) civil.year else null,
+    )
 }
 
 fun formatLead(leadMillis: Long, s: Strings): String {
@@ -78,5 +82,5 @@ fun String.personForDisplay(): String = trim().split(Regex("\\s+")).joinToString
 fun formatDateTimeShort(epochMillis: Long, days: DayCalculator, s: com.adhamelgendy.nixura.presentation.strings.Strings): String {
     val dayIndex = days.dayIndexOf(epochMillis)
     val minutes = (days.millisOfDay(epochMillis) / 60_000L).toInt()
-    return "${formatDate(dayIndex, s, includeWeekday = false, includeYear = false)} · ${formatClockMinutes(minutes, s)}"
+    return s.dateTimeText(formatDate(dayIndex, s, includeWeekday = false, includeYear = false), formatClockMinutes(minutes, s))
 }

@@ -56,7 +56,8 @@ class WaterProgressTest {
         assertEquals("5 / 8 أكواب", WaterProgress.text(WaterGoal.fromCups(8), 5, ArabicStrings))
         assertEquals("5 / 12 كوبًا", WaterProgress.text(WaterGoal.fromCups(12), 5, ArabicStrings))
         assertEquals("1 / 2 لتر", WaterProgress.text(WaterGoal.fromLiters(2.0), 4, ArabicStrings))
-        assertEquals("+250 مل", WaterProgress.quickAddLabel(WaterGoal.fromLiters(2.0), ArabicStrings))
+        // A left-to-right mark keeps the plus sign in front of the number in Arabic text.
+        assertEquals("\u200E+250 مل", WaterProgress.quickAddLabel(WaterGoal.fromLiters(2.0), ArabicStrings))
     }
 
     @Test
