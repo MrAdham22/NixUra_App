@@ -28,6 +28,8 @@ class WaterGoalTest {
         assertEquals(0.5f, goal.progress(4))
         assertEquals(1f, goal.progress(12))
         assertEquals(1.2, WaterGoal(2_000, 200, WaterUnit.LITERS).drunkInUnit(6)) // 1200 ml shows as 1.2 L
+        assertEquals(1.25, WaterGoal(1_000, 250, WaterUnit.LITERS).drunkInUnit(5)) // never rounded up to 1.3
+        assertEquals(2.25, WaterGoal(2_250, 300, WaterUnit.LITERS).goalInUnit())
     }
 
     @Test

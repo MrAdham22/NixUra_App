@@ -38,14 +38,14 @@ data class WaterGoal(
     /** 0..1 share of the goal reached with [count] servings; the calendar's colour intensity and the fill level. */
     fun progress(count: Int): Float = (drunkMl(count).toFloat() / goalMl).coerceIn(0f, 1f)
 
-    /** The goal in the chosen unit: litres (one decimal) or whole cups. */
+    /** The goal in the chosen unit: litres (to the centilitre, so 1.25 L stays 1.25) or cups. */
     fun goalInUnit(): Double = amountInUnit(goalMl)
 
     /** A day's amount in the chosen unit. */
     fun drunkInUnit(count: Int): Double = amountInUnit(drunkMl(count))
 
     private fun amountInUnit(ml: Int): Double = when (unit) {
-        WaterUnit.LITERS -> (ml / 100.0).roundToInt() / 10.0
+        WaterUnit.LITERS -> (ml / 10.0).roundToInt() / 100.0
         WaterUnit.CUPS -> ml.toDouble() / servingMl
     }
 
