@@ -232,7 +232,7 @@ private fun GuestBanner(onSignIn: () -> Unit) {
 private fun StartCard(navigator: Navigator) {
     val s = LocalStrings.current
     val c = Nix.colors
-    NixCard(Modifier.fillMaxWidth().guideTarget(GuideTarget.Progress)) {
+    NixCard(Modifier.fillMaxWidth().guideTarget(GuideTarget.StartHere)) {
         Text(s.homeStartTitle, style = NixType.Heading, color = c.textPrimary)
         Spacer(Modifier.height(10.dp))
         StartRow(NixIcon.Shield, s.homeStartQuit, c.accent) { navigator.push(Route.BadHabitForm()) }

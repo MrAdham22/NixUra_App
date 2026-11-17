@@ -614,6 +614,8 @@ open class Strings {
     open val guideStart: String = "Show me around"
     open val guideScoresTitle: String = "Your progress at a glance"
     open val guideScoresBody: String = "These rings fill up as you stay clear and reach your targets. Tap one any time to see how it's worked out."
+    open val guideStartHereTitle: String = "Start here"
+    open val guideStartHereBody: String = "Pick one thing to change first: something to quit, a habit to build or an event to count down to. Your progress rings show up here once you add it."
     open val guideQuitTitle: String = "Quit a bad habit"
     open val guideQuitBody: String = "Tap + to add one. A live counter starts, and its card gets lighter the longer you stay clear. In a hard moment, tap Craving? on the card."
     open val guideBuildTitle: String = "Build a good habit"
