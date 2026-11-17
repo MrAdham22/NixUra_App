@@ -17,6 +17,7 @@ import com.adhamelgendy.nixura.data.mapper.storedTheme
 import com.adhamelgendy.nixura.data.mapper.toDomain
 import com.adhamelgendy.nixura.domain.clock.Clock
 import com.adhamelgendy.nixura.domain.model.AppSettings
+import com.adhamelgendy.nixura.domain.model.DigitStyle
 import com.adhamelgendy.nixura.domain.model.CoachConversation
 import com.adhamelgendy.nixura.domain.model.CoachMessage
 import com.adhamelgendy.nixura.domain.model.CoachRole
@@ -220,6 +221,7 @@ class PreferencesRepositoryImpl(
             usageStatsEnabled = map[KEY_USAGE_STATS]?.let { it == "1" } ?: defaults.usageStatsEnabled,
             aiCoachConsent = map[KEY_AI_COACH]?.let { it == "1" },
             followSystemTheme = map[KEY_FOLLOW_SYSTEM_THEME]?.let { it == "1" } ?: defaults.followSystemTheme,
+            digitStyle = map[KEY_DIGITS]?.let { v -> DigitStyle.entries.firstOrNull { it.name == v } } ?: defaults.digitStyle,
         )
     }
 
@@ -253,6 +255,7 @@ class PreferencesRepositoryImpl(
             PreferenceEntity(KEY_GUIDE_DONE, if (settings.guideCompleted) "1" else "0"),
             PreferenceEntity(KEY_USAGE_STATS, if (settings.usageStatsEnabled) "1" else "0"),
             PreferenceEntity(KEY_FOLLOW_SYSTEM_THEME, if (settings.followSystemTheme) "1" else "0"),
+            PreferenceEntity(KEY_DIGITS, settings.digitStyle.name),
         ) + listOfNotNull(settings.aiCoachConsent?.let { PreferenceEntity(KEY_AI_COACH, if (it) "1" else "0") })
         dao.upsertAll(synced + local + marks)
     }
@@ -271,6 +274,7 @@ class PreferencesRepositoryImpl(
         const val KEY_GUIDE_DONE = "settings.guide_done"
         const val KEY_USAGE_STATS = "settings.usage_stats"
         const val KEY_AI_COACH = "settings.ai_coach"
+        const val KEY_DIGITS = "settings.digits"
     }
 }
 

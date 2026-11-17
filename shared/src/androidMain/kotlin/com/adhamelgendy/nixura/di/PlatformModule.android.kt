@@ -44,4 +44,5 @@ fun platformModule(
     single<SecureStore> { AndroidSecureStore(context) }
     single<DeviceInfoProvider> { AndroidDeviceInfo() }
     single<DeviceRegion> { AndroidDeviceRegion(context) }
+    single<com.adhamelgendy.nixura.presentation.locale.AppLocaleGateway> { com.adhamelgendy.nixura.presentation.locale.AndroidAppLocaleGateway() }
 }

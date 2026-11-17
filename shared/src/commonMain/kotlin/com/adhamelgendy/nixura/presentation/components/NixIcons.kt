@@ -18,6 +18,9 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -25,21 +28,33 @@ import kotlin.math.sin
 enum class NixIcon {
     Home, Shield, CircleCheck, Calendar, Sparkle, User, Gear, Plus, Back, Chevron, Bell, Trash,
     Pencil, Flame, Send, Close, Tick, Minus, Reset, Archive, Moon, Sun, Globe, Clock, Info, Leaf,
-    Eye, EyeOff, Mail, Lock, Mic, Stop, More,
+    Eye, EyeOff, Mail, Lock, Mic, Stop, More, Hash,
 
     // Habit-category glyphs (path data in TopicIcons.kt)
     Cigarette, WineGlass, Cup, Soda, Candy, Burger, Phone, Gamepad, Tv, Pill, Money, Dice, Thought, Chair, Speech,
     Hand, Drop, Dumbbell, Shoe, Book, Arch, Lotus, Apple, Heart, Music,
 }
 
+/** Icons that show a direction (back, forward, "open"): mirrored in RTL. Ticks, play, logos and the rest are not. */
+val NixIcon.isDirectional: Boolean get() = this == NixIcon.Back || this == NixIcon.Chevron
+
 /** 24×24 icons drawn in code; [NixIcon.Gear] uses the official Material "Settings" icon (material-icons-core). */
 @Composable
-fun NixIconView(icon: NixIcon, tint: Color, modifier: Modifier = Modifier, size: Dp = 22.dp, strokeWidth: Float = 1.8f) {
+fun NixIconView(
+    icon: NixIcon,
+    tint: Color,
+    modifier: Modifier = Modifier,
+    size: Dp = 22.dp,
+    strokeWidth: Float = 1.8f,
+    /** Directional icons (back, chevron) point the other way in a right-to-left layout. False when the caller rotates it. */
+    autoMirror: Boolean = true,
+) {
     if (icon == NixIcon.Gear) {
         Icon(Icons.Filled.Settings, contentDescription = null, tint = tint, modifier = modifier.size(size))
         return
     }
-    Canvas(modifier.size(size)) {
+    val mirror = autoMirror && icon.isDirectional && LocalLayoutDirection.current == LayoutDirection.Rtl
+    Canvas(modifier.size(size).then(if (mirror) Modifier.graphicsLayer { scaleX = -1f } else Modifier)) {
         val s = this.size.width / 24f
         val stroke = Stroke(width = strokeWidth * s, cap = StrokeCap.Round, join = StrokeJoin.Round)
         drawNixIcon(icon, tint, s, stroke)
@@ -156,6 +171,10 @@ private fun DrawScope.drawNixIcon(icon: NixIcon, c: Color, s: Float, st: Stroke)
         NixIcon.Close -> { line(c, s, w, 6f, 6f, 18f, 18f); line(c, s, w, 18f, 6f, 6f, 18f) }
         NixIcon.Tick -> poly(c, s, st, false, 5f, 12.5f, 10f, 17.5f, 19f, 7f)
         NixIcon.Minus -> line(c, s, w, 5f, 12f, 19f, 12f)
+        NixIcon.Hash -> {
+            line(c, s, w, 10f, 4.5f, 8.5f, 19.5f); line(c, s, w, 15.5f, 4.5f, 14f, 19.5f)
+            line(c, s, w, 5f, 9.5f, 19.5f, 9.5f); line(c, s, w, 4.5f, 14.5f, 19f, 14.5f)
+        }
         NixIcon.More -> listOf(6f, 12f, 18f).forEach { x -> drawCircle(c, 1.7f * s, Offset(x * s, 12f * s)) }
         NixIcon.Reset -> {
             drawArc(c, -50f, 280f, false, Offset(4.5f * s, 4.5f * s), Size(15f * s, 15f * s), style = st)

@@ -16,7 +16,9 @@ enum class WidgetKind { QUIT_COUNTER, GOOD_QUICK_LOG, EVENT }
 /** Theme and language the widgets should follow (read from the app settings). */
 data class WidgetAppearance(
     val darkTheme: Boolean = true,
+    /** The saved choice: "system", "en" or "ar" (resolve it with `AppLocales.resolve`). */
     val languageCode: String = "en",
+    val digitStyle: com.adhamelgendy.nixura.domain.model.DigitStyle = com.adhamelgendy.nixura.domain.model.DigitStyle.WESTERN,
 )
 
 private const val MILLIS_PER_DAY = 86_400_000L

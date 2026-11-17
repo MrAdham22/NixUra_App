@@ -63,6 +63,10 @@ fun platformModule() = module {
     // Google Calendar on iOS needs Google's iOS sign-in (an iOS OAuth client + URL scheme): not built yet, so the
     // Integrations screen says it is not available here. Notion works (it is done by the server).
     single<GoogleAuthorizer> { NotAvailableGoogleAuthorizer }
+
+    // Language: the app switches by itself; "System default" follows iOS (including Settings → NixUra → Language,
+    // offered because Info.plist lists en and ar in CFBundleLocalizations). Nothing to tell the OS.
+    single<com.adhamelgendy.nixura.presentation.locale.AppLocaleGateway> { com.adhamelgendy.nixura.presentation.locale.NoOpAppLocaleGateway }
 }
 
 private object NotAvailableSocialSignIn : SocialSignIn {

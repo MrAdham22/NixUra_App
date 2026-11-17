@@ -42,7 +42,7 @@ import kotlinx.coroutines.flow.drop
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import com.adhamelgendy.nixura.presentation.components.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -60,6 +60,15 @@ import com.adhamelgendy.nixura.presentation.auth.ChangePasswordScreen
 import com.adhamelgendy.nixura.presentation.auth.DeleteAccountScreen
 import com.adhamelgendy.nixura.presentation.auth.LegalScreen
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import com.adhamelgendy.nixura.presentation.locale.AppLocale
+import com.adhamelgendy.nixura.presentation.locale.AppLocaleGateway
+import com.adhamelgendy.nixura.presentation.locale.AppLocales
+import com.adhamelgendy.nixura.presentation.locale.LocalAppLocale
+import com.adhamelgendy.nixura.presentation.locale.rememberArabicFontFamily
+import com.adhamelgendy.nixura.presentation.platform.systemLanguageTag
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -156,9 +165,32 @@ fun AppRoot() {
     val inGate = state.loaded && session is SessionState.SignedOut && authPromptSeen == false
     val chosenDark = if (state.settings.followSystemTheme) isSystemInDarkTheme() else state.settings.darkTheme
     val darkTheme = chosenDark || inGate || navigator.current is Route.Auth
+    // Language: the saved choice ("system", "en", "ar") → the language shown. Strings, layout direction (RTL for
+    // Arabic), digits and the Arabic font all switch at once, without restarting. The OS is told too (Android 13+
+    // per-app language), and a language picked in the phone's settings is taken back into the app.
+    val localeGateway = koinInject<AppLocaleGateway>()
+    var systemTag by remember { mutableStateOf(systemLanguageTag()) }
+    val loadedNow by rememberUpdatedState(state.loaded)
+    LifecycleResumeEffect(Unit) {
+        systemTag = systemLanguageTag()
+        if (loadedNow) localeGateway.externalChoice()?.let(settingsVm::onLanguage)
+        onPauseOrDispose { }
+    }
+    LaunchedEffect(state.loaded, state.settings.languageCode) {
+        if (state.loaded) localeGateway.apply(state.settings.languageCode)
+    }
+    val language = AppLocales.resolve(state.settings.languageCode, systemTag)
+    val arabicFont = rememberArabicFontFamily()
+    val appLocale = remember(language, state.settings.digitStyle, arabicFont) {
+        AppLocale(language = language, digitStyle = state.settings.digitStyle, arabicFont = arabicFont)
+    }
+    CompositionLocalProvider(
+        LocalAppLocale provides appLocale,
+        LocalLayoutDirection provides if (appLocale.isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr,
+    ) {
     NixUraTheme(darkTheme = darkTheme) {
         SystemBarsEffect(darkTheme)
-        CompositionLocalProvider(LocalStrings provides stringsFor(state.settings.languageCode)) {
+        CompositionLocalProvider(LocalStrings provides stringsFor(language)) {
             // The starter guide runs once per device, over the real app. It covers the whole window, bars included.
             val inMainApp = state.loaded && session !is SessionState.Loading && authPromptSeen != null && !inGate
             val guideActive = inMainApp && !state.settings.guideCompleted
@@ -197,6 +229,7 @@ fun AppRoot() {
                 }
             }
         }
+    }
     }
 }
 

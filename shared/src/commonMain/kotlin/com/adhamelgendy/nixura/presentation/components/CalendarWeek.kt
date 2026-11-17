@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.adhamelgendy.nixura.domain.time.CivilCalendar
+import com.adhamelgendy.nixura.presentation.locale.LocalAppLocale
 
 /** The first day of a week in the month calendar. [isoDay]: 1 = Monday … 7 = Sunday. */
 enum class WeekStart(val isoDay: Int) {
@@ -19,14 +20,15 @@ enum class WeekStart(val isoDay: Int) {
 
     companion object {
         /**
-         * NixUra's weeks start on Sunday (owner decision, 2026-11-14); Arabic weeks start on Saturday. Until Arabic
-         * can be picked (Session 4), a right-to-left layout stands for Arabic, so RTL previews show it already.
+         * NixUra's weeks start on Sunday (owner decision, 2026-11-14); Arabic weeks start on Saturday. A right-to-left
+         * layout also counts as Arabic, so RTL previews that do not set the language show it too.
          */
         fun forLocale(languageCode: String?, rtl: Boolean): WeekStart =
             if (rtl || languageCode?.lowercase()?.substringBefore('-')?.substringBefore('_') == "ar") SATURDAY else SUNDAY
     }
 }
 
-/** The week start for the current layout (the grid itself runs right to left on its own in an RTL layout). */
+/** The week start for the app's language (the grid itself runs right to left on its own in an RTL layout). */
 @Composable
-fun rememberWeekStart(): WeekStart = WeekStart.forLocale(null, LocalLayoutDirection.current == LayoutDirection.Rtl)
+fun rememberWeekStart(): WeekStart =
+    WeekStart.forLocale(LocalAppLocale.current.language, LocalLayoutDirection.current == LayoutDirection.Rtl)

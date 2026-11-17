@@ -100,7 +100,7 @@ class LoadWidgetStateUseCase(
 
     suspend fun appearance(): WidgetAppearance {
         val settings = preferences.observeSettings().first()
-        return WidgetAppearance(darkTheme = settings.darkTheme, languageCode = settings.languageCode)
+        return WidgetAppearance(darkTheme = settings.darkTheme, languageCode = settings.languageCode, digitStyle = settings.digitStyle)
     }
 }
 

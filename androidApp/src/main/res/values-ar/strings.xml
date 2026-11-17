@@ -1,0 +1,15 @@
+<resources>
+    <!-- The launcher name stays NixUra in every language (the brand). -->
+    <string name="app_name">NixUra</string>
+
+    <string name="widget_quit_label">عدّاد الإقلاع من NixUra</string>
+    <string name="widget_quit_description">الوقت منذ آخر تعثّر لعادة تقلع عنها، يتحدّث باستمرار.</string>
+    <string name="widget_good_label">تسجيل سريع من NixUra</string>
+    <string name="widget_good_description">تقدّم اليوم في عادة جيدة، وسجّلها بلمسة واحدة.</string>
+    <string name="widget_event_label">مناسبات NixUra</string>
+    <string name="widget_event_description">العدّ التنازلي لمناسبتك القادمة أو لمناسبة تختارها.</string>
+    <string name="widget_config_label">اختر للأداة</string>
+
+    <string name="channel_reminders_name">التذكيرات والتشجيع</string>
+    <string name="channel_reminders_description">تذكيرات المناسبات، وإنجازات أيامك المتتالية، ورسالة يومية قصيرة</string>
+</resources>

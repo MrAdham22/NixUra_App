@@ -71,6 +71,8 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.androidx.core.ktx)
             implementation(libs.ktor.client.okhttp)
+            // Per-app language (AppCompatDelegate.setApplicationLocales, Android 13+ system language settings).
+            implementation(libs.androidx.appcompat)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

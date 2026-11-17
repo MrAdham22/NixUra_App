@@ -349,7 +349,7 @@ internal class RoomSyncLocalStore(
         if (now[PreferencesRepositoryImpl.KEY_SETTINGS_DIRTY] != "1") return null
         val payload = SettingsPayload(
             darkTheme = now[PreferencesRepositoryImpl.KEY_DARK] == "1",
-            languageCode = now[PreferencesRepositoryImpl.KEY_LANGUAGE] ?: "en",
+            languageCode = now[PreferencesRepositoryImpl.KEY_LANGUAGE] ?: com.adhamelgendy.nixura.domain.model.LANGUAGE_SYSTEM,
             notificationsEnabled = now[PreferencesRepositoryImpl.KEY_NOTIFICATIONS] == "1",
             dailyCheckInMinutes = now[PreferencesRepositoryImpl.KEY_CHECKIN]?.toIntOrNull() ?: 0,
         )

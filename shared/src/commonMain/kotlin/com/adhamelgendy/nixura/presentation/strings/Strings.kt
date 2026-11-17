@@ -354,7 +354,12 @@ open class Strings {
     open val ageYears: (Int) -> String = { "$it years old" }
     open val yourProgress: String = "Your progress"
     open val profileTotals: String = "Totals"
-    open val languageHint: String = "More languages are on the way."
+    open val languageHint: String = "Applies right away. The layout turns right-to-left in Arabic."
+    open val languageSystem: String = "System default"
+    open val digitsTitle: String = "Digits"
+    open val digitsHint: String = "How numbers are shown. Your saved data does not change."
+    open val digitsWestern: String = "123"
+    open val digitsArabic: String = "١٢٣"
     open val guideReplayHint: String = "A 30-second tour of the app."
     open val privacyAndData: String = "Privacy and data"
     open val quitScoreTitle: String = "Breaking free"
@@ -858,15 +863,21 @@ open class Strings {
     // ---- end of Session 3 ----
 }
 
-data class AppLanguage(val code: String, val nativeName: String)
+/** A choice in Settings → Language. [nativeName] is null for "System default", which is shown in the UI language. */
+data class AppLanguage(val code: String, val nativeName: String?)
 
+/** Settings → Language: follow the phone, English, Arabic (each written in its own language). */
 val availableLanguages: List<AppLanguage> = listOf(
+    AppLanguage(com.adhamelgendy.nixura.domain.model.LANGUAGE_SYSTEM, null),
     AppLanguage("en", "English"),
+    AppLanguage("ar", "العربية"),
 )
 
 val EnglishStrings: Strings = Strings()
 
-fun stringsFor(code: String): Strings = when (code) {
+/** Text for a resolved language ("en" or "ar"; also accepts tags such as "ar-EG"). Unknown → English. */
+fun stringsFor(code: String): Strings = when (com.adhamelgendy.nixura.presentation.locale.AppLocales.primary(code)) {
+    "ar" -> ArabicStrings
     else -> EnglishStrings
 }
 

@@ -68,7 +68,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import com.adhamelgendy.nixura.presentation.components.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -568,18 +568,15 @@ fun MonthCalendar(
     val lead = weekStart.columnOf(firstDay)
     val length = CivilCalendar.monthLength(year, month)
     val rows = (lead + length + 6) / 7
-    // The arrows are drawn pointing left / right; in RTL "previous" points right, so both are mirrored.
+    // The arrows mirror by themselves in RTL (NixIconView), so "previous" points right there.
     val floor = DayIntensity.partialFloor(accent, c.surfaceRaised, c.isDark)
-    val mirror = if (LocalLayoutDirection.current == LayoutDirection.Rtl) Modifier.graphicsLayer { scaleX = -1f } else Modifier
 
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("${s.monthNames[month - 1]} $year", style = NixType.Heading, color = c.textPrimary, modifier = Modifier.weight(1f))
-            Box(mirror) { NixIconButton(NixIcon.Back, onPrevMonth, size = 36.dp) }
+            NixIconButton(NixIcon.Back, onPrevMonth, size = 36.dp)
             Spacer(Modifier.width(8.dp))
-            Box(mirror) {
-                NixIconButton(NixIcon.Chevron, { if (canGoNext) onNextMonth() }, size = 36.dp, tint = if (canGoNext) c.textPrimary else c.textMuted.copy(alpha = 0.4f))
-            }
+            NixIconButton(NixIcon.Chevron, { if (canGoNext) onNextMonth() }, size = 36.dp, tint = if (canGoNext) c.textPrimary else c.textMuted.copy(alpha = 0.4f))
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             weekStart.reorder(s.weekdayLetters).forEach {

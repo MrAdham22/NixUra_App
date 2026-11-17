@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.adhamelgendy.nixura.domain.analytics.UsageStats
 import com.adhamelgendy.nixura.domain.model.AppSettings
+import com.adhamelgendy.nixura.domain.model.DigitStyle
 import com.adhamelgendy.nixura.domain.usecase.ClearAllDataUseCase
 import com.adhamelgendy.nixura.domain.usecase.ObserveSettingsUseCase
 import com.adhamelgendy.nixura.domain.usecase.UpdateSettingsUseCase
@@ -55,6 +56,8 @@ class SettingsViewModel(
     fun onCheckInMinutes(minutes: Int) = update { it.copy(dailyCheckInMinutes = minutes) }
 
     fun onLanguage(code: String) = update { it.copy(languageCode = code) }
+
+    fun onDigits(style: DigitStyle) = update { it.copy(digitStyle = style) }
 
     fun onGuideFinished() = update { it.copy(guideCompleted = true) }
 
