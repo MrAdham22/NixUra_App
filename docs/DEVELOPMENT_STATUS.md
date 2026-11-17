@@ -2,6 +2,16 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## Session 1 of 4 (2026-11-17): bugs, habit themes, Home loading
+
+Branch `claude/nixora-bugs-features-plan-9a1220`. Plan and ownership for all four sessions: [HANDOFF.md](../HANDOFF.md).
+
+- **Bug: starter guide highlighted the wrong card.** Cause: the empty-state "Start with one thing" card was tagged with the same target as the progress rings, so step 2 (about the rings) spotlighted it for every new user. Positions were also never forgotten when an element left the screen. Fix: each step's text and target are written together (`guideSteps`), the start card has its own target and step text, positions are dropped on dispose, and a target outside the window is never highlighted. Unit-tested (`GuideStepsTest`); **not yet checked on a device** (RTL, small/large screens, rotation are reasoned, not run).
+- **Bug: mic in the AI coach opened add-habit.** The empty-input button opened the voice note (add habits) sheet. Removed; the coach only has Send. The voice note is still on Home ("Say it, I'll add it"), and the coach still uses the review sheet for items the AI suggests. `RECORD_AUDIO` stays (Home uses it). Also `windowSoftInputMode="adjustResize"` so the keyboard no longer pans the chat under the status bar. **Not yet checked on a device.**
+- **HabitTheme foundation + Room v8:** see PROJECT_CONTEXT "Habit themes". `MIGRATION_7_8` is additive; `tools/room_migration_check.py` passes for the new columns and queries (it still reports 2 old problems on `events` queries with a `$REMOVED_BY_IMPORT_SQL` template, a limitation of the script, not new). Firestore rules need no change (good-habit `data` stays under 24 keys).
+- **Home loading (Feature 1):** cause of the slow-looking Home: Home had no loading state, so it showed the empty "Start" card until the three lists arrived, then swapped in the real cards; and the good-habit list waited for the habit catalog (built in the background at start, ~100 ms on a desktop JVM, slower on a phone; **not measured on a phone**: none was connected) to guess each card's style from its name. The style is now stored, Home shows skeletons only after 300 ms, then crossfades. The quit and good lists still detect a card's glyph (`HabitTopicDetector`) on first load.
+- **Verified:** `:androidApp:assembleDebug` OK, `:shared:testAndroidHostTest` 562 tests OK (2026-11-17). **Not done:** install on the phone (not connected), iOS (Windows).
+
 ## Where we are now (2026-11-11, read this first in a new chat)
 
 - **`master`** (`6ed81b1`) holds everything merged so far: Firebase sign-in, UI polish, the email link page (PR #4), weekly good habits (PR #5, Room v6) and the Notion Worker (PR #6).

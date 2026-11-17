@@ -24,7 +24,7 @@ Does **not** grant product approval — follow user authorization and [DEVELOPME
 ## Scope guards
 
 - Offline-first. Accounts are on Firebase Authentication; cloud sync runs on Firestore (`FirestoreSyncRemote`; rules in `firestore.rules`, deploy only with the owner's OK). Guests must stay completely offline (the only exception is opt-in anonymous usage stats). The real AI coach (Cloudflare Worker + Workers AI, signed-in users only, about 20 messages a day) comes after Firestore sync and Notion (owner decision 2026-11-05); do not start it before those land.
-- New UI text goes in `presentation/strings/Strings.kt`.
+- New UI text goes in `presentation/strings/Strings.kt` **and** gets an Arabic override in `presentation/strings/ArabicStrings.kt` in the same change (owner rule, 2026-11-17). Counts in Arabic use `ArabicPlurals`.
 - Room entity changes need a new migration and a schema check; never use destructive fallback.
 - The merged UI/features build and run on Android (owner-confirmed 2026-10-23). **iOS is in scope and unrestricted**: you may implement and fix iOS code (`iosMain`, `iosApp/`, iOS notifications via `UNUserNotificationCenter`) like any other code, keeping Android/iOS parity via `expect`/`actual` or Koin platform modules. iOS only compiles on macOS; if you cannot run it, mark iOS work **unverified** and give the owner the Mac commands (see AGENTS.md).
 - Insets: use `WindowInsets.safeDrawing`, never `safeContentPadding()` (it adds gesture-inset gaps).
