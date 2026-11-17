@@ -6,6 +6,8 @@ import androidx.compose.ui.text.font.FontFamily
 import com.adhamelgendy.nixura.domain.model.DigitStyle
 import com.adhamelgendy.nixura.domain.locale.AppLocales
 
+private fun Char.isAsciiLetter(): Boolean = this in 'a'..'z' || this in 'A'..'Z'
+
 /** Western ↔ Arabic-Indic digits for text on screen. Never used on stored data. */
 object Digits {
     private const val ARABIC_ZERO = '\u0660'
@@ -21,14 +23,25 @@ object Digits {
         if (style == DigitStyle.WESTERN || text.none { it in '0'..'9' }) return text
         if ('@' in text || "://" in text) return text
         val out = CharArray(text.length)
-        for (i in text.indices) {
+        var i = 0
+        while (i < text.length) {
             val ch = text[i]
+            if (ch in '0'..'9') {
+                // A run of digits glued to Latin letters is part of a typed word or code ("S4", "mp3"): keep it.
+                var end = i
+                while (end < text.length && text[end] in '0'..'9') end++
+                val glued = (i > 0 && text[i - 1].isAsciiLetter()) || (end < text.length && text[end].isAsciiLetter())
+                for (k in i until end) out[k] = if (glued) text[k] else ARABIC_ZERO + (text[k] - '0')
+                i = end
+                continue
+            }
             out[i] = when {
-                ch in '0'..'9' -> ARABIC_ZERO + (ch - '0')
-                ch == '.' && i > 0 && i < text.lastIndex && text[i - 1] in '0'..'9' && text[i + 1] in '0'..'9' -> ARABIC_DECIMAL
+                ch == '.' && i > 0 && i < text.lastIndex && text[i - 1] in '0'..'9' && text[i + 1] in '0'..'9' &&
+                    !(i >= 2 && text[i - 2].isAsciiLetter()) -> ARABIC_DECIMAL
                 ch == '%' && i > 0 && text[i - 1] in '0'..'9' -> ARABIC_PERCENT
                 else -> ch
             }
+            i++
         }
         return out.concatToString()
     }

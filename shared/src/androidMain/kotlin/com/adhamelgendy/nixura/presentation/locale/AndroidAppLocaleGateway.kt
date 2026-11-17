@@ -1,38 +1,40 @@
 package com.adhamelgendy.nixura.presentation.locale
 
-import com.adhamelgendy.nixura.domain.locale.AppLocales
+import android.app.LocaleManager
+import android.content.Context
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.os.LocaleListCompat
+import android.os.LocaleList
+import com.adhamelgendy.nixura.domain.locale.AppLocales
 
 /**
- * Android per-app language. On Android 13+ AppCompat hands the choice to the system LocaleManager, so NixUra's
- * language also shows (and can be changed) in Settings → Apps → NixUra → Language. Older Android keeps no system
- * record of it; the app still switches, because the UI reads its own saved choice (MainActivity is a
- * ComponentActivity, which AppCompat's pre-13 locale override does not apply to, and nothing needs it to).
+ * Android per-app language. On Android 13+ the choice is handed to the system [LocaleManager], so NixUra's language
+ * also shows (and can be changed) in Settings → Apps → NixUra → Language (`res/xml/locales_config.xml`).
+ *
+ * Why not `AppCompatDelegate.setApplicationLocales`: it only reaches the system through a live AppCompatActivity, and
+ * MainActivity is a ComponentActivity (Compose), so it silently did nothing (checked on an Android 16 emulator,
+ * `cmd locale get-app-locales` stayed empty). Before Android 13 there is no system record of a per-app language; the
+ * app still switches, because the UI reads its own saved choice.
+ *
  * MainActivity declares `configChanges="locale|layoutDirection"`, so applying a language never recreates the screen.
  */
-class AndroidAppLocaleGateway : AppLocaleGateway {
+class AndroidAppLocaleGateway(private val context: Context) : AppLocaleGateway {
     private var lastApplied: String? = null
 
     override fun apply(choice: String) {
-        val tag = AppLocales.osTag(choice)
-        lastApplied = tag.orEmpty()
-        val run = Runnable {
-            val wanted = if (tag == null) LocaleListCompat.getEmptyLocaleList() else LocaleListCompat.forLanguageTags(tag)
-            if (AppCompatDelegate.getApplicationLocales().toLanguageTags() != wanted.toLanguageTags()) {
-                AppCompatDelegate.setApplicationLocales(wanted)
-            }
+        val tag = AppLocales.osTag(choice).orEmpty()
+        lastApplied = tag
+        if (Build.VERSION.SDK_INT < 33) return
+        val manager = context.getSystemService(LocaleManager::class.java) ?: return
+        if (manager.applicationLocales.toLanguageTags() != tag) {
+            manager.applicationLocales = LocaleList.forLanguageTags(tag)
         }
-        if (Looper.myLooper() == Looper.getMainLooper()) run.run() else Handler(Looper.getMainLooper()).post(run)
     }
 
     override fun externalChoice(): String? {
         if (Build.VERSION.SDK_INT < 33) return null
         val applied = lastApplied ?: return null
-        val now = AppLocales.osTag(AppCompatDelegate.getApplicationLocales().toLanguageTags()).orEmpty()
+        val manager = context.getSystemService(LocaleManager::class.java) ?: return null
+        val now = AppLocales.osTag(manager.applicationLocales.toLanguageTags()).orEmpty()
         if (now == applied) return null
         lastApplied = now
         return AppLocales.choiceFromOs(now)

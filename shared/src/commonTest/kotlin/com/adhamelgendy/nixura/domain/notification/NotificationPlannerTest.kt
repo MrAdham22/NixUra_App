@@ -78,4 +78,20 @@ class NotificationPlannerTest {
         val plan = planner.plan(now, AppSettings(), "A", listOf(bad(0)), emptyList(), listOf(event(1, 5, 0L, 3_600_000L)))
         assertEquals(plan.size, plan.map { it.key }.toSet().size)
     }
+
+    @Test
+    fun notificationsAreWrittenInTheSavedLanguage() {
+        val arabic = com.adhamelgendy.nixura.domain.locale.ContentLanguage { "en-US" }
+        val kb = com.adhamelgendy.nixura.domain.coach.HabitKnowledgeBase(arabic)
+        val arPlanner = NotificationPlanner(CoachEngine(kb, arabic), dayCalc, arabic)
+        val settings = AppSettings(languageCode = "ar")
+        val plan = arPlanner.plan(now, settings, "A", listOf(bad(0)), emptyList(), listOf(event(1, 3, 3_600_000L, 0L)))
+        assertTrue(plan.any { it.body == "تبدأ بعد ساعة واحدة." }, plan.toString())
+        assertTrue(plan.any { it.body == "حان الوقت." })
+        assertTrue(plan.first { it.key.startsWith("daily:") }.title.startsWith("رسالة اليوم"))
+        assertTrue(plan.first { it.key.startsWith("milestone:") }.title.startsWith("صامد منذ"))
+        // "System default" on an English phone is English.
+        val en = arPlanner.plan(now, AppSettings(languageCode = "system"), "A", emptyList(), emptyList(), listOf(event(1, 3, 0L)))
+        assertTrue(en.any { it.body == "It's time." })
+    }
 }
