@@ -94,6 +94,7 @@ fun CoachScreen(navigator: Navigator) {
     val c = Nix.colors
     var input by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
+    // Only for the review sheet below; the voice recorder itself is not offered in the chat.
     val voiceVm: com.adhamelgendy.nixura.presentation.voice.VoiceNoteViewModel = koinViewModel()
 
     // The AI understood "add ..." in the chat: show the same review list as a voice note, never add silently.
@@ -245,10 +246,8 @@ fun CoachScreen(navigator: Navigator) {
                 maxLength = 500,
                 modifier = Modifier.weight(1f),
             )
-            // Nothing typed yet: the button is a microphone (say what to add). Typing turns it into Send.
-            if (input.isBlank() && voiceVm.supported && !state.isTyping) {
-                NixIconButton(NixIcon.Mic, voiceVm::open, size = 50.dp, tint = c.onAccent, background = c.accent, bordered = false, haptic = true)
-            } else NixIconButton(
+            // Only Send here: the voice note (say habits to add) lives on Home, not in the chat.
+            NixIconButton(
                 NixIcon.Send,
                 { send(input) },
                 size = 50.dp,

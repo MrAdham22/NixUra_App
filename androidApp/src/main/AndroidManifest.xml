@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Voice notes for the AI coach: asked only when the user taps the microphone. -->
+    <!-- Voice notes ("Say it, I'll add it" on Home): asked only when the user taps the microphone. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -47,10 +47,13 @@
                 <data android:scheme="fb${facebookAppId}" />
             </intent-filter>
         </activity>
-        <!-- singleTask: coming back from Notion's page in the browser reuses the open app instead of stacking a copy. -->
+        <!-- singleTask: coming back from Notion's page in the browser reuses the open app instead of stacking a copy.
+             adjustResize: the keyboard shrinks the window (the app pads by the IME inset) instead of panning the
+             whole screen up under the status bar. -->
         <activity
             android:exported="true"
             android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
             android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

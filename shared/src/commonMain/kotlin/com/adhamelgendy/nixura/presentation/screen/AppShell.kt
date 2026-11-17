@@ -202,7 +202,7 @@ fun AppRoot() {
 
 @Composable
 private fun MainContent(navigator: Navigator) {
-    // The voice note sheet: opened by the mic buttons on Home and in the coach.
+    // The voice note sheet: opened by the Home voice card, and by the coach chat to review the items it suggests.
     com.adhamelgendy.nixura.presentation.voice.VoiceNoteHost(navigator)
     val route = navigator.current
     val reducedMotion = rememberReducedMotion()
