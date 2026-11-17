@@ -27,7 +27,7 @@ import kotlin.math.sin
 
 /**
  * Water: a thin stream pours from the top centre and splashes, the water rises with a moving two-wave surface until
- * the page is full, then the stream stops and the water comes alive (bubbles, light rays, one small fish). A tap on
+ * the page is full, then the stream stops and the water comes alive (bubbles, one small fish). A tap on
  * the water sends a ripple; the phone's tilt slopes the surface a little. Leaving the theme drains it.
  * With "remove animations": the water simply stands at its level, still.
  */
@@ -35,7 +35,6 @@ internal object WaterScene : ThemeScene {
 
     private const val BUBBLES = 14
     private const val DROPLETS = 6
-    private const val RAYS = 3
 
     @Composable
     override fun Content(params: ThemeSceneParams) {
@@ -94,7 +93,6 @@ internal object WaterScene : ThemeScene {
             Modifier.fillMaxSize().drawWithCache {
                 val back = Path()
                 val front = Path()
-                val ray = Path()
                 val fish = Path()
                 val top = Color.White
                 val surfaceTint = if (colors.isDark) 0.40f else 0.26f
@@ -143,7 +141,6 @@ internal object WaterScene : ThemeScene {
                     val since = aliveSince.floatValue
                     if (since >= 0f) {
                         val alive = if (reduced) 1f else ((t - since) / 0.8f).coerceIn(0f, 1f)
-                        drawRays(ray, left, w, surf, bottom, t, alive, top)
                         drawBubbles(left, w, surf, bottom, t, alive)
                         if (!reduced) {
                             ThemeAnimMath.fishProgress(t - since)?.let { p ->
@@ -217,25 +214,6 @@ internal object WaterScene : ThemeScene {
             val c = Offset(left + b.x * w, y)
             drawCircle(Color.White.copy(alpha = 0.35f * edge * alive), r, c, style = Stroke(1.dp.toPx()))
             drawCircle(Color.White.copy(alpha = 0.5f * edge * alive), r * 0.28f, Offset(c.x - r * 0.35f, c.y - r * 0.35f))
-        }
-    }
-
-    private fun DrawScope.drawRays(path: Path, left: Float, w: Float, surf: Float, bottom: Float, t: Float, alive: Float, light: Color) {
-        val length = (bottom - surf) * 0.75f
-        if (length <= 0f) return
-        for (i in 0 until RAYS) {
-            val x0 = left + w * (0.18f + 0.3f * i) + sin(t * 0.15f + i * 2f) * w * 0.05f
-            val topW = 26.dp.toPx()
-            val bottomW = 80.dp.toPx()
-            val slant = 50.dp.toPx()
-            path.reset()
-            path.moveTo(x0, surf)
-            path.lineTo(x0 + topW, surf)
-            path.lineTo(x0 + topW + slant + bottomW / 2f, surf + length)
-            path.lineTo(x0 + slant - bottomW / 2f, surf + length)
-            path.close()
-            val a = (0.07f + 0.04f * sin(t * 0.5f + i * 1.9f)) * alive
-            drawPath(path, Brush.verticalGradient(listOf(light.copy(alpha = a), Color.Transparent), startY = surf, endY = surf + length))
         }
     }
 
