@@ -69,10 +69,27 @@ class HabitThemeShadesTest {
         listOf(DarkNixColors, LightNixColors).forEach { c ->
             HabitTheme.entries.forEach { theme ->
                 (1..DayIntensity.FULL).forEach { level ->
-                    val square = DayIntensity.shade(level, HabitThemes.accentFor(theme, c), c.surfaceRaised)
+                    val accent = HabitThemes.accentFor(theme, c)
+                    val square = DayIntensity.shade(level, accent, c.surfaceRaised, DayIntensity.partialFloor(accent, c.surfaceRaised, c.isDark))
                     val ratio = contrastRatio(DayIntensity.inkOn(square), square)
                     // Bold day numbers; 3.9 is about the best two inks can do on a mid-tone (see GoodFillContrastTest).
                     assertTrue(ratio >= 3.9f, "$theme level $level (dark=${c.isDark}): $ratio")
+                }
+            }
+        }
+    }
+
+    @Test
+    fun calendarStepsAreDistinctAndKeepTheAccentHue() {
+        listOf(DarkNixColors, LightNixColors).forEach { c ->
+            listOf(HabitTheme.WATER, HabitTheme.PRAYER).forEach { theme ->
+                val accent = HabitThemes.accentFor(theme, c)
+                val floor = DayIntensity.partialFloor(accent, c.surfaceRaised, c.isDark)
+                val steps = DayIntensity.legendLevels.map { DayIntensity.shade(it, accent, c.surfaceRaised, floor) }
+                assertEquals(steps.size, steps.toSet().size, "$theme steps (dark=${c.isDark})")
+                // Every partial step keeps the accent's dominant channel (blue stays blue, gold stays red-yellow).
+                steps.drop(1).forEach { sq ->
+                    if (theme == HabitTheme.WATER) assertTrue(sq.blue >= sq.red, "$theme $sq") else assertTrue(sq.red >= sq.blue, "$theme $sq")
                 }
             }
         }

@@ -81,8 +81,24 @@ object DayIntensity {
         else -> 0.24f + (level - 1) * 0.18f // 0.24, 0.42, 0.60, 0.78
     }
 
-    /** The square's colour at a level: the idle square blended toward the theme accent. */
-    fun shade(level: Int, accent: Color, idle: Color): Color = lerp(idle, accent, fraction(level))
+    /**
+     * The square's colour at a level. Without [partialFrom] the idle square is blended toward the accent (for the
+     * small strip on a card, where the idle square is see-through); with it, the partial steps run from
+     * [partialFrom] to the accent, so they stay in the accent's colour family.
+     */
+    fun shade(level: Int, accent: Color, idle: Color, partialFrom: Color? = null): Color = when {
+        level <= 0 -> idle
+        level >= FULL -> accent
+        partialFrom != null -> lerp(partialFrom, accent, (level - 1).toFloat() / PARTIAL_LEVELS)
+        else -> lerp(idle, accent, fraction(level))
+    }
+
+    /**
+     * Where the calendar's partial steps start. On the dark theme the accent dimmed toward black: blending gold into
+     * the purple idle square turned the low steps grey-brown. On the light theme the accent faded toward the idle square.
+     */
+    fun partialFloor(accent: Color, idle: Color, dark: Boolean): Color =
+        if (dark) lerp(accent, Color.Black, 0.58f) else lerp(accent, idle, 0.75f)
 
     /** Day-number ink on a square: whichever of the card inks reads best on it. */
     fun inkOn(square: Color): Color = if (square.prefersLightContentOnCard()) CardInkLight else CardInkDark

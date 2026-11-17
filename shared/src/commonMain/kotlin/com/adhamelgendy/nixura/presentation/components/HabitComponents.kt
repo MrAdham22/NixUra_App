@@ -472,11 +472,13 @@ fun DaySquare(
     doneColor: Color = Nix.colors.positive,
     idleColor: Color = Nix.colors.surfaceRaised,
     todayBorder: Color = Nix.colors.textSecondary,
+    /** Start of the partial steps (the calendar), see [DayIntensity.partialFloor]. */
+    partialFrom: Color? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val c = Nix.colors
     val shape = RoundedCornerShape(9.dp)
-    val shade = DayIntensity.shade(level, doneColor, idleColor)
+    val shade = DayIntensity.shade(level, doneColor, idleColor, partialFrom)
     val bg by animateColorAsState(if (enabled) shade else Color.Transparent, tween(350), label = "daySquare")
     val borderColor = when {
         selected -> c.accent
@@ -569,6 +571,7 @@ fun MonthCalendar(
     val length = CivilCalendar.monthLength(year, month)
     val rows = (lead + length + 6) / 7
     // The arrows are drawn pointing left / right; in RTL "previous" points right, so both are mirrored.
+    val floor = DayIntensity.partialFloor(accent, c.surfaceRaised, c.isDark)
     val mirror = if (LocalLayoutDirection.current == LayoutDirection.Rtl) Modifier.graphicsLayer { scaleX = -1f } else Modifier
 
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -602,6 +605,7 @@ fun MonthCalendar(
                             selected = day == selectedDay,
                             enabled = selectable,
                             doneColor = accent,
+                            partialFrom = floor,
                             onClick = { onSelectDay(day) },
                         )
                     }
@@ -628,7 +632,7 @@ fun IntensityLegend(accent: Color, modifier: Modifier = Modifier) {
             val shape = RoundedCornerShape(3.dp)
             Box(
                 Modifier.size(12.dp).clip(shape)
-                    .background(DayIntensity.shade(level, accent, c.surfaceRaised))
+                    .background(DayIntensity.shade(level, accent, c.surfaceRaised, DayIntensity.partialFloor(accent, c.surfaceRaised, c.isDark)))
                     .border(1.dp, c.border.copy(alpha = if (level == 0) 1f else 0.4f), shape),
             )
         }
