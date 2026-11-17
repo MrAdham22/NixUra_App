@@ -24,6 +24,12 @@ class ArabicCatalogTest {
     }
 
     @Test
+    fun everyCategoryIsFullyTranslated() {
+        val missing = (kbEn.categories.map { it.id } + kbEn.generic.id).filter { it !in ArabicCatalog.texts }
+        if (missing.isNotEmpty()) fail("No Arabic details: $missing")
+    }
+
+    @Test
     fun arabicTextsLineUpWithTheirEnglishEntries() {
         val byId = (kbEn.categories + kbEn.generic).associateBy { it.id }
         ArabicCatalog.texts.forEach { (id, text) ->
