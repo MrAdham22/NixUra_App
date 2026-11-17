@@ -8,11 +8,13 @@ import com.adhamelgendy.nixura.domain.locale.AppLocales
 
 /** Western ↔ Arabic-Indic digits for text on screen. Never used on stored data. */
 object Digits {
-    private const val ARABIC_ZERO = '٠'
-    private const val ARABIC_DECIMAL = '٫'
+    private const val ARABIC_ZERO = '\u0660'
+    private const val ARABIC_DECIMAL = '\u066B'
+    private const val ARABIC_PERCENT = '\u066A'
 
     /**
-     * [text] with its digits drawn in [style]. A "." between two digits becomes the Arabic decimal mark. Emails and
+     * [text] with its digits drawn in [style]. A "." between two digits becomes the Arabic decimal mark and a "%"
+     * after a digit the Arabic percent sign. Emails and
      * links are left alone, since they have to stay exactly as typed.
      */
     fun localize(text: String, style: DigitStyle): String {
@@ -24,6 +26,7 @@ object Digits {
             out[i] = when {
                 ch in '0'..'9' -> ARABIC_ZERO + (ch - '0')
                 ch == '.' && i > 0 && i < text.lastIndex && text[i - 1] in '0'..'9' && text[i + 1] in '0'..'9' -> ARABIC_DECIMAL
+                ch == '%' && i > 0 && text[i - 1] in '0'..'9' -> ARABIC_PERCENT
                 else -> ch
             }
         }

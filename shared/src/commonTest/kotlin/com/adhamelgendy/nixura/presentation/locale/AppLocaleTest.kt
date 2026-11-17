@@ -71,6 +71,7 @@ class AppLocaleTest {
         assertEquals("١٢٣", Digits.localize("123", DigitStyle.ARABIC_INDIC))
         assertEquals("١٫٢٥ / ٢ لتر", Digits.localize("1.25 / 2 لتر", DigitStyle.ARABIC_INDIC))
         assertEquals("٨:٣٠ م", Digits.localize("8:30 م", DigitStyle.ARABIC_INDIC))
+        assertEquals("٧٥٪", Digits.localize("75%", DigitStyle.ARABIC_INDIC))
         // A full stop that is not between two digits stays a full stop.
         assertEquals("تم ٣.", Digits.localize("تم 3.", DigitStyle.ARABIC_INDIC))
         assertEquals("", Digits.localize("", DigitStyle.ARABIC_INDIC))
