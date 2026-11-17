@@ -2,6 +2,14 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## Session 4 of 4 (2026-11-17): Arabic and right-to-left
+
+Branch `claude/cranky-goodall-94eb7c` (cut from `claude/nixora-bugs-features-plan-9a1220`). Details, the commits and the Arabic wording to review: `HANDOFF.md`, Session 4.
+
+- **Built:** Settings → Language (System default / English / العربية) applied at once, persisted and synced; Android 13+ per-app language through `LocaleManager` + `locales_config.xml`; RTL layout for Arabic with mirrored back arrows and chevrons; every UI string, error, widget, notification, the starter guide, the offline coach and all 49 habit timelines in Arabic; Arabic counts and dates; Settings → Digits (123 / ١٢٣, display only); IBM Plex Sans Arabic bundled through Compose resources; Arabic launcher/widget labels and notification channel in `values-ar`; pseudo-locales in debug; RTL previews (`presentation/locale/LocalePreviews.kt`).
+- **Verified:** `:androidApp:assembleDebug` OK; `:shared:testAndroidHostTest` 623 tests, 0 failures. On the Android 16 emulator: switching languages in place, Home, Quit, Build, Events, Coach (greeting, chips, a reply), the good-habit detail with its Saturday-first calendar, the quit detail timeline, the Add Good Habit form with the water and prayer themes from Arabic quick picks, the Add Quit form, Settings, Profile and the starter guide in RTL, dark and light, Western and Arabic-Indic digits; `cmd locale get-app-locales` = `[ar]`; a language set in the phone's settings is taken back; ar-XB maps to Arabic, en-XA to English; the notification channel name in Arabic.
+- **Not verified:** the owner's phone (not connected during the session), Firebase sign-in/sync after switching (no test account), the widgets on a home screen and a fired notification in Arabic (covered by code and tests only), previews rendered in an IDE, iOS (Windows: run `:shared:compileKotlinIosSimulatorArm64`, `:shared:linkDebugFrameworkIosSimulatorArm64`, `:shared:iosSimulatorArm64Test` and the Xcode build on a Mac).
+
 ## Sessions 2 and 3 of 4 (2026-11-17): Add-form animations, water goal, themed calendar
 
 Ran in parallel (branches `claude/s2-form-animations-e6598c`, `claude/s3-calendar-water-d163b7`), merged into `claude/nixora-bugs-features-plan-9a1220`. Details per session in `HANDOFF.md`.
@@ -82,7 +90,7 @@ Branch `claude/nixora-bugs-features-plan-9a1220`. Plan and ownership for all fou
 - **Not verified:** nothing was seen running. The look and feel of the animations (gold wash, burst, star buttons) and the colour contrast still need the owner's eyes on a phone. iOS: the code is in `commonMain` but was not compiled for iOS (no Mac).
 - **Owner feedback round (2026-11-12, after seeing it on the phone):** the shine now loops seamlessly (two bands half a loop apart, each wraps only while outside the card); the gold wash starts at the very top and covers the status and navigation bar areas; richer amber colors; gold "Add habit" button (`NixButtonStyle.Gold`); "Read 10 pages" and "Sleep before midnight" removed from the quick picks; card redesign inspired by the owner's reference picture (mosque silhouette, crescent, golden dawn, mihrab-arch badge, double frame, rays when all five are done). Tests pass and the APK builds. Installed on the owner's phone and checked from screenshots: the gold form covers the whole screen, the gold button, the Build card (mosque in its own space at the bottom, moon at the top centre) and the Home row (big mosque, kept as the owner liked it). The shine loop and the count burst move, so they cannot be judged from a still screenshot; the owner checks them by eye.
 - **Second feedback round (2026-11-12):** Home-row mosque a little smaller so it fits the row; the form's gold button is now its own `PrayerGoldButton` (the plain gold `NixButton` style was removed again); the five prayer markers are mihrab arches with a tick instead of stars. Installed on the owner's phone and checked from screenshots (unfinished and all-done card states, Home row, form).
-- **Known limits:** English only (Arabic strings are not built yet).
+- **Known limits:** English only at the time (Arabic arrived in Session 4, 2026-11-17).
 
 ## Prayer widget, category glyphs, 3x1 quit widget name (2026-11-12, branch `claude/prayer-habit-card-widget-1b8b83`, on top of the prayer card branch)
 
@@ -104,7 +112,7 @@ NixUra (renamed everywhere on 2026-11-03; app id and code packages `com.adhamelg
 - Dark theme first (navy `#1D1A39` background), light theme available in Settings.
 - Palette fixed; plum stays `#862549` (the owner first typed `#662549`, then chose the repo value).
 - AI coach = **offline rule-based now, real AI later**; owner wants a free AI option (see `docs/AI_COACH_UPGRADE.md`).
-- Languages: English only at launch, code structured for more.
+- Languages: English and Arabic (with RTL) since 2026-11-17.
 - Android and iOS are both targets (approved 2026-10-23): agents may edit iOS code freely. Android was built first. iOS reminders are currently a no-op placeholder that must be replaced with a real `UNUserNotificationCenter` implementation.
 - Users can choose the bad-habit card color; card starts almost darkest shade of it and lightens day by day; default = original brand gradient.
 

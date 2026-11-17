@@ -241,7 +241,7 @@ A six-colour night-to-dawn ramp on navy, with rose doing the work and a few docu
 
 ## Typography
 
-**Display Font:** the system font (Roboto on Android, SF Pro on iOS). No custom font is bundled.
+**Display Font:** the system font (Roboto on Android, SF Pro on iOS) in English. **Arabic:** IBM Plex Sans Arabic (Regular, SemiBold, Bold; SIL Open Font License, `composeResources/font`), used for the whole UI in Arabic and for any Arabic text in English (a habit name). Arabic text gets no letter spacing (tracking breaks joined letters) and a line height of at least 1.5× the size so marks above and below are never clipped; digits-only text (counters) keeps its line height.
 **Counter numbers:** the same font, bold, with tabular figures (`tnum`) so a ticking counter never jumps.
 
 **Character:** plain, friendly system type, tightened with negative letter spacing at large sizes so headings feel compact and confident. The personality comes from colour and motion, not from the typeface.
@@ -366,3 +366,8 @@ Each category has its own colour (`eventCategoryColor`): Personal rose, Travel w
 - **Don't** add motion that plays on its own without a reason. Motion answers a touch or marks progress (the prayer card's sliding light is the one ambient effect).
 - **Don't** let one look split by platform: no Material-only or Apple-only styling beyond safe areas, back gestures and the status bar.
 - **Don't** hard-code text in screens. It goes through `Strings.kt`.
+
+## Right-to-left (Arabic)
+
+Layouts use start/end, so they mirror on their own. Arrows that mean a direction (back, chevron, month arrows) are mirrored; checkmarks, play, plus/minus, logos and the habit glyphs are not. The pager, bottom bar and droplet follow the direction; calendars start on Saturday and run right to left. A plus sign before a number keeps its place with a left-to-right mark ("+300 مل"). Numbers can be drawn as Arabic-Indic digits (Settings → Digits), with ٫ as the decimal mark and ٪ for percent.
+

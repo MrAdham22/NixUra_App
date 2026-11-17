@@ -234,3 +234,48 @@ System / English / العربية in Settings applied without restart, RTL check
 digits setting (Western default / Arabic-Indic), Arabic font with safe line height, pseudo-locales in debug.
 
 **Owns:** everything, since it runs last.
+
+**Status (2026-11-17): done on the emulator; not yet on the owner's phone (it was not connected).** Branch `claude/cranky-goodall-94eb7c`
+(reset onto `388ab00` of the plan branch first: the worktree had been cut from an older commit). Commits: `889882c` (switching, RTL,
+font, digits), `30d069b` (all strings, offline coach, notifications), `6dd01d3` (٪ and RTL previews), `a798b7f` (Arabic
+catalog), `b3e0e31` (LocaleManager fix, typed-name digits, notification test), then the docs commit.
+
+- **Language switching:** `AppSettings.languageCode` = `system` (new default) / `en` / `ar`, synced as before; `digitStyle` is new and per
+  device (`settings.digits`, no schema change). `domain/locale/AppLocales.resolve` picks the language; `AppShell` provides strings,
+  `LayoutDirection` and `LocalAppLocale` at the root, so a switch applies at once. Android: `AndroidAppLocaleGateway` uses
+  `LocaleManager` on 13+ (AppCompat's `setApplicationLocales` does nothing without an AppCompatActivity, and MainActivity is a
+  ComponentActivity: checked on the emulator), `res/xml/locales_config.xml`, `android:localeConfig`, `configChanges="locale|layoutDirection"`;
+  a language chosen in the phone's settings is taken back on resume. Before Android 13 the app still switches (its own setting),
+  the system just has no record. iOS: "System default" follows `NSLocale.preferredLanguages` (also the iOS per-app language, offered
+  through `CFBundleLocalizations` en/ar in Info.plist); unverified.
+- **Text:** every `Strings` member has an Arabic override (`ArabicCoverageTest`). Domain error messages are mapped in
+  `ArabicStrings.errorText`. The offline coach (`CoachEngine`, `StopTimelineExplainer`), notification texts and the habit catalog follow
+  `ContentLanguage`. **Catalog: everything is translated** (48 categories + the general profile: labels, why it matters, every
+  milestone title and detail, craving tips, safety notes) in `domain/coach/catalog/ar/*`, keyed by id in the English milestone order;
+  matching is untouched. Still English: the legal drafts (Privacy Policy, Terms: a note says so, they need a lawyer's version), the
+  AI coach's replies (they come from the online model in whatever language the user writes), habit names the user typed, and
+  `DesignPreviewScreen` (debug).
+- **RTL:** start/end everywhere; `NixIconView` mirrors `Back`/`Chevron` (`autoMirror = false` where a chevron is rotated); Session 3's
+  manual calendar mirror removed (it would have doubled); `rememberWeekStart()` now reads the app language; widgets set their root
+  direction; the legal text keeps LTR inside the RTL screen.
+- **Numbers, dates, font:** dates and times are built by `Strings.dateText / clockText / dateTimeText / monthYear` (Arabic:
+  «الثلاثاء، 20 أكتوبر 2026 · 8:30 م»); `presentation/components/Text` (used everywhere instead of Material's) draws digits as chosen
+  (٫ decimal, ٪ percent; emails, links and digits glued to Latin letters stay as typed) and gives Arabic IBM Plex Sans Arabic, zero
+  letter spacing and ≥ 1.5× line height. The widget Chronometer keeps the device's digits. Arabic "+300 مل" uses a left-to-right mark.
+- **Previews:** `presentation/locale/LocalePreviews.kt` (Home parts, detail stats and calendar; Arabic dark/light, Arabic-Indic digits,
+  English). The screens read ViewModels from Koin, so their building blocks are previewed. Compiled, not rendered in an IDE.
+- **Verified:** assembleDebug OK; testAndroidHostTest **623 tests, 0 failures** (new: `AppLocaleTest`, `ArabicCoverageTest`,
+  `ArabicCatalogTest`, an Arabic `NotificationPlannerTest`). On `emulator-5554` (Android 16): everything listed under "Done when"
+  except the phone-only items below, dark and light, both digit styles; pseudo-locales ar-XB → Arabic, en-XA → English. Test quit habit
+  "S4test smoking" deleted; the emulator was left in English, dark, Western digits.
+- **Not verified:** the owner's phone (install with `:androidApp:installDebug` and switch Settings → Language → العربية); Firebase
+  sign-in/sync after a switch (needs an account; the code path is unchanged apart from the synced `languageCode` value `system`);
+  widgets on a home screen and a fired notification in Arabic (code + tests); iOS (Mac commands in DEVELOPMENT_STATUS).
+- **Arabic to review (owner):** «الإقلاع / البناء» as tab names; «صامد منذ» for "Clear for"; «تعثّر / تعثّرت» used for relapse and "I
+  slipped" everywhere; «رغبة قوية؟» for "Craving?"; «طاب يومك» for "Good afternoon"; «لنترك السيئ خلفنا» for the tagline "Let's Nix the
+  bad" (the "Aura" word animation stays Latin); the short time units «3ي 20س» / «5س 12د» and the stop-explorer chips «1س…1ش»; «رسالة
+  اليوم» for the daily check-in; «الزخم / التحرّر / الانضباط» for the three scores; «ارتقِ / تطلّع / تحرّر» eyebrows; the weekday letters
+  «ن ث ر خ ج س ح»; Egyptian-style month names (يناير…ديسمبر) instead of the Levantine ones; «اللّي» (shisha mouthpiece, Egyptian
+  word) in a shisha tip; the medical safety notes in `ArabicDrugTexts.kt` (worth a second reader).
+- **Follow-ups:** an Arabic legal text; a pseudo-locale view of the shared `Strings` (Android pseudo-locales only touch `res` strings);
+  digit setting for the widget Chronometer; let iOS write the in-app choice to the iOS per-app language.
