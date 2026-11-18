@@ -17,7 +17,7 @@ data class GoodHabitEntity(
     @ColumnInfo(name = "updated_at", defaultValue = "0") val updatedAtEpochMillis: Long = createdAtEpochMillis,
     @ColumnInfo(name = "deleted_at") val deletedAtEpochMillis: Long? = null,
     @ColumnInfo(name = "dirty", defaultValue = "1") val dirty: Boolean = true,
-    /** `null` = daily habit; 1..7 = done on this many days a week (Sunday to Saturday). */
+    /** `null` = daily habit; 1..7 = done on this many days a week (Saturday to Friday). */
     @ColumnInfo(name = "weekly_target") val weeklyTarget: Int? = null,
     /** [com.adhamelgendy.nixura.domain.theme.HabitTheme.storageKey]; null until detected (rows from before v8). */
     @ColumnInfo(name = "theme") val theme: String? = null,

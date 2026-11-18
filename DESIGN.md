@@ -340,7 +340,7 @@ Each category has its own colour (`eventCategoryColor`): Personal rose, Travel w
 
 ## Calendars and time
 
-- Every week starts on **Sunday**: week strips, the month calendar, the date picker and weekly goals (owner decision 2026-11-14; `CivilCalendar.sundayFirstColumn`). Exception (owner request 2026-11-17): in Arabic / right-to-left the good-habit calendar and week strip start on **Saturday** and run right to left (`WeekStart.forLocale`).
+- Every week starts on **Saturday** and ends on Friday, in every language: the card week strips (always this week, days still to come dimmed), the month calendar, the date picker, weekly goals, widgets and reminders (owner decision 2026-11-18, replacing Sunday-first from 2026-11-14; one rule: `CivilCalendar.WEEK_START_ISO_DAY`, `weekColumn`, `weekStartOf`, `inWeekOrder`). In right-to-left layouts the grid runs right to left.
 - **Theme colours on good-habit calendars (2026-11-17):** done days, the week strip and the 7/30-day bars use `HabitThemes.visualFor(theme).accent`: water `#5BB6EC` (dark) / `#2E78C4` (light), prayer warm gold `#F1B451` (dark) / `#B5761A` (light), every other theme Done Green. Partial days are discrete steps toward that colour, with a less → more legend.
 - Progress rings draw at least a short arc (14°) for any value above zero, so a small value never looks like a lone dot; the track alone shows zero.
 - Event countdowns more than a day away show days, hours and minutes (no seconds); past events show one quiet line ("2 days ago").

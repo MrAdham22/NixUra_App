@@ -17,7 +17,6 @@ import com.adhamelgendy.nixura.domain.model.EventCategory
 import com.adhamelgendy.nixura.presentation.appearance.eventCardLook
 import com.adhamelgendy.nixura.domain.coach.durationText
 import com.adhamelgendy.nixura.presentation.util.forDisplay
-import com.adhamelgendy.nixura.presentation.util.weekdayLettersSundayFirst
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -504,8 +503,8 @@ fun DaySquare(
 }
 
 /**
- * Last 7 days, oldest first, ending today. With [weekStartIndex] it shows that week instead (Sunday to Saturday, for a
- * weekly habit), with the days still to come dimmed. [progressOf] turns a day's count into 0..1, as on the calendar.
+ * This week, Saturday to Friday (the same week on every card and in the calendar), with the days still to come dimmed.
+ * [progressOf] turns a day's count into 0..1, as on the calendar.
  */
 @Composable
 fun WeekStrip(
@@ -518,10 +517,9 @@ fun WeekStrip(
     doneColor: Color = Nix.colors.positive,
     idleColor: Color = Nix.colors.surfaceRaised,
     todayBorder: Color = Nix.colors.textSecondary,
-    weekStartIndex: Long? = null,
 ) {
     val s = LocalStrings.current
-    val firstDay = weekStartIndex ?: (todayIndex - 6)
+    val firstDay = CivilCalendar.weekStartOf(todayIndex)
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         for (i in 0 until 7) {
             val day = firstDay + i
@@ -531,7 +529,7 @@ fun WeekStrip(
                     level = DayIntensity.level(progressOf(countsByDay[day] ?: 0)),
                     modifier = Modifier.fillMaxWidth(),
                     isToday = day == todayIndex,
-                    enabled = if (weekStartIndex != null) day <= todayIndex else day >= createdDayIndex - 6,
+                    enabled = day <= todayIndex,
                     doneColor = doneColor,
                     idleColor = idleColor,
                     todayBorder = todayBorder,
@@ -543,7 +541,7 @@ fun WeekStrip(
 
 /**
  * A month of days coloured by the habit's theme ([accent]) at the intensity of each day ([progressOf] of its count).
- * The week starts on Sunday, or Saturday in Arabic ([weekStart]); in a right-to-left layout the grid runs right to left.
+ * The week starts on Saturday ([CivilCalendar.WEEK_START_ISO_DAY]); in a right-to-left layout the grid runs right to left.
  */
 @Composable
 fun MonthCalendar(
@@ -560,12 +558,11 @@ fun MonthCalendar(
     onNextMonth: () -> Unit,
     canGoNext: Boolean,
     modifier: Modifier = Modifier,
-    weekStart: WeekStart = rememberWeekStart(),
 ) {
     val s = LocalStrings.current
     val c = Nix.colors
     val firstDay = CivilCalendar.dayIndexFromCivil(year, month, 1)
-    val lead = weekStart.columnOf(firstDay)
+    val lead = CivilCalendar.weekColumn(firstDay)
     val length = CivilCalendar.monthLength(year, month)
     val rows = (lead + length + 6) / 7
     // The arrows mirror by themselves in RTL (NixIconView), so "previous" points right there.
@@ -579,7 +576,7 @@ fun MonthCalendar(
             NixIconButton(NixIcon.Chevron, { if (canGoNext) onNextMonth() }, size = 36.dp, tint = if (canGoNext) c.textPrimary else c.textMuted.copy(alpha = 0.4f))
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            weekStart.reorder(s.weekdayLetters).forEach {
+            CivilCalendar.inWeekOrder(s.weekdayLetters).forEach {
                 Text(it, style = NixType.Small, color = c.textMuted, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
             }
         }
@@ -694,7 +691,6 @@ fun GoodHabitCard(
             doneColor = look.doneSquare,
             idleColor = look.content.copy(alpha = 0.10f),
             todayBorder = look.content.copy(alpha = 0.7f),
-            weekStartIndex = if (habit.isWeekly) habit.weekStartIndex else null,
         )
         Spacer(Modifier.height(6.dp))
         Row(

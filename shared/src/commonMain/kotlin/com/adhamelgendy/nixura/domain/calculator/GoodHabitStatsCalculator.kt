@@ -21,7 +21,7 @@ data class GoodHabitStats(
     val completionLast7: Float,
     val completionLast30: Float,
     val weeklyTarget: Int? = null,
-    /** Days done this week (Sunday to Saturday) and this week's goal. 0 for daily habits. */
+    /** Days done this week (Saturday to Friday) and this week's goal. 0 for daily habits. */
     val weekDone: Int = 0,
     val weekGoal: Int = 0,
 ) {

@@ -1,10 +1,12 @@
 package com.adhamelgendy.nixura.domain.calculator
 
+import com.adhamelgendy.nixura.domain.time.CivilCalendar
+
 import kotlin.math.ceil
 
 /**
  * Rules for weekly good habits ("N days a week", owner decision 2026-11-11):
- * - A week runs **Sunday to Saturday**.
+ * - A week runs **Saturday to Friday** ([CivilCalendar.WEEK_START_ISO_DAY]).
  * - A day counts **once**, however many times it was logged.
  * - Reaching the goal makes the week 100%; doing more never goes above 100%.
  * - The current week never lowers the Discipline score early: until the goal is met it is left out, unless it can no
@@ -17,8 +19,8 @@ object WeeklyGoalCalculator {
     const val DAYS_IN_WEEK = 7
     const val MAX_DAYS_PER_WEEK = 7
 
-    /** The Sunday on or before [day]. */
-    fun weekStartOf(day: Long): Long = day - ((day + 4) % 7 + 7) % 7
+    /** The Saturday on or before [day]. */
+    fun weekStartOf(day: Long): Long = CivilCalendar.weekStartOf(day)
 
     /** The goal for the week starting [weekStart]; smaller in the week the habit was created. */
     fun goalFor(weekStart: Long, target: Int, createdDay: Long): Int {

@@ -152,7 +152,7 @@ sealed interface GoodWidgetState {
         val fillStyle: GoodHabitFillStyle = GoodHabitFillStyle.PLAIN,
         /**
          * Set for a weekly habit: then [count] / [target] are days done / this week's goal, [week] is this week
-         * (Sunday to Saturday), [currentStreakDays] is in weeks and [todayCount] is 0 or 1.
+         * (Saturday to Friday), [currentStreakDays] is in weeks and [todayCount] is 0 or 1.
          */
         val weeklyTarget: Int? = null,
         val todayCount: Int = count,

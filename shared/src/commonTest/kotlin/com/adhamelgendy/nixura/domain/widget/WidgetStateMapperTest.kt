@@ -189,24 +189,25 @@ class WidgetStateMapperTest {
     }
 
     // ---- good habit card extras ----
-    @Test fun goodWeekStripHasSevenDaysEndingToday() {
+    @Test fun goodWeekStripIsThisWeekSaturdayFirst() {
+        // Day 10 (1970-01-11) is a Sunday, so the week runs from Saturday day 9 to Friday day 15, like the app's strip.
         val now = 10 * DAY + 4 * HOUR
         val s = assertIs<GoodWidgetState.Active>(WidgetStateMapper.good(1, listOf(goodHabit(1, 2, 10L to 2, 9L to 1, created = 0)), now, days))
         assertEquals(7, s.week.size)
-        assertTrue(s.week.last().isToday); assertEquals(1, s.week.count { it.isToday })
-        assertEquals(DayStatus.DONE, s.week.last().status)
-        assertEquals(DayStatus.PARTIAL, s.week[5].status)
-        assertEquals(DayStatus.NONE, s.week[0].status)
-        // consecutive ISO weekdays 1..7
+        assertEquals(6, s.week[0].isoWeekday) // Saturday
+        assertEquals(DayStatus.PARTIAL, s.week[0].status)
+        assertTrue(s.week[1].isToday); assertEquals(1, s.week.count { it.isToday })
+        assertEquals(DayStatus.DONE, s.week[1].status)
+        // consecutive ISO weekdays, Saturday to Friday
         for (i in 1 until 7) assertEquals(s.week[i - 1].isoWeekday % 7 + 1, s.week[i].isoWeekday)
     }
 
-    @Test fun goodWeekStripDisablesDaysBeforeTheHabitExisted() {
+    @Test fun goodWeekStripDimsTheDaysStillToCome() {
+        // Day 100 is a Saturday: today opens the week and the six days after it are not here yet.
         val now = 100 * DAY
         val s = assertIs<GoodWidgetState.Active>(WidgetStateMapper.good(1, listOf(goodHabit(1, 2, created = 100 * DAY)), now, days))
-        assertTrue(s.week.all { it.enabled }) // app rule: createdDay - 6 is still enabled
-        val recent = assertIs<GoodWidgetState.Active>(WidgetStateMapper.good(1, listOf(goodHabit(1, 2, created = 100 * DAY)), now + 0, days))
-        assertEquals(7, recent.week.count { it.enabled })
+        assertTrue(s.week[0].isToday)
+        assertEquals(1, s.week.count { it.enabled })
     }
 
     @Test fun goodStreakAndTotalsMatchTheCalculator() {

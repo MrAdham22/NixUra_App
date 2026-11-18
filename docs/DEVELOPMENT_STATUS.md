@@ -10,6 +10,11 @@ Branch `claude/cranky-goodall-94eb7c` (cut from `claude/nixora-bugs-features-pla
 - **Verified:** `:androidApp:assembleDebug` OK; `:shared:testAndroidHostTest` 623 tests, 0 failures. On the Android 16 emulator: switching languages in place, Home, Quit, Build, Events, Coach (greeting, chips, a reply), the good-habit detail with its Saturday-first calendar, the quit detail timeline, the Add Good Habit form with the water and prayer themes from Arabic quick picks, the Add Quit form, Settings, Profile and the starter guide in RTL, dark and light, Western and Arabic-Indic digits; `cmd locale get-app-locales` = `[ar]`; a language set in the phone's settings is taken back; ar-XB maps to Arabic, en-XA to English; the notification channel name in Arabic.
 - **Not verified:** the owner's phone (not connected during the session), Firebase sign-in/sync after switching (no test account), the widgets on a home screen and a fired notification in Arabic (covered by code and tests only), previews rendered in an IDE, iOS (Windows: run `:shared:compileKotlinIosSimulatorArm64`, `:shared:linkDebugFrameworkIosSimulatorArm64`, `:shared:iosSimulatorArm64Test` and the Xcode build on a Mac).
 
+## After the 4 sessions (2026-11-18)
+
+- **All weeks start on Saturday** (owner decision): one rule in `CivilCalendar` (`WEEK_START_ISO_DAY`, `weekColumn`, `weekStartOf`, `inWeekOrder`) used by weekly goals, card week strips (now always this week, Saturday to Friday, for daily and weekly habits alike), month calendars, the date picker, widgets and reminders. Weekly habits' past weeks are now counted Saturday to Friday, so streaks in weeks and weekly percentages can shift by one day's worth for existing data. Tests updated (`SaturdayFirstWeekTest`, `WeeklyGoalCalculatorTest`, `WidgetStateMapperTest`); 621 pass.
+- **Landing line:** English "bad Aura" now blows away together; Arabic reads «لنمحُ الهالة السلبية».
+
 ## Sessions 2 and 3 of 4 (2026-11-17): Add-form animations, water goal, themed calendar
 
 Ran in parallel (branches `claude/s2-form-animations-e6598c`, `claude/s3-calendar-water-d163b7`), merged into `claude/nixora-bugs-features-plan-9a1220`. Details per session in `HANDOFF.md`.

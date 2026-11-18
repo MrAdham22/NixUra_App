@@ -46,8 +46,20 @@ object CivilCalendar {
     /** ISO weekday: Monday = 1 … Sunday = 7. */
     fun isoWeekday(dayIndex: Long): Int = ((dayIndex + 3L).mod(7L)).toInt() + 1
 
-    /** Column of [dayIndex] in a week that starts on Sunday: 0 = Sunday ... 6 = Saturday (all NixUra weeks). */
-    fun sundayFirstColumn(dayIndex: Long): Int = isoWeekday(dayIndex) % 7
+    /**
+     * The ISO weekday every NixUra week starts on: **Saturday**, in every language (owner decision 2026-11-18, replacing
+     * Sunday). Week strips, month calendars, the date picker, weekly goals, widgets and reminders all use it.
+     */
+    const val WEEK_START_ISO_DAY: Int = 6
+
+    /** Column of [dayIndex] in a NixUra week: 0 = Saturday ... 6 = Friday. */
+    fun weekColumn(dayIndex: Long): Int = (isoWeekday(dayIndex) - WEEK_START_ISO_DAY).mod(7)
+
+    /** The first day (Saturday) of the week that contains [dayIndex]. */
+    fun weekStartOf(dayIndex: Long): Long = dayIndex - weekColumn(dayIndex)
+
+    /** [isoOrdered] (Monday first, like `Strings.weekdayLetters`) put in NixUra's week order, Saturday first. */
+    fun <T> inWeekOrder(isoOrdered: List<T>): List<T> = List(7) { isoOrdered[(WEEK_START_ISO_DAY - 1 + it) % 7] }
 
     fun addMonths(year: Int, month: Int, delta: Int): Pair<Int, Int> {
         val total = year * 12 + (month - 1) + delta

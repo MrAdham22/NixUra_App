@@ -15,7 +15,7 @@ data class GoodHabit(
     val colorArgb: Long? = null,
     val createdAtEpochMillis: Long,
     val archivedAtEpochMillis: Long? = null,
-    /** `null` = daily habit. 1..7 = weekly habit: done on this many days of the week (Sunday to Saturday). */
+    /** `null` = daily habit. 1..7 = weekly habit: done on this many days of the week (Saturday to Friday). */
     val weeklyTarget: Int? = null,
     /** Colour, icon and animation family, detected from the name when saved. */
     val theme: HabitTheme = HabitTheme.DEFAULT,

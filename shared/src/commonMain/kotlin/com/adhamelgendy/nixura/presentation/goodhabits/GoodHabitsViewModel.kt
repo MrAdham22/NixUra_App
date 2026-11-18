@@ -59,7 +59,7 @@ data class GoodHabitUi(
     val progressTarget: Int = dailyTarget,
     /** This week's goal is met (weekly habits only). */
     val weekGoalMet: Boolean = false,
-    /** First day (Sunday) of the current week. */
+    /** First day (Saturday) of the current week. */
     val weekStartIndex: Long = 0,
     /** Stored theme: colour, icon and animation through [com.adhamelgendy.nixura.presentation.appearance.HabitThemes]. */
     val theme: HabitTheme = HabitTheme.DEFAULT,

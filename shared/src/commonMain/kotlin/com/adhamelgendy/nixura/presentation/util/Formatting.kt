@@ -65,10 +65,6 @@ fun formatLead(leadMillis: Long, s: Strings): String {
     }
 }
 
-/** Weekday letters in NixUra's week order, Sunday first ("S M T W T F S"). */
-fun com.adhamelgendy.nixura.presentation.strings.Strings.weekdayLettersSundayFirst(): List<String> =
-    listOf(weekdayLetters[6]) + weekdayLetters.take(6)
-
 /**
  * A name the user typed, for display: first letter capitalized ("smoking" → "Smoking"). Only for showing; the saved
  * name, matching and anything sent to the coach keep exactly what the user typed.

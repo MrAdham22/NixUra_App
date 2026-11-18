@@ -237,13 +237,13 @@ open class Strings {
     open val legendMissed: String = "Missed"
     open val editPastHint: String = "Forgot to log a day? Adjust it here."
 
-    // Weekly good habits ("N days a week", Sunday to Saturday)
+    // Weekly good habits ("N days a week", Saturday to Friday)
     open val habitFrequency: String = "How often"
     open val frequencyDaily: String = "Every day"
     open val frequencyWeekly: String = "Days a week"
     open val weeklyTarget: String = "Days a week"
     open val notDoneYet: String = "Not done yet"
-    open val weeklyTargetHint: String = "Any days from Sunday to Saturday. Each day counts once."
+    open val weeklyTargetHint: String = "Any days from Saturday to Friday. Each day counts once."
     open val weekProgress: (Int, Int) -> String = { done, goal -> "$done / $goal days this week" }
     open val weekGoalReached: String = "Weekly goal reached"
     open val daysToGoThisWeek: (Int) -> String = { if (it == 1) "1 more day this week" else "$it more days this week" }
