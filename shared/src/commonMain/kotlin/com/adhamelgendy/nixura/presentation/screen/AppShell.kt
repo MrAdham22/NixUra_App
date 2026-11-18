@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.ColorFilter
 import nixura.shared.generated.resources.nixura_logo
+import nixura.shared.generated.resources.nixura_logo_light
 import nixura.shared.generated.resources.nixura_icon
 import nixura.shared.generated.resources.Res
 import org.jetbrains.compose.resources.painterResource
@@ -401,14 +402,18 @@ private fun TopBar(navigator: Navigator) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // The logo alone (no dark square), lifted off the bar with a soft drop shadow (preview 2026-11-14).
+        // Light theme (2026-11-18): a fresh cut of the artwork that keeps the chain links solid (the dark cut has
+        // see-through gaps that showed on cream) and a soft purple shadow instead of the black one.
+        val logo = if (c.isDark) Res.drawable.nixura_logo else Res.drawable.nixura_logo_light
+        val shadow = if (c.isDark) Color.Black.copy(alpha = 0.6f) else NixUraPalette.Purple.copy(alpha = 0.28f)
         Box(Modifier.size(38.dp)) {
             Image(
-                painterResource(Res.drawable.nixura_logo),
+                painterResource(logo),
                 contentDescription = null,
-                colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.6f)),
+                colorFilter = ColorFilter.tint(shadow),
                 modifier = Modifier.matchParentSize().offset(x = 1.dp, y = 3.dp).blur(3.dp),
             )
-            Image(painterResource(Res.drawable.nixura_logo), contentDescription = null, modifier = Modifier.matchParentSize())
+            Image(painterResource(logo), contentDescription = null, modifier = Modifier.matchParentSize())
         }
         Spacer(Modifier.width(10.dp))
         Text("NixUra", style = NixType.Heading, color = c.textPrimary)
