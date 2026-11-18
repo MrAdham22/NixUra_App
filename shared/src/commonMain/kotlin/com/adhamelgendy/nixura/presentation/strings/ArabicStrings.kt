@@ -477,8 +477,9 @@ object ArabicStrings : Strings() {
     override val widgetTitleBuild: String = "البناء"
 
     // Accounts
-    override val landingTagline: String = "لنترك السيئ خلفنا"
-    override val landingAuraWord: String = "Aura"
+    // "Let's Nix the bad Aura": erase (نمحو, like "Nix") the negative aura (الهالة = aura); the aura words blow away.
+    override val landingTagline: String = "لنمحُ"
+    override val landingFadingWords: List<String> = listOf("الهالة", "السلبية")
     override val landingBody: String = "اترك ما يستنزفك، وابنِ ما يرفعك، وعُدّ الأيام لما يهمّك."
     override val landingGetStarted: String = "أنشئ حسابًا"
     override val landingHaveAccount: String = "لديّ حساب بالفعل"

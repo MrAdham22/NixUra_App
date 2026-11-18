@@ -449,8 +449,9 @@ open class Strings {
     open val widgetTitleBuild: String = "Build"
 
     // ---- Accounts (Agent 2) ----
-    open val landingTagline: String = "Let's Nix the bad"
-    open val landingAuraWord: String = "Aura"
+    /** The landing line is [landingTagline] followed by [landingFadingWords], which blow away as ash and come back. */
+    open val landingTagline: String = "Let's Nix the"
+    open val landingFadingWords: List<String> = listOf("bad", "Aura")
     open val landingBody: String = "Quit what drains you. Build what lifts you. Count down to what matters."
     open val landingGetStarted: String = "Create account"
     open val landingHaveAccount: String = "I already have an account"

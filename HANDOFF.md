@@ -272,8 +272,8 @@ catalog), `b3e0e31` (LocaleManager fix, typed-name digits, notification test), t
   sign-in/sync after a switch (needs an account; the code path is unchanged apart from the synced `languageCode` value `system`);
   widgets on a home screen and a fired notification in Arabic (code + tests); iOS (Mac commands in DEVELOPMENT_STATUS).
 - **Arabic to review (owner):** «الإقلاع / البناء» as tab names; «صامد منذ» for "Clear for"; «تعثّر / تعثّرت» used for relapse and "I
-  slipped" everywhere; «رغبة قوية؟» for "Craving?"; «طاب يومك» for "Good afternoon"; «لنترك السيئ خلفنا» for the tagline "Let's Nix the
-  bad" (the "Aura" word animation stays Latin); the short time units «3ي 20س» / «5س 12د» and the stop-explorer chips «1س…1ش»; «رسالة
+  slipped" everywhere; «رغبة قوية؟» for "Craving?"; «طاب يومك» for "Good afternoon"; «لنمحُ الهالة السلبية» (owner asked for an Arabic word instead of "Aura", 2026-11-18; «الهالة السلبية» blows away like "bad Aura") for the tagline "Let's Nix the
+  bad Aura"; the short time units «3ي 20س» / «5س 12د» and the stop-explorer chips «1س…1ش»; «رسالة
   اليوم» for the daily check-in; «الزخم / التحرّر / الانضباط» for the three scores; «ارتقِ / تطلّع / تحرّر» eyebrows; the weekday letters
   «ن ث ر خ ج س ح»; Egyptian-style month names (يناير…ديسمبر) instead of the Levantine ones; «اللّي» (shisha mouthpiece, Egyptian
   word) in a shisha tip; the medical safety notes in `ArabicDrugTexts.kt` (worth a second reader).

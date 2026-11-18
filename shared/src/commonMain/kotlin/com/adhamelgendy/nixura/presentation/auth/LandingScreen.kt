@@ -47,7 +47,8 @@ import com.adhamelgendy.nixura.presentation.theme.NixUraPalette
 private val TaglineStyle = TextStyle(fontSize = 25.sp, lineHeight = 33.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.3).sp)
 
 /**
- * The first screen when signed out: brand, the "Let's Nix the bad Aura" line whose last word blows away as ash, and
+ * The first screen when signed out: brand, the "Let's Nix the bad Aura" line whose last words ("bad Aura"; in Arabic
+ * "الهالة السلبية") blow away as ash together, and
  * Get Started. [onGuest] is the guest path; [AuthGate] handles its warnings.
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -78,13 +79,14 @@ fun LandingScreen(navigator: Navigator, onGuest: (() -> Unit)?) {
                 modifier = Modifier.riseIn(120).semantics { heading() },
             )
             Spacer(Modifier.height(14.dp))
-            val fullLine = "${s.landingTagline} ${s.landingAuraWord}"
+            val fullLine = (listOf(s.landingTagline) + s.landingFadingWords).joinToString(" ")
             FlowRow(
                 Modifier.fillMaxWidth().riseIn(260).clearAndSetSemantics { contentDescription = fullLine },
                 horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally),
             ) {
                 Text(s.landingTagline, style = TaglineStyle, color = c.textPrimary)
-                AshWord(s.landingAuraWord, TaglineStyle, auraBrush)
+                // One AshWord per word, so the line can wrap between them; they share the same timing, so they go together.
+                s.landingFadingWords.forEach { AshWord(it, TaglineStyle, auraBrush) }
             }
             Spacer(Modifier.height(16.dp))
             Text(
