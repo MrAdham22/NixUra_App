@@ -18,12 +18,14 @@ class WeeklyGoalCalculatorTest {
     private fun days(vararg d: Long) = d.associateWith { 1 }
 
     @Test
-    fun weekStartsOnSunday() {
-        assertEquals(sun, w.weekStartOf(sun))
-        assertEquals(sun, w.weekStartOf(sun + 6)) // Saturday
-        assertEquals(sun + 7, w.weekStartOf(sun + 7)) // next Sunday
-        assertEquals(3L, w.weekStartOf(3)) // 1970-01-04 was a Sunday
-        assertEquals(-4L, w.weekStartOf(-1)) // 1969-12-31 (Wednesday) -> Sunday 1969-12-28
+    fun weekStartsOnSaturday() {
+        val sat = sun - 1
+        assertEquals(sat, w.weekStartOf(sat))
+        assertEquals(sat, w.weekStartOf(sun)) // Sunday is the second day
+        assertEquals(sat, w.weekStartOf(sat + 6)) // Friday ends the week
+        assertEquals(sat + 7, w.weekStartOf(sat + 7)) // next Saturday
+        assertEquals(2L, w.weekStartOf(2)) // 1970-01-03 was a Saturday
+        assertEquals(-5L, w.weekStartOf(-1)) // 1969-12-31 (Wednesday) -> Saturday 1969-12-27
     }
 
     @Test

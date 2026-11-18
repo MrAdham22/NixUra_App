@@ -57,14 +57,14 @@ object WidgetStateMapper {
         val createdDayIndex = days.dayIndexOf(item.habit.createdAtEpochMillis)
         val stats = GoodHabitStatsCalculator.compute(item, todayIndex, createdDayIndex)
         val counts = GoodHabitStatsCalculator.countsByDay(item)
-        // Same days as the in-app strip: the last 7 days, or this week (Sunday to Saturday) for a weekly habit.
-        val firstDay = if (stats.isWeekly) WeeklyGoalCalculator.weekStartOf(todayIndex) else todayIndex - 6
+        // Same days as the in-app strip: this week, Saturday to Friday, days to come dimmed.
+        val firstDay = CivilCalendar.weekStartOf(todayIndex)
         val week = (0 until 7).map { i ->
             val day = firstDay + i
             WidgetDay(
                 isoWeekday = CivilCalendar.isoWeekday(day),
                 status = GoodHabitStatsCalculator.statusOf(counts[day] ?: 0, stats.dailyTarget),
-                enabled = if (stats.isWeekly) day <= todayIndex else day >= createdDayIndex - 6,
+                enabled = day <= todayIndex,
                 isToday = day == todayIndex,
                 ratio = GoodHabitStatsCalculator.fillLevel(counts[day] ?: 0, stats.dailyTarget),
             )

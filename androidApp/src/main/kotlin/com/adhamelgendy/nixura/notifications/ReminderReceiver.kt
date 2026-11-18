@@ -57,13 +57,13 @@ class ReminderReceiver : BroadcastReceiver() {
         fun ensureChannel(context: Context) {
             if (Build.VERSION.SDK_INT < 26) return
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            if (manager.getNotificationChannel(CHANNEL_ID) == null) {
-                manager.createNotificationChannel(
-                    NotificationChannel(CHANNEL_ID, "Reminders & coaching", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                        description = "Event reminders, streak milestones and your daily check-in"
-                    },
-                )
-            }
+            // Created every time on purpose: creating an existing channel only renames it, so its name follows the
+            // app's language (Android resources, values / values-ar) after a language switch.
+            manager.createNotificationChannel(
+                NotificationChannel(CHANNEL_ID, context.getString(R.string.channel_reminders_name), NotificationManager.IMPORTANCE_DEFAULT).apply {
+                    description = context.getString(R.string.channel_reminders_description)
+                },
+            )
         }
     }
 }

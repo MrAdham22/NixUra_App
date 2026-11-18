@@ -1,5 +1,11 @@
 package com.adhamelgendy.nixura.domain.usecase
 
+import com.adhamelgendy.nixura.domain.theme.HabitTheme
+import com.adhamelgendy.nixura.domain.theme.HabitThemeDetector
+import com.adhamelgendy.nixura.domain.theme.WaterGoal
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 import com.adhamelgendy.nixura.domain.calculator.WeeklyGoalCalculator
 import com.adhamelgendy.nixura.domain.model.GoodHabit
 import com.adhamelgendy.nixura.domain.model.GoodHabitWithLogs
@@ -29,18 +35,57 @@ private fun checkTargets(dailyTarget: Int, weeklyTarget: Int?): Int {
     return dailyTarget
 }
 
-class CreateGoodHabitUseCase(private val repository: GoodHabitRepository) {
-    suspend operator fun invoke(name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int? = null): Result<Long> =
+/**
+ * What a saved good habit stores besides its name: its theme (detected once, here) and, for a daily water habit, its
+ * goal in ml. A water habit's daily target is always the number of cups its goal needs, so cards, widgets, scores and
+ * the calendar keep counting cups.
+ */
+private data class GoodHabitShape(val dailyTarget: Int, val theme: HabitTheme, val water: WaterGoal?)
+
+private suspend fun shapeOf(
+    themes: HabitThemeDetector,
+    name: String,
+    dailyTarget: Int,
+    weeklyTarget: Int?,
+    water: WaterGoal?,
+): GoodHabitShape {
+    // The first detection builds the catalog index: keep it off the caller's (main) thread.
+    val theme = withContext(Dispatchers.Default) { themes.themeFor(name) }
+    val target = checkTargets(dailyTarget, weeklyTarget)
+    if (theme != HabitTheme.WATER || weeklyTarget != null) return GoodHabitShape(target, theme, null)
+    val goal = water ?: WaterGoal.defaultFor(target)
+    return GoodHabitShape(goal.servingsPerDay.coerceAtMost(MAX_DAILY_TARGET), theme, goal)
+}
+
+/** [water] is the goal chosen on the form; null = N cups of 250 ml from [dailyTarget]. Ignored unless it is water. */
+class CreateGoodHabitUseCase(private val repository: GoodHabitRepository, private val themes: HabitThemeDetector) {
+    suspend operator fun invoke(
+        name: String,
+        dailyTarget: Int,
+        colorArgb: Long?,
+        weeklyTarget: Int? = null,
+        water: WaterGoal? = null,
+    ): Result<Long> =
         HabitNameValidator.validate(name).mapCatching { valid ->
-            repository.create(valid, checkTargets(dailyTarget, weeklyTarget), colorArgb, weeklyTarget)
+            val shape = shapeOf(themes, valid, dailyTarget, weeklyTarget, water)
+            repository.create(valid, shape.dailyTarget, colorArgb, weeklyTarget, shape.theme, shape.water)
         }
 }
 
-class UpdateGoodHabitUseCase(private val repository: GoodHabitRepository) {
-    suspend operator fun invoke(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int? = null): Result<Unit> =
+/** Renaming re-detects the theme, so "Walk" renamed to "Drink water" turns into a water habit. */
+class UpdateGoodHabitUseCase(private val repository: GoodHabitRepository, private val themes: HabitThemeDetector) {
+    suspend operator fun invoke(
+        id: Long,
+        name: String,
+        dailyTarget: Int,
+        colorArgb: Long?,
+        weeklyTarget: Int? = null,
+        water: WaterGoal? = null,
+    ): Result<Unit> =
         HabitNameValidator.validate(name).mapCatching { valid ->
             require(id > 0) { "Invalid habit id" }
-            repository.update(id, valid, checkTargets(dailyTarget, weeklyTarget), colorArgb, weeklyTarget)
+            val shape = shapeOf(themes, valid, dailyTarget, weeklyTarget, water)
+            repository.update(id, valid, shape.dailyTarget, colorArgb, weeklyTarget, shape.theme, shape.water)
         }
 }
 

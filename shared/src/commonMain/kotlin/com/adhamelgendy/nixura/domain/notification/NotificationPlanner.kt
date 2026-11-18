@@ -8,6 +8,8 @@ import com.adhamelgendy.nixura.domain.coach.CoachSnapshot
 import com.adhamelgendy.nixura.domain.coach.GoodHabitSnapshot
 import com.adhamelgendy.nixura.domain.coach.durationText
 import com.adhamelgendy.nixura.domain.model.AppSettings
+import com.adhamelgendy.nixura.domain.locale.AppLocales
+import com.adhamelgendy.nixura.domain.locale.ContentLanguage
 import com.adhamelgendy.nixura.domain.model.Event
 import com.adhamelgendy.nixura.domain.model.GoodHabitWithLogs
 import com.adhamelgendy.nixura.domain.model.HabitEventType
@@ -24,6 +26,8 @@ import kotlin.time.Duration.Companion.milliseconds
 class NotificationPlanner(
     private val coach: CoachEngine,
     private val dayCalculator: DayCalculator,
+    /** Notifications are written in the saved language (resolved here, so background re-planning gets it right). */
+    private val language: ContentLanguage = ContentLanguage.English,
 ) {
 
     fun plan(
@@ -35,6 +39,7 @@ class NotificationPlanner(
         events: List<Event>,
     ): List<PlannedNotification> {
         if (!settings.notificationsEnabled) return emptyList()
+        val arabic = language.update(settings.languageCode) == AppLocales.ARABIC
         val planned = mutableListOf<PlannedNotification>()
 
         // 1. Event reminders
@@ -46,7 +51,12 @@ class NotificationPlanner(
                     key = "event:${event.id}:$lead",
                     triggerAtEpochMillis = trigger,
                     title = event.title,
-                    body = if (lead <= 0L) "It's time." else "Starts in ${durationText(lead.milliseconds)}.",
+                    body = when {
+                        arabic && lead <= 0L -> "حان الوقت."
+                        arabic -> "تبدأ بعد ${durationText(lead.milliseconds, arabic = true)}."
+                        lead <= 0L -> "It's time."
+                        else -> "Starts in ${durationText(lead.milliseconds)}."
+                    },
                 )
             }
         }

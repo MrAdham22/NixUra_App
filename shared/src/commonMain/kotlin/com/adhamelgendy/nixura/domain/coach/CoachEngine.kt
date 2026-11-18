@@ -1,5 +1,7 @@
 package com.adhamelgendy.nixura.domain.coach
 
+import com.adhamelgendy.nixura.domain.locale.ArabicPlurals
+import com.adhamelgendy.nixura.domain.locale.ContentLanguage
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
@@ -61,11 +63,26 @@ data class CoachNote(val title: String, val body: String)
  * Offline rule-based coach. Pure Kotlin and deterministic for a given [seed], so it is fully testable.
  * A real AI backend can later replace [reply] behind the `CoachResponder` abstraction.
  */
-class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase()) {
+class CoachEngine(
+    private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase(),
+    /** The language replies and notes are written in. Matching what the user typed works in both languages. */
+    private val language: ContentLanguage = ContentLanguage.English,
+) {
 
-    private val explainer = StopTimelineExplainer(knowledge)
+    private val explainer = StopTimelineExplainer(knowledge, language)
+
+    private val ar: Boolean get() = language.isArabic
+
+    /** The English or the Arabic version of a sentence, by the current language. */
+    private fun tr(en: String, arabic: String): String = if (ar) arabic else en
+
+    private fun dur(d: Duration): String = durationText(d, ar)
+    private fun span(d: Duration): String = elapsedText(d, ar)
 
     fun categoryFor(habitName: String): HabitCategory = knowledge.match(habitName)
+
+    /** A length in words in the coach's language ("3 days" / "3 أيام"). */
+    fun durationWords(duration: Duration): String = dur(duration)
 
     /** "What happens if I stop for [elapsed]?" for any habit name (generic profile when the habit is not recognised). */
     fun explainStop(habitName: String, elapsed: Duration): StopTimelineAnswer = explainer.explain(habitName, elapsed)
@@ -98,32 +115,46 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
     fun motivation(habitName: String, elapsed: Duration, seed: Long): String {
         val variants = when {
             elapsed < ONE_HOUR -> listOf(
-                "The first hour is the hardest part, and you are already in it. Stay with it.",
-                "You decided. That is the biggest step — now just get through the next few minutes.",
+                tr("The first hour is the hardest part, and you are already in it. Stay with it.",
+                    "الساعة الأولى هي الأصعب، وأنت فيها بالفعل. اصمد."),
+                tr("You decided. That is the biggest step — now just get through the next few minutes.",
+                    "لقد قرّرت، وهذه أكبر خطوة. الآن تجاوز الدقائق القليلة القادمة فقط."),
             )
             elapsed < 1.days -> listOf(
-                "Every hour you stay clear is proof that you can do this. Keep stacking them.",
-                "Today is the foundation. Protect it one hour at a time.",
+                tr("Every hour you stay clear is proof that you can do this. Keep stacking them.",
+                    "كل ساعة تصمد فيها دليل على أنك تستطيع. واصل جمعها."),
+                tr("Today is the foundation. Protect it one hour at a time.",
+                    "اليوم هو الأساس. احمِه ساعة بعد ساعة."),
             )
             elapsed < 3.days -> listOf(
-                "Cravings often peak around now. If it feels hard, that means your brain is rewiring.",
-                "Days 2–3 are the toughest stretch. You are crossing it — keep going.",
+                tr("Cravings often peak around now. If it feels hard, that means your brain is rewiring.",
+                    "كثيرًا ما تبلغ الرغبة ذروتها في هذا الوقت. إن شعرت بالصعوبة فهذا يعني أن دماغك يعيد ترتيب نفسه."),
+                tr("Days 2–3 are the toughest stretch. You are crossing it — keep going.",
+                    "اليومان الثاني والثالث أصعب مرحلة، وأنت تعبرها الآن. واصل."),
             )
             elapsed < 7.days -> listOf(
-                "You are building real momentum. A week is within reach.",
-                "Each day makes the old habit a little weaker and you a little stronger.",
+                tr("You are building real momentum. A week is within reach.",
+                    "أنت تبني زخمًا حقيقيًا. الأسبوع صار قريبًا."),
+                tr("Each day makes the old habit a little weaker and you a little stronger.",
+                    "كل يوم يُضعف العادة القديمة قليلًا ويقوّيك قليلًا."),
             )
             elapsed < 14.days -> listOf(
-                "Past the first week most people stop doubting that change is possible. You are one of them.",
-                "You have shown consistency. Keep your triggers in sight and your plan ready.",
+                tr("Past the first week most people stop doubting that change is possible. You are one of them.",
+                    "بعد الأسبوع الأول يتوقف معظم الناس عن الشك في قدرتهم على التغيير، وأنت منهم."),
+                tr("You have shown consistency. Keep your triggers in sight and your plan ready.",
+                    "أثبتّ أنك تستطيع الاستمرار. أبقِ محفّزاتك أمام عينيك وخطتك جاهزة."),
             )
             elapsed < 30.days -> listOf(
-                "Two weeks of clarity. The habit loop is visibly weaker now.",
-                "You are close to a full month. Protect the progress you have built.",
+                tr("Two weeks of clarity. The habit loop is visibly weaker now.",
+                    "أسبوعان من الصفاء. حلقة العادة أضعف بوضوح الآن."),
+                tr("You are close to a full month. Protect the progress you have built.",
+                    "أنت قريب من شهر كامل. احمِ التقدّم الذي بنيته."),
             )
             else -> listOf(
-                "A month or more — this is no longer a streak, it is a new way of living.",
-                "You have outlasted the hardest part. Stay curious about your triggers and keep going.",
+                tr("A month or more — this is no longer a streak, it is a new way of living.",
+                    "شهر أو أكثر، هذه لم تعد سلسلة، بل طريقة جديدة للحياة."),
+                tr("You have outlasted the hardest part. Stay curious about your triggers and keep going.",
+                    "تجاوزت الجزء الأصعب. ابقَ منتبهًا لمحفّزاتك وواصل."),
             )
         }
         return variants[seed.mod(variants.size.toLong()).toInt()]
@@ -133,13 +164,22 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
 
     fun dailyCheckIn(snapshot: CoachSnapshot, seed: Long): CoachNote {
         val name = snapshot.userName.trim()
-        val title = if (name.isEmpty()) "Daily check-in" else "Daily check-in, $name"
+        val title = when {
+            name.isEmpty() -> tr("Daily check-in", "رسالة اليوم")
+            else -> tr("Daily check-in, $name", "رسالة اليوم يا $name")
+        }
         val focus = snapshot.badHabits.minByOrNull { it.elapsed }
         val pendingGood = snapshot.goodHabits.firstOrNull { it.pendingToday }
         val body = when {
-            focus != null -> "${displayName(focus.name)}: ${durationText(focus.elapsed)} clear. ${motivation(focus.name, focus.elapsed, seed)}"
-            pendingGood != null -> "Don't forget \"${pendingGood.name}\" today — ${pendingGood.progressLine} so far."
-            else -> "Take a minute to notice how you are doing. Small steps count."
+            focus != null -> tr(
+                "${displayName(focus.name)}: ${dur(focus.elapsed)} clear. ${motivation(focus.name, focus.elapsed, seed)}",
+                "${displayName(focus.name)}: صامد منذ ${dur(focus.elapsed)}. ${motivation(focus.name, focus.elapsed, seed)}",
+            )
+            pendingGood != null -> tr(
+                "Don't forget \"${pendingGood.name}\" today — ${progressLine(pendingGood)} so far.",
+                "لا تنسَ «${pendingGood.name}» اليوم، أنجزت حتى الآن ${progressLine(pendingGood)}.",
+            )
+            else -> tr("Take a minute to notice how you are doing. Small steps count.", "خذ دقيقة لتلاحظ كيف حالك. الخطوات الصغيرة تُحسب.")
         }
         return CoachNote(title, body)
     }
@@ -147,22 +187,32 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
     fun milestoneNote(habitName: String, reached: Duration): CoachNote {
         val category = knowledge.match(habitName)
         val milestone = category.milestones.lastOrNull { it.after <= reached }
-        val title = "${durationText(reached)} clear: ${displayName(habitName)}"
+        val title = tr("${dur(reached)} clear: ${displayName(habitName)}", "صامد منذ ${dur(reached)}: ${displayName(habitName)}")
         val body = milestone?.let { "${it.title}. ${it.detail}" }
-            ?: "You reached ${durationText(reached)}. Keep going — you are proving it to yourself."
+            ?: tr("You reached ${dur(reached)}. Keep going — you are proving it to yourself.", "وصلت إلى ${dur(reached)}. واصل، فأنت تثبت ذلك لنفسك.")
         return CoachNote(title, body)
+    }
+
+    /** "3 of 5 today" / "2 of 4 days this week" in the current language. */
+    private fun progressLine(h: GoodHabitSnapshot): String = when {
+        !ar -> h.progressLine
+        h.weeklyTarget != null -> "${h.weekDone} من ${h.weekGoal} أيام هذا الأسبوع"
+        else -> "${h.todayCount} من ${h.dailyTarget} اليوم"
     }
 
     // ---------- Chat ----------
 
     fun greeting(snapshot: CoachSnapshot, seed: Long): String {
         val name = snapshot.userName.trim().substringBefore(' ') // first name keeps the greeting to one short line
-        val hello = if (name.isEmpty()) "Hi there." else "Hi $name."
+        val hello = if (name.isEmpty()) tr("Hi there.", "أهلًا بك.") else tr("Hi $name.", "أهلًا يا $name.")
         val focus = snapshot.badHabits.maxByOrNull { it.elapsed }
         val status = when {
-            focus != null -> " You're **${durationText(focus.elapsed)}** clear on **${displayName(focus.name)}**."
-            snapshot.goodHabits.isNotEmpty() -> " Your good habits are waiting for today's check-in."
-            else -> " Add a habit you want to leave behind and I'll help you through it."
+            focus != null -> tr(
+                " You're **${dur(focus.elapsed)}** clear on **${displayName(focus.name)}**.",
+                " أنت صامد منذ **${dur(focus.elapsed)}** على **${displayName(focus.name)}**.",
+            )
+            snapshot.goodHabits.isNotEmpty() -> tr(" Your good habits are waiting for today's check-in.", " عاداتك الجيدة تنتظر تسجيل اليوم.")
+            else -> tr(" Add a habit you want to leave behind and I'll help you through it.", " أضف عادة تريد تركها خلفك، وسأساعدك على تجاوزها.")
         }
         return "$hello$status"
     }
@@ -170,13 +220,13 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
     fun suggestions(snapshot: CoachSnapshot): List<String> {
         val list = mutableListOf<String>()
         if (snapshot.badHabits.isNotEmpty()) {
-            list += "I have a craving"
-            list += "What's happening in my body?"
-            list += "I slipped up"
+            list += tr("I have a craving", "عندي رغبة قوية")
+            list += tr("What's happening in my body?", "ماذا يحدث في جسمي؟")
+            list += tr("I slipped up", "تعثّرت")
         }
-        list += "How am I doing?"
-        list += "Motivate me"
-        list += "Give me a reset plan"
+        list += tr("How am I doing?", "كيف تقدّمي؟")
+        list += tr("Motivate me", "حفّزني")
+        list += tr("Give me a reset plan", "أعطني خطة لبداية جديدة")
         return list
     }
 
@@ -186,7 +236,11 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
         val focused = snapshot.focusHabitId?.let { id -> snapshot.badHabits.firstOrNull { it.id == id } }
         val habit = findMentionedHabit(text, tokens, snapshot) ?: focused ?: snapshot.badHabits.minByOrNull { it.elapsed }
         val name = snapshot.userName.trim()
-        val lead = if (name.isEmpty()) "" else "$name, "
+        val lead = when {
+            name.isEmpty() -> ""
+            ar -> "$name، "
+            else -> "$name, "
+        }
         val parsedDuration = DurationParser.find(userText)
 
         return when {
@@ -203,12 +257,22 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
             hasAny(text, tokens, EVENTS) -> eventReply(snapshot)
             hasWord(tokens, THANKS) -> thanksReply(name, seed)
             hasWord(tokens, GREETING) -> greeting(snapshot, seed)
-            hasPhrase(tokens, HOW_ARE_YOU) -> "I'm doing well, thank you for asking. More importantly, how are you doing today?"
+            hasPhrase(tokens, HOW_ARE_YOU) -> tr(
+                "I'm doing well, thank you for asking. More importantly, how are you doing today?",
+                "أنا بخير، شكرًا لسؤالك. والأهم: كيف حالك أنت اليوم؟",
+            )
             hasPhrase(tokens, WHO_ARE_YOU) -> capabilitiesReply()
-            hasPhrase(tokens, GOODBYE) -> "Take care${if (name.isEmpty()) "" else ", $name"}. I'm here whenever you need a reset or a boost."
+            hasPhrase(tokens, GOODBYE) -> tr(
+                "Take care${if (name.isEmpty()) "" else ", $name"}. I'm here whenever you need a reset or a boost.",
+                "اعتنِ بنفسك${if (name.isEmpty()) "" else " يا $name"}. أنا هنا متى احتجت بداية جديدة أو دفعة حماس.",
+            )
             focused != null -> habitOverviewReply(lead, focused)
-            else -> "I can help with cravings, your progress, what is happening in your body, what happens when you stop for a while, or a reset plan. " +
-                "Tell me what is on your mind, or pick one of the suggestions below."
+            else -> tr(
+                "I can help with cravings, your progress, what is happening in your body, what happens when you stop for a while, or a reset plan. " +
+                    "Tell me what is on your mind, or pick one of the suggestions below.",
+                "أستطيع مساعدتك في الرغبات القوية، وتقدّمك، وما يحدث في جسمك، وما يحدث حين تتوقف لفترة، أو في خطة لبداية جديدة. " +
+                    "أخبرني بما يدور في ذهنك، أو اختر أحد الاقتراحات بالأسفل.",
+            )
         }
     }
 
@@ -264,9 +328,14 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
 
         if (resolved == null && snapshot.badHabits.size > 1) {
             val names = snapshot.badHabits.map { displayName(it.name) }
-            val list = names.dropLast(1).joinToString(", ") + " or " + names.last()
-            return "${lead}which habit do you mean: $list? Tell me its name together with the time, " +
-                "for example \"what happens to ${names.first()} after 6 hours?\""
+            return if (ar) {
+                val list = names.dropLast(1).joinToString("، ") + " أم " + names.last()
+                "${lead}أي عادة تقصد: $list؟ اكتب اسمها مع المدة، مثل «ماذا يحدث لـ ${names.first()} بعد 6 ساعات؟»"
+            } else {
+                val list = names.dropLast(1).joinToString(", ") + " or " + names.last()
+                "${lead}which habit do you mean: $list? Tell me its name together with the time, " +
+                    "for example \"what happens to ${names.first()} after 6 hours?\""
+            }
         }
 
         val habitName = resolved?.name ?: ""
@@ -277,50 +346,79 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
         if (duration == null) {
             val upcoming = explainer.upcoming(habitName, actual, 2)
             val answer = explainer.explain(habitName, actual)
-            val where = if (snap != null) " You are ${elapsedText(actual)} in." else ""
+            val where = if (snap != null) tr(" You are ${span(actual)} in.", " مضى عليك ${span(actual)}.") else ""
             val shown = if (snap != null) displayName(snap.name) else answer.habitLabel
-            val sb = StringBuilder("${lead}here is what is coming up for $shown.$where\n\n")
+            val sb = StringBuilder(tr("${lead}here is what is coming up for $shown.$where\n\n", "${lead}إليك ما ينتظرك مع $shown.$where\n\n"))
             if (upcoming.isEmpty()) {
-                sb.append("The main milestones on this timeline are behind you. From here it is mostly about keeping your routines and knowing your triggers.\n\n")
+                sb.append(
+                    tr(
+                        "The main milestones on this timeline are behind you. From here it is mostly about keeping your routines and knowing your triggers.\n\n",
+                        "تجاوزت المحطات الرئيسية في هذا المسار. من الآن، الأمر يتعلق غالبًا بالحفاظ على روتينك ومعرفة محفّزاتك.\n\n",
+                    ),
+                )
             } else {
                 upcoming.forEachIndexed { index, m ->
-                    val label = if (index == 0) "Next" else "After that"
-                    sb.append("$label: ${m.title}, in about ${elapsedText(m.after - actual)}. ${m.detail}\n\n")
+                    if (ar) {
+                        val label = if (index == 0) "التالي" else "بعد ذلك"
+                        sb.append("$label: ${m.title}، بعد نحو ${span(m.after - actual)}. ${m.detail}\n\n")
+                    } else {
+                        val label = if (index == 0) "Next" else "After that"
+                        sb.append("$label: ${m.title}, in about ${span(m.after - actual)}. ${m.detail}\n\n")
+                    }
                 }
             }
-            sb.append("Tell me a time, for example \"what happens after 3 days?\", and I will show you that moment.\n\n")
+            sb.append(
+                tr(
+                    "Tell me a time, for example \"what happens after 3 days?\", and I will show you that moment.\n\n",
+                    "اذكر لي مدة، مثل «ماذا يحدث بعد 3 أيام؟»، وسأريك تلك اللحظة.\n\n",
+                ),
+            )
             appendSafetyAndDisclaimer(sb, answer)
             return sb.toString().trimEnd()
         }
 
         val answer = explainer.explain(habitName, duration.duration)
         val shown = if (snap != null) displayName(snap.name) else answer.habitLabel
+        val time = span(duration.duration)
         val intro = when (opener) {
-            0 -> "here is what typically happens around ${elapsedText(duration.duration)} in with $shown."
-            1 -> "around ${elapsedText(duration.duration)} in with $shown, this is the usual picture."
-            else -> "this is what many people notice about ${elapsedText(duration.duration)} into $shown."
+            0 -> tr("here is what typically happens around $time in with $shown.", "إليك ما يحدث عادةً بعد نحو $time مع $shown.")
+            1 -> tr("around $time in with $shown, this is the usual picture.", "بعد نحو $time مع $shown، هذه هي الصورة المعتادة.")
+            else -> tr("this is what many people notice about $time into $shown.", "هذا ما يلاحظه كثيرون بعد نحو $time مع $shown.")
         }
         val sb = StringBuilder("$lead$intro\n\n")
         sb.append("${answer.headline}\n${answer.whatIsHappening}\n\n")
         val before = answer.alreadyHappened.dropLast(1).takeLast(2)
-        if (before.isNotEmpty()) sb.append("Earlier on the way: ${before.joinToString("; ") { it.title }}.\n\n")
+        if (before.isNotEmpty()) {
+            sb.append(tr("Earlier on the way: ${before.joinToString("; ") { it.title }}.\n\n", "وفي الطريق قبل ذلك: ${before.joinToString("؛ ") { it.title }}.\n\n"))
+        }
         if (answer.next != null && answer.timeToNext != null) {
-            sb.append("Next: ${answer.next.title}, about ${elapsedText(answer.timeToNext)} later.\n\n")
+            sb.append(tr("Next: ${answer.next.title}, about ${span(answer.timeToNext)} later.\n\n", "التالي: ${answer.next.title}، بعد نحو ${span(answer.timeToNext)}.\n\n"))
         }
         if (answer.cravingTips.isNotEmpty()) {
-            sb.append("If urges show up: ${answer.cravingTips[seed.mod(answer.cravingTips.size.toLong()).toInt()]}\n\n")
+            val tip = answer.cravingTips[seed.mod(answer.cravingTips.size.toLong()).toInt()]
+            sb.append(tr("If urges show up: $tip\n\n", "إن جاءتك الرغبة: $tip\n\n"))
         }
-        if (snap != null) sb.append("You are actually ${elapsedText(snap.elapsed)} in right now.\n\n")
+        if (snap != null) sb.append(tr("You are actually ${span(snap.elapsed)} in right now.\n\n", "أنت الآن فعليًا عند ${span(snap.elapsed)}.\n\n"))
         appendSafetyAndDisclaimer(sb, answer, includeDisclaimer = false)
         return sb.toString().trimEnd()
     }
 
     private fun appendSafetyAndDisclaimer(sb: StringBuilder, answer: StopTimelineAnswer, includeDisclaimer: Boolean = true) {
-        answer.safetyNote?.let { sb.append("Important: $it\n\n") }
-        if (includeDisclaimer) sb.append("Timelines vary, and this is general information, not medical advice.")
+        answer.safetyNote?.let { sb.append(tr("Important: $it\n\n", "مهم: $it\n\n")) }
+        if (includeDisclaimer) {
+            sb.append(tr("Timelines vary, and this is general information, not medical advice.", "تختلف المدد من شخص لآخر، وهذه معلومات عامة وليست نصيحة طبية."))
+        }
     }
 
     private fun thanksReply(name: String, seed: Long): String {
+        if (ar) {
+            val who = if (name.isEmpty()) "يا صديقي" else "يا $name"
+            return listOf(
+                "العفو $who. أنا هنا متى احتجت بداية جديدة أو دفعة حماس.",
+                "في أي وقت $who. كل تسجيل يُحسب.",
+                "سعيد بمساعدتك $who. واصل، خطوة بخطوة.",
+            )[seed.mod(3L).toInt()]
+        }
         val who = name.ifEmpty { "friend" }
         return listOf(
             "You're welcome, $who. I'm here whenever you need a reset or a boost.",
@@ -329,14 +427,25 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
         )[seed.mod(3L).toInt()]
     }
 
-    private fun capabilitiesReply(): String =
+    private fun capabilitiesReply(): String = tr(
         "I'm your offline NixUra coach. I can help you through a craving, explain what happens in your body and mind when you stop for a few hours or days, " +
-            "review your progress, build a reset plan, or just cheer you on. Replies are generated on your device."
+            "review your progress, build a reset plan, or just cheer you on. Replies are generated on your device.",
+        "أنا مدرّبك في NixUra، وأعمل دون اتصال. أستطيع مساعدتك على تجاوز رغبة قوية، وشرح ما يحدث في جسمك وذهنك حين تتوقف لساعات أو أيام، " +
+            "ومراجعة تقدّمك، ووضع خطة لبداية جديدة، أو تشجيعك فقط. تُكتب الردود على جهازك.",
+    )
 
     private fun cravingReply(lead: String, habit: BadHabitSnapshot?, seed: Long): String {
-        val category = habit?.let { knowledge.match(it.name) } ?: knowledge.generic
+        val category = habit?.let { knowledge.match(it.name) } ?: knowledge.localize(knowledge.generic)
         val tip = category.cravingTips[seed.mod(category.cravingTips.size.toLong()).toInt()]
-        val where = habit?.let { " You are ${durationText(it.elapsed)} into ${displayName(it.name)}." } ?: ""
+        if (ar) {
+            val where = habit?.let { " مضى عليك ${dur(it.elapsed)} مع ${displayName(it.name)}." } ?: ""
+            val safety = category.safetyNote?.let { "\n\nمهم: $it" } ?: ""
+            return "${lead}هذه الرغبة حقيقية، لكنها مؤقتة. معظم الرغبات تخفت خلال 10 دقائق.$where\n\n" +
+                "جرّب هذا الآن:\n1. أجّل: اضبط مؤقتًا لعشر دقائق.\n2. تنفّس: 5 أنفاس بطيئة (شهيق 4، زفير 6).\n" +
+                "3. اشرب كوب ماء.\n4. تحرّك: قم وانتقل إلى غرفة أخرى.\n\nنصيحة إضافية: $tip$safety\n\n" +
+                "أخبرني حين ينتهي المؤقت وكيف تشعر."
+        }
+        val where = habit?.let { " You are ${dur(it.elapsed)} into ${displayName(it.name)}." } ?: ""
         val safety = category.safetyNote?.let { "\n\nImportant: $it" } ?: ""
         return "${lead}that urge is real, and it is temporary. Most cravings fade in 10 minutes.$where\n\n" +
             "Try this now:\n1. Delay — set a 10-minute timer.\n2. Breathe — 5 slow breaths (in 4, out 6).\n" +
@@ -345,7 +454,17 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
     }
 
     private fun relapseReply(lead: String, habit: BadHabitSnapshot?, seed: Long): String {
-        val record = habit?.let { " Your longest streak of ${durationText(it.longest)} still counts — it is part of your story." } ?: ""
+        if (ar) {
+            val record = habit?.let { " أطول سلسلة لك، ${dur(it.longest)}، ما زالت تُحسب، فهي جزء من قصتك." } ?: ""
+            val closing = listOf(
+                "ماذا كان يحدث قبلها مباشرة؟ تسمية المحفّز هي طريقتنا للاستعداد له في المرة القادمة.",
+                "ماذا تحتاج الآن: خطة لبداية جديدة، أم لحظة تلتقط فيها أنفاسك؟",
+            )[seed.mod(2L).toInt()]
+            return "${lead}التعثّر ليس النهاية، ولا يمحو تقدّمك.$record\n\n" +
+                "كن لطيفًا مع نفسك، فاللوم يقوّي العادة، والفضول يقوّيك أنت. $closing\n\n" +
+                "حين تكون مستعدًا، افتح العادة والمس «سجّل تعثّرًا» لتعيد العدّاد بصدق."
+        }
+        val record = habit?.let { " Your longest streak of ${dur(it.longest)} still counts — it is part of your story." } ?: ""
         val closing = listOf(
             "What was happening just before? Naming the trigger is how we plan for it next time.",
             "What do you need right now: a reset plan, or just a moment to breathe?",
@@ -357,56 +476,97 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
 
     private fun bodyReply(lead: String, habit: BadHabitSnapshot?): String {
         if (habit == null) {
-            return "${lead}add a habit you want to quit and I will show how your body and mind recover over time."
+            return tr(
+                "${lead}add a habit you want to quit and I will show how your body and mind recover over time.",
+                "${lead}أضف عادة تريد الإقلاع عنها، وسأريك كيف يتعافى جسمك وذهنك مع الوقت.",
+            )
         }
         val insight = insightFor(habit.name, habit.elapsed)
         val latest = insight.achieved.lastOrNull()
         val next = insight.next
-        val sb = StringBuilder("${lead}here is what is happening with ${displayName(habit.name)} (${insight.category.label}), ${durationText(habit.elapsed)} in:\n\n")
+        val sb = StringBuilder(
+            tr(
+                "${lead}here is what is happening with ${displayName(habit.name)} (${insight.category.label}), ${dur(habit.elapsed)} in:\n\n",
+                "${lead}إليك ما يحدث مع ${displayName(habit.name)} (${insight.category.label})، بعد ${dur(habit.elapsed)}:\n\n",
+            ),
+        )
         if (latest != null) {
-            sb.append("Now: ${latest.title}. ${latest.detail}\n\n")
+            sb.append(tr("Now: ${latest.title}. ${latest.detail}\n\n", "الآن: ${latest.title}. ${latest.detail}\n\n"))
         } else {
-            sb.append("Your recovery has just started — the first changes begin soon.\n\n")
+            sb.append(tr("Your recovery has just started — the first changes begin soon.\n\n", "بدأ تعافيك للتو، وأول التغييرات قريبة.\n\n"))
         }
         if (next != null) {
-            sb.append("Next: ${next.title} in about ${durationText(next.after - habit.elapsed)}.\n\n")
+            sb.append(tr("Next: ${next.title} in about ${dur(next.after - habit.elapsed)}.\n\n", "التالي: ${next.title} بعد نحو ${dur(next.after - habit.elapsed)}.\n\n"))
         }
-        insight.category.safetyNote?.let { sb.append("Important: $it\n\n") }
-        sb.append("This is general information, not medical advice.")
+        insight.category.safetyNote?.let { sb.append(tr("Important: $it\n\n", "مهم: $it\n\n")) }
+        sb.append(tr("This is general information, not medical advice.", "هذه معلومات عامة، وليست نصيحة طبية."))
         return sb.toString()
     }
 
     /** Shown when the user picked a habit and sent something that matches no other topic. */
     private fun habitOverviewReply(lead: String, habit: BadHabitSnapshot): String {
         val insight = insightFor(habit.name, habit.elapsed)
-        val sb = StringBuilder("${lead}let's talk about ${displayName(habit.name)} (${insight.category.label}). ")
-        sb.append("You are ${durationText(habit.elapsed)} in; your longest streak is ${durationText(habit.longest)}")
-        sb.append(if (habit.relapseCount == 0) " and you have no relapses recorded.\n\n" else " with ${habit.relapseCount} relapse(s) recorded.\n\n")
-        insight.achieved.lastOrNull()?.let { sb.append("Where your body is now: ${it.title}. ${it.detail}\n\n") }
-        insight.category.safetyNote?.let { sb.append("Important: $it\n\n") }
-        sb.append("I can help with a craving, explain what is happening in your body, or build a reset plan for ${displayName(habit.name)}. What do you need?")
+        val shown = displayName(habit.name)
+        val sb = StringBuilder()
+        if (ar) {
+            sb.append("${lead}لنتحدث عن $shown (${insight.category.label}). ")
+            sb.append("مضى عليك ${dur(habit.elapsed)}، وأطول سلسلة لك ${dur(habit.longest)}")
+            sb.append(if (habit.relapseCount == 0) "، ولم تسجّل أي تعثّر.\n\n" else "، مع ${habit.relapseCount} تعثّر مسجّل.\n\n")
+            insight.achieved.lastOrNull()?.let { sb.append("أين جسمك الآن: ${it.title}. ${it.detail}\n\n") }
+            insight.category.safetyNote?.let { sb.append("مهم: $it\n\n") }
+            sb.append("أستطيع مساعدتك في رغبة قوية، أو شرح ما يحدث في جسمك، أو وضع خطة لبداية جديدة مع $shown. بماذا أساعدك؟")
+        } else {
+            sb.append("${lead}let's talk about $shown (${insight.category.label}). ")
+            sb.append("You are ${dur(habit.elapsed)} in; your longest streak is ${dur(habit.longest)}")
+            sb.append(if (habit.relapseCount == 0) " and you have no relapses recorded.\n\n" else " with ${habit.relapseCount} relapse(s) recorded.\n\n")
+            insight.achieved.lastOrNull()?.let { sb.append("Where your body is now: ${it.title}. ${it.detail}\n\n") }
+            insight.category.safetyNote?.let { sb.append("Important: $it\n\n") }
+            sb.append("I can help with a craving, explain what is happening in your body, or build a reset plan for $shown. What do you need?")
+        }
         return sb.toString()
     }
 
     private fun progressReply(snapshot: CoachSnapshot): String {
         if (snapshot.badHabits.isEmpty() && snapshot.goodHabits.isEmpty()) {
-            return "Nothing to review yet. Add a habit and I will track your progress with you."
+            return tr("Nothing to review yet. Add a habit and I will track your progress with you.", "لا شيء نراجعه بعد. أضف عادة وسأتابع تقدّمك معك.")
         }
-        val sb = StringBuilder("Here is where you stand:\n\n")
+        val sb = StringBuilder(tr("Here is where you stand:\n\n", "هذا موقعك الآن:\n\n"))
         snapshot.badHabits.forEach {
-            sb.append("• ${displayName(it.name)}: ${durationText(it.elapsed)} clear (best ${durationText(it.longest)})\n")
+            sb.append(
+                tr(
+                    "• ${displayName(it.name)}: ${dur(it.elapsed)} clear (best ${dur(it.longest)})\n",
+                    "• ${displayName(it.name)}: صامد منذ ${dur(it.elapsed)} (الأفضل ${dur(it.longest)})\n",
+                ),
+            )
         }
         snapshot.goodHabits.forEach {
-            val unit = if (it.weeklyTarget != null) plural(it.streakDays, "week", "weeks") else plural(it.streakDays, "day", "days")
-            sb.append("• ${it.name}: ${it.progressLine}, streak ${it.streakDays} $unit\n")
+            if (ar) {
+                val streak = if (it.weeklyTarget != null) arWeeks(it.streakDays.toLong()) else arDays(it.streakDays.toLong())
+                sb.append("• ${it.name}: ${progressLine(it)}، سلسلة $streak\n")
+            } else {
+                val unit = if (it.weeklyTarget != null) plural(it.streakDays, "week", "weeks") else plural(it.streakDays, "day", "days")
+                sb.append("• ${it.name}: ${it.progressLine}, streak ${it.streakDays} $unit\n")
+            }
         }
         val best = snapshot.badHabits.maxByOrNull { it.elapsed }
-        if (best != null) sb.append("\nYour strongest streak is ${displayName(best.name)}. Keep it protected.")
+        if (best != null) {
+            sb.append(tr("\nYour strongest streak is ${displayName(best.name)}. Keep it protected.", "\nأقوى سلسلة لديك هي ${displayName(best.name)}. احمِها."))
+        }
         return sb.toString().trimEnd()
     }
 
     private fun planReply(lead: String, habit: BadHabitSnapshot?): String {
-        val category = habit?.let { knowledge.match(it.name) } ?: knowledge.generic
+        val category = habit?.let { knowledge.match(it.name) } ?: knowledge.localize(knowledge.generic)
+        if (ar) {
+            val target = habit?.let { displayName(it.name) } ?: "عادتك"
+            return "${lead}إليك خطة بسيطة لبداية جديدة مع $target:\n\n" +
+                "1. اعرف المحفّز: متى وأين تبدأ الرغبة عادةً؟\n" +
+                "2. اختر بديلًا: ${category.cravingTips.first()}\n" +
+                "3. صعّب الأمر: أزل ما يذكّرك بها وضع عوائق حول $target.\n" +
+                "4. أخبر شخصًا تثق به، أو سجّل هنا كل يوم.\n" +
+                "5. احتفل بكل محطة مهما كانت صغيرة.\n\n" +
+                category.whyItMatters
+        }
         val target = habit?.let { displayName(it.name) } ?: "your habit"
         return "${lead}here is a simple reset plan for $target:\n\n" +
             "1. Spot the trigger — when and where does the urge usually start?\n" +
@@ -418,6 +578,12 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
     }
 
     private fun emotionReply(lead: String, habit: BadHabitSnapshot?): String {
+        if (ar) {
+            val target = habit?.let { " مع ${displayName(it.name)}" } ?: ""
+            return "${lead}المشاعر القوية من أكثر المحفّزات شيوعًا$target، والشعور بها لا يعني أن عليك أن تستجيب لها.\n\n" +
+                "جرّب «تنفّس الصندوق» لدقيقتين: شهيق 4، احبس 4، زفير 4، احبس 4. ثم سمِّ شعورك بصوت عالٍ («أشعر بالتوتر») واسأل نفسك عمّا تحتاجه فعلًا: راحة، أم طعام، أم صحبة، أم استراحة.\n\n" +
+                "إن كانت هذه المشاعر ثقيلة أو استمرت أسابيع، فالحديث مع شخص تثق به أو مع مختص قد يُحدث فرقًا حقيقيًا."
+        }
         val target = habit?.let { " around ${displayName(it.name)}" } ?: ""
         return "${lead}strong feelings are one of the most common triggers$target — and feeling them does not mean you have to act on them.\n\n" +
             "Try box breathing for 2 minutes: in 4, hold 4, out 4, hold 4. Then name the feeling out loud (\"I feel stressed\") and ask what you actually need: rest, food, company, or a break.\n\n" +
@@ -426,35 +592,58 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
 
     private fun motivationReply(lead: String, habit: BadHabitSnapshot?, seed: Long): String {
         return if (habit != null) {
-            "$lead${motivation(habit.name, habit.elapsed, seed)}\n\nYou are ${durationText(habit.elapsed)} into ${displayName(habit.name)}. That is real, measurable progress."
+            tr(
+                "$lead${motivation(habit.name, habit.elapsed, seed)}\n\nYou are ${dur(habit.elapsed)} into ${displayName(habit.name)}. That is real, measurable progress.",
+                "$lead${motivation(habit.name, habit.elapsed, seed)}\n\nمضى عليك ${dur(habit.elapsed)} مع ${displayName(habit.name)}. هذا تقدّم حقيقي يمكن قياسه.",
+            )
         } else {
-            "${lead}every habit begins with a decision. Add one you want to leave behind and I will cheer you on every step."
+            tr(
+                "${lead}every habit begins with a decision. Add one you want to leave behind and I will cheer you on every step.",
+                "${lead}كل عادة تبدأ بقرار. أضف عادة تريد تركها خلفك، وسأشجّعك في كل خطوة.",
+            )
         }
     }
 
     private fun goodHabitsReply(snapshot: CoachSnapshot): String {
         if (snapshot.goodHabits.isEmpty()) {
-            return "Good habits crowd out bad ones. Add one small thing — a glass of water, a short walk — and check in daily."
+            return tr(
+                "Good habits crowd out bad ones. Add one small thing — a glass of water, a short walk — and check in daily.",
+                "العادات الجيدة تزاحم السيئة. أضف شيئًا صغيرًا، كوب ماء أو مشيًا قصيرًا، وسجّله كل يوم.",
+            )
         }
         val pending = snapshot.goodHabits.filter { it.pendingToday }
         return if (pending.isEmpty()) {
-            "You have completed all your good habits today. That discipline is what makes quitting stick."
+            tr(
+                "You have completed all your good habits today. That discipline is what makes quitting stick.",
+                "أنجزت كل عاداتك الجيدة اليوم. هذا الانضباط هو ما يجعل الإقلاع يدوم.",
+            )
         } else {
-            "Still to do today:\n" + pending.joinToString("\n") { "• ${it.name} (${it.progressLine})" } +
-                "\n\nSmall actions repeated daily become who you are."
+            tr("Still to do today:\n", "باقٍ لليوم:\n") + pending.joinToString("\n") { "• ${it.name} (${progressLine(it)})" } +
+                tr("\n\nSmall actions repeated daily become who you are.", "\n\nالخطوات الصغيرة التي تتكرّر كل يوم تصبح جزءًا منك.")
         }
     }
 
     private fun eventReply(snapshot: CoachSnapshot): String {
-        val event = snapshot.nextEvent ?: return "You have no upcoming events. Add one to the Events tab and I will help you stay on track until it arrives."
-        return "Your next event is \"${event.title}\" in ${durationText(event.remaining)}. Staying consistent now means you arrive feeling proud of yourself."
+        val event = snapshot.nextEvent ?: return tr(
+            "You have no upcoming events. Add one to the Events tab and I will help you stay on track until it arrives.",
+            "ليست لديك مناسبات قادمة. أضف واحدة من تبويب المناسبات، وسأساعدك على البقاء على المسار حتى موعدها.",
+        )
+        return tr(
+            "Your next event is \"${event.title}\" in ${dur(event.remaining)}. Staying consistent now means you arrive feeling proud of yourself.",
+            "مناسبتك القادمة «${event.title}» بعد ${dur(event.remaining)}. استمرارك الآن يعني أن تصل إليها فخورًا بنفسك.",
+        )
     }
 
-    private fun crisisReply(): String =
+    private fun crisisReply(): String = tr(
         "I'm really sorry you are feeling this way, and I'm glad you told me. You deserve support right now.\n\n" +
             "Please reach out to someone you trust, or contact your local emergency number or a crisis line in your country as soon as you can. " +
             "If you are in immediate danger, call emergency services now.\n\n" +
-            "I am an app with simple automated replies, so I can't give you the care a person can — but you do not have to go through this alone."
+            "I am an app with simple automated replies, so I can't give you the care a person can — but you do not have to go through this alone.",
+        "يؤسفني حقًا أنك تشعر بهذا، ويسعدني أنك أخبرتني. أنت تستحق الدعم الآن.\n\n" +
+            "تواصل من فضلك مع شخص تثق به، أو اتصل برقم الطوارئ المحلي أو بخط دعم الأزمات في بلدك في أقرب وقت. " +
+            "وإن كنت في خطر مباشر، فاتصل بخدمات الطوارئ الآن.\n\n" +
+            "أنا تطبيق بردود آلية بسيطة، ولا أستطيع أن أقدّم لك الرعاية التي يقدّمها إنسان، لكنك لست مضطرًا لمواجهة هذا وحدك.",
+    )
 
     // ---------- Helpers ----------
 
@@ -539,6 +728,7 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
         )
         private val RELAPSE = listOf(
             "relaps", "slipped", "slip up", "slip-up", "failed", "fell off", "messed up", "gave in", "did it again", "broke my streak", "انتكاس", "فشلت", "رجعت",
+            "تعثر", "ضعفت",
         )
         private val CRAVING = listOf(
             "crav", "urge", "tempt", "can't resist", "cant resist", "about to", "want to smoke", "want to drink", "i want a", "رغبة", "نفسي", "هضعف",
@@ -551,28 +741,38 @@ class CoachEngine(private val knowledge: HabitKnowledgeBase = HabitKnowledgeBase
         )
         private val PLAN = listOf(
             "plan", "reset", "routine", "strateg", "tips", "advice", "help me", "what should i do", "خطة", "نصيحة",
+            "بداية جديدة",
         )
         private val EMOTION = listOf(
             "stress", "anxi", "bored", "lonely", "sad", "angry", "upset", "overwhelm", "توتر", "ملل", "حزين", "زعلان",
         )
         private val MOTIVATION = listOf(
             "motivat", "encourag", "inspir", "give up", "struggl", "discourag", "tired", "hard", "تحفيز", "شجعني", "صعب",
+            "حفزني", "حمس",
         )
         private val GOOD = listOf(
             "good habit", "water", "walk", "workout", "exercis", "check-in", "discipline",
+            "عادات جيدة", "عادة جيدة", "ماء", "مياه", "مشي", "تمرين", "انضباط",
         )
-        private val EVENTS = listOf("event", "countdown", "upcoming")
+        private val EVENTS = listOf("event", "countdown", "upcoming", "مناسب", "موعد")
         private val THANKS = listOf("thanks", "thank", "thx", "شكرا", "شكراً")
         private val GREETING = listOf("hi", "hello", "hey", "hola", "مرحبا", "اهلا", "أهلا", "السلام")
     }
 }
 
-/** "3 days", "5 hours", "12 minutes" — the largest meaningful unit, used in messages. */
-fun durationText(duration: Duration): String {
+/** "3 days", "5 hours", "12 minutes" — the largest meaningful unit, used in messages. [arabic]: "3 أيام", "ساعتان". */
+fun durationText(duration: Duration, arabic: Boolean = false): String {
     val total = duration.coerceAtLeast(Duration.ZERO)
     val days = total.inWholeDays
     val hours = total.inWholeHours
     val minutes = total.inWholeMinutes
+    if (arabic) {
+        return when {
+            days >= 1 -> arDays(days)
+            hours >= 1 -> arHours(hours)
+            else -> arMinutes(minutes.coerceAtLeast(0))
+        }
+    }
     return when {
         days >= 1 -> "$days ${plural(days.toInt(), "day", "days")}"
         hours >= 1 -> "$hours ${plural(hours.toInt(), "hour", "hours")}"
@@ -581,3 +781,8 @@ fun durationText(duration: Duration): String {
 }
 
 private fun plural(count: Int, one: String, many: String) = if (count == 1) one else many
+
+internal fun arDays(n: Long) = ArabicPlurals.format(n, "%d يوم", "يوم واحد", "يومان", "%d أيام", "%d يومًا", "%d يوم")
+internal fun arHours(n: Long) = ArabicPlurals.format(n, "%d ساعة", "ساعة واحدة", "ساعتان", "%d ساعات", "%d ساعة", "%d ساعة")
+internal fun arMinutes(n: Long) = ArabicPlurals.format(n, "%d دقيقة", "دقيقة واحدة", "دقيقتان", "%d دقائق", "%d دقيقة", "%d دقيقة")
+internal fun arWeeks(n: Long) = ArabicPlurals.format(n, "%d أسبوع", "أسبوع واحد", "أسبوعان", "%d أسابيع", "%d أسبوعًا", "%d أسبوع")

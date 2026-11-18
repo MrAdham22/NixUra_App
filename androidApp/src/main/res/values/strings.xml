@@ -9,4 +9,8 @@
     <string name="widget_event_label">NixUra events</string>
     <string name="widget_event_description">Countdown to your next event, or to one you choose.</string>
     <string name="widget_config_label">Choose for widget</string>
+
+    <!-- Notification channel (Settings → Apps → NixUra → Notifications). -->
+    <string name="channel_reminders_name">Reminders &amp; coaching</string>
+    <string name="channel_reminders_description">Event reminders, streak milestones and your daily check-in</string>
 </resources>

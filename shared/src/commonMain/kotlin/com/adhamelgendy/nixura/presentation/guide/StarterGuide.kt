@@ -22,8 +22,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
+import com.adhamelgendy.nixura.presentation.components.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
@@ -50,6 +51,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.unit.dp
 import com.adhamelgendy.nixura.presentation.components.NixButton
 import com.adhamelgendy.nixura.presentation.components.NixButtonStyle
@@ -62,8 +64,11 @@ import com.adhamelgendy.nixura.presentation.strings.Strings
 import com.adhamelgendy.nixura.presentation.theme.Nix
 import com.adhamelgendy.nixura.presentation.theme.NixType
 
-/** Real parts of the app that the starter guide can point at. */
-enum class GuideTarget { Progress, AddQuit, AddGood, AddEvent, NavBar, Avatar }
+/**
+ * Real parts of the app that the starter guide can point at. Each value is tagged on exactly one element, so a
+ * highlight can never land on something the step's text does not describe.
+ */
+enum class GuideTarget { Progress, StartHere, AddQuit, AddGood, AddEvent, NavBar, Avatar }
 
 /** Where each target is on screen. Only provided while the guide runs, so it costs nothing otherwise. */
 @Stable
@@ -73,18 +78,31 @@ class GuideTargets {
 
 val LocalGuideTargets = compositionLocalOf<GuideTargets?> { null }
 
-/** Marks this element as something the starter guide can spotlight. */
+/**
+ * Marks this element as something the starter guide can spotlight. The position is forgotten when the element
+ * leaves the screen, so the guide never points at a stale spot after a tab change, a rotation or new data.
+ */
 @Composable
 fun Modifier.guideTarget(target: GuideTarget): Modifier {
     val targets = LocalGuideTargets.current ?: return this
+    DisposableEffect(targets, target) { onDispose { targets.bounds.remove(target) } }
     return this.onGloballyPositioned { targets.bounds[target] = it.boundsInRoot() }
 }
 
-private data class GuideStep(val title: String, val body: String, val target: GuideTarget? = null, val tab: Route.Tab? = null)
+/** One stop of the tour. Its text and the element it explains are written together, so they cannot drift apart. */
+internal data class GuideStep(val title: String, val body: String, val target: GuideTarget? = null, val tab: Route.Tab? = null)
 
-private fun guideSteps(s: Strings) = listOf(
+/**
+ * The tour, in order. Home shows the progress rings, or before the first habit the "Start with one thing" card,
+ * so the second stop explains whichever of the two is actually on screen ([onScreen]).
+ */
+internal fun guideSteps(s: Strings, onScreen: Set<GuideTarget>): List<GuideStep> = listOf(
     GuideStep(s.guideWelcomeTitle, s.guideWelcomeBody, tab = Route.Home),
-    GuideStep(s.guideScoresTitle, s.guideScoresBody, GuideTarget.Progress, Route.Home),
+    if (GuideTarget.StartHere in onScreen) {
+        GuideStep(s.guideStartHereTitle, s.guideStartHereBody, GuideTarget.StartHere, Route.Home)
+    } else {
+        GuideStep(s.guideScoresTitle, s.guideScoresBody, GuideTarget.Progress, Route.Home)
+    },
     GuideStep(s.guideQuitTitle, s.guideQuitBody, GuideTarget.AddQuit, Route.BadHabits),
     GuideStep(s.guideBuildTitle, s.guideBuildBody, GuideTarget.AddGood, Route.GoodHabits),
     GuideStep(s.guideEventsTitle, s.guideEventsBody, GuideTarget.AddEvent, Route.Events),
@@ -107,7 +125,7 @@ fun StarterGuide(
 ) {
     val s = LocalStrings.current
     val density = LocalDensity.current
-    val steps = remember(s) { guideSteps(s) }
+    val steps = guideSteps(s, targets.bounds.keys)
     var index by rememberSaveable { mutableStateOf(0) }
     var name by rememberSaveable { mutableStateOf("") }
     var origin by remember { mutableStateOf(Offset.Zero) }
@@ -129,7 +147,11 @@ fun StarterGuide(
     }
 
     val margin = with(density) { 8.dp.toPx() }
-    val hole = step.target?.let { targets.bounds[it] }?.translate(-origin)?.inflate(margin)
+    // Only a target that is really inside the window counts: a page still sliding in has bounds off screen.
+    val window = Rect(Offset.Zero, size.toSize())
+    val hole = step.target?.let { targets.bounds[it] }?.translate(-origin)
+        ?.takeIf { size != IntSize.Zero && window.contains(it.center) }
+        ?.inflate(margin)
     val center = Offset(size.width / 2f, size.height / 2f)
     val shownHole by animateRectAsState(hole ?: Rect(center, 0f), tween(380), label = "guideHole")
     val radius = with(density) { 22.dp.toPx() }

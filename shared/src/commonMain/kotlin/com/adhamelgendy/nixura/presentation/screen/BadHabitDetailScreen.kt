@@ -38,7 +38,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import com.adhamelgendy.nixura.presentation.components.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -160,7 +160,7 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
                 val progress = ((model.activeElapsed - prevBound) / (nextBound - prevBound)).toFloat().coerceIn(0f, 1f)
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     NixProgressBar(progress, color = primary, track = primary.copy(alpha = 0.18f), height = 6.dp)
-                    Text(s.nextShadeIn(durationText(nextBound - model.activeElapsed)), style = NixType.Small, color = muted)
+                    Text(s.nextShadeIn(s.durationWords(nextBound - model.activeElapsed)), style = NixType.Small, color = muted)
                 }
             } else {
                 Text(s.shadeMax, style = NixType.Small, color = muted)
@@ -169,8 +169,8 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
 
         // Stats
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatTile(s.statCurrent, durationText(model.activeElapsed), Modifier.weight(1f), info = s.infoClearFor)
-            StatTile(s.statBest, durationText(model.longestStreak), Modifier.weight(1f), info = s.infoBestQuit)
+            StatTile(s.statCurrent, s.durationWords(model.activeElapsed), Modifier.weight(1f), info = s.infoClearFor)
+            StatTile(s.statBest, s.durationWords(model.longestStreak), Modifier.weight(1f), info = s.infoBestQuit)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatTile(s.statRelapses, model.relapseCount.toString(), Modifier.weight(1f), info = s.infoRelapses)
@@ -222,7 +222,7 @@ fun BadHabitDetailScreen(habitId: Long, navigator: Navigator) {
     }
 
     if (clearInfo && model != null) {
-        InfoSheet(s.clearFor, durationText(model.activeElapsed), s.infoClearFor, onDismiss = { clearInfo = false })
+        InfoSheet(s.clearFor, s.durationWords(model.activeElapsed), s.infoClearFor, onDismiss = { clearInfo = false })
     }
     if (confirmRelapse && model != null) {
         ConfirmDialog(
@@ -389,7 +389,7 @@ private fun TimelineStep(milestone: BodyMilestone, state: StepState, elapsed: Du
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(s.timelineUpNext.uppercase(), style = NixType.Eyebrow, color = c.accent, modifier = Modifier.weight(1f))
-                    Text(s.timelineIn(durationText(milestone.after - elapsed)), style = NixType.SmallStrong, color = c.accent)
+                    Text(s.timelineIn(s.durationWords(milestone.after - elapsed)), style = NixType.SmallStrong, color = c.accent)
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(milestone.title, style = NixType.Heading, color = c.textPrimary)
@@ -402,9 +402,9 @@ private fun TimelineStep(milestone: BodyMilestone, state: StepState, elapsed: Du
             val reached = state == StepState.Reached
             Column(content.padding(top = 4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(s.timelineAfter(durationText(milestone.after)).uppercase(), style = NixType.Eyebrow, color = c.textMuted, modifier = Modifier.weight(1f))
+                    Text(s.timelineAfter(s.durationWords(milestone.after)).uppercase(), style = NixType.Eyebrow, color = c.textMuted, modifier = Modifier.weight(1f))
                     Text(
-                        if (reached) s.reached else s.timelineIn(durationText(milestone.after - elapsed)),
+                        if (reached) s.reached else s.timelineIn(s.durationWords(milestone.after - elapsed)),
                         style = NixType.SmallStrong,
                         color = if (reached) c.positive else c.textMuted,
                     )

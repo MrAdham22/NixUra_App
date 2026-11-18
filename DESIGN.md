@@ -241,7 +241,7 @@ A six-colour night-to-dawn ramp on navy, with rose doing the work and a few docu
 
 ## Typography
 
-**Display Font:** the system font (Roboto on Android, SF Pro on iOS). No custom font is bundled.
+**Display Font:** the system font (Roboto on Android, SF Pro on iOS) in English. **Arabic:** IBM Plex Sans Arabic (Regular, SemiBold, Bold; SIL Open Font License, `composeResources/font`), used for the whole UI in Arabic and for any Arabic text in English (a habit name). Arabic text gets no letter spacing (tracking breaks joined letters) and a line height of at least 1.5× the size so marks above and below are never clipped; digits-only text (counters) keeps its line height.
 **Counter numbers:** the same font, bold, with tabular figures (`tnum`) so a ticking counter never jumps.
 
 **Character:** plain, friendly system type, tightened with negative letter spacing at large sizes so headings feel compact and confident. The personality comes from colour and motion, not from the typeface.
@@ -333,14 +333,15 @@ Each category has its own colour (`eventCategoryColor`): Personal rose, Travel w
 
 ## Brand marks
 
-- **Logo:** the official broken-chain artwork without its dark square (`composeResources/drawable/nixura_logo.png`, cut out of the launcher foreground), lifted off the top bar with a soft drop shadow (38dp, the logo tinted black at 60%, offset 1/3dp, blurred 3dp). The landing screen keeps the full icon (`nixura_icon.png`, 88dp).
+- **Logo:** the official broken-chain artwork without its dark square (`composeResources/drawable/nixura_logo.png`, cut out of the launcher foreground), lifted off the top bar with a soft drop shadow (38dp, the logo tinted black at 60%, offset 1/3dp, blurred 3dp) in the dark theme. The light theme uses its own cut-out, `nixura_logo_light.png` (from the owner's white-background artwork, kept at `docs/assets/nixura-logo-light-source.webp`), because the dark cut has see-through gaps in the chain that show on cream; its shadow is Purple `#451952` at 28% instead of black. The landing screen keeps the full icon (`nixura_icon.png`, 88dp).
 - **Rose "+" and the avatar (owner-approved 2026-11-14):** the cards' recipe on a small round control (`Modifier.cardGlow`, `GlowIconButton`): a diagonal gradient from a deep shade of the colour to its light end, a soft light in the top corner, a thin edge of the same hue and the soft lift. No glassy shine (tried and rejected). Used by the "+" in the Quit, Build and Events headers, the good-habit and Home "Today" add buttons, the new-chat "+" in chat history, and the avatar (rose to orange, warm-white initial). Neutral "+" buttons (steppers, the coach header) stay quiet.
 - **Good-habit "−" and "+" match their card (owner request 2026-11-14, `GoodHabitButton`):** on plain cards the buttons follow the card's fill: while the card is empty (night-coloured) the "+" is the rose action in the cards' recipe and the "−" a quiet tint of the card's ink; as the card fills with emerald (by 40%) both turn emerald; the done tick is pale emerald (never plain white). On water the "+" starts exactly like the other cards' rose "+" (same `cardGlow` recipe) and its colours blend gradually into a blue drop as the glass fills (fully blue by 40%); the "−" stays frosted white. Prayer keeps its gold stars.
 - Prayer look: selections are gold (`PrayerPalette.Gold` with night text) instead of rose; decorative stars stay in the side margins; the moon has a soft glow, never a button-shaped circle.
 
 ## Calendars and time
 
-- Every week starts on **Sunday**: week strips, the month calendar, the date picker and weekly goals (owner decision 2026-11-14; `CivilCalendar.sundayFirstColumn`).
+- Every week starts on **Saturday** and ends on Friday, in every language: the card week strips (always this week, days still to come dimmed), the month calendar, the date picker, weekly goals, widgets and reminders (owner decision 2026-11-18, replacing Sunday-first from 2026-11-14; one rule: `CivilCalendar.WEEK_START_ISO_DAY`, `weekColumn`, `weekStartOf`, `inWeekOrder`). In right-to-left layouts the grid runs right to left.
+- **Theme colours on good-habit calendars (2026-11-17):** done days, the week strip and the 7/30-day bars use `HabitThemes.visualFor(theme).accent`: water `#5BB6EC` (dark) / `#2E78C4` (light), prayer warm gold `#F1B451` (dark) / `#B5761A` (light), every other theme Done Green. Partial days are discrete steps toward that colour, with a less → more legend.
 - Progress rings draw at least a short arc (14°) for any value above zero, so a small value never looks like a lone dot; the track alone shows zero.
 - Event countdowns more than a day away show days, hours and minutes (no seconds); past events show one quiet line ("2 days ago").
 - Names the user typed are shown with a capital first letter (`forDisplay`, people's names `personForDisplay`); what is saved stays as typed.
@@ -365,3 +366,8 @@ Each category has its own colour (`eventCategoryColor`): Personal rose, Travel w
 - **Don't** add motion that plays on its own without a reason. Motion answers a touch or marks progress (the prayer card's sliding light is the one ambient effect).
 - **Don't** let one look split by platform: no Material-only or Apple-only styling beyond safe areas, back gestures and the status bar.
 - **Don't** hard-code text in screens. It goes through `Strings.kt`.
+
+## Right-to-left (Arabic)
+
+Layouts use start/end, so they mirror on their own. Arrows that mean a direction (back, chevron, month arrows) are mirrored; checkmarks, play, plus/minus, logos and the habit glyphs are not. The pager, bottom bar and droplet follow the direction; calendars start on Saturday and run right to left. A plus sign before a number keeps its place with a left-to-right mark ("+300 مل"). Numbers can be drawn as Arabic-Indic digits (Settings → Digits), with ٫ as the decimal mark and ٪ for percent.
+

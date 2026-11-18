@@ -17,8 +17,14 @@ data class GoodHabitEntity(
     @ColumnInfo(name = "updated_at", defaultValue = "0") val updatedAtEpochMillis: Long = createdAtEpochMillis,
     @ColumnInfo(name = "deleted_at") val deletedAtEpochMillis: Long? = null,
     @ColumnInfo(name = "dirty", defaultValue = "1") val dirty: Boolean = true,
-    /** `null` = daily habit; 1..7 = done on this many days a week (Sunday to Saturday). */
+    /** `null` = daily habit; 1..7 = done on this many days a week (Saturday to Friday). */
     @ColumnInfo(name = "weekly_target") val weeklyTarget: Int? = null,
+    /** [com.adhamelgendy.nixura.domain.theme.HabitTheme.storageKey]; null until detected (rows from before v8). */
+    @ColumnInfo(name = "theme") val theme: String? = null,
+    /** Water habits only: the daily goal in ml, the cup size in ml and the unit it is shown in. */
+    @ColumnInfo(name = "water_goal_ml") val waterGoalMl: Int? = null,
+    @ColumnInfo(name = "water_serving_ml") val waterServingMl: Int? = null,
+    @ColumnInfo(name = "water_unit") val waterUnit: String? = null,
 )
 
 /** [syncId] is `<good habit sync id>:<day>`, so two devices logging the same day update one row instead of adding two. */

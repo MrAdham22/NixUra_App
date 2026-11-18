@@ -1,6 +1,7 @@
 package com.adhamelgendy.nixura.domain.notification
 
 import com.adhamelgendy.nixura.domain.clock.Clock
+import com.adhamelgendy.nixura.domain.locale.ContentLanguage
 import com.adhamelgendy.nixura.domain.repository.EventRepository
 import com.adhamelgendy.nixura.domain.repository.GoodHabitRepository
 import com.adhamelgendy.nixura.domain.repository.HabitTrackingRepository
@@ -21,6 +22,8 @@ class NotificationSyncService(
     private val planner: NotificationPlanner,
     private val scheduler: NotificationScheduler,
     private val clock: Clock,
+    /** Re-plans when the shown language changes (the texts are written in it). */
+    private val language: ContentLanguage = ContentLanguage.English,
 ) {
     suspend fun run() {
         plans().distinctUntilChanged().collect { scheduler.replaceAll(it) }
@@ -35,7 +38,7 @@ class NotificationSyncService(
         tracking.observeActiveHabitTracking(),
         goodHabits.observeGoodHabits(),
         events.observeEvents(),
-        preferences.observeSettings(),
+        combine(preferences.observeSettings(), language.current) { settings, _ -> settings },
         preferences.observeProfile(),
     ) { bad, good, upcoming, settings, profile ->
         planner.plan(clock.nowEpochMillis(), settings, profile.name, bad, good, upcoming)

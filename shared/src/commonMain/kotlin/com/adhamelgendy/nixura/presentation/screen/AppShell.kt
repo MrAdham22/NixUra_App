@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.ColorFilter
 import nixura.shared.generated.resources.nixura_logo
+import nixura.shared.generated.resources.nixura_logo_light
 import nixura.shared.generated.resources.nixura_icon
 import nixura.shared.generated.resources.Res
 import org.jetbrains.compose.resources.painterResource
@@ -42,7 +43,7 @@ import kotlinx.coroutines.flow.drop
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import com.adhamelgendy.nixura.presentation.components.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -60,6 +61,16 @@ import com.adhamelgendy.nixura.presentation.auth.ChangePasswordScreen
 import com.adhamelgendy.nixura.presentation.auth.DeleteAccountScreen
 import com.adhamelgendy.nixura.presentation.auth.LegalScreen
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import com.adhamelgendy.nixura.presentation.locale.AppLocale
+import com.adhamelgendy.nixura.domain.locale.ContentLanguage
+import com.adhamelgendy.nixura.presentation.locale.AppLocaleGateway
+import com.adhamelgendy.nixura.domain.locale.AppLocales
+import com.adhamelgendy.nixura.presentation.locale.LocalAppLocale
+import com.adhamelgendy.nixura.presentation.locale.rememberArabicFontFamily
+import com.adhamelgendy.nixura.presentation.platform.systemLanguageTag
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -156,9 +167,35 @@ fun AppRoot() {
     val inGate = state.loaded && session is SessionState.SignedOut && authPromptSeen == false
     val chosenDark = if (state.settings.followSystemTheme) isSystemInDarkTheme() else state.settings.darkTheme
     val darkTheme = chosenDark || inGate || navigator.current is Route.Auth
+    // Language: the saved choice ("system", "en", "ar") → the language shown. Strings, layout direction (RTL for
+    // Arabic), digits and the Arabic font all switch at once, without restarting. The OS is told too (Android 13+
+    // per-app language), and a language picked in the phone's settings is taken back into the app.
+    val localeGateway = koinInject<AppLocaleGateway>()
+    var systemTag by remember { mutableStateOf(systemLanguageTag()) }
+    val loadedNow by rememberUpdatedState(state.loaded)
+    LifecycleResumeEffect(Unit) {
+        systemTag = systemLanguageTag()
+        if (loadedNow) localeGateway.externalChoice()?.let(settingsVm::onLanguage)
+        onPauseOrDispose { }
+    }
+    LaunchedEffect(state.loaded, state.settings.languageCode) {
+        if (state.loaded) localeGateway.apply(state.settings.languageCode)
+    }
+    val language = AppLocales.resolve(state.settings.languageCode, systemTag)
+    // Coach replies, notifications and the habit catalog (domain text) follow the same language.
+    val contentLanguage = koinInject<ContentLanguage>()
+    remember(state.settings.languageCode, systemTag) { contentLanguage.update(state.settings.languageCode) }
+    val arabicFont = rememberArabicFontFamily()
+    val appLocale = remember(language, state.settings.digitStyle, arabicFont) {
+        AppLocale(language = language, digitStyle = state.settings.digitStyle, arabicFont = arabicFont)
+    }
+    CompositionLocalProvider(
+        LocalAppLocale provides appLocale,
+        LocalLayoutDirection provides if (appLocale.isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr,
+    ) {
     NixUraTheme(darkTheme = darkTheme) {
         SystemBarsEffect(darkTheme)
-        CompositionLocalProvider(LocalStrings provides stringsFor(state.settings.languageCode)) {
+        CompositionLocalProvider(LocalStrings provides stringsFor(language)) {
             // The starter guide runs once per device, over the real app. It covers the whole window, bars included.
             val inMainApp = state.loaded && session !is SessionState.Loading && authPromptSeen != null && !inGate
             val guideActive = inMainApp && !state.settings.guideCompleted
@@ -198,11 +235,12 @@ fun AppRoot() {
             }
         }
     }
+    }
 }
 
 @Composable
 private fun MainContent(navigator: Navigator) {
-    // The voice note sheet: opened by the mic buttons on Home and in the coach.
+    // The voice note sheet: opened by the Home voice card, and by the coach chat to review the items it suggests.
     com.adhamelgendy.nixura.presentation.voice.VoiceNoteHost(navigator)
     val route = navigator.current
     val reducedMotion = rememberReducedMotion()
@@ -364,14 +402,18 @@ private fun TopBar(navigator: Navigator) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // The logo alone (no dark square), lifted off the bar with a soft drop shadow (preview 2026-11-14).
+        // Light theme (2026-11-18): a fresh cut of the artwork that keeps the chain links solid (the dark cut has
+        // see-through gaps that showed on cream) and a soft purple shadow instead of the black one.
+        val logo = if (c.isDark) Res.drawable.nixura_logo else Res.drawable.nixura_logo_light
+        val shadow = if (c.isDark) Color.Black.copy(alpha = 0.6f) else NixUraPalette.Purple.copy(alpha = 0.28f)
         Box(Modifier.size(38.dp)) {
             Image(
-                painterResource(Res.drawable.nixura_logo),
+                painterResource(logo),
                 contentDescription = null,
-                colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.6f)),
+                colorFilter = ColorFilter.tint(shadow),
                 modifier = Modifier.matchParentSize().offset(x = 1.dp, y = 3.dp).blur(3.dp),
             )
-            Image(painterResource(Res.drawable.nixura_logo), contentDescription = null, modifier = Modifier.matchParentSize())
+            Image(painterResource(logo), contentDescription = null, modifier = Modifier.matchParentSize())
         }
         Spacer(Modifier.width(10.dp))
         Text("NixUra", style = NixType.Heading, color = c.textPrimary)

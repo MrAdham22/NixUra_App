@@ -6,12 +6,16 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Text
+import com.adhamelgendy.nixura.presentation.components.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import com.adhamelgendy.nixura.presentation.locale.LocalAppLocale
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.adhamelgendy.nixura.domain.auth.SessionManager
+import com.adhamelgendy.nixura.domain.model.DigitStyle
 import com.adhamelgendy.nixura.domain.auth.SessionState
 import com.adhamelgendy.nixura.domain.notification.NotificationPermissionGateway
 import com.adhamelgendy.nixura.presentation.components.ConfirmDialog
@@ -47,6 +52,7 @@ import com.adhamelgendy.nixura.presentation.util.formatClockMinutes
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(navigator: Navigator) {
     val vm: SettingsViewModel = koinViewModel()
@@ -107,15 +113,38 @@ fun SettingsScreen(navigator: Navigator) {
                     Text(s.language, style = NixType.BodyStrong, color = c.textPrimary)
                     Text(s.languageHint, style = NixType.Small, color = c.textMuted)
                 }
+            }
+            Spacer(Modifier.height(12.dp))
+            // Each language is written in its own language; "System default" in the language now shown.
+            FlowRow(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                availableLanguages.forEach { lang ->
+                    NixChip(
+                        lang.nativeName ?: s.languageSystem,
+                        selected = settings.languageCode == lang.code,
+                        onClick = { vm.onLanguage(lang.code) },
+                    )
+                }
+            }
+        }
+        NixCard {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                NixIconView(NixIcon.Hash, c.accent, size = 22.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(s.digitsTitle, style = NixType.BodyStrong, color = c.textPrimary)
+                    Text(s.digitsHint, style = NixType.Small, color = c.textMuted)
+                }
                 Spacer(Modifier.width(8.dp))
-                if (availableLanguages.size > 1) {
+                // Each option shows its own digits, whatever the current setting (so "123" is never drawn as "١٢٣").
+                CompositionLocalProvider(LocalAppLocale provides LocalAppLocale.current.copy(digitStyle = DigitStyle.WESTERN)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        availableLanguages.forEach { lang ->
-                            NixChip(lang.nativeName, selected = settings.languageCode == lang.code, onClick = { vm.onLanguage(lang.code) })
-                        }
+                        NixChip(s.digitsWestern, selected = settings.digitStyle == DigitStyle.WESTERN, onClick = { vm.onDigits(DigitStyle.WESTERN) })
+                        NixChip(s.digitsArabic, selected = settings.digitStyle == DigitStyle.ARABIC_INDIC, onClick = { vm.onDigits(DigitStyle.ARABIC_INDIC) })
                     }
-                } else {
-                    availableLanguages.firstOrNull()?.let { Text(it.nativeName, style = NixType.BodyStrong, color = c.textSecondary) }
                 }
             }
         }

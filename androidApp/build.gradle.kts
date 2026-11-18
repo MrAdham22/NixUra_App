@@ -70,6 +70,11 @@ android {
         }
     }
     buildTypes {
+        debug {
+            // Pseudo-locales en-XA (accented, longer) and ar-XB (mirrored) in Developer options, to find untranslated
+            // Android text and clipping. The app's own text comes from Strings and follows the language they map to.
+            isPseudoLocalesEnabled = true
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(

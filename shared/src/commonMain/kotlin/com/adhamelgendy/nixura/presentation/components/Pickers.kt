@@ -1,6 +1,5 @@
 package com.adhamelgendy.nixura.presentation.components
 
-import com.adhamelgendy.nixura.presentation.util.weekdayLettersSundayFirst
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,7 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
+import com.adhamelgendy.nixura.presentation.components.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -106,21 +105,21 @@ fun DateTimePickerDialog(
     val year = monthIndex.floorDiv(12)
     val month = monthIndex.mod(12) + 1
     val firstDay = CivilCalendar.dayIndexFromCivil(year, month, 1)
-    val lead = CivilCalendar.sundayFirstColumn(firstDay)
+    val lead = CivilCalendar.weekColumn(firstDay)
     val length = CivilCalendar.monthLength(year, month)
     val rows = (lead + length + 6) / 7
 
     Dialog(onDismissRequest = onDismiss) {
         NixCard(padding = PaddingValues(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("${s.monthNames[month - 1]} $year", style = NixType.Heading, color = c.textPrimary, modifier = Modifier.weight(1f))
+                Text(s.monthYear(s.monthNames[month - 1], year), style = NixType.Heading, color = c.textPrimary, modifier = Modifier.weight(1f))
                 NixIconButton(NixIcon.Back, { monthIndex -= 1 }, size = 34.dp)
                 Spacer(Modifier.width(8.dp))
                 NixIconButton(NixIcon.Chevron, { monthIndex += 1 }, size = 34.dp)
             }
             Spacer(Modifier.height(10.dp))
             Row(Modifier.fillMaxWidth()) {
-                s.weekdayLettersSundayFirst().forEach {
+                CivilCalendar.inWeekOrder(s.weekdayLetters).forEach {
                     Text(it, style = NixType.Small, color = c.textMuted, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
                 }
             }

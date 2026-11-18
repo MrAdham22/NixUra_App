@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Text
+import com.adhamelgendy.nixura.presentation.components.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +48,10 @@ import com.adhamelgendy.nixura.presentation.theme.Nix
 import com.adhamelgendy.nixura.presentation.theme.NixType
 import com.adhamelgendy.nixura.presentation.util.formatDate
 import org.koin.compose.viewmodel.koinViewModel
+import com.adhamelgendy.nixura.presentation.appearance.HabitThemes
+import com.adhamelgendy.nixura.presentation.goodhabits.water.WaterAddButton
+import com.adhamelgendy.nixura.presentation.goodhabits.water.WaterProgress
+import com.adhamelgendy.nixura.presentation.goodhabits.water.dayProgress
 
 @Composable
 fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
@@ -87,25 +91,32 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
         val weekly = habit.isWeekly
         val look = rememberGoodFill(habit.progressCount, habit.progressTarget, habit.fillStyle)
         val pulse = rememberCompletionPulse(habit.goalReached)
+        val water = habit.water
+        val accent = HabitThemes.visualFor(habit.theme, c).accent
         NixCard(Modifier.graphicsLayer { scaleX = pulse.value; scaleY = pulse.value }, paint = look.paint) {
             Text((if (weekly) s.thisWeekLabel else s.todayLabel).uppercase(), style = NixType.Eyebrow, color = look.contentMuted)
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("${habit.progressCount} / ${habit.progressTarget}", style = NixType.counter(40), color = look.content)
-                    val left = habit.progressTarget - habit.progressCount
-                    val note = when {
-                        weekly && habit.weekGoalMet -> s.weekGoalReached
-                        weekly -> s.daysToGoThisWeek(left)
-                        habit.doneToday -> s.goalReached
-                        else -> s.timesToGo(left)
+                    if (water != null) {
+                        // "1.2 / 2 L" or "5 / 8 cups": the goal's own unit.
+                        Text(WaterProgress.text(water, habit.todayCount, s), style = NixType.counter(32), color = look.content, maxLines = 1)
+                        Text(WaterProgress.leftText(water, habit.todayCount, s) ?: s.goalReached, style = NixType.Small, color = look.contentMuted)
+                    } else {
+                        Text("${habit.progressCount} / ${habit.progressTarget}", style = NixType.counter(40), color = look.content)
+                        val left = habit.progressTarget - habit.progressCount
+                        val note = when {
+                            weekly && habit.weekGoalMet -> s.weekGoalReached
+                            weekly -> s.daysToGoThisWeek(left)
+                            habit.doneToday -> s.goalReached
+                            else -> s.timesToGo(left)
+                        }
+                        Text(note, style = NixType.Small, color = look.contentMuted)
                     }
-                    Text(note, style = NixType.Small, color = look.contentMuted)
                 }
-                val prayer = habit.fillStyle == GoodHabitFillStyle.PRAYER
                 GoodHabitButton(habit.fillStyle, look, NixIcon.Minus, { vm.onChangeToday(habit.id, -1) }, size = 46.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), secondary = true)
                 Spacer(Modifier.width(10.dp))
-                GoodHabitButton(
+                if (water != null) WaterAddButton(water, look, { vm.onChangeToday(habit.id, +1) }, height = 52.dp) else GoodHabitButton(
                     habit.fillStyle, look,
                     if (weekly && habit.doneToday) NixIcon.Tick else NixIcon.Plus, { vm.onChangeToday(habit.id, +1) }, size = 52.dp,
                     tint = if (habit.doneToday) look.background else c.onAccent,
@@ -145,14 +156,15 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
                 Text("${(habit.completion7 * 100).toInt()}%", style = NixType.BodyStrong, color = c.textPrimary)
             }
             Spacer(Modifier.height(8.dp))
-            NixProgressBar(habit.completion7, color = c.positive)
+            // Same colour as a reached day on this habit's calendar.
+            NixProgressBar(habit.completion7, color = accent)
             Spacer(Modifier.height(14.dp))
             Row {
                 Text(if (weekly) s.last4Weeks else s.last30Days, style = NixType.BodyStrong, color = c.textSecondary, modifier = Modifier.weight(1f))
                 Text("${(habit.completion30 * 100).toInt()}%", style = NixType.BodyStrong, color = c.textPrimary)
             }
             Spacer(Modifier.height(8.dp))
-            NixProgressBar(habit.completion30, color = c.positive)
+            NixProgressBar(habit.completion30, color = accent)
         }
 
         // Calendar
@@ -163,7 +175,8 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
                     year = shownYear,
                     month = shownMonth,
                     countsByDay = habit.countsByDay,
-                    target = if (weekly) 1 else habit.dailyTarget,
+                    progressOf = habit::dayProgress,
+                    accent = accent,
                     todayIndex = state.todayIndex,
                     createdDayIndex = habit.createdDayIndex,
                     selectedDay = selectedDay,
@@ -182,6 +195,7 @@ fun GoodHabitDetailScreen(habitId: Long, navigator: Navigator) {
                             Text(formatDate(day, s, includeWeekday = true), style = NixType.BodyStrong, color = c.textPrimary)
                             Text(
                                 when {
+                                    water != null -> WaterProgress.text(water, count, s)
                                     !weekly -> s.todayProgress(count, habit.dailyTarget)
                                     count > 0 -> s.legendDone
                                     day == state.todayIndex -> s.notDoneYet

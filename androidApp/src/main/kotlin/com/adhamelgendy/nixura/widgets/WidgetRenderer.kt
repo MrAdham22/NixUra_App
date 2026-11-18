@@ -1,5 +1,9 @@
 package com.adhamelgendy.nixura.widgets
 
+import com.adhamelgendy.nixura.domain.model.DigitStyle
+import com.adhamelgendy.nixura.domain.locale.AppLocales
+import com.adhamelgendy.nixura.presentation.locale.Digits
+import com.adhamelgendy.nixura.presentation.platform.systemLanguageTag
 import com.adhamelgendy.nixura.presentation.util.formatDateTimeShort
 import com.adhamelgendy.nixura.presentation.appearance.cardInk
 import com.adhamelgendy.nixura.presentation.appearance.relativeLuminance
@@ -83,14 +87,21 @@ internal object WidgetRenderer {
         val widthDp: Int,
         val heightDp: Int,
         val darkTheme: Boolean,
+        val rtl: Boolean,
     )
+
+    /** Digits of the text on the widgets (Settings → Digits). The same for every widget, so one value is enough. */
+    @Volatile
+    private var digitStyle: DigitStyle = DigitStyle.WESTERN
 
     suspend fun render(context: Context, widgetId: Int, kind: WidgetKind): RenderedWidget {
         val appearance = loadAppearance()
-        val s = stringsFor(appearance.languageCode)
+        val language = AppLocales.resolve(appearance.languageCode, systemLanguageTag())
+        val s = stringsFor(language)
+        digitStyle = appearance.digitStyle
         val c = WidgetTheme.of(appearance.darkTheme)
         val (w, h) = sizeDp(context, widgetId)
-        val env = Env(context, widgetId, s, c, w, h, appearance.darkTheme)
+        val env = Env(context, widgetId, s, c, w, h, appearance.darkTheme, AppLocales.isRtl(language))
         return try {
             val loader = KoinPlatform.getKoin().get<LoadWidgetStateUseCase>()
             val target = WidgetPrefs.targetOf(context, widgetId)
@@ -138,7 +149,7 @@ internal object WidgetRenderer {
             WidgetVariant.ROW -> R.layout.widget_bad_row
             WidgetVariant.SLIM -> R.layout.widget_bad_slim
         }
-        val rv = RemoteViews(env.context.packageName, layout)
+        val rv = views(env, layout)
         val elapsed = st.elapsedMillis.milliseconds
         // Same gradient and shade progression as the in-app card; text follows its middle color, as in BadHabitCard.
         val gradient = StreakColorMapper().cardGradient(elapsed, st.colorArgb)
@@ -217,7 +228,7 @@ internal object WidgetRenderer {
         val hasProgress = layout != R.layout.widget_good_slim
         val hasWeek = layout != R.layout.widget_good_row && layout != R.layout.widget_good_slim // narrow is also used by SLIM when stacked; the plan then hides the strip
         val hasStreak = layout != R.layout.widget_good_slim
-        val rv = RemoteViews(env.context.packageName, layout)
+        val rv = views(env, layout)
         // Same fill as GoodHabitCard (goodFillColors): the card turns green, or fills with water, as today's count grows.
         val nix = if (env.darkTheme) DarkNixColors else LightNixColors
         val water = st.fillStyle == GoodHabitFillStyle.WATER
@@ -402,7 +413,7 @@ internal object WidgetRenderer {
             WidgetVariant.ROW -> R.layout.widget_event_row
             WidgetVariant.SLIM -> R.layout.widget_event_slim
         }
-        val rv = RemoteViews(env.context.packageName, layout)
+        val rv = views(env, layout)
         // The category color, warming as the event comes closer, as on the in-app event card.
         val surface = androidx.compose.ui.graphics.Color(c.surface)
         val daysLeft = clock.days + clock.remainderMillis / 86_400_000f
@@ -451,7 +462,7 @@ internal object WidgetRenderer {
         val size = plan.counterSizeDp.toFloat()
         val hasDays = clock.days > 0
         show(rv, R.id.w_days_block, hasDays)
-        rv.setTextViewText(R.id.w_days, clock.days.toString())
+        rv.setTextViewText(R.id.w_days, shown(clock.days.toString()))
         rv.setTextColor(R.id.w_days, valueColor)
         rv.setTextViewTextSize(R.id.w_days, TypedValue.COMPLEX_UNIT_DIP, size)
         text(rv, R.id.w_days_label, env.s.unitDays.uppercase(), labelColor)
@@ -486,7 +497,7 @@ internal object WidgetRenderer {
             val fallback = arrayOf("0".repeat(clock.hoursDigits), ":", "00", ":", "00")
             for (i in ghosts.indices) {
                 rv.setTextViewTextSize(ghosts[i], TypedValue.COMPLEX_UNIT_DIP, size)
-                rv.setTextViewText(ghosts[i], fallback[i])
+                rv.setTextViewText(ghosts[i], shown(fallback[i]))
             }
         }
         text(rv, R.id.w_lbl_h, env.s.unitHours.uppercase(), labelColor)
@@ -527,7 +538,7 @@ internal object WidgetRenderer {
     /** Empty, "tap to choose" and error states, drawn as a small card in the same style. */
     fun message(env: Any, title: String, subtitle: String, onClick: PendingIntent): RenderedWidget {
         val e = env as Env
-        val rv = RemoteViews(e.context.packageName, R.layout.widget_message)
+        val rv = views(e, R.layout.widget_message)
         tint(rv, R.id.w_bg, e.c.surface)
         tint(rv, R.id.w_border, e.c.border, e.c.borderAlpha)
         text(rv, R.id.w_name, title, e.c.textPrimary)
@@ -543,8 +554,15 @@ internal object WidgetRenderer {
         rv.setInt(id, "setImageAlpha", alpha)
     }
 
+    /** A widget layout laid out in the app's language direction (the layouts use start/end throughout). */
+    private fun views(env: Env, layout: Int): RemoteViews = RemoteViews(env.context.packageName, layout).also {
+        it.setInt(R.id.w_root, "setLayoutDirection", if (env.rtl) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR)
+    }
+
+    private fun shown(value: String): String = Digits.localize(value, digitStyle)
+
     private fun text(rv: RemoteViews, id: Int, value: String, color: Int) {
-        rv.setTextViewText(id, value)
+        rv.setTextViewText(id, shown(value))
         rv.setTextColor(id, color)
     }
 

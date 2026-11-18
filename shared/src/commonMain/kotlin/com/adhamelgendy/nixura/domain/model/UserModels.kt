@@ -10,7 +10,10 @@ data class AppSettings(
     val darkTheme: Boolean = true,
     /** Follow the phone's light/dark setting instead of [darkTheme]. Per device, never synced. */
     val followSystemTheme: Boolean = false,
-    val languageCode: String = "en",
+    /** "system" (follow the phone), "en" or "ar". Synced. See `presentation/locale/AppLocale`. */
+    val languageCode: String = LANGUAGE_SYSTEM,
+    /** Digits shown on screen (Western 123 or Arabic-Indic ١٢٣). Display only; stored data never changes. Per device. */
+    val digitStyle: DigitStyle = DigitStyle.WESTERN,
     val notificationsEnabled: Boolean = true,
     /** Minutes after local midnight for the daily check-in notification. */
     val dailyCheckInMinutes: Int = 8 * 60 + 30,
@@ -24,6 +27,12 @@ data class AppSettings(
      */
     val aiCoachConsent: Boolean? = null,
 )
+
+/** The language choice that follows the phone's language. */
+const val LANGUAGE_SYSTEM: String = "system"
+
+/** How numbers are drawn on screen. Stored data is always plain Western digits. */
+enum class DigitStyle { WESTERN, ARABIC_INDIC }
 
 enum class CoachRole { USER, COACH }
 

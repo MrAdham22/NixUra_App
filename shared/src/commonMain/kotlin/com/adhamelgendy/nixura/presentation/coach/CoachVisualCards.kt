@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import com.adhamelgendy.nixura.presentation.components.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -115,7 +115,7 @@ private fun QuitVisual(v: CoachVisual.Quit) {
         Column(Modifier.weight(1f)) {
             CardTitle(s.visualQuitEyebrow, v.name)
             Spacer(Modifier.height(6.dp))
-            Text(durationText((v.elapsedMillis * reveal).toLong().milliseconds), style = NixType.Title, color = c.accentWarm, maxLines = 1)
+            Text(s.durationWords((v.elapsedMillis * reveal).toLong().milliseconds), style = NixType.Title, color = c.accentWarm, maxLines = 1)
             Text(s.visualClean, style = NixType.Small, color = c.textSecondary)
         }
     }
@@ -123,7 +123,7 @@ private fun QuitVisual(v: CoachVisual.Quit) {
     // This streak against the best one: the bar fills as far as the current streak has come.
     val ofBest = if (v.longestMillis > 0) v.elapsedMillis.toFloat() / v.longestMillis else 1f
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(s.visualBest(durationText(v.longestMillis.milliseconds)), style = NixType.Small, color = c.textSecondary, modifier = Modifier.weight(1f))
+        Text(s.visualBest(s.durationWords(v.longestMillis.milliseconds)), style = NixType.Small, color = c.textSecondary, modifier = Modifier.weight(1f))
         Text(s.visualRelapses(v.relapses), style = NixType.Small, color = c.textMuted)
     }
     Spacer(Modifier.height(6.dp))
@@ -193,7 +193,7 @@ private fun OverviewVisual(v: CoachVisual.Overview) {
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (v.quitCount > 0) {
-                StatLine(s.visualLongestClean, durationText((v.bestCleanMillis * reveal).toLong().milliseconds))
+                StatLine(s.visualLongestClean, s.durationWords((v.bestCleanMillis * reveal).toLong().milliseconds))
                 StatLine(s.visualQuitting, (v.quitCount * reveal).roundToInt().toString())
             }
             if (v.goodTotal > 0) StatLine(s.visualDoneToday, "${(v.goodDone * reveal).roundToInt()} / ${v.goodTotal}")

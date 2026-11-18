@@ -2,6 +2,37 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## Session 4 of 4 (2026-11-17): Arabic and right-to-left
+
+Branch `claude/cranky-goodall-94eb7c` (cut from `claude/nixora-bugs-features-plan-9a1220`). Details, the commits and the Arabic wording to review: `HANDOFF.md`, Session 4.
+
+- **Built:** Settings → Language (System default / English / العربية) applied at once, persisted and synced; Android 13+ per-app language through `LocaleManager` + `locales_config.xml`; RTL layout for Arabic with mirrored back arrows and chevrons; every UI string, error, widget, notification, the starter guide, the offline coach and all 49 habit timelines in Arabic; Arabic counts and dates; Settings → Digits (123 / ١٢٣, display only); IBM Plex Sans Arabic bundled through Compose resources; Arabic launcher/widget labels and notification channel in `values-ar`; pseudo-locales in debug; RTL previews (`presentation/locale/LocalePreviews.kt`).
+- **Verified:** `:androidApp:assembleDebug` OK; `:shared:testAndroidHostTest` 623 tests, 0 failures. On the Android 16 emulator: switching languages in place, Home, Quit, Build, Events, Coach (greeting, chips, a reply), the good-habit detail with its Saturday-first calendar, the quit detail timeline, the Add Good Habit form with the water and prayer themes from Arabic quick picks, the Add Quit form, Settings, Profile and the starter guide in RTL, dark and light, Western and Arabic-Indic digits; `cmd locale get-app-locales` = `[ar]`; a language set in the phone's settings is taken back; ar-XB maps to Arabic, en-XA to English; the notification channel name in Arabic.
+- **Not verified:** the owner's phone (not connected during the session), Firebase sign-in/sync after switching (no test account), the widgets on a home screen and a fired notification in Arabic (covered by code and tests only), previews rendered in an IDE, iOS (Windows: run `:shared:compileKotlinIosSimulatorArm64`, `:shared:linkDebugFrameworkIosSimulatorArm64`, `:shared:iosSimulatorArm64Test` and the Xcode build on a Mac).
+
+## After the 4 sessions (2026-11-18)
+
+- **All weeks start on Saturday** (owner decision): one rule in `CivilCalendar` (`WEEK_START_ISO_DAY`, `weekColumn`, `weekStartOf`, `inWeekOrder`) used by weekly goals, card week strips (now always this week, Saturday to Friday, for daily and weekly habits alike), month calendars, the date picker, widgets and reminders. Weekly habits' past weeks are now counted Saturday to Friday, so streaks in weeks and weekly percentages can shift by one day's worth for existing data. Tests updated (`SaturdayFirstWeekTest`, `WeeklyGoalCalculatorTest`, `WidgetStateMapperTest`); 621 pass.
+- **Landing line:** English "bad Aura" now blows away together; Arabic reads «لنمحُ الهالة السلبية».
+
+## Sessions 2 and 3 of 4 (2026-11-17): Add-form animations, water goal, themed calendar
+
+Ran in parallel (branches `claude/s2-form-animations-e6598c`, `claude/s3-calendar-water-d163b7`), merged into `claude/nixora-bugs-features-plan-9a1220`. Details per session in `HANDOFF.md`.
+
+- **Built:** theme animations behind the Add/Edit Good Habit form (water pour, fill, bubbles, fish, ripple, tilt, drain, haptics; footprints, energy, pages, night sky, prayer rays); the daily water goal card (Liters/Cups, goal, cup size); calendar days, week strip and 7/30-day bars in the theme colour with intensity steps and a legend; Saturday-first, right-to-left calendar in RTL; water progress "1.25 / 2 L" or "5 / 8 cups" with a quick-add button on cards, the Home row and details.
+- **Owner changes after testing (2026-11-17):** no light beams in the water scene; footprints walk top to bottom in several pairs with distinct left and right feet; Undo and "Change goal" removed; 7/30-day bars take the theme colour; litres shown to two decimals (1.25 L).
+- **Verified:** the merged build, `:shared:testAndroidHostTest` (all pass), installed on the owner's phone: gold and blue bars, no Undo / Change goal, water fill without beams, the footprint trail. **Not verified:** RTL on a device (until Session 4), tilt by hand, "remove animations" on a device, frame timing, iOS (Windows).
+
+## Session 1 of 4 (2026-11-17): bugs, habit themes, Home loading
+
+Branch `claude/nixora-bugs-features-plan-9a1220`. Plan and ownership for all four sessions: [HANDOFF.md](../HANDOFF.md).
+
+- **Bug: starter guide highlighted the wrong card.** Cause: the empty-state "Start with one thing" card was tagged with the same target as the progress rings, so step 2 (about the rings) spotlighted it for every new user. Positions were also never forgotten when an element left the screen. Fix: each step's text and target are written together (`guideSteps`), the start card has its own target and step text, positions are dropped on dispose, and a target outside the window is never highlighted. Unit-tested (`GuideStepsTest`); **not yet checked on a device** (RTL, small/large screens, rotation are reasoned, not run).
+- **Bug: mic in the AI coach opened add-habit.** The empty-input button opened the voice note (add habits) sheet. Removed; the coach only has Send. The voice note is still on Home ("Say it, I'll add it"), and the coach still uses the review sheet for items the AI suggests. `RECORD_AUDIO` stays (Home uses it). Also `windowSoftInputMode="adjustResize"` so the keyboard no longer pans the chat under the status bar. **Not yet checked on a device.**
+- **HabitTheme foundation + Room v8:** see PROJECT_CONTEXT "Habit themes". `MIGRATION_7_8` is additive; `tools/room_migration_check.py` passes for the new columns and queries (it still reports 2 old problems on `events` queries with a `$REMOVED_BY_IMPORT_SQL` template, a limitation of the script, not new). Firestore rules need no change (good-habit `data` stays under 24 keys).
+- **Home loading (Feature 1):** cause of the slow-looking Home: Home had no loading state, so it showed the empty "Start" card until the three lists arrived, then swapped in the real cards; and the good-habit list waited for the habit catalog (built in the background at start, ~100 ms on a desktop JVM, slower on a phone; **not measured on a phone**: none was connected) to guess each card's style from its name. The style is now stored, Home shows skeletons only after 300 ms, then crossfades. The quit and good lists still detect a card's glyph (`HabitTopicDetector`) on first load.
+- **Verified:** `:androidApp:assembleDebug` OK, `:shared:testAndroidHostTest` 562 tests OK (2026-11-17). **Not done:** install on the phone (not connected), iOS (Windows).
+
 ## Where we are now (2026-11-11, read this first in a new chat)
 
 - **`master`** (`6ed81b1`) holds everything merged so far: Firebase sign-in, UI polish, the email link page (PR #4), weekly good habits (PR #5, Room v6) and the Notion Worker (PR #6).
@@ -23,6 +54,7 @@
 - **Event widget unit labels (2026-11-14):** DAYS / HRS / MIN / SEC now take the category's colour, matching the category name (owner preference); checked on the owner's home screen.
 - **Plain good-habit card redesign (2026-11-14, done):** the flat surface-to-mint fill with navy text is now a diagonal emerald gradient (`EmeraldDeep/Mid/Light`) with a corner glow and soft lift, deepening as the count grows and ending on deep emerald with warm-white text; ink chosen by the weakest gradient stop; light theme keeps the stops close so one ink reads on all of it. Water and prayer unchanged. The widget uses the same colours (flat middle tone). New `GoodFillContrastTest`; 512 tests pass; checked on the owner's phone (Build tab, a finished Workout card).
 - **Widget week squares (2026-11-14):** the empty day squares on good-habit widgets were barely visible (10% of the text colour); they are now 24%. The in-app card keeps 10%. Installed on the owner's phone; **not yet looked at on the home screen**.
+- **Top-bar logo in the light theme (2026-11-18):** the bare logo looked smudged on the cream bar (the dark cut has see-through gaps where the chain's near-black shading matched its old navy tile, and the black drop shadow showed as a grey halo). The light theme now uses `nixura_logo_light.png`, cut from the owner's white-background artwork (source kept at `docs/assets/nixura-logo-light-source.webp`), with a soft Purple shadow; the dark theme is unchanged (`AppShell.kt`, `TopBar`). Built on `claude/nixora-bugs-features-plan-9a1220` (Room v8). `:androidApp:assembleDebug` built and `:shared:testAndroidHostTest` passed; checked on the owner's phone (light theme, Home top bar).
 - **Logo, avatar and "+" (2026-11-14, owner-approved after two on-phone previews):** the top-bar logo is the artwork alone (cut out of its dark square) with a drop shadow; the avatar and every rose "+" use the cards' look (`cardGlow` / `GlowIconButton`: deep-to-light gradient, corner light, tinted edge, soft lift). A glassy version was previewed first and rejected. 512 tests pass; checked on the owner's phone (Quit, Home).
 - **Good-habit buttons per card (2026-11-14):** "−" and "+" on good-habit cards (Build, Home, detail) now match their card: on plain cards they follow the fill (rose "+" and a quiet "−" while the card is empty, emerald from 40%, pale-emerald done tick), on water a "+" that starts as the same rose "+" as the other cards and turns gradually blue as the glass fills, and a frosted "−", gold stars on prayer (`GoodHabitButton` takes the card style). 512 tests pass; checked on the owner's phone (Build: water, plain at 0, 2/3 and done, prayer).
 - **Owner's next UI wish (2026-11-14, not started):** Arabic as a second language (UI text is all in `presentation/strings/Strings.kt`, so this means an Arabic `Strings` subclass plus right-to-left layout checks; the habit recognizer already understands Arabic names).
@@ -64,7 +96,7 @@
 - **Not verified:** nothing was seen running. The look and feel of the animations (gold wash, burst, star buttons) and the colour contrast still need the owner's eyes on a phone. iOS: the code is in `commonMain` but was not compiled for iOS (no Mac).
 - **Owner feedback round (2026-11-12, after seeing it on the phone):** the shine now loops seamlessly (two bands half a loop apart, each wraps only while outside the card); the gold wash starts at the very top and covers the status and navigation bar areas; richer amber colors; gold "Add habit" button (`NixButtonStyle.Gold`); "Read 10 pages" and "Sleep before midnight" removed from the quick picks; card redesign inspired by the owner's reference picture (mosque silhouette, crescent, golden dawn, mihrab-arch badge, double frame, rays when all five are done). Tests pass and the APK builds. Installed on the owner's phone and checked from screenshots: the gold form covers the whole screen, the gold button, the Build card (mosque in its own space at the bottom, moon at the top centre) and the Home row (big mosque, kept as the owner liked it). The shine loop and the count burst move, so they cannot be judged from a still screenshot; the owner checks them by eye.
 - **Second feedback round (2026-11-12):** Home-row mosque a little smaller so it fits the row; the form's gold button is now its own `PrayerGoldButton` (the plain gold `NixButton` style was removed again); the five prayer markers are mihrab arches with a tick instead of stars. Installed on the owner's phone and checked from screenshots (unfinished and all-done card states, Home row, form).
-- **Known limits:** English only (Arabic strings are not built yet).
+- **Known limits:** English only at the time (Arabic arrived in Session 4, 2026-11-17).
 
 ## Prayer widget, category glyphs, 3x1 quit widget name (2026-11-12, branch `claude/prayer-habit-card-widget-1b8b83`, on top of the prayer card branch)
 
@@ -86,7 +118,7 @@ NixUra (renamed everywhere on 2026-11-03; app id and code packages `com.adhamelg
 - Dark theme first (navy `#1D1A39` background), light theme available in Settings.
 - Palette fixed; plum stays `#862549` (the owner first typed `#662549`, then chose the repo value).
 - AI coach = **offline rule-based now, real AI later**; owner wants a free AI option (see `docs/AI_COACH_UPGRADE.md`).
-- Languages: English only at launch, code structured for more.
+- Languages: English and Arabic (with RTL) since 2026-11-17.
 - Android and iOS are both targets (approved 2026-10-23): agents may edit iOS code freely. Android was built first. iOS reminders are currently a no-op placeholder that must be replaced with a real `UNUserNotificationCenter` implementation.
 - Users can choose the bad-habit card color; card starts almost darkest shade of it and lightens day by day; default = original brand gradient.
 

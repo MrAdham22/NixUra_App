@@ -22,6 +22,9 @@ import com.adhamelgendy.nixura.domain.widget.WidgetKind
 import com.adhamelgendy.nixura.presentation.strings.EnglishStrings
 import com.adhamelgendy.nixura.presentation.strings.Strings
 import com.adhamelgendy.nixura.presentation.strings.stringsFor
+import com.adhamelgendy.nixura.domain.locale.AppLocales
+import com.adhamelgendy.nixura.presentation.locale.Digits
+import com.adhamelgendy.nixura.presentation.platform.systemLanguageTag
 import kotlinx.coroutines.flow.first
 import org.koin.mp.KoinPlatform
 import java.text.DateFormat
@@ -70,7 +73,10 @@ class WidgetConfigActivity : Activity() {
 
     private suspend fun load(): Pair<Strings, List<Option>> {
         val koin = KoinPlatform.getKoin()
-        val strings = stringsFor(koin.get<LoadWidgetStateUseCase>().appearance().languageCode)
+        val appearance = koin.get<LoadWidgetStateUseCase>().appearance()
+        val language = AppLocales.resolve(appearance.languageCode, systemLanguageTag())
+        rtl = AppLocales.isRtl(language)
+        val strings = stringsFor(language)
         val options = when (kind) {
             WidgetKind.QUIT_COUNTER -> koin.get<HabitTrackingRepository>().observeActiveHabitTracking().first()
                 .filter { !it.habit.isArchived }
@@ -78,15 +84,19 @@ class WidgetConfigActivity : Activity() {
             WidgetKind.GOOD_QUICK_LOG -> koin.get<GoodHabitRepository>().observeGoodHabits().first()
                 .map { Option(it.habit.name, it.habit.id) }
             WidgetKind.EVENT -> {
-                val format = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
+                // The date in the app's language (Locale-aware pattern), digits as chosen in Settings.
+                val format = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, java.util.Locale.forLanguageTag(language))
                 listOf(Option(strings.widgetConfigNearestEvent, null)) +
                     koin.get<EventRepository>().observeEvents().first()
                         .sortedBy { it.targetAtEpochMillis }
-                        .map { Option("${it.title}  ·  ${format.format(Date(it.targetAtEpochMillis))}", it.id) }
+                        .map { Option(Digits.localize("${it.title}  ·  ${format.format(Date(it.targetAtEpochMillis))}", appearance.digitStyle), it.id) }
             }
         }
         return strings to options
     }
+
+    /** The app's language is right-to-left (Arabic). Set by [load]. */
+    private var rtl = false
 
     private fun show(strings: Strings, options: List<Option>) {
         val title = when (kind) {
@@ -127,6 +137,7 @@ class WidgetConfigActivity : Activity() {
     private fun root(loading: Boolean, title: String, body: String?): LinearLayout {
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            layoutDirection = if (rtl) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
             setBackgroundColor(0xFF1D1A39.toInt())
             setPadding(dp(20), dp(20), dp(20), dp(20))
             if (loading) gravity = Gravity.CENTER

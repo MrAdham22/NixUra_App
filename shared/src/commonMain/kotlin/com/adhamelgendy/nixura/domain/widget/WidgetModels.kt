@@ -16,7 +16,9 @@ enum class WidgetKind { QUIT_COUNTER, GOOD_QUICK_LOG, EVENT }
 /** Theme and language the widgets should follow (read from the app settings). */
 data class WidgetAppearance(
     val darkTheme: Boolean = true,
+    /** The saved choice: "system", "en" or "ar" (resolve it with `AppLocales.resolve`). */
     val languageCode: String = "en",
+    val digitStyle: com.adhamelgendy.nixura.domain.model.DigitStyle = com.adhamelgendy.nixura.domain.model.DigitStyle.WESTERN,
 )
 
 private const val MILLIS_PER_DAY = 86_400_000L
@@ -150,7 +152,7 @@ sealed interface GoodWidgetState {
         val fillStyle: GoodHabitFillStyle = GoodHabitFillStyle.PLAIN,
         /**
          * Set for a weekly habit: then [count] / [target] are days done / this week's goal, [week] is this week
-         * (Sunday to Saturday), [currentStreakDays] is in weeks and [todayCount] is 0 or 1.
+         * (Saturday to Friday), [currentStreakDays] is in weeks and [todayCount] is 0 or 1.
          */
         val weeklyTarget: Int? = null,
         val todayCount: Int = count,

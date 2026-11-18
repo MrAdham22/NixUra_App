@@ -2,6 +2,8 @@ package com.adhamelgendy.nixura.domain.coach
 
 import com.adhamelgendy.nixura.domain.coach.catalog.BehaviorCatalog
 import com.adhamelgendy.nixura.domain.coach.catalog.SubstanceCatalog
+import com.adhamelgendy.nixura.domain.coach.catalog.ar.ArabicCatalog
+import com.adhamelgendy.nixura.domain.locale.ContentLanguage
 import com.adhamelgendy.nixura.domain.recognition.CategoryMatch
 import com.adhamelgendy.nixura.domain.recognition.HabitMatcher
 import com.adhamelgendy.nixura.domain.recognition.MatchOutcome
@@ -40,9 +42,12 @@ class HabitKnowledgeBase internal constructor(
     builtIn: List<HabitCategory>?,
     substance: List<HabitCategory>,
     behavior: List<HabitCategory>,
+    /** The language of the texts handed out ([match], [localize]); matching itself never depends on it. */
+    private val language: ContentLanguage = ContentLanguage.English,
 ) {
 
-    constructor() : this(null, SubstanceCatalog.categories, BehaviorCatalog.categories)
+    constructor(language: ContentLanguage = ContentLanguage.English) :
+        this(null, SubstanceCatalog.categories, BehaviorCatalog.categories, language)
 
     private val builtInCategories: List<HabitCategory> = listOf(
         HabitCategory(
@@ -262,14 +267,22 @@ class HabitKnowledgeBase internal constructor(
 
     private val matcher: HabitMatcher by lazy { HabitMatcher(categories) }
 
-    /** Picks the best-matching category for a free-text habit name, or [generic] when nothing matches well. */
-    fun match(habitName: String): HabitCategory = matchDetailed(habitName)?.category ?: generic
+    /**
+     * Picks the best-matching category for a free-text habit name, or [generic] when nothing matches well. The
+     * texts are in the current content language (the id, keywords and times are the same in every language).
+     */
+    fun match(habitName: String): HabitCategory = localize(matchDetailed(habitName)?.category ?: generic)
 
     /** Like [match] but with the confidence, the keyword that matched and the word the user typed; null when nothing matched. */
     fun matchDetailed(habitName: String): CategoryMatch? {
         if (habitName.isBlank()) return null
-        return matcher.outcome(habitName).category
+        val found = matcher.outcome(habitName).category ?: return null
+        return CategoryMatch(localize(found.category), found.confidence, found.keyword, found.typedWord, found.exact)
     }
+
+    /** [category] with its texts in the current content language (Arabic from `catalog/ar`, else English). */
+    fun localize(category: HabitCategory): HabitCategory =
+        if (language.isArabic) ArabicCatalog.localize(category) else category
 
     internal fun outcomeFor(rawText: String): MatchOutcome = matcher.outcome(rawText)
 

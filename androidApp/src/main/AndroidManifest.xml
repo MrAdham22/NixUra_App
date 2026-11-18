@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Voice notes for the AI coach: asked only when the user taps the microphone. -->
+    <!-- Voice notes ("Say it, I'll add it" on Home): asked only when the user taps the microphone. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -21,6 +21,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:localeConfig="@xml/locales_config"
         android:theme="@style/Theme.NixUra">
         <!-- Usage stats (Firebase Analytics) stay off until the user turns them on in Settings > Privacy. -->
         <meta-data android:name="firebase_analytics_collection_enabled" android:value="false" />
@@ -47,10 +48,16 @@
                 <data android:scheme="fb${facebookAppId}" />
             </intent-filter>
         </activity>
-        <!-- singleTask: coming back from Notion's page in the browser reuses the open app instead of stacking a copy. -->
+        <!-- singleTask: coming back from Notion's page in the browser reuses the open app instead of stacking a copy.
+             adjustResize: the keyboard shrinks the window (the app pads by the IME inset) instead of panning the
+             whole screen up under the status bar.
+             configChanges locale|layoutDirection: switching the app's language (Settings, or the phone's per-app
+             language on Android 13+) is handled by Compose in place, without recreating the screen. -->
         <activity
             android:exported="true"
+            android:configChanges="locale|layoutDirection"
             android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
             android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

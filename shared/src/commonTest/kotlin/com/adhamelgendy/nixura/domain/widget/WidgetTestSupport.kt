@@ -65,8 +65,8 @@ class FakeGoodHabitRepository(initial: List<GoodHabitWithLogs>) : GoodHabitRepos
     var writes = 0
 
     override fun observeGoodHabits(): Flow<List<GoodHabitWithLogs>> = state
-    override suspend fun create(name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?): Long = error("unused")
-    override suspend fun update(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?) = error("unused")
+    override suspend fun create(name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?, theme: com.adhamelgendy.nixura.domain.theme.HabitTheme, water: com.adhamelgendy.nixura.domain.theme.WaterGoal?): Long = error("unused")
+    override suspend fun update(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?, theme: com.adhamelgendy.nixura.domain.theme.HabitTheme, water: com.adhamelgendy.nixura.domain.theme.WaterGoal?) = error("unused")
     override suspend fun archive(id: Long) = error("unused")
 
     override suspend fun setCount(id: Long, dayIndex: Long, count: Int) {

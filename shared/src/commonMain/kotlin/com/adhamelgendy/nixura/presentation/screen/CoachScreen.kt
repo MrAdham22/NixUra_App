@@ -32,7 +32,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Text
+import com.adhamelgendy.nixura.presentation.components.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -94,6 +94,7 @@ fun CoachScreen(navigator: Navigator) {
     val c = Nix.colors
     var input by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
+    // Only for the review sheet below; the voice recorder itself is not offered in the chat.
     val voiceVm: com.adhamelgendy.nixura.presentation.voice.VoiceNoteViewModel = koinViewModel()
 
     // The AI understood "add ..." in the chat: show the same review list as a voice note, never add silently.
@@ -245,10 +246,8 @@ fun CoachScreen(navigator: Navigator) {
                 maxLength = 500,
                 modifier = Modifier.weight(1f),
             )
-            // Nothing typed yet: the button is a microphone (say what to add). Typing turns it into Send.
-            if (input.isBlank() && voiceVm.supported && !state.isTyping) {
-                NixIconButton(NixIcon.Mic, voiceVm::open, size = 50.dp, tint = c.onAccent, background = c.accent, bordered = false, haptic = true)
-            } else NixIconButton(
+            // Only Send here: the voice note (say habits to add) lives on Home, not in the chat.
+            NixIconButton(
                 NixIcon.Send,
                 { send(input) },
                 size = 50.dp,
@@ -493,7 +492,7 @@ private fun FocusPicker(
                 modifier = Modifier.weight(1f),
             )
             Spacer(Modifier.width(8.dp))
-            NixIconView(NixIcon.Chevron, c.accent, size = 16.dp, modifier = Modifier.rotate(if (open) -90f else 90f))
+            NixIconView(NixIcon.Chevron, c.accent, size = 16.dp, modifier = Modifier.rotate(if (open) -90f else 90f), autoMirror = false)
         }
         if (open) {
             Spacer(Modifier.height(8.dp))

@@ -39,6 +39,11 @@ open class Strings {
     open val seeAll: String = "See all"
     open val reached: String = "Reached"
     open val habitNotFound: String = "This habit is no longer available."
+    /**
+     * An error message for the screen. Use cases and repositories fail with English messages (they are pure
+     * Kotlin, with no access to the UI language); each language turns the ones it knows into its own words.
+     */
+    open fun errorText(message: String): String = message
     open val am: String = "AM"
     open val pm: String = "PM"
 
@@ -55,6 +60,19 @@ open class Strings {
     )
     open val monthShort: List<String> = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
     open val daysCount: (Int) -> String = { if (it == 1) "1 day" else "$it days" }
+    /** A length in words, largest unit: "3 days", "5 hours", "12 minutes". */
+    open fun durationWords(duration: kotlin.time.Duration): String = com.adhamelgendy.nixura.domain.coach.durationText(duration)
+    /** A date in this language's order: "Tue, 20 Oct 2026", "20 Oct". [weekday] / [year] are null when not shown. */
+    open fun dateText(weekday: String?, day: Int, month: String, year: Int?): String {
+        val base = if (year != null) "$day $month $year" else "$day $month"
+        return if (weekday != null) "$weekday, $base" else base
+    }
+    /** A time of day: "8:30 PM". */
+    open fun clockText(hour12: Int, minute: String, suffix: String): String = "$hour12:$minute $suffix"
+    /** "Tue, 20 Oct 2026 · 8:30 PM". */
+    open fun dateTimeText(date: String, time: String): String = "$date · $time"
+    /** The month above a calendar: "November 2026". */
+    open fun monthYear(month: String, year: Int): String = "$month $year"
 
     // Onboarding
 
@@ -219,13 +237,13 @@ open class Strings {
     open val legendMissed: String = "Missed"
     open val editPastHint: String = "Forgot to log a day? Adjust it here."
 
-    // Weekly good habits ("N days a week", Sunday to Saturday)
+    // Weekly good habits ("N days a week", Saturday to Friday)
     open val habitFrequency: String = "How often"
     open val frequencyDaily: String = "Every day"
     open val frequencyWeekly: String = "Days a week"
     open val weeklyTarget: String = "Days a week"
     open val notDoneYet: String = "Not done yet"
-    open val weeklyTargetHint: String = "Any days from Sunday to Saturday. Each day counts once."
+    open val weeklyTargetHint: String = "Any days from Saturday to Friday. Each day counts once."
     open val weekProgress: (Int, Int) -> String = { done, goal -> "$done / $goal days this week" }
     open val weekGoalReached: String = "Weekly goal reached"
     open val daysToGoThisWeek: (Int) -> String = { if (it == 1) "1 more day this week" else "$it more days this week" }
@@ -354,7 +372,12 @@ open class Strings {
     open val ageYears: (Int) -> String = { "$it years old" }
     open val yourProgress: String = "Your progress"
     open val profileTotals: String = "Totals"
-    open val languageHint: String = "More languages are on the way."
+    open val languageHint: String = "Applies right away. The layout turns right-to-left in Arabic."
+    open val languageSystem: String = "System default"
+    open val digitsTitle: String = "Digits"
+    open val digitsHint: String = "How numbers are shown. Your saved data does not change."
+    open val digitsWestern: String = "123"
+    open val digitsArabic: String = "١٢٣"
     open val guideReplayHint: String = "A 30-second tour of the app."
     open val privacyAndData: String = "Privacy and data"
     open val quitScoreTitle: String = "Breaking free"
@@ -426,8 +449,9 @@ open class Strings {
     open val widgetTitleBuild: String = "Build"
 
     // ---- Accounts (Agent 2) ----
-    open val landingTagline: String = "Let's Nix the bad"
-    open val landingAuraWord: String = "Aura"
+    /** The landing line is [landingTagline] followed by [landingFadingWords], which blow away as ash and come back. */
+    open val landingTagline: String = "Let's Nix the"
+    open val landingFadingWords: List<String> = listOf("bad", "Aura")
     open val landingBody: String = "Quit what drains you. Build what lifts you. Count down to what matters."
     open val landingGetStarted: String = "Create account"
     open val landingHaveAccount: String = "I already have an account"
@@ -555,6 +579,8 @@ open class Strings {
     open val delConfirmBody: String = "This cannot be undone."
     open val legalPrivacyTitle: String = "Privacy Policy"
     open val legalTermsTitle: String = "Terms of Use"
+    /** Shown above the legal text in languages it is not translated into yet (empty in English). */
+    open val legalEnglishOnly: String = ""
     open val legalDraftNotice: String = "Draft: the owner must fill in the bracketed details and have this reviewed before release."
 
     // Score and streak explanations
@@ -582,6 +608,8 @@ open class Strings {
     // Dashboard
     open val guestBannerTitle: String = "You're using NixUra as a guest"
     open val guestBannerBody: String = "Your data is only on this phone. Sign in to back it up."
+    /** Read by screen readers while Home shows its loading placeholders. */
+    open val homeLoading: String = "Loading your habits"
     open val homeStartTitle: String = "Start with one thing"
     open val homeStartQuit: String = "Something to quit"
     open val homeStartBuild: String = "A habit to build"
@@ -614,6 +642,8 @@ open class Strings {
     open val guideStart: String = "Show me around"
     open val guideScoresTitle: String = "Your progress at a glance"
     open val guideScoresBody: String = "These rings fill up as you stay clear and reach your targets. Tap one any time to see how it's worked out."
+    open val guideStartHereTitle: String = "Start here"
+    open val guideStartHereBody: String = "Pick one thing to change first: something to quit, a habit to build or an event to count down to. Your progress rings show up here once you add it."
     open val guideQuitTitle: String = "Quit a bad habit"
     open val guideQuitBody: String = "Tap + to add one. A live counter starts, and its card gets lighter the longer you stay clear. In a hard moment, tap Craving? on the card."
     open val guideBuildTitle: String = "Build a good habit"
@@ -814,17 +844,61 @@ open class Strings {
     open val visualLongestClean: String = "Longest clean streak"
     open val visualQuitting: String = "Habits you're quitting"
     open val visualDoneToday: String = "Good habits done today"
+
+    // ---- Session 2 (Add/Edit form: theme animations, water goal section). Only Session 2 adds lines here. ----
+    open val waterGoalTitle: String = "Daily water goal"
+    open val waterGoalHint: String = "Set it in liters or cups. Switching never changes the goal."
+    open val waterUnitLiters: String = "Liters"
+    open val waterUnitCups: String = "Cups"
+    open fun waterLiters(amount: String): String = "$amount L"
+    /** [amount] may have a decimal ("6.7"); [wholeCups] picks the plural form. */
+    open fun waterCups(amount: String, wholeCups: Int): String = if (amount == "1") "1 cup" else "$amount cups"
+    open val waterCupSize: String = "Cup size"
+    open val waterCupSizeHint: String = "Each tap on the card adds one cup."
+    open fun waterMl(ml: Int): String = "$ml ml"
+    open fun waterGoalSummary(cups: Int, servingMl: Int): String =
+        if (cups == 1) "1 cup of $servingMl ml a day" else "$cups cups of $servingMl ml a day"
+    open val waterCupSizeChanged: String = "Days you already logged will be counted with the new cup size."
+    open val waterGoalPerDay: String = "Per day"
+    open val waterGoalDecrease: String = "Lower the goal"
+    open val waterGoalIncrease: String = "Raise the goal"
+
+    // ---- end of Session 2 ----
+
+    // ---- Session 3 (details, calendar, cards: theme colours, water progress). Only Session 3 adds lines here. ----
+    /** Water progress: "1.2 / 2 L". Amounts arrive already formatted. */
+    open val waterProgressLiters: (String, String) -> String = { drunk, goal -> "$drunk / $goal L" }
+    /** Water progress: "5 / 8 cups". The Int is the goal rounded, to pick the plural. */
+    open val waterProgressCups: (String, String, Int) -> String = { drunk, goal, n -> "$drunk / $goal ${if (n == 1) "cup" else "cups"}" }
+    open val waterLeftLiters: (String) -> String = { "$it L to go" }
+    open val waterLeftCups: (String, Int) -> String = { amount, n -> "$amount ${if (n == 1) "cup" else "cups"} to go" }
+    /** Quick add of one serving when the goal is shown in cups. */
+    open val waterAddCup: String = "+1 cup"
+    /** Quick add of one serving when the goal is shown in litres: "+250 ml". */
+    open val waterAddMl: (Int) -> String = { "+$it ml" }
+    open val waterAddA11y: (Int) -> String = { "Add a cup of $it ml" }
+    open val calendarLess: String = "Less"
+    open val calendarMore: String = "More"
+    open val calendarLegendA11y: String = "Colour shows how much of each day was done, from less to more"
+
+    // ---- end of Session 3 ----
 }
 
-data class AppLanguage(val code: String, val nativeName: String)
+/** A choice in Settings → Language. [nativeName] is null for "System default", which is shown in the UI language. */
+data class AppLanguage(val code: String, val nativeName: String?)
 
+/** Settings → Language: follow the phone, English, Arabic (each written in its own language). */
 val availableLanguages: List<AppLanguage> = listOf(
+    AppLanguage(com.adhamelgendy.nixura.domain.model.LANGUAGE_SYSTEM, null),
     AppLanguage("en", "English"),
+    AppLanguage("ar", "العربية"),
 )
 
 val EnglishStrings: Strings = Strings()
 
-fun stringsFor(code: String): Strings = when (code) {
+/** Text for a resolved language ("en" or "ar"; also accepts tags such as "ar-EG"). Unknown → English. */
+fun stringsFor(code: String): Strings = when (com.adhamelgendy.nixura.domain.locale.AppLocales.primary(code)) {
+    "ar" -> ArabicStrings
     else -> EnglishStrings
 }
 

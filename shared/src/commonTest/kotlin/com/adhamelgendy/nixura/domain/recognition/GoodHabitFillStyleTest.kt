@@ -7,18 +7,18 @@ import kotlin.test.assertEquals
 
 class GoodHabitFillStyleTest {
 
-    private val detector = GoodHabitFillStyleDetector(HabitKnowledgeBase())
+    private val detector = com.adhamelgendy.nixura.domain.theme.HabitThemeDetector(HabitKnowledgeBase())
 
     @Test
     fun waterNamesFillWithWater() {
         listOf("Drink water", "water", "drinking water", "Hydration", "hydrate", "drink watr", "8 glasses of water", "شرب الماء")
-            .forEach { assertEquals(GoodHabitFillStyle.WATER, detector.styleFor(it), it) }
+            .forEach { assertEquals(GoodHabitFillStyle.WATER, detector.themeFor(it).fillStyle, it) }
     }
 
     @Test
     fun otherHabitsKeepThePlainFill() {
         listOf("Read 10 pages", "Workout", "Meditate", "test syncing 2", "")
-            .forEach { assertEquals(GoodHabitFillStyle.PLAIN, detector.styleFor(it), it) }
+            .forEach { assertEquals(GoodHabitFillStyle.PLAIN, detector.themeFor(it).fillStyle, it) }
     }
 
     @Test

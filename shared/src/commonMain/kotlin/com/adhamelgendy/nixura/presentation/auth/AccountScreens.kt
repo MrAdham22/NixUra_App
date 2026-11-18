@@ -1,5 +1,8 @@
 package com.adhamelgendy.nixura.presentation.auth
 
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.runtime.CompositionLocalProvider
 import com.adhamelgendy.nixura.domain.sync.CloudSync
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,7 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
+import com.adhamelgendy.nixura.presentation.components.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -317,12 +320,19 @@ fun LegalScreen(document: LegalDocument, navigator: Navigator) {
         LegalDocument.Terms -> s.legalTermsTitle to LegalContent.terms
     }
     SubScreen(title = title, onBack = { navigator.back() }) {
-        for (b in blocks) when (b.style) {
-            LegalBlockStyle.Title -> Unit // the screen header already shows it
-            LegalBlockStyle.Heading -> Text(b.text, style = NixType.Heading, color = c.textPrimary)
-            LegalBlockStyle.Paragraph -> Text(b.text, style = NixType.Body, color = c.textSecondary)
-            LegalBlockStyle.Bullet -> Text("\u2022  " + b.text, style = NixType.Body, color = c.textSecondary)
-            LegalBlockStyle.Note -> Text(b.text, style = NixType.Small, color = c.textMuted)
+        // The legal drafts exist in English only: other languages say so, and the English text keeps its own
+        // left-to-right layout inside an RTL screen.
+        if (s.legalEnglishOnly.isNotEmpty()) Text(s.legalEnglishOnly, style = NixType.SmallStrong, color = c.textMuted)
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                for (b in blocks) when (b.style) {
+                    LegalBlockStyle.Title -> Unit // the screen header already shows it
+                    LegalBlockStyle.Heading -> Text(b.text, style = NixType.Heading, color = c.textPrimary)
+                    LegalBlockStyle.Paragraph -> Text(b.text, style = NixType.Body, color = c.textSecondary)
+                    LegalBlockStyle.Bullet -> Text("\u2022  " + b.text, style = NixType.Body, color = c.textSecondary)
+                    LegalBlockStyle.Note -> Text(b.text, style = NixType.Small, color = c.textMuted)
+                }
+            }
         }
     }
 }

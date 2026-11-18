@@ -7,5 +7,13 @@
 	<!-- NixUra server (https only): the Notion Worker in workers/notion. -->
 	<key>NixUraApiBaseUrl</key>
 	<string>https://nixura-notion.nixura-notion-worker.workers.dev</string>
+	<!-- The languages the app speaks, so iOS offers Settings → NixUra → Language (English / العربية). -->
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>ar</string>
+	</array>
 </dict>
 </plist>
