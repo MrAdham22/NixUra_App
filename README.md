@@ -33,22 +33,84 @@ NixUra helps people **break bad habits**, **build good ones** and **look forward
 
 ## Screenshots
 
-All screenshots are from the Android app running on a Pixel 9 emulator, with demo data.
+Taken on the Android app (Pixel 9 emulator) on 2026-11-20 with demo data. The widgets picture is from 2026-11-14.
 
-| Home dashboard | Habits to quit | Polish (2026-11-14) | Every card's ⋯ / long-press sheet has "Add to Home screen"; Event cards are coloured by category and warm up as the event comes closer; Home shows quit habits as compact rows; Settings has Dark / Light / Same as phone; the coach's focus follows the habit a chat is about; landing shows the official icon with Create account, Continue as guest and Sign in. |
-| Quit habit analysis |
-|:---:|:---:|:---:|
-| <img src="docs/screenshots/home.png" width="250" alt="Home dashboard" /> | <img src="docs/screenshots/quit.png" width="250" alt="Habits to quit" /> | <img src="docs/screenshots/quit-detail.png" width="250" alt="Quit habit analysis" /> |
-| **Habits to build** | **Prayer habit card** | **Good habit analysis** |
-| <img src="docs/screenshots/build.png" width="250" alt="Habits to build" /> | <img src="docs/screenshots/prayer.png" width="250" alt="Prayer habit card" /> | <img src="docs/screenshots/prayer-detail.png" width="250" alt="Good habit analysis" /> |
-| **Event countdowns** | **Coach** | **Coach reply with a progress card** |
-| <img src="docs/screenshots/events.png" width="250" alt="Event countdowns" /> | <img src="docs/screenshots/coach.png" width="250" alt="Coach" /> | <img src="docs/screenshots/coach-chat.png" width="250" alt="Coach reply" /> |
-| **Adding a quit habit (name recognised)** | **Adding a good habit** | **Adding an event with reminders** |
-| <img src="docs/screenshots/add-quit.png" width="250" alt="Add a quit habit" /> | <img src="docs/screenshots/add-good.png" width="250" alt="Add a good habit" /> | <img src="docs/screenshots/add-event.png" width="250" alt="Add an event" /> |
-| **Home-screen widgets** | **Light theme** | **Light theme** |
-| <img src="docs/screenshots/widgets.png" width="250" alt="Android home-screen widgets" /> | <img src="docs/screenshots/home-light.png" width="250" alt="Home in the light theme" /> | <img src="docs/screenshots/quit-light.png" width="250" alt="Quit list in the light theme" /> |
-| **Welcome** | **Sign in** | **Settings** |
-| <img src="docs/screenshots/welcome.png" width="250" alt="Welcome screen" /> | <img src="docs/screenshots/sign-in.png" width="250" alt="Sign-in screen" /> | <img src="docs/screenshots/settings.png" width="250" alt="Settings" /> |
+### Your day at a glance
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/home.png" width="240" alt="Home dashboard" /><br /><sub><b>Home dashboard</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/quit.png" width="240" alt="Habits to quit" /><br /><sub><b>Habits to quit</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/build.png" width="240" alt="Habits to build" /><br /><sub><b>Habits to build</b></sub></td>
+  </tr>
+</table>
+
+### Progress and countdowns
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/quit-detail.png" width="240" alt="Quit habit analysis" /><br /><sub><b>Quit habit analysis</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/prayer-detail.png" width="240" alt="Prayer habit analysis" /><br /><sub><b>Prayer habit analysis</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/events.png" width="240" alt="Event countdowns" /><br /><sub><b>Event countdowns</b></sub></td>
+  </tr>
+</table>
+
+### Coach and widgets
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/coach.png" width="240" alt="Offline coach" /><br /><sub><b>Offline coach</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/coach-chat.png" width="240" alt="Coach reply with a progress card" /><br /><sub><b>Coach reply with a progress card</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/widgets.png" width="240" alt="Android home-screen widgets" /><br /><sub><b>Android home-screen widgets</b></sub></td>
+  </tr>
+</table>
+
+### Adding things
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/add-quit.png" width="240" alt="New quit habit (name recognised)" /><br /><sub><b>New quit habit (name recognised)</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/add-good.png" width="240" alt="New good habit (N days a week)" /><br /><sub><b>New good habit (N days a week)</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/add-event.png" width="240" alt="New event with reminders" /><br /><sub><b>New event with reminders</b></sub></td>
+  </tr>
+</table>
+
+### Light theme
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/home-light.png" width="240" alt="Home" /><br /><sub><b>Home</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/quit-light.png" width="240" alt="Habits to quit" /><br /><sub><b>Habits to quit</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/build-light.png" width="240" alt="Habits to build" /><br /><sub><b>Habits to build</b></sub></td>
+  </tr>
+</table>
+
+### Getting started
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/welcome.png" width="240" alt="Welcome" /><br /><sub><b>Welcome</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/sign-in.png" width="240" alt="Sign in" /><br /><sub><b>Sign in</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/settings.png" width="240" alt="Settings: theme, language, digits" /><br /><sub><b>Settings: theme, language, digits</b></sub></td>
+  </tr>
+</table>
+
+### Arabic (العربية)
+
+Arabic is a full second language: every screen turns right-to-left, with Arabic text, plurals, dates and optional Arabic digits. Switch it in Settings > Language.
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/home-ar.png" width="240" alt="الرئيسية · Home" /><br /><sub><b>الرئيسية · Home</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/quit-ar.png" width="240" alt="عادات تقلع عنها · Quit" /><br /><sub><b>عادات تقلع عنها · Quit</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/build-ar.png" width="240" alt="عادات تبنيها · Build" /><br /><sub><b>عادات تبنيها · Build</b></sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/events-ar.png" width="240" alt="مناسبات مهمة · Events" /><br /><sub><b>مناسبات مهمة · Events</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/coach-ar.png" width="240" alt="المدرّب · Coach" /><br /><sub><b>المدرّب · Coach</b></sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/settings-ar.png" width="240" alt="الإعدادات · Settings" /><br /><sub><b>الإعدادات · Settings</b></sub></td>
+  </tr>
+</table>
 
 ## Engineering highlights
 
