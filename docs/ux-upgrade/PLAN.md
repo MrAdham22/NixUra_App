@@ -213,7 +213,7 @@ All shared paths are under `shared/src/commonMain/kotlin/com/adhamelgendy/nixura
 - Why keep `nixura_reminders` for events: it already carries event reminders and costs nothing to keep (no users
   yet, decision 3, but the owner's test phones have it). Renaming a channel is allowed, changing its importance after
   creation is not (only the user can). Freeze this channel list before the first release.
-  Milestones and the check-in move to the new LOW channels. Prayer gets no separate channel in B; if Q1 leads to
+  Milestones and the check-in move to the new LOW channels. Prayer gets no separate channel in B; if prayer ever needs
   adhan-like sounds later, that would be its own channel then.
 - **Groups**: a channel group per area (`Habits`, `Events`, `Coach & app`) for the settings screen, and a
   notification **group key per type** so several water reminders never stack (water reminders replace each other:
