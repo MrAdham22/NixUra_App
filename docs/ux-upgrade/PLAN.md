@@ -13,7 +13,7 @@ Reminders exist to support the habit, not to raise engagement: no guilt, no dark
 | A1 | Widget "+" tap latency (feedback within one frame-ish, every tap counts) | none |
 | A2 | Launcher App Shortcuts (4) + the 3 new screens they open | none (shares manifest/strings/nav with B) |
 | B | Notification foundation: channels, grouping, look per type, permission flow | none |
-| C | Good-habit reminders + notification actions ("+1 glass") | B (and the prayer-times answer, see Q1) |
+| C | Good-habit reminders + notification actions ("+1 glass") + prayer times from location | B |
 | D | Lock-screen / persistent presence: research only | B, C findings |
 
 ---
@@ -22,49 +22,45 @@ Reminders exist to support the habit, not to raise engagement: no guilt, no dark
 
 | Phase | Status | Branch / PR | Phase doc | Device-tested on Oppo |
 |---|---|---|---|---|
-| Plan | PR open, waiting for owner review | `docs/ux-upgrade-plan` | this file | n/a |
-| A1 | Not started | | `docs/ux-upgrade/A1.md` | no |
-| A2 | Not started (blocked on Q4, Q5) | | `docs/ux-upgrade/A2.md` | no |
-| B | Not started (blocked on Q3) | | `docs/ux-upgrade/B.md` | no |
-| C | Not started (blocked on Q1, Q2, B) | | `docs/ux-upgrade/C.md` | no |
+| Plan | Questions answered 2026-11-21; PR waiting for owner approval | `docs/ux-upgrade-plan` | this file | n/a |
+| A1 | Not started, ready | | `docs/ux-upgrade/A1.md` | no |
+| A2 | Not started, ready | | `docs/ux-upgrade/A2.md` | no |
+| B | Not started, ready | | `docs/ux-upgrade/B.md` | no |
+| C | Not started (needs B merged) | | `docs/ux-upgrade/C.md` | no |
 | D | Not started | | `docs/ux-upgrade/D.md` | n/a (research) |
 
 Update this table at the end of every phase.
 
 ---
 
-## Open questions for the owner (answer before the phase that needs it)
+## Owner decisions (2026-11-21, answers to the planning questions)
 
-1. **Prayer times are not calculated anywhere in the app today** (blocks C for prayer). The brief says "prayer
-   reminders use the prayer times the app already calculates", but the code has no prayer-time calculation, no
-   location access and no calculation method. Prayer is detected by name only (`domain/recognition/PrayerHabitDetector.kt`)
-   and the card shows five stars named Fajr…Isha (`Strings.prayerNames`), filled in order by today's count.
-   Options:
-   - **(a) Recommended:** compute times in pure Kotlin in `commonMain` (standard astronomical formulas, ~200 lines,
-     fully unit-testable, no new dependency), from a **city the user picks** (stored per device, no GPS permission)
-     and a calculation method (Egyptian General Authority by default for Arabic, Muslim World League otherwise,
-     changeable). Offline, works on iOS too.
-   - (b) Same, but take the location from the phone (needs `ACCESS_COARSE_LOCATION`, a Play Data-safety update and
-     a permission prompt; more accurate when travelling).
-   - (c) The user types five times once per habit (no astronomy; times drift through the year, so it is weaker).
-   - (d) Add the `adhan` Kotlin library (new dependency; needs the written reason the ground rules ask for).
-2. **Where reminder settings live** (C). They are per habit and alarms are per device. Recommended: a new Room
-   table `habit_reminders` (Room v9, additive migration, no change to existing rows) that is **synced** with the
-   habit, so a new phone keeps the choices; a per-device "pause all reminders" stays unsynced. Alternative: per
-   device only (simpler, lost on a new phone). Which do you want?
-3. **Live app vs docs** (B, C). The brief says NixUra is live on Google Play; `AGENTS.md` and the README still say
-   "the app is not released yet" (and `versionCode = 1`). Which track is it on (internal / closed / production), and
-   how many real users? It decides how careful the channel and Room migrations must be. Plan assumes **live**.
-4. **Bug reports and guests** (A2). `AGENTS.md` says guests make no network calls, and `firestore.rules` only allows
-   `users/{uid}/sync/{doc}` for a signed-in user. Should a guest's bug report (a) go by email only, with Firestore
-   only for signed-in users (recommended, keeps the guest promise), or (b) go to Firestore for everyone (needs
-   Firebase anonymous auth or an unauthenticated write rule, both new)?
-5. **"Don't delete NixUra!" screen** (A2). What should it offer? Recommended: a calm screen that says what is lost
-   (streaks, history; nothing for a guest without backup), offers "Export / back up first" (only if it exists; it does
-   not today), "Tell me what's wrong" (opens the bug screen) and "Uninstall anyway" (opens the system app page).
-   No guilt wording. Confirm, or describe what you want.
-6. **Your phone**: `adb` saw no device in this session. `docs/DEVELOPMENT_STATUS.md` records the owner's phone as
-   OPPO CPH2531 on **Android 15** (ColorOS 15). Still correct?
+1. **Prayer times come from the phone's location, asked only when the user adds a prayer habit.** The app has no
+   prayer-time calculation today (prayer is detected by name only, `domain/recognition/PrayerHabitDetector.kt`; the
+   card fills five stars Fajr…Isha from today's count). Phase C adds it:
+   - `ACCESS_COARSE_LOCATION` only (city-level is enough for prayer times), requested **in the prayer-habit flow**
+     (when a habit with theme PRAYER is saved with reminders on), never at launch, never for any other habit.
+     A one-line reason card comes before the system dialog.
+   - One reading of the location at that moment; the coordinates are stored **on the device only** (not synced, never
+     sent to any server or AI). Prayer times are computed offline from them.
+   - Calculation in pure Kotlin in `commonMain` (standard astronomical formulas, unit-tested against published
+     timetables, no new dependency); method: Egyptian General Authority by default, changeable later if asked.
+   - If the user denies location: the prayer habit still works, reminders for it stay off, and the reminders sheet
+     says why with a "Use my location" button that asks again. (Not a city picker: owner chose location only.)
+   - Location is not refreshed in the background. If the user travels, the reminders sheet offers "Update location"
+     (a user action, same permission). Play Data safety: location used on device only, not collected/shared.
+   - iOS: `CLLocationManager` "when in use", same rules, unverified on Windows.
+2. **Reminder settings are synced** (recommendation accepted): new Room table `habit_reminders` (Room v9, additive
+   migration) synced with the habit through Firestore; "pause all reminders" is per device, not synced.
+3. **The app is NOT released and has no users.** There is no existing user data or channel to protect yet: channels
+   and migrations can be designed cleanly. Still do a proper Room migration (AGENTS.md rule: no destructive
+   fallback), and from the first release on the "live app" ground rule applies in full. (`versionCode = 1`.)
+4. **Bug reports:** guests send by **email only** (keeps "guests make no network calls"); signed-in users send to
+   **email and Firestore**.
+5. **"Don't delete NixUra!" screen:** the draft is accepted (what you'd lose, "Tell me what's wrong" → bug screen,
+   "Uninstall anyway" → system app page), **plus funny, light guilt wording** (playful, never shaming, never hiding
+   the uninstall button). Examples in A2 below.
+6. **Test phone:** OPPO Reno 10 5G (CPH2531), **Android 15**, ColorOS 15 (confirmed).
 
 ---
 
@@ -177,10 +173,27 @@ All shared paths are under `shared/src/commonMain/kotlin/com/adhamelgendy/nixura
 - New routes: `Route.KeepNixUra`, `Route.ReportBug`, `Route.Help`; Coach reuses `Route.Coach`.
 - **Bug report**: a form (what happened, optional steps, optional screenshot later) → **both** an email intent to
   adhamelgendydev@gmail.com (subject + body prefilled with app version, device model, Android version, language;
-  no account id) **and** a Firestore write (see Q4 for guests). Firestore needs a new collection (e.g.
+  no account id) **and**, for signed-in users only, a Firestore write (guests: email only, decision 4). Firestore
+  needs a new collection (e.g.
   `bugReports/{autoId}`, create-only, size-limited fields) in `firestore.rules`, tested with
   `tools/firestore-rules-test`, deployed only with the owner's OK. Device info comes through an `expect/actual`
   `DeviceInfo` (iOS side too).
+- **Keep NixUra ("Don't delete")**: what you'd lose (live streaks, history; for a guest: everything, no backup),
+  "Tell me what's wrong" (→ bug screen), "Uninstall anyway" (→ system app-details page, always visible, same size as
+  the other buttons). Tone: funny, light guilt, never shaming. Draft copy (owner reviews in A2):
+
+  | English | Arabic |
+  |---|---|
+  | **Wait… are you breaking up with me?** 🥺 | **لحظة… هل تنفصل عني؟** 🥺 |
+  | Your 12-day streak just asked if it did something wrong. | سلسلة الـ١٢ يوماً تسأل إن كانت أخطأت في شيء. |
+  | The water glasses are already crying. Literally. That's 8 glasses of tears. 💧 | أكواب الماء تبكي الآن. حرفياً. هذه ٨ أكواب من الدموع. 💧 |
+  | Tell me what went wrong. I can change. (I'm an app. I really can, with an update.) | قل لي ما الذي حدث. يمكنني أن أتغير. (أنا تطبيق، أستطيع فعلاً، بتحديث.) |
+  | Button: **Tell me what's wrong** | زر: **أخبرني ما المشكلة** |
+  | Button: **Uninstall anyway** · small line under it: "No hard feelings. Mostly." | زر: **احذفه على أي حال** · سطر صغير: «لا ضغينة. تقريباً.» |
+
+  The streak and glass numbers come from the user's real data (largest active quit streak, today's water goal);
+  when there is none, a generic line is used ("Your future streaks are already sad about this."). Arabic counts via
+  `ArabicPlurals`.
 - **Help**: an offline FAQ (logging, widgets, reminders, sync, language, deleting data) with a "Still stuck?" link
   to the bug screen. Text in `Strings` + `ArabicStrings`.
 - Report a shortcut use with `ShortcutManagerCompat.reportShortcutUsed` (helps launcher ranking). iOS: Home-screen
@@ -197,8 +210,9 @@ All shared paths are under `shared/src/commonMain/kotlin/com/adhamelgendy/nixura
 | `nixura_coach` (new) | Coach / المدرب | LOW | daily check-in, coach notes |
 | `nixura_app` (new) | App & account / التطبيق والحساب | LOW | sync problems, account, updates |
 
-- Why keep `nixura_reminders` for events: existing users may have customised it (sound, off); it already carries
-  their event reminders. Renaming a channel is allowed, changing its importance is not (only the user can).
+- Why keep `nixura_reminders` for events: it already carries event reminders and costs nothing to keep (no users
+  yet, decision 3, but the owner's test phones have it). Renaming a channel is allowed, changing its importance after
+  creation is not (only the user can). Freeze this channel list before the first release.
   Milestones and the check-in move to the new LOW channels. Prayer gets no separate channel in B; if Q1 leads to
   adhan-like sounds later, that would be its own channel then.
 - **Groups**: a channel group per area (`Habits`, `Events`, `Coach & app`) for the settings screen, and a
@@ -227,7 +241,7 @@ All shared paths are under `shared/src/commonMain/kotlin/com/adhamelgendy/nixura
 
 | Habit | Default | Timing | Cap/day | Skip rule |
 |---|---|---|---|---|
-| Prayer (theme PRAYER, daily 5) | ON (suggested at create, see Q1) | ~10 min after each prayer's start time (adhan time) for the **next unlogged** prayer, never before it starts | 5 | skip if that prayer (count ≥ index) is already logged; one notification that updates, never stacks |
+| Prayer (theme PRAYER, daily 5) | ON (suggested at create; needs location, decision 1) | ~10 min after each prayer's start time (adhan time) for the **next unlogged** prayer, never before it starts | 5 | skip if that prayer (count ≥ index) is already logged; one notification that updates, never stacks |
 | Water (theme WATER) | ON (suggested) | every 2 h inside a waking window (default 09:00–21:00), only while behind pace (`expected = goal × elapsed share of the window`) | 6 | skip if on or ahead of pace or the goal is met; stop for the day when met |
 | Other daily counters (walk, reading, workout…) | OFF, offered | one time the user picks (default: the habit's usual logging hour if we learn it later; for now 19:00) | 1 (2 if target > 1, second at +3 h) | skip if today's target is met |
 | Weekly habits | OFF, offered | one time on the remaining days, only when the week is still reachable | 1 | skip if today already done or the week's goal is met |
@@ -310,8 +324,9 @@ ActivityKit + Swift target). Recommendation and cost for each.
 | Reboot / update | Alarms are cleared. | Already re-armed by `BootReceiver`; C extends the stored plan with kind and habit id (backward-compatible decode). |
 | Time zone / clock / DST | `BootReceiver` does not listen to `TIMEZONE_CHANGED`/`TIME_SET`; prayer times and water windows are local-time. | Re-plan on those broadcasts; plan with local dates (`DayCalculator`), never "+24 h"; tests across DST days (Egypt observes DST since 2023). |
 | ColorOS background killing | Oppo kills background processes and may block auto-start; receivers still run but cold; alarms may be delayed in deep sleep. | Inexact alarms are fine for nudges; never rely on a long-running service; make the cold path fast (A1); Help screen explains "Allow auto-launch / no battery restriction" for NixUra with ColorOS steps. |
-| Existing users' channel | `nixura_reminders` exists on every install with the user's settings. | Keep the ID; only rename it. New channels start fresh. Never delete it. Test the update path: install the current Play build, set the channel to silent, update, check it stays silent. |
-| Existing data | Reminder settings need storage. | Additive Room v9 migration (new table only), migration test + `room_migration_check.py`; Firestore payload stays backward-compatible (old apps ignore unknown fields). |
+| Channels before release | Not released, no users (decision 3), so no user has customised `nixura_reminders` yet. | Keeping its ID for events costs nothing and avoids an orphan channel on the owner's test phones. The final channel set must be fixed **before the first release**: after that, IDs are permanent. |
+| Data | Reminder settings need storage. | Additive Room v9 migration (new table only), migration test + `room_migration_check.py`; Firestore payload stays backward-compatible. |
+| Location privacy | Prayer times need the phone's location. | Coarse only, asked only when a prayer habit is added, read once, kept on device, never synced or sent (decision 1); Play Data-safety form and privacy policy (`docs/legal`) updated in C. |
 | Notification actions after process death | Action receiver starts cold like the widget. | Same `goAsync` pattern, same fast path as A1, idempotent per tap. |
 | Spam / trust | Too many nudges = users block the whole app. | Daily cap, quiet hours, skip-when-done, pause, auto-quiet offer, LOW importance for non-time-critical types. |
 | iOS parity | No iOS notifications exist; nothing can be verified on Windows. | Implement both sides per phase, mark iOS unverified, list Mac commands in each phase doc. |
@@ -325,7 +340,7 @@ A1 (widgets) ─────────────┐
                           ├──> C (reminders + actions) ──> D (research)
 B (notification base) ────┘
 A2 (shortcuts + screens)  independent, but shares files with B and C
-Q1 (prayer times) ──> C (prayer part only; water/others can ship first)
+Prayer times from location ──> C (prayer part only; water/others can ship first)
 ```
 
 - A1, A2 and B can run in parallel **only** if they keep to their own files and append-only markers in shared files.
@@ -347,7 +362,7 @@ Q1 (prayer times) ──> C (prayer part only; water/others can ship first)
 | `widgets/WidgetReceivers.kt`, `WidgetUpdater.kt` | yes | | | call `syncOnce()` after a write |
 | `domain/usecase/WidgetUseCases.kt` (+ DAO) | single-count path | | | reused by actions |
 | `data/local/*` (Room) | DAO query only | | | Room v9 |
-| `firestore.rules` | | bug reports | | reminder sync (if Q2 = synced) |
+| `firestore.rules` | | bug reports (signed-in) | | reminder sync |
 | `GoodHabitsScreen.kt`, `HomeScreen.kt` (sheet actions) | | | | reminders row |
 | Docs (`README.md`, `docs/*.md`, `AGENTS.md`) | each phase updates them per the AGENTS.md table |
 
@@ -368,6 +383,10 @@ Merge order if run in parallel: A1 → B → A2 → C, each rebased on master be
 - Git: branch from the latest main, open a PR with `gh` that covers what changed, why, limitations and verification steps. Before merging, rebase on main and re-run build + tests. Squash-merge ONLY after checks are green AND I confirm the device test. Then delete the branch.
 - At the end, write `docs/ux-upgrade/<phase>.md` and update the status table in PLAN.md, so the next session needs nothing from this conversation.
 - If a product decision isn't covered here or in PLAN.md, ask me. Don't guess.
+
+**About "the app is live":** the owner confirmed on 2026-11-21 that NixUra is not released yet and has no users.
+Until the first release, protecting existing users' data and channels is not a constraint (still no destructive
+Room fallback). From the first release on, the rule applies in full.
 
 **Repo notes that sit next to these rules** (from `AGENTS.md`, no `CLAUDE.md` exists; `AGENTS.md` plays that role):
 "main" is `master`. "Resources" for UI text means `Strings.kt` + `ArabicStrings.kt` (shared with iOS); only text
