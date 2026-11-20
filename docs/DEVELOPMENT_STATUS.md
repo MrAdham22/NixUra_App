@@ -77,6 +77,12 @@ Branch `claude/nixora-bugs-features-plan-9a1220`. Plan and ownership for all fou
 - **Verified:** `:shared:testAndroidHostTest` passes (475 tests, new `CoachActionRulesTest` and `ApplyCoachActionsUseCaseTest`) and `:androidApp:assembleDebug` builds.
 - **Not verified:** nothing was seen running. The only device attached was an emulator (not the owner's phone) that stopped answering adb, so `installDebug` could not finish. The owner checks on the phone: record a voice note, tap the pencil, change the count, the date and the category, keep, add, and see the corrected habit and event saved. iOS not compiled (no Mac; the code is all in `commonMain`).
 
+## README screenshots refresh (2026-11-20, branch `claude/nixura-readme-update-2f4f49`)
+
+- **Fixed:** the README gallery was broken: a changelog note had been pasted into the table's header row, so captions sat beside the pictures. The gallery is now HTML tables with each caption directly under its image, grouped into sections (day at a glance, progress and countdowns, coach and widgets, adding things, light theme, getting started) plus a new **Arabic (العربية)** section with six right-to-left screens.
+- **New screenshots and hero banner** from the current `master` UI: `:androidApp:assembleDebug` built and installed on the Pixel 9 emulator; demo data written into the emulator's database (4 quit habits, 4 good habits with 45 days of history, 4 events). The widgets picture is still the one from 2026-11-14 (not retaken). `prayer.png` was removed (the prayer card shows on the Build screenshot).
+- No app code changed.
+
 ## README, screenshots and official app icon (2026-11-14, branch `claude/nixura-repo-enhancement-3a1a93`)
 
 - **App icon:** the owner's artwork (broken purple chain, glowing gold "i") is now the official launcher icon. Android: adaptive icon (`mipmap-*/ic_launcher_foreground.png` at all five densities on `@color/ic_launcher_background` `#110721`), legacy `ic_launcher` / `ic_launcher_round` PNGs for Android 7, and `androidApp/src/main/ic_launcher-playstore.png` (512 px) for the Play listing. The template vectors `drawable-v24/ic_launcher_foreground.xml` and `drawable/ic_launcher_background.xml` were removed. iOS: `app-icon-1024.png` replaced (opaque, iOS rounds it). The in-app leaf brand mark was not changed.
