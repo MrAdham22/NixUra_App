@@ -8,7 +8,7 @@ read the text. Notifications stay useful, never spammy, and can be dismissed as 
 ## Owner decisions taken in this phase (2026-11-21)
 
 1. **Tapping an event reminder opens that event** (Events tab → the event's screen), as PLAN.md says. Before, every
-   notification opened Home. The text, timing and exact/inexact rules of event reminders did not change.
+   notification opened Home. The text of event reminders did not change (timing: see "Timing" below).
 2. **Streak milestones and the daily check-in move to their own quiet channels now** (Quit progress, Coach), as
    PLAN.md says. Before, they shared the events channel and made a sound.
 
@@ -92,6 +92,23 @@ prefix (`event:`, `milestone:`, `daily:`, `good:`), and alarms armed before the 
   off in system settings" with **Turn on in settings** opens that channel's own screen.
 - No per-type toggles in the app: they would duplicate Android's channel screen.
 
+### Timing (fixed after the first device test, 2026-11-21)
+- **What went wrong:** on the Oppo an event's "at time" reminder came ~2-3 min late, the check-in ~2 min late, and a
+  "10 min before" reminder never came.
+- **Cause 1, ColorOS widens alarms.** `dumpsys alarm` showed NixUra's `setExactAndAllowWhileIdle` alarms accepted as
+  exact (`exactAllowReason=permission`) yet given a delivery window of ~75% of the time left (3 m 14 s for an alarm
+  4 min ahead; inexact ones get 1 h). Only alarm clocks keep `window=0`.
+  **Fix:** every reminder is armed with `AlarmManager.setAlarmClock` when exact alarms are allowed (the "show" intent
+  opens what the reminder is about). Side effect: Android counts them as alarms (status-bar alarm icon, "next alarm"
+  on the clock / lock screen). Without the exact-alarm permission they stay inexact (up to 1 h late).
+- **Cause 2, a re-plan cancelled late alarms.** Each re-plan (every app start and data change) cancelled all alarms and
+  re-armed only future ones, so an alarm whose time had passed but that the OS had not delivered yet was lost.
+  **Fix:** the planner keeps items up to `NotificationArming.LATE_GRACE_MILLIS` (1 h) late; the pure
+  `NotificationArming.select` (tested) re-arms such an item only if it is still planned, was armed before at that
+  same time, and was not delivered (`ReminderReceiver` records deliveries via `markDelivered`). It then fires at once.
+- **Measured after the fix** (Oppo, screen off): check-in due 19:38:00 posted 19:38:00.04; event reminders due
+  19:39:00 and 19:40:00 posted at .02 s.
+
 ### Re-arming
 `BootReceiver` also listens to `TIMEZONE_CHANGED` and `TIME_SET` and **re-plans** (`NotificationSyncService.syncOnce`),
 since stored times were computed for the old local time. Reboot / update / exact-alarm changes still re-arm the stored plan.
@@ -110,13 +127,15 @@ since stored times were computed for the old local time. Reboot / update / exact
 4. **Ask for permission** with `rememberNotificationAsk().ensure(reason)` when reminders are switched on for a habit
    (add an EN + AR reason string). Show the channel state with `ReminderCapabilities.channelEnabled(GOOD_HABIT)` and
    link with `openChannelSettings(GOOD_HABIT)`.
-5. **Inexact alarms only** for good habits: the scheduler already uses exact alarms for `EVENT` alone.
+5. **Timing is handled for you:** the scheduler arms every kind as an alarm clock (exact) when allowed, and
+   `NotificationArming` keeps late-but-undelivered ones. Keep one key per habit moment so the delivery record matches.
 6. After a log from a widget or an action while the UI is closed, call `NotificationSyncService.syncOnce()`.
 
 ## Verification
 
 - `:androidApp:assembleDebug`: OK.
-- `:shared:testAndroidHostTest`: **673 tests, 0 failures** (new: `NotificationChannelsTest` 9, `NotificationAccessPolicyTest` 7).
+- `:shared:testAndroidHostTest`: **685 tests, 0 failures** (new: `NotificationChannelsTest` 9, `NotificationAccessPolicyTest` 7,
+  `NotificationArmingTest` 9, 3 planner tests for late items).
 - Installed on the owner's Oppo Reno 10 5G (Android 15). `adb shell dumpsys notification` there shows the five
   channels with the right importance and groups, and `nixura_reminders` renamed to "Events".
 - **Not verified yet:** what each notification looks like on the phone, taps, the permission flow (the Oppo already

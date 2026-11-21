@@ -41,12 +41,15 @@ class NotificationPlanner(
         if (!settings.notificationsEnabled) return emptyList()
         val arabic = language.update(settings.languageCode) == AppLocales.ARABIC
         val planned = mutableListOf<PlannedNotification>()
+        // Items up to this late are still planned, so a re-plan does not cancel an alarm the OS has not delivered yet
+        // (NotificationArming decides whether it is armed again).
+        val lateLimit = nowMillis - NotificationArming.LATE_GRACE_MILLIS
 
         // 1. Event reminders
         for (event in events) {
             for (lead in event.reminderLeadMillis.distinct()) {
                 val trigger = event.targetAtEpochMillis - lead
-                if (trigger <= nowMillis) continue
+                if (trigger <= lateLimit) continue
                 planned += PlannedNotification(
                     key = "${NotificationKind.EVENT_PREFIX}${event.id}:$lead",
                     triggerAtEpochMillis = trigger,
@@ -67,7 +70,8 @@ class NotificationPlanner(
         for (item in badHabits) {
             val start = item.tracking.activePeriodStartEpochMillis ?: continue
             val elapsed = (nowMillis - start).coerceAtLeast(0).milliseconds
-            MILESTONES.filter { it > elapsed }.take(2).forEach { threshold ->
+            val justPassed = MILESTONES.filter { it <= elapsed && start + it.inWholeMilliseconds > lateLimit }
+            (justPassed + MILESTONES.filter { it > elapsed }.take(2)).forEach { threshold ->
                 val note = coach.milestoneNote(item.habit.name, threshold)
                 planned += PlannedNotification(
                     key = "${NotificationKind.MILESTONE_PREFIX}${item.habit.id}:${threshold.inWholeDays}:$start",
@@ -82,11 +86,11 @@ class NotificationPlanner(
 
         // 3. Daily check-in for the next two weeks
         val today = dayCalculator.dayIndexOf(nowMillis)
-        for (offset in 0 until DAILY_HORIZON_DAYS) {
+        for (offset in -1 until DAILY_HORIZON_DAYS) { // -1: yesterday's check-in may still be due just after midnight
             val day = today + offset
             val trigger = dayCalculator.startOfDayMillis(day) + settings.dailyCheckInMinutes * 60_000L
-            if (trigger <= nowMillis) continue
-            val ahead = (trigger - nowMillis).milliseconds
+            if (trigger <= lateLimit) continue
+            val ahead = (trigger - nowMillis).coerceAtLeast(0).milliseconds
             val snapshot = CoachSnapshot(
                 userName = userName,
                 badHabits = badHabits.mapNotNull { item ->

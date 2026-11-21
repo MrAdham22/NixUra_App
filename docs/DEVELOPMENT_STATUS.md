@@ -17,8 +17,19 @@ Branch `feature/notification-foundation`, details, the phase C API guide and the
   re-plan on time-zone / clock change.
 - **Verified:** `:androidApp:assembleDebug`; `:shared:testAndroidHostTest` 673 tests, 0 failures; installed on the
   owner's Oppo, `dumpsys notification` shows the 5 channels with the right importance and groups.
-- **Not verified:** the look, taps, permission flow and grouping on the phone (owner device test pending); iOS
-  (still a no-op scheduler, unchanged).
+- **Timing fix (same day, after the owner's device test):** reminders came late (event "at time" ~2-3 min, check-in
+  ~2 min) and one (10 min before) never came. Causes found on the Oppo with `dumpsys alarm`: (1) ColorOS widens even
+  `setExactAndAllowWhileIdle` alarms to ~75% of the time left (inexact ones to 1 h); (2) every re-plan (app start,
+  any data change) cancelled an alarm whose time had passed but that the OS had not delivered yet. Fix: all reminders
+  are armed with `setAlarmClock` when exact alarms are allowed (zero window on ColorOS); the planner keeps items up to
+  1 h late and the new pure `NotificationArming` re-arms only an undelivered alarm armed before at that same time
+  (`ReminderReceiver` records deliveries). Measured on the Oppo, screen off: check-in 19:38:00.04, event 1-min
+  reminder 19:39:00.02, event at time 19:40:00.02. Side effect: Android shows NixUra reminders as the "next alarm"
+  (status-bar alarm icon, clock/lock screen). `:shared:testAndroidHostTest` 685 tests, 0 failures (new
+  `NotificationArmingTest` 9, 3 planner tests).
+- **Not verified:** taps, permission flow and grouping on the phone (owner device test pending); a fresh install on
+  Android 14+ may start with exact alarms denied (then reminders are inexact again; the event form shows a notice);
+  iOS (still a no-op scheduler, unchanged).
 
 ## UX upgrade A2 (2026-11-21): launcher App Shortcuts
 

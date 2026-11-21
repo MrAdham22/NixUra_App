@@ -3,6 +3,7 @@ package com.adhamelgendy.nixura.notifications
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import com.adhamelgendy.nixura.domain.notification.NotificationKind
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
 
@@ -19,6 +20,11 @@ class ReminderReceiver : BroadcastReceiver() {
         // Alarms armed before phase B carry no kind: the key prefix says what they are.
         val kind = intent.getStringExtra(EXTRA_KIND)?.let { name -> NotificationKind.entries.firstOrNull { it.name == name } }
             ?: NotificationKind.fromKey(key)
+        val triggerAt = intent.getLongExtra(EXTRA_AT, 0L)
+        if (triggerAt > 0L) {
+            AndroidNotificationScheduler(context).markDelivered(key, triggerAt)
+            Log.i(TAG, "deliver $key late=${System.currentTimeMillis() - triggerAt}ms")
+        }
         NixNotifications.post(
             context,
             NixNotificationRequest(
@@ -40,5 +46,9 @@ class ReminderReceiver : BroadcastReceiver() {
         const val EXTRA_KIND = "kind"
         const val EXTRA_TARGET = "target"
         const val EXTRA_THEME = "theme"
+
+        /** The planned time, so the delivery can be recorded (see [AndroidNotificationScheduler.markDelivered]). */
+        const val EXTRA_AT = "at"
+        private const val TAG = "NixUraReminder"
     }
 }

@@ -48,6 +48,31 @@ class NotificationPlannerTest {
     }
 
     @Test
+    fun remindersALittleLateStayPlannedSoAReplanDoesNotCancelThem() {
+        // The event started 5 minutes ago: its "at event time" reminder (5 min late) and its 10-min reminder
+        // (15 min late) are still planned; NotificationArming re-arms them only if the OS has not delivered them.
+        val event = Event(1, "Trip", EventCategory.TRAVEL, now - 5 * 60_000L, listOf(0L, 600_000L, 2.hours.inWholeMilliseconds), now)
+        val plan = planner.plan(now, AppSettings(), "A", emptyList(), emptyList(), listOf(event)).filter { it.key.startsWith("event:") }
+        assertEquals(setOf("event:1:0", "event:1:600000"), plan.map { it.key }.toSet()) // the 2-hour one is too late
+    }
+
+    @Test
+    fun aMilestoneJustReachedStaysPlannedNextToTheNextTwo() {
+        val started = 1.days.inWholeMilliseconds + 10 * 60_000L // the 1-day milestone was 10 minutes ago
+        val plan = planner.plan(now, AppSettings(), "A", listOf(bad(started)), emptyList(), emptyList())
+            .filter { it.key.startsWith("milestone:") }
+        assertEquals(listOf(1L, 3L, 7L), plan.map { it.key.split(":")[2].toLong() })
+    }
+
+    @Test
+    fun aCheckInJustPassedStaysPlanned() {
+        val plan = planner.plan(now, AppSettings(dailyCheckInMinutes = 9 * 60 + 50), "A", emptyList(), emptyList(), emptyList())
+        val daily = plan.filter { it.key.startsWith("daily:") }
+        assertEquals(NotificationPlanner.DAILY_HORIZON_DAYS, daily.size) // today 09:50 (10 min ago) + 13 more days
+        assertEquals(now - 10 * 60_000L, daily.first().triggerAtEpochMillis)
+    }
+
+    @Test
     fun nextTwoMilestonesAreScheduledAtStartPlusThreshold() {
         val started = 2.days.inWholeMilliseconds + 1
         val plan = planner.plan(now, AppSettings(), "A", listOf(bad(started)), emptyList(), emptyList())
