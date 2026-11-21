@@ -27,7 +27,7 @@ Reminders exist to support the habit, not to raise engagement: no guilt, no dark
 | A2 | Done, merged 2026-11-21 (PR #17) | `feature/app-shortcuts` (deleted) | `docs/ux-upgrade/A2-app-shortcuts.md` | yes: owner device test passed 2026-11-21 |
 | B | Done, merged 2026-11-21 (PR #19) | `feature/notification-foundation` (deleted) | `docs/ux-upgrade/B-notifications.md` | yes: adb timing measurements + owner device test passed 2026-11-21 |
 | C | Done, merged 2026-11-22 (PR #21) | `feature/habit-reminders` (deleted) | `docs/ux-upgrade/C-reminders.md` | installed and `dumpsys alarm` checked; owner approved the merge 2026-11-22 |
-| D | Not started | | `docs/ux-upgrade/D.md` | n/a (research) |
+| D | Research written 2026-11-22; PR waiting for owner review (needs an owner decision on a "Today" notification) | `docs/lock-screen-research` | `docs/ux-upgrade/D-lock-screen.md` | n/a (research; Oppo checks listed in the doc) |
 
 Update this table at the end of every phase.
 
@@ -307,7 +307,7 @@ owner in the C session.
   user looks at it), but the reminders sheet can say "You also have this on your Home screen".
 
 ### D: lock screen (research only)
-Questions to answer in `D.md`, no code: Android lock-screen widgets (Android 16+ on some devices, not ColorOS 15),
+Answered in `D-lock-screen.md` (2026-11-22). Questions to answer, no code: Android lock-screen widgets (Android 16+ on some devices, not ColorOS 15),
 ongoing notification with progress (water) vs Play policy for ongoing notifications, `setPublicVersion` / visibility
 for private habits (quit habits must be hidden on the lock screen by default), Live Updates / progress-style
 notifications on Android 16, ColorOS "Fluid Cloud" support for third-party apps, iOS Live Activities (needs

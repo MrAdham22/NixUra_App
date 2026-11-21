@@ -2,6 +2,16 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## UX upgrade D (2026-11-22): lock-screen research (no code)
+
+Branch `docs/lock-screen-research`, `docs/ux-upgrade/D-lock-screen.md`. Compares lock-screen visibility, an ongoing
+"Today" notification, Live Updates / ProgressStyle (Android 16), MetricStyle (Android 17), lock-screen widgets, QS
+tiles and iOS options for NixUra's SDK range (24-37) and the Oppo (Android 15; the Reno 10 5G is not on OPPO's
+ColorOS 16 list). **Found:** notifications never set a lock-screen visibility, so on a phone set to show all content
+the quit-milestone text shows on the lock screen (not yet checked on the Oppo). **Recommended, not built:** per-type
+lock-screen privacy (quit hidden by default), an opt-in ongoing "Today" notification (needs the owner's OK: PLAN.md
+ruled out summary notifications), `keyguard` on the good-habit and events widgets. Waiting for the owner.
+
 ## UX upgrade C (2026-11-21): good-habit reminders and notification buttons
 
 Branch `feature/habit-reminders`, details, scheduling choices, ColorOS notes and the Oppo test steps in
