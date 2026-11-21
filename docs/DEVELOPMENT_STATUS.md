@@ -2,6 +2,28 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## UX upgrade C (2026-11-21): good-habit reminders and notification buttons
+
+Branch `feature/habit-reminders`, details, scheduling choices, ColorOS notes and the Oppo test steps in
+`docs/ux-upgrade/C-reminders.md`.
+
+- **Built:** `domain/reminder` (pure planner for prayer / water / daily / weekly habits with quiet hours, daily cap 8,
+  30-min gap, snooze, pause; offline prayer times from a city-level location kept on the phone; button handler that
+  logs through the widget's use cases once per press); Room v9 (`MIGRATION_8_9`, reminder columns on `good_habits`,
+  synced); buttons "+1 glass" / "Prayed ✓" / "Done ✓" / Snooze handled without opening the app, notification updated
+  in place with the native progress bar and removed after 4 s; re-plan after widget and button logs, each delivered
+  reminder, app update, time-zone/clock change, plus a 12-hourly WorkManager safety net; the long-press sheet row
+  "Reminders", the create-form line for prayer/water, Settings "Pause habit reminders"; EN + AR copy in `Strings`.
+- **Owner decision:** prayer times are calculated here from the phone's location (the brief assumed they existed).
+- **Verified:** `:androidApp:assembleDebug`; `:shared:testAndroidHostTest` 730 tests, 0 failures (new
+  `PrayerTimeCalculatorTest` 6 against published timetables, `HabitReminderPlannerTest` 20, `HabitReminderRulesTest` 7,
+  `ReminderActionHandlerTest` 7, `ArabicCoverageTest` extended); `tools/room_migration_check.py` OK for v9 (the 2 old
+  `$REMOVED_BY_IMPORT_SQL` script errors remain). Installed on the Oppo over the phase B build (v8 → v9 ran, no crash);
+  `dumpsys alarm` shows flexible reminders with a 10-minute window.
+- **Merged 2026-11-22 (PR #21, squash) on the owner's go-ahead**, after re-running `:shared:testAndroidHostTest`
+  (730 tests, 0 failures) and a clean `:androidApp:assembleDebug` on the branch (already on top of `master`).
+- **Not recorded as verified:** the individual device test steps in C-reminders.md (no per-step results were reported). iOS: not implemented (no iOS scheduler yet, location stub). Not built: PLAN.md's "auto-quiet" offer.
+
 ## UX upgrade B (2026-11-21): notification foundation
 
 Branch `feature/notification-foundation`, details, the phase C API guide and the Oppo test steps in

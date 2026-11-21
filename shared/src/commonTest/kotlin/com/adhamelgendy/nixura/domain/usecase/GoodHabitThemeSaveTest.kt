@@ -28,6 +28,7 @@ class GoodHabitThemeSaveTest {
             last = Saved(dailyTarget, weeklyTarget, theme, water)
         }
         override suspend fun archive(id: Long) = Unit
+        override suspend fun setReminder(id: Long, reminder: com.adhamelgendy.nixura.domain.reminder.HabitReminderSettings) = error("unused")
         override suspend fun setCount(id: Long, dayIndex: Long, count: Int) = Unit
     }
 

@@ -18,6 +18,7 @@ import com.adhamelgendy.nixura.domain.notification.NixChannel
 import com.adhamelgendy.nixura.domain.notification.NixChannelGroup
 import com.adhamelgendy.nixura.domain.notification.NotificationChannels
 import com.adhamelgendy.nixura.domain.notification.NotificationKind
+import com.adhamelgendy.nixura.domain.notification.NotificationProgress
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
 
 /**
@@ -26,7 +27,8 @@ import com.adhamelgendy.nixura.domain.theme.HabitTheme
  * @param key stable identity: posting the same key again **replaces** the notification (e.g. one water reminder per
  *   habit, never a stack). Use the planner's key.
  * @param targetId the event or habit a tap opens (see [NotificationDeepLink]).
- * @param actions buttons (phase C: "+1 glass", "Prayed"). Each one's PendingIntent must target a non-exported receiver.
+ * @param actions buttons (phase C: "+1 glass", "Prayed"). Each one's PendingIntent must target a non-exported receiver
+ *   (see [ReminderActions]).
  */
 data class NixNotificationRequest(
     val key: String,
@@ -36,6 +38,14 @@ data class NixNotificationRequest(
     val targetId: Long? = null,
     val theme: HabitTheme? = null,
     val actions: List<NotificationCompat.Action> = emptyList(),
+    /** Native progress bar ("3 / 8 glasses"); `null` = none. Never an animation: the app shows that on tap. */
+    val progress: NotificationProgress? = null,
+    /** True for an update of a notification already showing (after a button): no second sound or vibration. */
+    val onlyAlertOnce: Boolean = false,
+    /** Removes the notification by itself after this long (the "5 of 8 glasses" confirmation); `null` = stays. */
+    val timeoutAfterMillis: Long? = null,
+    /** Told when the user swipes it away; `null` = nothing to tell. */
+    val deleteIntent: PendingIntent? = null,
 )
 
 /**
@@ -87,7 +97,13 @@ object NixNotifications {
             .setGroup(group)
             .setAutoCancel(true)
             .setContentIntent(NotificationDeepLink.contentIntent(context, request.key, request.kind, request.targetId))
-            .apply { request.actions.forEach(::addAction) }
+            .setOnlyAlertOnce(request.onlyAlertOnce)
+            .apply {
+                request.actions.forEach(::addAction)
+                request.progress?.let { setProgress(it.max.coerceAtLeast(1), it.current.coerceIn(0, it.max.coerceAtLeast(1)), false) }
+                request.timeoutAfterMillis?.let(::setTimeoutAfter)
+                request.deleteIntent?.let(::setDeleteIntent)
+            }
             .build()
         val manager = NotificationManagerCompat.from(context)
         try {

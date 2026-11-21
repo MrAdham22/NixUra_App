@@ -40,6 +40,9 @@ class WidgetActionReceiver : BroadcastReceiver() {
                 // Always re-render: on success to show the new count, on failure (e.g. habit deleted) to show the safe state.
                 try {
                     WidgetUpdater.redrawAfterTap(app, widgetId, habitId)
+                    // Phase C: a glass logged here cancels or re-words the pending water reminder, even with the app closed.
+                    runCatching { KoinPlatform.getKoin().get<com.adhamelgendy.nixura.domain.notification.NotificationSyncService>().syncOnce() }
+                        .exceptionOrNull()?.let { if (it is CancellationException) throw it else Log.w("NixUraWidgets", "re-plan failed", it) }
                 } finally {
                     pending.finish()
                 }

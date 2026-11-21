@@ -6,11 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import com.adhamelgendy.nixura.domain.notification.NotificationArming
-import com.adhamelgendy.nixura.domain.notification.NotificationKind
+import com.adhamelgendy.nixura.domain.notification.NotificationTiming
 import com.adhamelgendy.nixura.domain.notification.NotificationScheduler
 import com.adhamelgendy.nixura.domain.notification.PlannedNotification
-import com.adhamelgendy.nixura.domain.theme.HabitTheme
-import org.json.JSONArray
 import org.json.JSONObject
 
 /**
@@ -25,6 +23,9 @@ import org.json.JSONObject
  * - a farther one is an ordinary exact alarm, plus one hand-off wake-up for the soonest of them, which re-arms the
  *   plan so that reminder becomes an alarm clock in time (the icon shows only 15-75 min before a reminder).
  * Without the permission everything is inexact (Android may deliver it up to an hour late).
+ *
+ * Phase C: [NotificationTiming.FLEXIBLE] items (water, a habit's chosen time) skip all of that: `setWindow` with a
+ * 10-minute window, no exact-alarm permission and no alarm icon (see docs/ux-upgrade/C-reminders.md).
  *
  * Every notification has a stable key (`event:<id>:<lead>`, `milestone:...`, `daily:<day>`). The key is both the
  * alarm's identity (data URI + request code) and the stored plan entry, so [replaceAll] cancels exactly the alarms
@@ -41,12 +42,12 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
     private val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     override fun replaceAll(planned: List<PlannedNotification>) = synchronized(LOCK) {
-        val stored = decode(prefs.getString(KEY_PLAN, null))
+        val stored = PlannedNotificationJson.decodeAll(prefs.getString(KEY_PLAN, null))
         stored.forEach { alarmManager.cancel(pendingIntent(it)) }
         val now = System.currentTimeMillis()
         val armed = NotificationArming.select(planned, stored, delivered(now), now)
         arm(armed, now)
-        prefs.edit().putString(KEY_PLAN, encode(armed)).apply()
+        prefs.edit().putString(KEY_PLAN, PlannedNotificationJson.encodeAll(armed)).apply()
     }
 
     /**
@@ -54,7 +55,7 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
      * off), and at the hand-off wake-up, which turns the reminders now close by into alarm clocks.
      */
     fun restoreFromStorage() = synchronized(LOCK) {
-        val stored = decode(prefs.getString(KEY_PLAN, null))
+        val stored = PlannedNotificationJson.decodeAll(prefs.getString(KEY_PLAN, null))
         val now = System.currentTimeMillis()
         arm(NotificationArming.select(stored, stored, delivered(now), now), now)
     }
@@ -64,7 +65,8 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
         val exact = AndroidNotificationPermission.canScheduleExactAlarms(appContext)
         items.forEach { schedule(it, now, exact) }
         val wake = handOffIntent()
-        val handOffAt = if (exact) NotificationArming.handOffAt(items, now) else null
+        // Only on-time items need the hand-off; flexible ones are never alarm clocks.
+        val handOffAt = if (exact) NotificationArming.handOffAt(items.filter { it.timing == NotificationTiming.ON_TIME }, now) else null
         if (handOffAt == null) {
             alarmManager.cancel(wake)
         } else {
@@ -105,6 +107,10 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
         val at = item.triggerAtEpochMillis
         try {
             when {
+                // A nudge (water, a habit's chosen time): a short window, no exact-alarm permission, no alarm icon.
+                // Android may hold it while the phone sleeps deeply (Doze) and deliver it when the screen wakes.
+                item.timing == NotificationTiming.FLEXIBLE ->
+                    alarmManager.setWindow(AlarmManager.RTC_WAKEUP, at, FLEXIBLE_WINDOW_MILLIS, operation)
                 !exact -> alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, operation)
                 NotificationArming.armAsAlarmClock(at, now) -> {
                     val show = NotificationDeepLink.contentIntent(appContext, item.key, item.kind, item.targetId)
@@ -133,6 +139,8 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
             .putExtra(ReminderReceiver.EXTRA_KEY, item.key)
             .putExtra(ReminderReceiver.EXTRA_KIND, item.kind.name)
             .putExtra(ReminderReceiver.EXTRA_AT, item.triggerAtEpochMillis)
+            // The whole item (post key, buttons, progress, timing), so the receiver shows exactly what was planned.
+            .putExtra(ReminderReceiver.EXTRA_PLAN, PlannedNotificationJson.encode(item).toString())
             .apply {
                 item.targetId?.let { putExtra(ReminderReceiver.EXTRA_TARGET, it) }
                 item.theme?.let { putExtra(ReminderReceiver.EXTRA_THEME, it.name) }
@@ -140,52 +148,14 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
         return PendingIntent.getBroadcast(appContext, item.key.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
-    private fun encode(items: List<PlannedNotification>): String {
-        val array = JSONArray()
-        items.forEach {
-            array.put(
-                JSONObject()
-                    .put("key", it.key)
-                    .put("at", it.triggerAtEpochMillis)
-                    .put("title", it.title)
-                    .put("body", it.body)
-                    .put("kind", it.kind.name)
-                    .apply {
-                        it.targetId?.let { id -> put("target", id) }
-                        it.theme?.let { theme -> put("theme", theme.name) }
-                    },
-            )
-        }
-        return array.toString()
-    }
-
-    /** Reads the stored plan. Entries written before phase B have no kind / target / theme: the key prefix decides the kind. */
-    private fun decode(raw: String?): List<PlannedNotification> {
-        if (raw.isNullOrEmpty()) return emptyList()
-        return runCatching {
-            val array = JSONArray(raw)
-            (0 until array.length()).map {
-                val o = array.getJSONObject(it)
-                val key = o.getString("key")
-                PlannedNotification(
-                    key = key,
-                    triggerAtEpochMillis = o.getLong("at"),
-                    title = o.getString("title"),
-                    body = o.getString("body"),
-                    kind = o.optString("kind").let { name -> NotificationKind.entries.firstOrNull { k -> k.name == name } }
-                        ?: NotificationKind.fromKey(key),
-                    targetId = if (o.has("target")) o.getLong("target") else null,
-                    theme = o.optString("theme").let { name -> HabitTheme.entries.firstOrNull { t -> t.name == name } },
-                )
-            }
-        }.getOrDefault(emptyList())
-    }
-
     private companion object {
         const val PREFS = "nixura_notifications"
         const val KEY_PLAN = "plan"
         const val KEY_DELIVERED = "delivered"
         const val HAND_OFF_REQUEST = 0x4E58 // fixed: one hand-off wake-up for the whole plan
+
+        /** Delivery window of a flexible reminder (Android 12+ allows no less than 10 minutes). */
+        const val FLEXIBLE_WINDOW_MILLIS = 10 * 60_000L
 
         /** One lock for every instance: the receivers create their own scheduler next to the app's Koin one. */
         val LOCK = Any()

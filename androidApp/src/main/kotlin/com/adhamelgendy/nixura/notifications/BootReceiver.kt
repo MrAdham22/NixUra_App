@@ -21,10 +21,11 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
             Intent.ACTION_BOOT_COMPLETED,
-            Intent.ACTION_MY_PACKAGE_REPLACED,
             ACTION_EXACT_ALARM_PERMISSION_CHANGED,
             -> AndroidNotificationScheduler(context).restoreFromStorage()
 
+            // An app update may change how reminders are planned (phase C added good-habit reminders): plan afresh.
+            Intent.ACTION_MY_PACKAGE_REPLACED,
             Intent.ACTION_TIMEZONE_CHANGED,
             Intent.ACTION_TIME_CHANGED,
             -> replan(context)

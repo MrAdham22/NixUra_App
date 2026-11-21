@@ -16,6 +16,7 @@ NixUra helps you quit bad habits, build good habits and count down to events. Th
 | Device sessions: device name (e.g. "Pixel 8"), platform, created / last-used time | You sign in | Show and revoke your signed-in devices; keep you signed in securely | Our server |
 | Security log: event type (sign-in, password change, suspicious token reuse) with your account id | Account activity | Detect abuse and protect your account | Our server |
 | Habits (including their names and colours), relapse dates, good-habit logs, events, reminders, theme, language and notification settings | You use the app | The core features; with an account, the same data on all your devices | On your device. With an account also on our server. Without an account it never leaves your device |
+| Approximate location (city level, rounded to about 1 km) | Only if you tap "Use my location" for a prayer habit's reminders | Work out prayer times on your phone | On your device only. Never synced, never sent to our server or anyone else. Delete it by turning off the location permission and erasing app data |
 | Coach chat messages | You use the coach | The offline coach | On your device only |
 | Authentication tokens | You sign in | Keep you signed in | Encrypted on your device (Android Keystore / iOS Keychain) |
 

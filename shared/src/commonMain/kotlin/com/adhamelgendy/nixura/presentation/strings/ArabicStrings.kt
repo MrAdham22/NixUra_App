@@ -5,6 +5,8 @@ import com.adhamelgendy.nixura.domain.locale.PluralCategory
 import com.adhamelgendy.nixura.domain.model.EventCategory
 import com.adhamelgendy.nixura.domain.money.CostUnit
 import com.adhamelgendy.nixura.domain.notification.ReminderError
+import com.adhamelgendy.nixura.domain.reminder.Prayer
+import com.adhamelgendy.nixura.domain.theme.HabitTheme
 
 /**
  * Arabic text: friendly Modern Standard Arabic, written for the meaning rather than word for word. Counts go through
@@ -1042,6 +1044,107 @@ object ArabicStrings : Strings() {
     override val notificationTypes: String = "أنواع الإشعارات"
     override val notificationTypesHint: String = "الصوت أو الصمت للمناسبات والعادات والمدرب والتطبيق، من إعدادات النظام."
     // ---- end of UX B ----
+
+    // ---- UX C ----
+    private fun prayersMarked(n: Long) = pl(n, "صلاة واحدة", "صلاتين", "صلوات", "صلاة", "صلاة")
+    private fun snoozeLength(minutes: Int): String =
+        if (minutes % 60 == 0) nHours((minutes / 60).toLong()).let { if (minutes == 60) "ساعة" else it } else nMinutes(minutes.toLong())
+    override fun prayerName(prayer: Prayer): String = when (prayer) {
+        Prayer.FAJR -> "الفجر"
+        Prayer.DHUHR -> "الظهر"
+        Prayer.ASR -> "العصر"
+        Prayer.MAGHRIB -> "المغرب"
+        Prayer.ISHA -> "العشاء"
+    }
+    override fun reminderPrayerTitle(prayer: Prayer): String = when (prayer) {
+        Prayer.FAJR -> "🌙 دخل وقت الفجر"
+        Prayer.DHUHR -> "☀️ حان وقت الظهر"
+        Prayer.ASR -> "🌤️ حان وقت العصر"
+        Prayer.MAGHRIB -> "🌅 حان وقت المغرب"
+        Prayer.ISHA -> "🌌 حان وقت العشاء"
+    }
+    override fun reminderPrayerBody(prayer: Prayer, marked: Int): String =
+        if (marked <= 0) "سجّلها هنا بعد أن تصلّي."
+        else "سجّلت ${prayersMarked(marked.toLong())} اليوم. سجّل ${prayerName(prayer)} هنا بعد أن تصلّي."
+    override fun reminderWaterTitle(variant: Int): String = when (variant.mod(3)) {
+        0 -> "💧 وقت كوب ماء"
+        1 -> "💧 استراحة ماء"
+        else -> "💧 كوب ماء؟"
+    }
+    override fun reminderWaterBody(count: Int, target: Int): String = "$count من $target حتى الآن اليوم. اضغط $LRM+1 عندما تشربه."
+    override fun reminderWaterLastBody(count: Int, target: Int): String = "كوب واحد بعد ويكتمل ماء اليوم."
+    override fun reminderHabitTitle(theme: HabitTheme, name: String, variant: Int): String = when (theme) {
+        HabitTheme.READING -> "📖 وقت القراءة"
+        HabitTheme.WALK -> "🚶 مشية قصيرة؟"
+        HabitTheme.WORKOUT -> "💪 وقت الحركة"
+        HabitTheme.SLEEP -> "🌙 وقت الاستعداد للنوم"
+        HabitTheme.WATER -> "💧 $name"
+        HabitTheme.PRAYER -> "🕌 $name"
+        HabitTheme.DEFAULT -> if (variant.mod(2) == 0) "🌱 حان وقت $name" else "🌱 $name؟"
+    }
+    override fun reminderDailyBody(name: String, count: Int, target: Int): String =
+        if (target <= 1) "$name: مرة واحدة اليوم تكفي." else "$name: $count من $target اليوم."
+    override fun reminderWeeklyBody(name: String, doneDays: Int, goalDays: Int): String =
+        "$name: $doneDays من ${nDays(goalDays.toLong())} هذا الأسبوع."
+    override fun reminderActionGlass(servingMl: Int): String = "$LRM+1 كوب · $servingMl مل"
+    override fun reminderActionPrayed(prayer: Prayer): String = "صلّيت ✓"
+    override fun reminderActionDone(): String = "تمّ ✓"
+    override fun reminderActionSnooze(minutes: Int): String = "أجّل ${snoozeLength(minutes)}"
+    override fun reminderLoggedWater(count: Int, target: Int): String = "شربت $count من $target اليوم"
+    override fun reminderWaterGoalDone(): String = "💧 اكتمل ماء اليوم. أحسنت."
+    override fun reminderLoggedPrayer(prayer: Prayer, marked: Int): String = "سُجّلت صلاة ${prayerName(prayer)} · $marked من 5 اليوم"
+    override fun reminderLoggedHabit(name: String, count: Int, target: Int): String =
+        if (count >= target) "$name: اكتمل اليوم ✓" else "$name: $count من $target اليوم"
+    override fun reminderSnoozed(minutes: Int): String = "حسنًا، سأذكّرك بعد ${snoozeLength(minutes)}."
+
+    override fun reminderSheetRow(status: String): String = "التذكيرات: $status"
+    override val reminderStatusOff: String = "متوقفة"
+    override val reminderStatusWater: String = "مفعّلة · كل ساعتين"
+    override val reminderStatusPrayer: String = "مفعّلة · في أوقات الصلاة"
+    override fun reminderStatusAt(time: String): String = "مفعّلة · $time"
+    override val reminderStatusNeedsLocation: String = "تحتاج إلى موقعك"
+    override fun reminderStatusPausedUntil(date: String): String = "متوقفة مؤقتًا حتى $date"
+    override val reminderSwitch: String = "ذكّرني"
+    override val reminderExplainPrayer: String =
+        "بعد دخول وقت كل صلاة بنحو 10 دقائق، للصلاة التي لم تسجّلها بعد. الأوقات تُحسب على هاتفك من موقعك."
+    override val reminderExplainWater: String =
+        "كل ساعتين بين الوقتين أدناه، فقط عندما تكون متأخرًا عن هدف اليوم. تتوقف عندما يكتمل ماء اليوم."
+    override val reminderExplainDaily: String =
+        "في الوقت أدناه مرة في اليوم (وتذكير ثانٍ بعد 3 ساعات إن كان هدفك أكثر من مرة). لا يصل إذا اكتمل هدف اليوم."
+    override val reminderExplainWeekly: String =
+        "في الوقت أدناه، في الأيام التي ما زال فيها هدف الأسبوع ممكنًا. لا يصل في يوم أنجزتها فيه."
+    override fun reminderQuietNote(from: String, until: String): String = "وقت الهدوء: لا شيء بين $from و$until (عدا الفجر)."
+    override val reminderFrom: String = "من"
+    override val reminderUntil: String = "إلى"
+    override val reminderTime: String = "الوقت"
+    override val reminderTimeIsQuiet: String = "هذا الوقت ضمن وقت الهدوء، فلن يصل تذكير فيه."
+    override val reminderPauseToday: String = "إيقاف لليوم"
+    override val reminderPauseWeek: String = "إيقاف لأسبوع"
+    override val reminderResume: String = "استئناف التذكيرات"
+    override val reminderChannelOff: String = "تذكيرات العادات متوقفة من إعدادات النظام."
+    override val habitReminderNotificationsOff: String = "إشعارات NixUra محظورة، لذا لن تصلك التذكيرات."
+    override val notificationAskHabitReason: String =
+        "حتى يذكّرك NixUra بهذه العادة في الوقت المناسب. يمكنك إيقافها من هنا متى شئت."
+    override val reminderFormLine: String = "التذكيرات مفعّلة، غيّرها متى شئت"
+    override val reminderFormHintPrayer: String = "بعد كل وقت صلاة بنحو 10 دقائق."
+    override val reminderFormHintWater: String = "كل ساعتين من 9:00 إلى 21:00، فقط عندما تكون متأخرًا."
+    override val reminderAllowNotifications: String = "اسمح بالإشعارات"
+
+    override val locationTitle: String = "أوقات الصلاة تحتاج إلى موقعك"
+    override val locationBody: String =
+        "يُقرأ موقعك على مستوى المدينة مرة واحدة ويبقى على هذا الهاتف: لا يُزامَن ولا يُرسَل إلى أي مكان. بدونه تبقى تذكيرات الصلاة متوقفة."
+    override val locationUse: String = "استخدم موقعي"
+    override val locationUpdate: String = "حدّث الموقع"
+    override val locationSaved: String = "أوقات الصلاة تتبع موقعك المحفوظ."
+    override val locationBlocked: String = "الموقع متوقف لـ NixUra، فلا يمكن حساب أوقات الصلاة."
+    override val locationFailed: String = "تعذّر تحديد موقعك. فعّل الموقع في هاتفك ثم حاول مجددًا."
+    override val locationReading: String = "جارٍ تحديد موقعك…"
+
+    override val pauseRemindersTitle: String = "إيقاف تذكيرات العادات مؤقتًا"
+    override val pauseRemindersHint: String = "على هذا الهاتف فقط. تذكيرات المناسبات والمحطات والرسالة اليومية تستمر."
+    override val pauseForToday: String = "لليوم"
+    override val pauseForWeek: String = "لأسبوع"
+    // ---- end of UX C ----
 
     /** The noun after a written number: 3–10 أكواب, 11–99 كوبًا, otherwise كوب. */
     private fun cupNoun(n: Int): String = when (ArabicPlurals.category(n.toLong())) {

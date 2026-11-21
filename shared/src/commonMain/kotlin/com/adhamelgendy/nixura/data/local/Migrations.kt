@@ -157,3 +157,17 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
         connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `water_unit` TEXT")
     }
 }
+
+/**
+ * v8 → v9, additive only: a good habit's reminder choices (phase C). Existing rows get null = "not chosen", so the
+ * defaults for their type apply (prayer and water on, everything else off).
+ */
+val MIGRATION_8_9 = object : Migration(8, 9) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `reminder_enabled` INTEGER")
+        connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `reminder_time` INTEGER")
+        connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `reminder_window_start` INTEGER")
+        connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `reminder_window_end` INTEGER")
+        connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `reminder_paused_until` INTEGER")
+    }
+}

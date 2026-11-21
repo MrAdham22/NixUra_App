@@ -112,7 +112,23 @@ fun appModule() = module {
 
     // Notifications
     single { NotificationPlanner(get(), get(), get()) }
-    single { NotificationSyncService(get(), get(), get(), get(), get(), get(), get(), get()) }
+    // Good-habit reminders (phase C): the words come from the app's Strings / ArabicStrings.
+    single<com.adhamelgendy.nixura.domain.reminder.ReminderDeviceRepository> {
+        com.adhamelgendy.nixura.data.repository.ReminderDeviceRepositoryImpl(get())
+    }
+    single {
+        com.adhamelgendy.nixura.domain.reminder.HabitReminderCopyProvider { language ->
+            com.adhamelgendy.nixura.presentation.strings.stringsFor(language)
+        }
+    }
+    single { com.adhamelgendy.nixura.domain.reminder.HabitReminderPlanner(get(), get()) }
+    single {
+        NotificationSyncService(
+            get(), get(), get(), get(), get(), get(), get(), get(),
+            reminderPlanner = get(),
+            reminderDevice = get(),
+        )
+    }
 
     // Use cases — bad habits
     factory { ObserveActiveHabitTrackingUseCase(get()) }
@@ -166,6 +182,7 @@ fun appModule() = module {
             topics = get(),
         )
     }
+    viewModel { com.adhamelgendy.nixura.presentation.goodhabits.reminders.HabitRemindersViewModel(get(), get(), get(), get(), get()) }
     viewModel { GoodHabitsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { EventsViewModel(get(), get(), get(), get(), get()) }
     viewModel { CoachViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }

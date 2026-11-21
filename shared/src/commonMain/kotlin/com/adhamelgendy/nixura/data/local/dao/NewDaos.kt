@@ -51,6 +51,13 @@ interface GoodHabitDao {
     @Query("UPDATE good_habits SET theme = :theme WHERE id = :id AND theme IS NULL")
     suspend fun setDetectedTheme(id: Long, theme: String)
 
+    /** Reminder choices are a user edit like any other: marked for sync. */
+    @Query(
+        "UPDATE good_habits SET reminder_enabled = :enabled, reminder_time = :time, reminder_window_start = :windowStart, " +
+            "reminder_window_end = :windowEnd, reminder_paused_until = :pausedUntil, updated_at = :updatedAt, dirty = 1 WHERE id = :id",
+    )
+    suspend fun updateReminder(id: Long, enabled: Boolean?, time: Int?, windowStart: Int?, windowEnd: Int?, pausedUntil: Long?, updatedAt: Long)
+
     @Query("UPDATE good_habits SET archived_at = :archivedAt, updated_at = :archivedAt, dirty = 1 WHERE id = :id")
     suspend fun archive(id: Long, archivedAt: Long)
 

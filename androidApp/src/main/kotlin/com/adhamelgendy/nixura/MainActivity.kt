@@ -33,6 +33,14 @@ class MainActivity : ComponentActivity() {
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* result handled by next isGranted() check */ }
 
+    // Prayer-time location (phase C): the callback waiting for the system dialog's answer.
+    private var locationResult: ((Boolean) -> Unit)? = null
+    private val locationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            locationResult?.invoke(granted)
+            locationResult = null
+        }
+
     private val appNavigator: Navigator by inject()
     private val googleAuthorizer: AndroidGoogleAuthorizer by inject()
     private val socialSignIn: AndroidSocialSignIn by inject()
@@ -75,6 +83,13 @@ class MainActivity : ComponentActivity() {
 
         (application as NixUraApplication).voiceRecorder.launcher = {
             microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+        (application as NixUraApplication).deviceLocation.launcher = { onResult ->
+            locationResult = onResult
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+        (application as NixUraApplication).deviceLocation.rationale = {
+            shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_COARSE_LOCATION)
         }
         (application as NixUraApplication).notificationPermission.launcher = {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)

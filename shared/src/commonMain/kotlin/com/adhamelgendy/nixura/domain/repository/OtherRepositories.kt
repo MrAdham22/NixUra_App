@@ -40,6 +40,9 @@ interface GoodHabitRepository {
     )
     suspend fun archive(id: Long)
 
+    /** Saves a habit's reminder choices (synced with the habit). */
+    suspend fun setReminder(id: Long, reminder: com.adhamelgendy.nixura.domain.reminder.HabitReminderSettings)
+
     /** Sets the number of times the habit was done on [dayIndex]. `count <= 0` clears that day. */
     suspend fun setCount(id: Long, dayIndex: Long, count: Int)
 

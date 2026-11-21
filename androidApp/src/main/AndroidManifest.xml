@@ -10,6 +10,10 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Optional: lets event reminders fire at the exact minute. Without it they use inexact alarms. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Prayer times only (phase C): city-level, read once when the user asks from a prayer habit's reminders. Kept on
+         the phone, never synced or sent. No fine location, no background location. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-feature android:name="android.hardware.location" android:required="false" />
 
     <application
         android:name=".NixUraApplication"
@@ -80,6 +84,11 @@
 
         <receiver
             android:name=".notifications.ReminderReceiver"
+            android:exported="false" />
+
+        <!-- Reminder buttons ("+1 glass", "Prayed", Snooze): only our own PendingIntents target this. -->
+        <receiver
+            android:name=".notifications.ReminderActionReceiver"
             android:exported="false" />
 
         <receiver

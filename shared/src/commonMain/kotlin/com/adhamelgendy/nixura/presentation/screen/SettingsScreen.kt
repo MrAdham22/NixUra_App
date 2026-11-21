@@ -204,6 +204,9 @@ fun SettingsScreen(navigator: Navigator) {
                     Spacer(Modifier.width(8.dp))
                     NixButton(s.reminderOpenSettings, capabilities::openNotificationSettings, style = NixButtonStyle.Secondary)
                 }
+                // Phase C: pause every good-habit reminder on this phone (each habit's own switch is in its sheet).
+                Spacer(Modifier.height(14.dp))
+                PauseHabitRemindersRow()
             }
         }
 
@@ -313,6 +316,40 @@ private fun ThemeOption(label: String, icon: NixIcon, selected: Boolean, modifie
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically)) {
             NixIconView(icon, if (selected) c.accent else c.textSecondary, size = 26.dp)
             Text(label, style = NixType.SmallStrong, color = if (selected) c.textPrimary else c.textSecondary)
+        }
+    }
+}
+
+/** Settings → Notifications: "Pause habit reminders" for today or a week, on this phone only (PLAN.md decision 2). */
+@Composable
+private fun PauseHabitRemindersRow() {
+    val s = LocalStrings.current
+    val c = Nix.colors
+    val vm: com.adhamelgendy.nixura.presentation.goodhabits.reminders.HabitRemindersViewModel = koinViewModel()
+    val state by vm.uiState.collectAsStateWithLifecycle()
+    val clock = koinInject<com.adhamelgendy.nixura.domain.clock.Clock>()
+    val days = koinInject<com.adhamelgendy.nixura.domain.time.DayCalculator>()
+    val pausedUntil = state.device.pausedUntilEpochMillis?.takeIf { it > clock.nowEpochMillis() }
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        NixIconView(NixIcon.Bell, if (pausedUntil != null) c.accentWarm else c.accent, size = 22.dp)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(s.pauseRemindersTitle, style = NixType.BodyStrong, color = c.textPrimary)
+            Text(
+                pausedUntil?.let { s.reminderStatusPausedUntil(com.adhamelgendy.nixura.presentation.util.formatDate(days.dayIndexOf(it), s, includeWeekday = true, includeYear = false)) }
+                    ?: s.pauseRemindersHint,
+                style = NixType.Small,
+                color = if (pausedUntil != null) c.accentWarm else c.textMuted,
+            )
+        }
+    }
+    Spacer(Modifier.height(10.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (pausedUntil != null) {
+            NixButton(s.reminderResume, vm::resumeAll, style = NixButtonStyle.Secondary)
+        } else {
+            NixChip(s.pauseForToday, selected = false, onClick = { vm.pauseAllFor(1) })
+            NixChip(s.pauseForWeek, selected = false, onClick = { vm.pauseAllFor(7) })
         }
     }
 }
