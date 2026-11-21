@@ -14,6 +14,11 @@ import com.adhamelgendy.nixura.domain.theme.HabitTheme
 class ReminderReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == ACTION_HAND_OFF) {
+            // The soonest far reminder is now close: re-arm so it becomes an exact alarm clock (and set the next wake-up).
+            AndroidNotificationScheduler(context).restoreFromStorage()
+            return
+        }
         val title = intent.getStringExtra(EXTRA_TITLE) ?: return
         // Pre-phase-B alarms have no key extra, but their data URI is nixura://reminder/<key>.
         val key = intent.getStringExtra(EXTRA_KEY) ?: intent.data?.lastPathSegment ?: return
@@ -40,6 +45,9 @@ class ReminderReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION = "com.adhamelgendy.nixura.REMINDER"
+
+        /** The hybrid-timing wake-up (see [AndroidNotificationScheduler]). Posts nothing. */
+        const val ACTION_HAND_OFF = "com.adhamelgendy.nixura.REMINDER_HAND_OFF"
         const val EXTRA_TITLE = "title"
         const val EXTRA_BODY = "body"
         const val EXTRA_KEY = "key"

@@ -17,13 +17,14 @@ import org.json.JSONObject
  * Schedules planned notifications with [AlarmManager] and keeps the plan in SharedPreferences so
  * [BootReceiver] can restore it after a reboot or app update.
  *
- * Every notification has a user-visible time (event reminder, daily check-in at the chosen time, milestone), so all
- * of them are armed with [AlarmManager.setAlarmClock] when the user allows exact alarms (Android 12+ permission).
- * Measured on ColorOS 15 (Oppo Reno 10, 2026-11-21): `setExactAndAllowWhileIdle` was accepted as exact but the OS
- * still widened its delivery window to ~75% of the time left (a reminder 4 min ahead came ~3 min late); alarm clocks
- * keep a zero window and arrived within 50 ms. Side effect: Android treats them as alarms (status-bar alarm icon,
- * "next alarm" in the clock/lock screen; tapping it opens what the reminder is about). Without the permission they
- * fall back to inexact alarms, which Android may deliver up to an hour late.
+ * Timing is hybrid when the user allows exact alarms (Android 12+ permission). Measured on ColorOS 15 (Oppo Reno 10,
+ * 2026-11-21): `setExactAndAllowWhileIdle` was accepted as exact but the OS still widened its delivery window to ~75%
+ * of the time left, capped at 1 h (a reminder 4 min ahead came ~3 min late); only alarm clocks keep a zero window
+ * (they arrived within 50 ms), but they show the status-bar alarm icon and "next alarm". So:
+ * - a reminder at most [NotificationArming.ALARM_CLOCK_LEAD_MILLIS] away is an alarm clock (exact everywhere);
+ * - a farther one is an ordinary exact alarm, plus one hand-off wake-up for the soonest of them, which re-arms the
+ *   plan so that reminder becomes an alarm clock in time (the icon shows only 15-75 min before a reminder).
+ * Without the permission everything is inexact (Android may deliver it up to an hour late).
  *
  * Every notification has a stable key (`event:<id>:<lead>`, `milestone:...`, `daily:<day>`). The key is both the
  * alarm's identity (data URI + request code) and the stored plan entry, so [replaceAll] cancels exactly the alarms
@@ -44,15 +45,35 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
         stored.forEach { alarmManager.cancel(pendingIntent(it)) }
         val now = System.currentTimeMillis()
         val armed = NotificationArming.select(planned, stored, delivered(now), now)
-        armed.forEach(::schedule)
+        arm(armed, now)
         prefs.edit().putString(KEY_PLAN, encode(armed)).apply()
     }
 
-    /** Re-arms the stored plan (after reboot or app update), including reminders that became due while the phone was off. */
+    /**
+     * Re-arms the stored plan: after reboot or app update (including reminders that became due while the phone was
+     * off), and at the hand-off wake-up, which turns the reminders now close by into alarm clocks.
+     */
     fun restoreFromStorage() = synchronized(LOCK) {
         val stored = decode(prefs.getString(KEY_PLAN, null))
         val now = System.currentTimeMillis()
-        NotificationArming.select(stored, stored, delivered(now), now).forEach(::schedule)
+        arm(NotificationArming.select(stored, stored, delivered(now), now), now)
+    }
+
+    /** Arms every item and the one hand-off wake-up (see [NotificationArming.ALARM_CLOCK_LEAD_MILLIS]). */
+    private fun arm(items: List<PlannedNotification>, now: Long) {
+        val exact = AndroidNotificationPermission.canScheduleExactAlarms(appContext)
+        items.forEach { schedule(it, now, exact) }
+        val wake = handOffIntent()
+        val handOffAt = if (exact) NotificationArming.handOffAt(items, now) else null
+        if (handOffAt == null) {
+            alarmManager.cancel(wake)
+        } else {
+            try {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, handOffAt, wake)
+            } catch (failure: SecurityException) {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, handOffAt, wake)
+            }
+        }
     }
 
     /** Records that [key] (armed for [triggerAt]) was shown, so a later re-plan never arms it again. */
@@ -75,19 +96,32 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
         }.getOrDefault(emptyMap())
     }
 
-    private fun schedule(item: PlannedNotification) {
+    /**
+     * Arming the same [pendingIntent] again replaces its alarm, so the hand-off turns an ordinary exact alarm into an
+     * alarm clock for the same reminder (never two alarms for one reminder).
+     */
+    private fun schedule(item: PlannedNotification, now: Long, exact: Boolean) {
         val operation = pendingIntent(item)
+        val at = item.triggerAtEpochMillis
         try {
-            if (AndroidNotificationPermission.canScheduleExactAlarms(appContext)) {
-                val show = NotificationDeepLink.contentIntent(appContext, item.key, item.kind, item.targetId)
-                alarmManager.setAlarmClock(AlarmManager.AlarmClockInfo(item.triggerAtEpochMillis, show), operation)
-            } else {
-                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, item.triggerAtEpochMillis, operation)
+            when {
+                !exact -> alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, operation)
+                NotificationArming.armAsAlarmClock(at, now) -> {
+                    val show = NotificationDeepLink.contentIntent(appContext, item.key, item.kind, item.targetId)
+                    alarmManager.setAlarmClock(AlarmManager.AlarmClockInfo(at, show), operation)
+                }
+                // Far ahead: on time on most phones; on ColorOS possibly late, but the hand-off re-arms it in time.
+                else -> alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, operation)
             }
         } catch (failure: SecurityException) {
             // The exact-alarm permission was revoked between the check and the call: degrade to an inexact alarm.
             alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, item.triggerAtEpochMillis, operation)
         }
+    }
+
+    private fun handOffIntent(): PendingIntent {
+        val intent = Intent(appContext, ReminderReceiver::class.java).setAction(ReminderReceiver.ACTION_HAND_OFF)
+        return PendingIntent.getBroadcast(appContext, HAND_OFF_REQUEST, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
     private fun pendingIntent(item: PlannedNotification): PendingIntent {
@@ -151,6 +185,7 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
         const val PREFS = "nixura_notifications"
         const val KEY_PLAN = "plan"
         const val KEY_DELIVERED = "delivered"
+        const val HAND_OFF_REQUEST = 0x4E58 // fixed: one hand-off wake-up for the whole plan
 
         /** One lock for every instance: the receivers create their own scheduler next to the app's Koin one. */
         val LOCK = Any()

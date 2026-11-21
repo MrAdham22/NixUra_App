@@ -65,6 +65,42 @@ class NotificationArmingTest {
     }
 
     @Test
+    fun onlyRemindersCloseByBecomeAlarmClocks() {
+        val lead = NotificationArming.ALARM_CLOCK_LEAD_MILLIS
+        assertTrue(NotificationArming.armAsAlarmClock(now + lead, now))
+        assertTrue(NotificationArming.armAsAlarmClock(now - minute, now)) // due: fire at once, exactly
+        assertTrue(!NotificationArming.armAsAlarmClock(now + lead + 1, now))
+    }
+
+    @Test
+    fun theWakeUpIsSetForTheSoonestFarReminder() {
+        val lead = NotificationArming.ALARM_CLOCK_LEAD_MILLIS
+        val armed = listOf(
+            item("event:1:0", now + 10 * minute), // already an alarm clock
+            item("daily:2", now + 300 * minute),
+            item("event:3:0", now + 200 * minute),
+        )
+        assertEquals(now + 200 * minute - lead, NotificationArming.handOffAt(armed, now))
+    }
+
+    @Test
+    fun noWakeUpWhenEverythingIsCloseOrNothingIsArmed() {
+        assertEquals(null, NotificationArming.handOffAt(listOf(item("event:1:0", now + 5 * minute)), now))
+        assertEquals(null, NotificationArming.handOffAt(emptyList(), now))
+    }
+
+    @Test
+    fun theWakeUpArrivesBeforeTheReminderEvenWhenTheOsWidensIt() {
+        // ColorOS widens an exact alarm to 75% of the time left, capped at 1 hour.
+        fun latestDelivery(armedAt: Long, at: Long) = at + minOf((at - armedAt) * 3 / 4, 60 * minute)
+        for (aheadMinutes in listOf(76L, 90L, 120L, 600L, 20_000L)) {
+            val reminder = now + aheadMinutes * minute
+            val wake = NotificationArming.handOffAt(listOf(item("e", reminder)), now)!!
+            assertTrue(latestDelivery(now, wake) < reminder, "reminder $aheadMinutes min ahead")
+        }
+    }
+
+    @Test
     fun theArmedCountIsCappedKeepingTheSoonest() {
         val planned = (1..80).map { item("daily:$it", now + it * minute) }
         val result = NotificationArming.select(planned, emptyList(), emptyMap(), now)

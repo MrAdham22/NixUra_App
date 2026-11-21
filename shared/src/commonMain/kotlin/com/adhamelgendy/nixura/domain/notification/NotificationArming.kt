@@ -48,6 +48,28 @@ object NotificationArming {
             .take(limit)
     }
 
+    /**
+     * Hybrid timing (Android). Some phones (ColorOS) deliver ordinary exact alarms up to ~75% of the time left late
+     * (capped at 1 h) and keep only alarm clocks exact, but an alarm clock shows the alarm icon and "next alarm".
+     * So a reminder is armed as an alarm clock only once it is at most this close; before that it is an ordinary
+     * exact alarm (on time on most phones, at worst an hour late), and one wake-up alarm at [handOffAt] re-arms it.
+     *
+     * Why 75 min: a wake-up armed far ahead for T - 75 min arrives by T - 15 min even with the 1 h widening, and one
+     * armed close by arrives within 75% of the time left, also before T. The icon then shows 15-75 min before a reminder.
+     */
+    const val ALARM_CLOCK_LEAD_MILLIS: Long = 75 * 60_000L
+
+    /** True when [triggerAt] is close enough to be armed as an alarm clock (or already due). */
+    fun armAsAlarmClock(triggerAt: Long, nowMillis: Long): Boolean = triggerAt - nowMillis <= ALARM_CLOCK_LEAD_MILLIS
+
+    /** When to wake up and hand the next far reminder over to an alarm clock, or `null` if none is far. */
+    fun handOffAt(armed: List<PlannedNotification>, nowMillis: Long): Long? =
+        armed.asSequence()
+            .map { it.triggerAtEpochMillis }
+            .filterNot { armAsAlarmClock(it, nowMillis) }
+            .minOrNull()
+            ?.minus(ALARM_CLOCK_LEAD_MILLIS)
+
     /** Delivery records older than this can be forgotten: [select] never re-arms anything that late. */
     fun keepDeliveredSince(nowMillis: Long): Long = nowMillis - 2 * LATE_GRACE_MILLIS
 }

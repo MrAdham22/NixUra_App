@@ -98,9 +98,17 @@ prefix (`event:`, `milestone:`, `daily:`, `good:`), and alarms armed before the 
 - **Cause 1, ColorOS widens alarms.** `dumpsys alarm` showed NixUra's `setExactAndAllowWhileIdle` alarms accepted as
   exact (`exactAllowReason=permission`) yet given a delivery window of ~75% of the time left (3 m 14 s for an alarm
   4 min ahead; inexact ones get 1 h). Only alarm clocks keep `window=0`.
-  **Fix:** every reminder is armed with `AlarmManager.setAlarmClock` when exact alarms are allowed (the "show" intent
-  opens what the reminder is about). Side effect: Android counts them as alarms (status-bar alarm icon, "next alarm"
-  on the clock / lock screen). Without the exact-alarm permission they stay inexact (up to 1 h late).
+  Alarm clocks show the status-bar alarm icon and "next alarm" on the clock / lock screen. `USE_EXACT_ALARM` was
+  tried and does not help (ColorOS still gave a 1 h window; Google Calendar is exempt by package, not permission).
+  **Fix, hybrid timing (owner decision 2026-11-21):** when exact alarms are allowed, a reminder at most
+  `NotificationArming.ALARM_CLOCK_LEAD_MILLIS` (75 min) away is armed with `AlarmManager.setAlarmClock` (the "show"
+  intent opens what the reminder is about). A farther one is an ordinary exact alarm (on time on most phones), plus
+  **one** hand-off wake-up (`ReminderReceiver.ACTION_HAND_OFF`) at 75 min before the soonest of them. The wake-up
+  re-arms the stored plan, so that reminder becomes an alarm clock in time; arming the same PendingIntent replaces
+  the old alarm, so a reminder never has two. Even with ColorOS's widening (75% of the time left, at most 1 h) the
+  wake-up arrives by 15 min before the reminder (tested in `NotificationArmingTest`). The alarm icon therefore shows
+  only 15-75 min before a reminder. If the wake-up is lost, the ordinary exact alarm still fires (at worst late).
+  Without the exact-alarm permission everything is inexact (up to 1 h late).
 - **Cause 2, a re-plan cancelled late alarms.** Each re-plan (every app start and data change) cancelled all alarms and
   re-armed only future ones, so an alarm whose time had passed but that the OS had not delivered yet was lost.
   **Fix:** the planner keeps items up to `NotificationArming.LATE_GRACE_MILLIS` (1 h) late; the pure
@@ -127,15 +135,17 @@ since stored times were computed for the old local time. Reboot / update / exact
 4. **Ask for permission** with `rememberNotificationAsk().ensure(reason)` when reminders are switched on for a habit
    (add an EN + AR reason string). Show the channel state with `ReminderCapabilities.channelEnabled(GOOD_HABIT)` and
    link with `openChannelSettings(GOOD_HABIT)`.
-5. **Timing is handled for you:** the scheduler arms every kind as an alarm clock (exact) when allowed, and
+5. **Timing is handled for you:** the scheduler applies the hybrid timing above to every kind, and
    `NotificationArming` keeps late-but-undelivered ones. Keep one key per habit moment so the delivery record matches.
 6. After a log from a widget or an action while the UI is closed, call `NotificationSyncService.syncOnce()`.
 
 ## Verification
 
 - `:androidApp:assembleDebug`: OK.
-- `:shared:testAndroidHostTest`: **685 tests, 0 failures** (new: `NotificationChannelsTest` 9, `NotificationAccessPolicyTest` 7,
-  `NotificationArmingTest` 9, 3 planner tests for late items).
+- `:shared:testAndroidHostTest`: **689 tests, 0 failures** (new: `NotificationChannelsTest` 9, `NotificationAccessPolicyTest` 7,
+  `NotificationArmingTest` 13, 3 planner tests for late items).
+- The 50 ms measurement above was taken with alarm clocks for every reminder. The hybrid hand-off on the phone is
+  **not measured yet** (the phone was disconnected); see DEVELOPMENT_STATUS.md.
 - Installed on the owner's Oppo Reno 10 5G (Android 15). `adb shell dumpsys notification` there shows the five
   channels with the right importance and groups, and `nixura_reminders` renamed to "Events".
 - **Not verified yet:** what each notification looks like on the phone, taps, the permission flow (the Oppo already

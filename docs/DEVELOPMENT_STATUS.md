@@ -24,9 +24,11 @@ Branch `feature/notification-foundation`, details, the phase C API guide and the
   are armed with `setAlarmClock` when exact alarms are allowed (zero window on ColorOS); the planner keeps items up to
   1 h late and the new pure `NotificationArming` re-arms only an undelivered alarm armed before at that same time
   (`ReminderReceiver` records deliveries). Measured on the Oppo, screen off: check-in 19:38:00.04, event 1-min
-  reminder 19:39:00.02, event at time 19:40:00.02. Side effect: Android shows NixUra reminders as the "next alarm"
-  (status-bar alarm icon, clock/lock screen). `:shared:testAndroidHostTest` 685 tests, 0 failures (new
-  `NotificationArmingTest` 9, 3 planner tests).
+  reminder 19:39:00.02, event at time 19:40:00.02. Alarm clocks show the alarm icon / "next alarm", so (owner
+  decision) timing is now **hybrid**: alarm clock only within 75 min of a reminder, an ordinary exact alarm before
+  that, and one hand-off wake-up that converts the soonest far reminder in time (icon only 15-75 min before a
+  reminder). `USE_EXACT_ALARM` was tried and does not stop ColorOS's widening. `:shared:testAndroidHostTest` 689
+  tests, 0 failures (new `NotificationArmingTest` 13, 3 planner tests). **Hand-off not yet measured on the phone.**
 - **Not verified:** taps, permission flow and grouping on the phone (owner device test pending); a fresh install on
   Android 14+ may start with exact alarms denied (then reminders are inexact again; the event form shows a notice);
   iOS (still a no-op scheduler, unchanged).
