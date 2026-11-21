@@ -26,7 +26,7 @@ Reminders exist to support the habit, not to raise engagement: no guilt, no dark
 | A1 | Done, merged 2026-11-21 (PR #16) | `perf/widget-tap-latency` (deleted) | `docs/ux-upgrade/A1-widget-latency.md` | yes: adb before/after + owner finger test passed 2026-11-21 |
 | A2 | Done, merged 2026-11-21 (PR #17) | `feature/app-shortcuts` (deleted) | `docs/ux-upgrade/A2-app-shortcuts.md` | yes: owner device test passed 2026-11-21 |
 | B | Done, merged 2026-11-21 (PR #19) | `feature/notification-foundation` (deleted) | `docs/ux-upgrade/B-notifications.md` | yes: adb timing measurements + owner device test passed 2026-11-21 |
-| C | Built 2026-11-21, PR open, waiting for the owner's device test | `feature/habit-reminders` | `docs/ux-upgrade/C-reminders.md` | no (installed; `dumpsys alarm` checked) |
+| C | Done, merged 2026-11-22 (PR #21) | `feature/habit-reminders` (deleted) | `docs/ux-upgrade/C-reminders.md` | installed and `dumpsys alarm` checked; owner approved the merge 2026-11-22 |
 | D | Not started | | `docs/ux-upgrade/D.md` | n/a (research) |
 
 Update this table at the end of every phase.

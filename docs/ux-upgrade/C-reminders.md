@@ -239,4 +239,5 @@ adb shell cmd deviceidle unforce
   latitudes that removes Isha; exempting all prayers is a one-line change if the owner prefers it.
 - Notification text uses Western digits (as phase B's notifications do); Settings → Digits is not applied to it yet.
 - The water window and the time are per habit and synced; quiet hours are fixed at 22:00-08:00 (no setting yet).
-- **Device steps above are not run yet** (only install + `dumpsys alarm` were checked). Waiting for the owner.
+- **Merged 2026-11-22** on the owner's go-ahead. Per-step device results were not reported, so the steps above stay the
+  checklist for the next device pass (install + `dumpsys alarm` were checked by the build session).
