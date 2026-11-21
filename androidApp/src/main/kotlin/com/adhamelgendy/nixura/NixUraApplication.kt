@@ -28,11 +28,20 @@ class NixUraApplication : Application() {
     val notificationPermission by lazy { AndroidNotificationPermission(this) }
     val voiceRecorder by lazy { com.adhamelgendy.nixura.voice.AndroidVoiceRecorder(this) }
 
+    /**
+     * Facebook Login is only used from the app screens, so its SDK starts with [MainActivity], not here: a widget tap,
+     * a reminder alarm or a boot also start this process and must not pay ~120 ms for it (phase A1).
+     * Facebook's own start-up provider is removed from the manifest so a build without a client token cannot crash.
+     */
+    fun ensureFacebookSdk() {
+        if (BuildConfig.FACEBOOK_ENABLED && !FacebookSdk.isInitialized()) {
+            runCatching { @Suppress("DEPRECATION") FacebookSdk.sdkInitialize(applicationContext) }
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         ReminderReceiver.ensureChannel(this)
-        // Facebook's own start-up provider is removed from the manifest so a build without a client token cannot crash.
-        if (BuildConfig.FACEBOOK_ENABLED) runCatching { @Suppress("DEPRECATION") FacebookSdk.sdkInitialize(applicationContext) }
         initAndroidKoin(this, AndroidNotificationScheduler(this), notificationPermission)
         // Backend address comes from BuildConfig (the shared module cannot see it). Cleartext only in debug builds.
         loadKoinModules(

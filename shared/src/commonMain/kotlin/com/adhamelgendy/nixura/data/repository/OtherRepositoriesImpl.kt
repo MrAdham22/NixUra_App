@@ -29,6 +29,7 @@ import com.adhamelgendy.nixura.domain.model.UserProfile
 import com.adhamelgendy.nixura.domain.repository.CoachRepository
 import com.adhamelgendy.nixura.domain.repository.DataMaintenanceRepository
 import com.adhamelgendy.nixura.domain.repository.EventRepository
+import com.adhamelgendy.nixura.domain.repository.GoodHabitDayCount
 import com.adhamelgendy.nixura.domain.repository.GoodHabitRepository
 import com.adhamelgendy.nixura.domain.repository.PreferencesRepository
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
@@ -108,6 +109,12 @@ class GoodHabitRepositoryImpl(
     )
 
     override suspend fun archive(id: Long) = goodHabitDao.archive(id, clock.nowEpochMillis())
+
+    override suspend fun dayCountOf(id: Long, dayIndex: Long): GoodHabitDayCount? {
+        val entity = goodHabitDao.activeById(id) ?: return null
+        val habit = entity.toDomain(entity.storedTheme() ?: themes.themeFor(entity.name))
+        return GoodHabitDayCount(habit, logDao.countOn(id, dayIndex) ?: 0)
+    }
 
     override suspend fun setCount(id: Long, dayIndex: Long, count: Int) {
         val now = clock.nowEpochMillis()

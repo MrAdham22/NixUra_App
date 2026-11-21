@@ -56,6 +56,10 @@ interface GoodHabitDao {
 
     @Query("SELECT sync_id FROM good_habits WHERE id = :id LIMIT 1")
     suspend fun syncIdOf(id: Long): String?
+
+    /** The same rows as [observeActive], for one id (primary-key lookup). */
+    @Query("SELECT * FROM good_habits WHERE id = :id AND archived_at IS NULL AND deleted_at IS NULL LIMIT 1")
+    suspend fun activeById(id: Long): GoodHabitEntity?
 }
 
 @Dao
@@ -65,6 +69,10 @@ interface GoodHabitLogDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(log: GoodHabitLogEntity)
+
+    /** Count of one habit on one day (unique index on good_habit_id + day_index); `null` = nothing logged. */
+    @Query("SELECT count FROM good_habit_logs WHERE good_habit_id = :goodHabitId AND day_index = :dayIndex AND deleted_at IS NULL LIMIT 1")
+    suspend fun countOn(goodHabitId: Long, dayIndex: Long): Int?
 
     /** Clearing a day keeps a marked row, so the clear also reaches other devices. */
     @Query("UPDATE good_habit_logs SET count = 0, deleted_at = :at, updated_at = :at, dirty = 1 WHERE good_habit_id = :goodHabitId AND day_index = :dayIndex")

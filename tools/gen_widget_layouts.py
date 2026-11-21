@@ -172,7 +172,8 @@ def circle_btn(id,size,icon,border,ms=0,icon_size=None):
     if border: kids+=img(id+'_bd','widget_circle_border','match_parent','match_parent',' android:scaleType="fitXY"')+'\n'
     isz=icon_size or int(size*0.5)
     kids+=img(id+'_icon','ic_w_'+icon,'%ddp'%isz,'%ddp'%isz,'',m(gravity='center'))
-    return fl(id,'%ddp'%size,'%ddp'%size,kids,'\n        android:clickable="true"\n        android:focusable="true"',margin=(m(marginStart=ms) if ms else ''))
+    return fl(id,'%ddp'%size,'%ddp'%size,kids,'\n        android:clickable="true"\n        android:focusable="true"
+        android:foreground="@drawable/widget_btn_ripple"',margin=(m(marginStart=ms) if ms else ''))  # ripple: res/drawable/widget_btn_ripple.xml (A1)
 
 def progress(mt=12,h=6):
     return fl('w_prog','match_parent','%ddp'%h,

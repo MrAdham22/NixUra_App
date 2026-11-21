@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import com.adhamelgendy.nixura.domain.clock.Clock
 import com.adhamelgendy.nixura.domain.time.DayCalculator
 import com.adhamelgendy.nixura.domain.usecase.ObserveWidgetDataChangesUseCase
+import com.adhamelgendy.nixura.domain.widget.RefreshCoalescer
 import com.adhamelgendy.nixura.domain.widget.WidgetKind
 import com.adhamelgendy.nixura.domain.widget.WidgetRefreshPlanner
 import kotlinx.coroutines.CancellationException
@@ -21,22 +22,25 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.koin.mp.KoinPlatform
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Renders all widgets and keeps them fresh.
+ * Renders the widgets and keeps them fresh.
  *
  * Refresh strategy (battery-friendly, no polling):
  *  - the running clock is a system Chronometer, so it ticks with zero wake-ups;
  *  - ONE inexact alarm is armed for the earliest moment something a Chronometer cannot show changes
  *    (whole-day rollover of a counter, an event passing, or local midnight for the good-habit count);
- *  - data changes while the process is alive re-render after a 500 ms debounce;
- *  - boot, app update, time / date / time-zone changes re-render and re-arm the alarm.
+ *  - a "+" / "-" tap redraws only the widgets that show that habit, right after its write ([redrawAfterTap]);
+ *    redraws asked while one is running are merged into one (writes are never merged: every tap counts);
+ *  - data changes while the process is alive redraw, after a 500 ms debounce, only the kinds whose data changed,
+ *    and skip a quick-log widget whose content is the same as already drawn (so a tap is not drawn twice);
+ *  - boot, app update, time / date / time-zone changes and the launcher's own update requests redraw everything.
  */
 internal object WidgetUpdater {
     private const val TAG = "NixUraWidgets"
@@ -44,9 +48,25 @@ internal object WidgetUpdater {
 
     private val handler = CoroutineExceptionHandler { _, e -> Log.w(TAG, "widget coroutine failed", e) }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + handler)
+
+    /** One drawing pass at a time (they share the alarm and the [nextChanges] map). */
     private val lock = Mutex()
     private val observing = AtomicBoolean(false)
     private val receiverRegistered = AtomicBoolean(false)
+
+    /** Next re-render instant of each drawn widget, so a partial redraw can still arm the alarm for all of them. */
+    private val nextChanges = ConcurrentHashMap<Int, Long>()
+
+    /** Widgets drawn by this process: until all are known, a partial redraw leaves the armed alarm alone. */
+    private val drawn: MutableSet<Int> = ConcurrentHashMap.newKeySet()
+
+    @Volatile
+    private var appContext: Context? = null
+
+    private val tapRedraws = RefreshCoalescer<Int> { ids ->
+        val context = appContext ?: return@RefreshCoalescer
+        draw(context, ids.toList(), skipUnchanged = false)
+    }
 
     private val providers: List<Pair<Class<*>, WidgetKind>> = listOf(
         QuitCounterWidgetProvider::class.java to WidgetKind.QUIT_COUNTER,
@@ -57,7 +77,7 @@ internal object WidgetUpdater {
     /** Runs [block] on the widget scope (uncaught errors are logged, never crash the app). */
     fun launch(block: suspend CoroutineScope.() -> Unit) = scope.launch(block = block)
 
-    /** Fire-and-forget refresh. [firstIds] are rendered first (the widget the user just touched). */
+    /** Fire-and-forget full refresh. [firstIds] are rendered first (the widget the user just touched). */
     fun requestRefresh(context: Context, firstIds: IntArray? = null, pending: BroadcastReceiver.PendingResult? = null) {
         val app = context.applicationContext
         scope.launch {
@@ -69,30 +89,72 @@ internal object WidgetUpdater {
         }
     }
 
-    suspend fun refresh(context: Context, firstIds: IntArray? = null) = lock.withLock {
-        val manager = AppWidgetManager.getInstance(context)
-        val all = providers.flatMap { (cls, kind) ->
-            manager.getAppWidgetIds(ComponentName(context, cls)).map { it to kind }
-        }
+    /**
+     * After a "+" / "-" write: redraws [touchedWidgetId] first, then every other quick-log widget bound to [habitId].
+     * Returns once a redraw that started after this call is on screen, so what is shown is what was saved.
+     */
+    suspend fun redrawAfterTap(context: Context, touchedWidgetId: Int, habitId: Long) {
+        val app = context.applicationContext
+        appContext = app
+        val ids = LinkedHashSet<Int>()
+        if (touchedWidgetId > 0) ids += touchedWidgetId
+        idsOf(app, WidgetKind.GOOD_QUICK_LOG).filterTo(ids) { WidgetPrefs.targetOf(app, it) == habitId }
+        if (ids.isNotEmpty()) tapRedraws.request(ids)
+    }
+
+    /** Redraws every widget (system events, launcher requests). [firstIds] go first. */
+    suspend fun refresh(context: Context, firstIds: IntArray? = null) {
+        val all = allWidgets(context)
+        nextChanges.keys.retainAll(all.keys) // forget removed widgets
+        drawn.retainAll(all.keys)
         if (all.isEmpty()) {
             cancelAlarm(context)
-            return@withLock
+            return
         }
         val priority = firstIds?.toSet().orEmpty()
-        val ordered = all.sortedBy { if (it.first in priority) 0 else 1 }
-        val changes = mutableListOf<Long?>()
-        for ((id, kind) in ordered) {
-            try {
-                val rendered = WidgetRenderer.render(context, id, kind)
-                manager.updateAppWidget(id, rendered.views)
-                changes += rendered.nextChangeAtEpochMillis
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.w(TAG, "render failed for widget $id", e)
+        draw(context, all.keys.sortedBy { if (it in priority) 0 else 1 }, skipUnchanged = false)
+    }
+
+    /** Redraws the widgets of [kinds] whose content changed (data observer). */
+    private suspend fun refreshKinds(context: Context, kinds: Set<WidgetKind>) {
+        val ids = kinds.flatMap { idsOf(context, it) }
+        if (ids.isNotEmpty()) draw(context, ids, skipUnchanged = true)
+    }
+
+    private suspend fun draw(context: Context, ids: List<Int>, skipUnchanged: Boolean) {
+        lock.withLock {
+            val manager = AppWidgetManager.getInstance(context)
+            val kinds = allWidgets(context)
+            for (id in ids) {
+                val kind = kinds[id] ?: continue // removed meanwhile
+                try {
+                    val rendered = WidgetRenderer.render(context, id, kind, skipUnchanged)
+                        ?: continue // unchanged since it was last drawn
+                    manager.updateAppWidget(id, rendered.views)
+                    rendered.nextChangeAtEpochMillis?.let { nextChanges[id] = it } ?: nextChanges.remove(id)
+                    drawn += id
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "render failed for widget $id", e)
+                    nextChanges.remove(id)
+                    drawn += id // no instant of its own: the alarm still covers midnight and the other widgets
+                }
             }
+            // A skipped widget keeps its stored instant. Re-arm only when every widget's instant is known: right after
+            // a cold start a tap draws one widget, and the alarm armed by the last full refresh must stay valid.
+            if (drawn.containsAll(kinds.keys)) scheduleNext(context, kinds.keys.map { nextChanges[it] })
         }
-        scheduleNext(context, changes)
+    }
+
+    private fun allWidgets(context: Context): Map<Int, WidgetKind> {
+        val manager = AppWidgetManager.getInstance(context)
+        return providers.flatMap { (cls, kind) -> manager.getAppWidgetIds(ComponentName(context, cls)).map { it to kind } }.toMap()
+    }
+
+    private fun idsOf(context: Context, kind: WidgetKind): List<Int> {
+        val cls = providers.first { it.second == kind }.first
+        return AppWidgetManager.getInstance(context).getAppWidgetIds(ComponentName(context, cls)).toList()
     }
 
     private fun scheduleNext(context: Context, changes: List<Long?>) {
@@ -117,16 +179,17 @@ internal object WidgetUpdater {
         }
     }
 
-    /** While the app process is alive, re-render whenever habits, logs, events or theme change. */
+    /** While the app process is alive, redraw the widgets whose habits, logs, events or theme changed. */
     fun startObserving(context: Context) {
         if (!observing.compareAndSet(false, true)) return
         val app = context.applicationContext
+        appContext = app
         scope.launch {
             val changes = KoinPlatform.getKoin().get<ObserveWidgetDataChangesUseCase>()
-            // drop(1): the first emission is just the current state, widgets are already drawn for it.
-            changes().drop(1).collectLatest {
+            // The use case already skips the first value: widgets are drawn for the current state.
+            changes().collectLatest { kinds ->
                 delay(DEBOUNCE_MS)
-                refresh(app)
+                refreshKinds(app, kinds)
             }
         }
     }
