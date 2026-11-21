@@ -29,8 +29,8 @@ Branch `feature/notification-foundation`, details, the phase C API guide and the
   that, and one hand-off wake-up that converts the soonest far reminder in time (icon only 15-75 min before a
   reminder). `USE_EXACT_ALARM` was tried and does not stop ColorOS's widening. `:shared:testAndroidHostTest` 689
   tests, 0 failures (new `NotificationArmingTest` 13, 3 planner tests). Hand-off measured on the Oppo (screen off): an event 81 min ahead started as an ordinary exact alarm (ColorOS window 1 h), the wake-up armed for 21:10 fired by 21:13 and turned it into an alarm clock (window 0, the phone's "next alarm"); a check-in 2 min ahead (alarm clock) posted 0.6 s after its time.
-- **Not verified:** taps, permission flow and grouping on the phone (owner device test pending); a fresh install on
-  Android 14+ may start with exact alarms denied (then reminders are inexact again; the event form shows a notice);
+- **Owner device test passed (2026-11-21):** look per type, taps, grouping, permission flow, channel-off notice,
+  Settings link and timing all confirmed on the Oppo. **Still not verified:** a fresh install on Android 14+ may start with exact alarms denied (then reminders are inexact again; the event form shows a notice);
   iOS (still a no-op scheduler, unchanged).
 
 ## UX upgrade A2 (2026-11-21): launcher App Shortcuts

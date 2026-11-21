@@ -148,8 +148,8 @@ since stored times were computed for the old local time. Reboot / update / exact
   the wake-up armed for 21:10 fired by 21:13 and made it an alarm clock (window 0); a check-in 2 min ahead posted 0.6 s late.
 - Installed on the owner's Oppo Reno 10 5G (Android 15). `adb shell dumpsys notification` there shows the five
   channels with the right importance and groups, and `nixura_reminders` renamed to "Events".
-- **Not verified yet:** what each notification looks like on the phone, taps, the permission flow (the Oppo already
-  had the permission granted), grouping, the time-zone re-plan. iOS: nothing changed there (still a no-op scheduler).
+- **Owner device test passed (2026-11-21):** the look per type, taps, grouping, the permission flow, the channel-off
+  notice and timing were confirmed on the Oppo. iOS: nothing changed there (still a no-op scheduler).
 
 ## Device test steps (Oppo Reno 10 5G)
 
