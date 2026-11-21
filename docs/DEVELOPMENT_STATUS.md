@@ -14,8 +14,8 @@ Branch `feature/app-shortcuts`, details and the Oppo test steps in `docs/ux-upgr
   on the emulator; on the Android 17 emulator all four shortcuts registered and open the right screen with the right
   back stack, dark mode and Arabic RTL checked; installed on the owner's Oppo and all four shortcuts registered there.
 - **Owner device test on the Oppo: passed (2026-11-21).** Merged as PR #17.
-- **Not verified:** a real Firestore write
-  (**the `bugReports` rules are not deployed**, owner's OK needed), iOS (needs a Mac).
+- **Firestore rules deployed** to `nixura` on 2026-11-21 with the owner's OK (`bugReports` create-only is live).
+- **Not verified:** a real signed-in report landing in the Firebase console, iOS (needs a Mac).
 
 ## UX upgrade A1 (2026-11-21): widget "+" tap latency
 

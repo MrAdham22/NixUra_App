@@ -51,9 +51,9 @@ Long labels are 12–23 characters (limit 25), short 6–9 (limit 10), counted i
   mail. No mail app: the screen shows the address. Empty / under 10 letters / over 2000: inline message, nothing sent.
 - **Rules:** only `create`, only when `request.auth != null`, `uid == request.auth.uid`, exactly the 10 known fields,
   `createdAt == request.time`, known category, text ≤ 2000, short fields bounded. `read, update, delete: false` for
-  everyone (the owner reads reports in the Firebase console). **Not deployed:** needs the owner's OK
-  (`firebase deploy --only firestore:rules --project nixura`). Until then a signed-in report's cloud copy is refused
-  and the screen says "The saved copy didn't go through, but the email will."
+  everyone (the owner reads reports in the Firebase console). **Deployed** to `nixura` on 2026-11-21 with the
+  owner's OK (`firebase deploy --only firestore:rules --project nixura`). If a write is still refused (offline, quota),
+  the screen says so and the email goes anyway.
 - **Keep NixUra tone:** funny, light guilt (owner decision 5, re-confirmed by the owner on 2026-11-21 over the A2
   prompt's "no guilt-tripping"). Real numbers: longest running quit streak, the water habit's daily cups ("8 glasses of
   tears"), the habit count, guest vs backed up. Three buttons of the same size: "Fine, I'll stay" (Home), "Tell me
@@ -91,8 +91,8 @@ feature table and the real Settings labels.
    Press Back → the Keep screen.
 4. Long-press → **🐛 Bugs or issues?** Tap Send with nothing typed → red "Write a few words" line. Type "test" → still
    too short. Type a real sentence, pick a category, Send → Gmail opens with the address, subject and device lines.
-   Back to NixUra → "Thank you!" card. Signed in, you also see a line about the saved copy (it fails until the rules
-   are deployed).
+   Back to NixUra → "Thank you!" card. Signed in, you also see "Your report is saved." and the report appears in the
+   Firebase console under Firestore → `bugReports`.
 5. Long-press → **💡 Need help?** → open a few answers; "Report a problem" at the bottom opens the bug screen.
 6. Long-press → **🧠 Talk to your AI Coach** → the Coach opens. Back → Home.
 7. With the app already open on another screen (for example Settings), use a shortcut: it opens its screen; Back → Home.
@@ -102,6 +102,6 @@ feature table and the real Settings labels.
 
 ## Left for later
 
-- Deploy the `bugReports` rules (owner's OK).
+- Check that a signed-in report shows up in the Firebase console (rules deployed 2026-11-21).
 - iOS: build and run on a Mac; Arabic quick-action titles need `InfoPlist.strings` (en/ar) added to the Xcode project.
 - Owner review of the FAQ and the Keep wording (EN + AR).
