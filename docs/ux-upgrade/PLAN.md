@@ -25,8 +25,8 @@ Reminders exist to support the habit, not to raise engagement: no guilt, no dark
 | Plan | Questions answered 2026-11-21; PR waiting for owner approval | `docs/ux-upgrade-plan` | this file | n/a |
 | A1 | Done, merged 2026-11-21 (PR #16) | `perf/widget-tap-latency` (deleted) | `docs/ux-upgrade/A1-widget-latency.md` | yes: adb before/after + owner finger test passed 2026-11-21 |
 | A2 | Done, merged 2026-11-21 (PR #17) | `feature/app-shortcuts` (deleted) | `docs/ux-upgrade/A2-app-shortcuts.md` | yes: owner device test passed 2026-11-21 |
-| B | Not started, ready | | `docs/ux-upgrade/B.md` | no |
-| C | Not started (needs B merged) | | `docs/ux-upgrade/C.md` | no |
+| B | Done, merged 2026-11-21 (PR #19) | `feature/notification-foundation` (deleted) | `docs/ux-upgrade/B-notifications.md` | yes: adb timing measurements + owner device test passed 2026-11-21 |
+| C | Not started (B is merged, can start) | | `docs/ux-upgrade/C.md` | no |
 | D | Not started | | `docs/ux-upgrade/D.md` | n/a (research) |
 
 Update this table at the end of every phase.

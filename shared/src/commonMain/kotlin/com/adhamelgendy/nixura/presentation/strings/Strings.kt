@@ -1000,6 +1000,21 @@ open class Strings {
     open val helpStillStuckBody: String = "Tell me what's going on and I'll look into it."
     open val helpReport: String = "Report a problem"
     // ---- end of UX A2 ----
+
+    // ---- UX B: notification permission in context, notification types. ----
+    open val notificationAskTitle: String = "Allow notifications?"
+    open val notificationAskEventReason: String = "So NixUra can remind you before this event. You can silence each type of notification later."
+    open val notificationAskSettingsReason: String = "So event reminders, milestones and your daily check-in can reach you. You choose which types stay on."
+    open val notificationAskAllow: String = "Allow"
+    open val notNow: String = "Not now"
+    open val notificationBlockedTitle: String = "Notifications are blocked"
+    open val notificationBlockedBody: String = "Android won't ask again. To get reminders, turn on notifications for NixUra in system settings."
+    open val notificationsBlockedNotice: String = "Notifications are blocked for NixUra, so nothing can reach you."
+    open val eventChannelOff: String = "Event reminders are turned off in system settings."
+    open val turnOnInSettings: String = "Turn on in settings"
+    open val notificationTypes: String = "Notification types"
+    open val notificationTypesHint: String = "Sound or silence for events, habits, coach and app, in system settings."
+    // ---- end of UX B ----
 }
 
 /** One question and its answer on the Help screen. */

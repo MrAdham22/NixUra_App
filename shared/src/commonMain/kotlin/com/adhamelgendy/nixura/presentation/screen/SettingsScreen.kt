@@ -28,7 +28,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.adhamelgendy.nixura.domain.auth.SessionManager
 import com.adhamelgendy.nixura.domain.model.DigitStyle
 import com.adhamelgendy.nixura.domain.auth.SessionState
-import com.adhamelgendy.nixura.domain.notification.NotificationPermissionGateway
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import com.adhamelgendy.nixura.domain.notification.ReminderCapabilities
+import com.adhamelgendy.nixura.presentation.components.rememberNotificationAsk
 import com.adhamelgendy.nixura.presentation.components.ConfirmDialog
 import com.adhamelgendy.nixura.presentation.components.ErrorBanner
 import com.adhamelgendy.nixura.presentation.components.NixButton
@@ -57,7 +61,11 @@ import org.koin.compose.viewmodel.koinViewModel
 fun SettingsScreen(navigator: Navigator) {
     val vm: SettingsViewModel = koinViewModel()
     val state by vm.uiState.collectAsStateWithLifecycle()
-    val permission = koinInject<NotificationPermissionGateway>()
+    val notificationAsk = rememberNotificationAsk()
+    val capabilities = koinInject<ReminderCapabilities>()
+    var resumeTick by remember { mutableIntStateOf(0) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { resumeTick++ } // re-read after the system dialog or settings
+    val notificationsAllowed = remember(resumeTick) { capabilities.notificationsAllowed() }
     val session by koinInject<SessionManager>().state.collectAsStateWithLifecycle()
     val signedInEmail = (session as? SessionState.SignedIn)?.user?.email
     val s = LocalStrings.current
@@ -160,7 +168,7 @@ fun SettingsScreen(navigator: Navigator) {
                 }
                 Spacer(Modifier.width(8.dp))
                 NixSwitch(settings.notificationsEnabled, { enabled ->
-                    if (enabled && !permission.isGranted()) permission.request()
+                    if (enabled) notificationAsk.ensure(s.notificationAskSettingsReason)
                     vm.onNotifications(enabled)
                 })
             }
@@ -178,6 +186,23 @@ fun SettingsScreen(navigator: Navigator) {
                     }
                     Spacer(Modifier.width(8.dp))
                     NixButton(formatClockMinutes(settings.dailyCheckInMinutes, s), { showTime = true }, style = NixButtonStyle.Secondary)
+                }
+                // Per-type sound / silence lives in Android's channel screen; the app only links to it (no duplicate
+                // toggles). When the system blocks everything, say so here, where the user expects reminders.
+                Spacer(Modifier.height(14.dp))
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    NixIconView(if (notificationsAllowed) NixIcon.Gear else NixIcon.Info, if (notificationsAllowed) c.accent else c.accentWarm, size = 22.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(s.notificationTypes, style = NixType.BodyStrong, color = c.textPrimary)
+                        Text(
+                            if (notificationsAllowed) s.notificationTypesHint else s.notificationsBlockedNotice,
+                            style = NixType.Small,
+                            color = if (notificationsAllowed) c.textMuted else c.accentWarm,
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    NixButton(s.reminderOpenSettings, capabilities::openNotificationSettings, style = NixButtonStyle.Secondary)
                 }
             }
         }

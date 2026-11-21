@@ -2,6 +2,37 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## UX upgrade B (2026-11-21): notification foundation
+
+Branch `feature/notification-foundation`, details, the phase C API guide and the Oppo test steps in
+`docs/ux-upgrade/B-notifications.md`.
+
+- **Built:** one Android notification layer (`notifications/NixNotifications.kt`: channels + groups, icon/colour/
+  category per type, grouping with summaries, tap targets); 5 channels (`nixura_reminders` kept and renamed "Events";
+  new Good-habit reminders, Quit progress (silent), Coach (silent), App & account (silent)); milestones and the check-in
+  moved to the silent channels; taps open the event / quit habit / Coach (owner decisions 2026-11-21);
+  `NotificationKind` + `targetId` + `theme` on `PlannedNotification` (old stored plans read by key prefix);
+  in-context permission with a reason card and a settings path after two denials (`NotificationAccessPolicy`,
+  `rememberNotificationAsk`); Events-channel-off notice in the event form; Settings "Notification types" link;
+  re-plan on time-zone / clock change.
+- **Verified:** `:androidApp:assembleDebug`; `:shared:testAndroidHostTest` 673 tests, 0 failures; installed on the
+  owner's Oppo, `dumpsys notification` shows the 5 channels with the right importance and groups.
+- **Timing fix (same day, after the owner's device test):** reminders came late (event "at time" ~2-3 min, check-in
+  ~2 min) and one (10 min before) never came. Causes found on the Oppo with `dumpsys alarm`: (1) ColorOS widens even
+  `setExactAndAllowWhileIdle` alarms to ~75% of the time left (inexact ones to 1 h); (2) every re-plan (app start,
+  any data change) cancelled an alarm whose time had passed but that the OS had not delivered yet. Fix: all reminders
+  are armed with `setAlarmClock` when exact alarms are allowed (zero window on ColorOS); the planner keeps items up to
+  1 h late and the new pure `NotificationArming` re-arms only an undelivered alarm armed before at that same time
+  (`ReminderReceiver` records deliveries). Measured on the Oppo, screen off: check-in 19:38:00.04, event 1-min
+  reminder 19:39:00.02, event at time 19:40:00.02. Alarm clocks show the alarm icon / "next alarm", so (owner
+  decision) timing is now **hybrid**: alarm clock only within 75 min of a reminder, an ordinary exact alarm before
+  that, and one hand-off wake-up that converts the soonest far reminder in time (icon only 15-75 min before a
+  reminder). `USE_EXACT_ALARM` was tried and does not stop ColorOS's widening. `:shared:testAndroidHostTest` 689
+  tests, 0 failures (new `NotificationArmingTest` 13, 3 planner tests). Hand-off measured on the Oppo (screen off): an event 81 min ahead started as an ordinary exact alarm (ColorOS window 1 h), the wake-up armed for 21:10 fired by 21:13 and turned it into an alarm clock (window 0, the phone's "next alarm"); a check-in 2 min ahead (alarm clock) posted 0.6 s after its time.
+- **Owner device test passed (2026-11-21):** look per type, taps, grouping, permission flow, channel-off notice,
+  Settings link and timing all confirmed on the Oppo. **Still not verified:** a fresh install on Android 14+ may start with exact alarms denied (then reminders are inexact again; the event form shows a notice);
+  iOS (still a no-op scheduler, unchanged).
+
 ## UX upgrade A2 (2026-11-21): launcher App Shortcuts
 
 Branch `feature/app-shortcuts`, details and the Oppo test steps in `docs/ux-upgrade/A2-app-shortcuts.md`.

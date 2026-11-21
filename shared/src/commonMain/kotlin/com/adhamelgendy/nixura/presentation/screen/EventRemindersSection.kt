@@ -55,6 +55,8 @@ private val QUICK_PRESETS = listOf(0L, 10 * MINUTE, HOUR, DAY, 3 * DAY, 7 * DAY)
 data class ReminderPermissionState(
     val notificationsAllowed: Boolean,
     val exactAlarmsAllowed: Boolean,
+    /** False when the user switched the Events channel off in system settings (the rest of the app may still notify). */
+    val channelEnabled: Boolean = true,
 )
 
 /**
@@ -78,6 +80,7 @@ fun EventRemindersSection(
     onOpenNotificationSettings: () -> Unit,
     onOpenExactAlarmSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenChannelSettings: () -> Unit = onOpenNotificationSettings,
 ) {
     val s = LocalStrings.current
     val c = Nix.colors
@@ -90,6 +93,8 @@ fun EventRemindersSection(
 
         if (leads.isNotEmpty() && !permission.notificationsAllowed) {
             NoticeCard(s.reminderNotificationsOff, s.reminderOpenSettings, onOpenNotificationSettings)
+        } else if (leads.isNotEmpty() && !permission.channelEnabled) {
+            NoticeCard(s.eventChannelOff, s.turnOnInSettings, onOpenChannelSettings)
         } else if (leads.isNotEmpty() && !permission.exactAlarmsAllowed) {
             NoticeCard(s.reminderExactOff, s.reminderAllowExact, onOpenExactAlarmSettings)
         }

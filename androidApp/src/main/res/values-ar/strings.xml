@@ -10,8 +10,19 @@
     <string name="widget_event_description">العدّ التنازلي لمناسبتك القادمة أو لمناسبة تختارها.</string>
     <string name="widget_config_label">اختر للأداة</string>
 
-    <string name="channel_reminders_name">التذكيرات والتشجيع</string>
-    <string name="channel_reminders_description">تذكيرات المناسبات، وإنجازات أيامك المتتالية، ورسالة يومية قصيرة</string>
+    <string name="channel_reminders_name">المناسبات</string>
+    <string name="channel_reminders_description">تذكيرات قبل المناسبات التي تضيفها</string>
+    <string name="channel_good_habits_name">تذكيرات العادات الجيدة</string>
+    <string name="channel_good_habits_description">تنبيه في الوقت المناسب للماء والصلاة وعاداتك الجيدة الأخرى</string>
+    <string name="channel_quit_progress_name">تقدّم الإقلاع</string>
+    <string name="channel_quit_progress_description">رسائل هادئة عندما تبلغ سلسلة الإقلاع محطة جديدة</string>
+    <string name="channel_coach_name">المدرب</string>
+    <string name="channel_coach_description">رسالتك اليومية وملاحظات المدرب</string>
+    <string name="channel_app_name">التطبيق والحساب</string>
+    <string name="channel_app_description">مشاكل المزامنة ورسائل الحساب</string>
+    <string name="channel_group_habits">العادات</string>
+    <string name="channel_group_events">المناسبات</string>
+    <string name="channel_group_coach_app">المدرب والتطبيق</string>
 
     <!-- اختصارات المشغّل (res/xml/shortcuts.xml). الاسم القصير 10 أحرف على الأكثر، والطويل 25. -->
     <string name="shortcut_keep_short">🥺 ابقَ؟</string>

@@ -17,6 +17,12 @@ interface ReminderCapabilities {
 
     /** Opens the system screen where exact alarms can be allowed for this app (no-op where not applicable). */
     fun openExactAlarmSettings()
+
+    /** False when the user switched this kind's channel off in system settings (the app's own switch can still be on). */
+    fun channelEnabled(kind: NotificationKind): Boolean = true
+
+    /** Opens the system screen for this kind's channel (falls back to the app's notification settings). */
+    fun openChannelSettings(kind: NotificationKind) = openNotificationSettings()
 }
 
 object AlwaysAvailableReminderCapabilities : ReminderCapabilities {
