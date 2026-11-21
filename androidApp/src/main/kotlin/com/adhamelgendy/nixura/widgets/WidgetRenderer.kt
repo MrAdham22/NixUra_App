@@ -94,7 +94,23 @@ internal object WidgetRenderer {
     @Volatile
     private var digitStyle: DigitStyle = DigitStyle.WESTERN
 
-    suspend fun render(context: Context, widgetId: Int, kind: WidgetKind): RenderedWidget {
+    /**
+     * What each quick-log widget was last drawn from (state, appearance, size). The data observer passes
+     * `skipUnchanged = true`, so a widget a tap has already redrawn is not painted a second time.
+     */
+    private val lastGoodInput = java.util.concurrent.ConcurrentHashMap<Int, Any>()
+
+    /**
+     * Small painted pieces (prayer stars, beads, arch badge) depend only on a few values, so they are painted once
+     * and reused; the same Bitmap object is also sent once per RemoteViews instead of once per view.
+     */
+    private val pieces = android.util.LruCache<String, android.graphics.Bitmap>(32)
+
+    private fun piece(key: String, w: Int, h: Int, density: Float, block: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit) =
+        pieces.get(key) ?: WidgetCardPainter.compose(w, h, density, block).also { pieces.put(key, it) }
+
+    /** `null` = [skipUnchanged] and this quick-log widget would look exactly as already drawn. */
+    suspend fun render(context: Context, widgetId: Int, kind: WidgetKind, skipUnchanged: Boolean = false): RenderedWidget? {
         val appearance = loadAppearance()
         val language = AppLocales.resolve(appearance.languageCode, systemLanguageTag())
         val s = stringsFor(language)
@@ -107,12 +123,18 @@ internal object WidgetRenderer {
             val target = WidgetPrefs.targetOf(context, widgetId)
             when (kind) {
                 WidgetKind.QUIT_COUNTER -> quit(env, loader.quit(target))
-                WidgetKind.GOOD_QUICK_LOG -> good(env, loader.good(target))
+                WidgetKind.GOOD_QUICK_LOG -> {
+                    val st = loader.good(target)
+                    val input = Triple(st, appearance, w to h)
+                    if (skipUnchanged && lastGoodInput[widgetId] == input) return null
+                    good(env, st).also { lastGoodInput[widgetId] = input }
+                }
                 WidgetKind.EVENT -> event(env, loader.event(target))
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            lastGoodInput.remove(widgetId)
             message(env, s.widgetError, s.widgetTapToOpen, WidgetIntents.open(context, widgetId, WidgetIntents.TYPE_HOME))
         }
     }
@@ -292,7 +314,7 @@ internal object WidgetRenderer {
             if (prayer) {
                 show(rv, R.id.w_badge, plan.showBadge)
                 val size = (44 * density).toInt()
-                rv.setImageViewBitmap(R.id.w_badge_bg, WidgetCardPainter.compose(size, size, density) { drawPrayerArchBadge(solid) })
+                rv.setImageViewBitmap(R.id.w_badge_bg, piece("badge:$size:$solid", size, size, density) { drawPrayerArchBadge(solid) })
                 show(rv, R.id.w_badge_icon, false)
             } else {
                 badge(env, rv, plan, st.topic.icon(), tone)
@@ -306,10 +328,10 @@ internal object WidgetRenderer {
         rv.setImageViewResource(R.id.w_plus_icon, plusIcon)
         if (prayer) {
             val size = (52 * density).toInt()
-            rv.setImageViewBitmap(R.id.w_minus_bg, WidgetCardPainter.compose(size, size, density) { drawPrayerStar(true, solid, contentC) })
+            rv.setImageViewBitmap(R.id.w_minus_bg, piece("star-:$size:$solid:${contentC.value}", size, size, density) { drawPrayerStar(true, solid, contentC) })
             tint(rv, R.id.w_minus_bd, c.border, 0)
             tint(rv, R.id.w_minus_icon, prayerStarIconTint(true, solid, contentC).toArgb())
-            rv.setImageViewBitmap(R.id.w_plus_bg, WidgetCardPainter.compose(size, size, density) { drawPrayerStar(false, solid, contentC) })
+            rv.setImageViewBitmap(R.id.w_plus_bg, piece("star+:$size:$solid:${contentC.value}", size, size, density) { drawPrayerStar(false, solid, contentC) })
             tint(rv, R.id.w_plus_icon, prayerStarIconTint(false, solid, contentC).toArgb())
         } else {
             tint(rv, R.id.w_minus_bg, content, 26)
@@ -341,7 +363,7 @@ internal object WidgetRenderer {
                 show(rv, cellIds[i], i < marks)
                 if (i >= marks) continue
                 val lit = i < st.todayCount
-                rv.setImageViewBitmap(markIds[i], WidgetCardPainter.compose(mw, mh, density) { drawPrayerBead(if (lit) 1f else 0f, solid, contentC) })
+                rv.setImageViewBitmap(markIds[i], piece("bead:$mw:$mh:$lit:$solid:${contentC.value}", mw, mh, density) { drawPrayerBead(if (lit) 1f else 0f, solid, contentC) })
                 val name = names.getOrNull(i)
                 show(rv, nameIds[i], name != null)
                 if (name != null) text(rv, nameIds[i], name, if (lit) content else muted)

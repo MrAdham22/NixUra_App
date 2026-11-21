@@ -6,11 +6,13 @@ import com.adhamelgendy.nixura.domain.model.CoachMessage
 import com.adhamelgendy.nixura.domain.model.CoachRole
 import com.adhamelgendy.nixura.domain.model.Event
 import com.adhamelgendy.nixura.domain.model.EventCategory
+import com.adhamelgendy.nixura.domain.model.GoodHabit
 import com.adhamelgendy.nixura.domain.model.GoodHabitWithLogs
 import com.adhamelgendy.nixura.domain.model.UserProfile
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
 import com.adhamelgendy.nixura.domain.theme.WaterGoal
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 
 interface GoodHabitRepository {
     fun observeGoodHabits(): Flow<List<GoodHabitWithLogs>>
@@ -40,7 +42,20 @@ interface GoodHabitRepository {
 
     /** Sets the number of times the habit was done on [dayIndex]. `count <= 0` clears that day. */
     suspend fun setCount(id: Long, dayIndex: Long, count: Int)
+
+    /**
+     * One active (not archived) habit and its count on [dayIndex], or `null` when there is no such habit. Used by the
+     * widget "+" / "-" path, which needs one number, not every habit's history. The default reads the full list; the
+     * Room repository overrides it with two indexed single-row queries.
+     */
+    suspend fun dayCountOf(id: Long, dayIndex: Long): GoodHabitDayCount? =
+        observeGoodHabits().first().firstOrNull { it.habit.id == id }?.let { item ->
+            GoodHabitDayCount(item.habit, item.logs.firstOrNull { it.dayIndex == dayIndex }?.count ?: 0)
+        }
 }
+
+/** A habit with how many times it was done on one day. */
+data class GoodHabitDayCount(val habit: GoodHabit, val count: Int)
 
 interface EventRepository {
     fun observeEvents(): Flow<List<Event>>

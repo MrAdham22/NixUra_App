@@ -2,6 +2,24 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## UX upgrade A1 (2026-11-21): widget "+" tap latency
+
+Branch `perf/widget-tap-latency`, details and the before/after table in `docs/ux-upgrade/A1-widget-latency.md`.
+
+- **Measured on the owner's Oppo (adb taps on the real Prayer widget):** warm tap → new number 80–100 ms; cold start
+  ≈ 1.1 s (575 ms Android/ColorOS process start, 162 ms `Application.onCreate` with 122 ms Facebook SDK, 100 ms first
+  DB open, 150 ms Prayer render). No network in the tap path. Every tap redrew every widget, then the DB observer
+  redrew all again 500 ms later. The owner's 2–4 s was not reproduced through adb (lock screen needs the PIN).
+- **Built:** ripple on the widget "+"/"−" (drawn by the launcher on touch-down); single-row read for the tap
+  (`GoodHabitRepository.dayCountOf`, two new DAO queries, no schema change); a tap redraws only the widgets of that
+  habit; the observer redraws only changed kinds and skips unchanged quick-log widgets; `RefreshCoalescer` merges
+  redraws (never writes); cached prayer bitmap pieces; Facebook SDK starts with `MainActivity`.
+- **After:** warm 70–90 ms, cold ≈ 980 ms (`onCreate` 53 ms), observer pass 35 ms without drawing, counts exact.
+- **Verified:** `:androidApp:assembleDebug`, `:shared:testAndroidHostTest` (all pass, new `WidgetTapConcurrencyTest`,
+  `RefreshCoalescerTest`), installed on the Oppo, before/after runs there. **Owner finger test on the Oppo: passed (2026-11-21).**
+  **Not verified:** a release build (R8 should cut class loading), iOS (no widgets there).
+- **Found:** `tools/gen_widget_layouts.py` is out of sync with the committed layouts; do not run it before fixing it.
+
 ## Session 4 of 4 (2026-11-17): Arabic and right-to-left
 
 Branch `claude/cranky-goodall-94eb7c` (cut from `claude/nixora-bugs-features-plan-9a1220`). Details, the commits and the Arabic wording to review: `HANDOFF.md`, Session 4.
@@ -255,7 +273,7 @@ Branch `agent-5-widgets` (earlier commits e10193d, 0c3214a; the card redesign an
 
 **Technology decision:** classic `AppWidgetProvider` + `RemoteViews`, not Glance (no Maven access when written; could not be checked against AGP 9.1.1, compileSdk 37, Kotlin 2.4.20, Compose 1.12.1). Dependencies: `androidApp/build.gradle.kts` has `implementation(libs.compose.ui)` and `implementation(libs.kotlinx.coroutines.core)` (existing catalog entries); `libs.versions.toml` unchanged. Widget text is in the `widget*` members of `presentation/strings/Strings.kt` (the former `WidgetStrings` class was merged into it).
 
-**Refresh strategy:** system `Chronometer` for the clock (no wake-ups); one inexact `AlarmManager.setAndAllowWhileIdle` alarm for the earliest of: counter day rollover, MM:SS/H:MM:SS switch, event passing, local midnight; 500 ms-debounced re-render on data change while the process lives; re-render on boot, app update, time/date/time-zone change. Doze can delay the alarm by minutes.
+**Refresh strategy:** system `Chronometer` for the clock (no wake-ups); one inexact `AlarmManager.setAndAllowWhileIdle` alarm for the earliest of: counter day rollover, MM:SS/H:MM:SS switch, event passing, local midnight; a "+"/"-" tap redraws only the widgets of that habit (merged while one is drawing); 500 ms-debounced redraw of only the changed widget kinds on data change while the process lives (unchanged quick-log widgets skipped); re-render on boot, app update, time/date/time-zone change. Doze can delay the alarm by minutes.
 
 **Files:** `domain/widget/*` (models, state mapper, nearest-event selector, refresh planner, layout planner, `WidgetPinner`), `domain/usecase/WidgetUseCases.kt`, `presentation/components/AddToHomeScreenButton.kt`, one added line in each of `BadHabitDetailScreen`, `GoodHabitDetailScreen`, `EventFormScreen`, `androidApp/.../widgets/*`, `res/layout/widget_*`, `res/drawable/{widget_*,ic_w_*}`, `res/drawable-nodpi/widget_preview_*`, `res/xml/widget_*_info.xml`, manifest, `MainActivity`, `NixUraApplication`, `PlatformModule.android.kt` (widget use cases), tests in `commonTest/.../domain/widget/` and `.../usecase/WidgetUseCasesTest.kt`, `tools/gen_widget_layouts.py`.
 

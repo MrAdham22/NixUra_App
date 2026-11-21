@@ -49,6 +49,7 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
         )
         super.onCreate(savedInstanceState)
+        (application as NixUraApplication).ensureFacebookSdk()
 
         // Opened from a home-screen widget? Only on a fresh start: after rotation / process restore the
         // navigator already holds (or deliberately reset) the stack and the extras were consumed.

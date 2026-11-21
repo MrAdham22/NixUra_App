@@ -15,9 +15,13 @@ import com.adhamelgendy.nixura.domain.widget.QuitWidgetState
 import com.adhamelgendy.nixura.domain.widget.WidgetAppearance
 import com.adhamelgendy.nixura.domain.widget.WidgetStateMapper
 import kotlinx.coroutines.flow.Flow
+import com.adhamelgendy.nixura.domain.widget.WidgetKind
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -38,10 +42,9 @@ private suspend fun adjustTodayCount(
     goodHabitWidgetWriteLock.withLock {
         val now = clock.nowEpochMillis()
         val today = days.dayIndexOf(now)
-        // observeGoodHabits() only contains active (non-archived) habits.
-        val item = repository.observeGoodHabits().first().firstOrNull { it.habit.id == habitId }
-            ?: throw IllegalStateException("Habit not found")
-        val current = item.logs.firstOrNull { it.dayIndex == today }?.count ?: 0
+        // One habit, one day: an archived or deleted habit is "not found".
+        val item = repository.dayCountOf(habitId, today) ?: throw IllegalStateException("Habit not found")
+        val current = item.count
         val next = (current + delta).coerceIn(0, item.habit.maxCountPerDay)
         if (next != current) repository.setCount(habitId, today, next)
         next
@@ -104,17 +107,37 @@ class LoadWidgetStateUseCase(
     }
 }
 
-/** Emits whenever anything a widget shows may have changed (habits, relapses, logs, events, theme/language). */
+/**
+ * Emits, after the first value, the widget kinds whose data really changed: quit habits/relapses → quit counters,
+ * good habits/logs → quick-log widgets, events → event widgets, settings (theme, language, digits) → all of them.
+ * Room re-emits a query on any write to its tables, so equal values are filtered out here; a "+" on one habit
+ * therefore never redraws the quit or event widgets.
+ */
 class ObserveWidgetDataChangesUseCase(
     private val habits: HabitTrackingRepository,
     private val goodHabits: GoodHabitRepository,
     private val events: EventRepository,
     private val preferences: PreferencesRepository,
 ) {
-    operator fun invoke(): Flow<Unit> = combine(
+    private data class Snapshot(val quit: Any?, val good: Any?, val events: Any?, val settings: Any?)
+
+    operator fun invoke(): Flow<Set<WidgetKind>> = combine(
         habits.observeActiveHabitTracking(),
         goodHabits.observeGoodHabits(),
         events.observeEvents(),
         preferences.observeSettings(),
-    ) { _, _, _, _ -> }.map { }
+    ) { quit, good, events, settings -> Snapshot(quit, good, events, settings) }
+        .scan(null as Pair<Snapshot?, Set<WidgetKind>>?) { previous, now -> now to changedKinds(previous?.first, now) }
+        .drop(2) // the seed and the first real value: widgets are already drawn for the current state
+        .map { it!!.second }
+        .filter { it.isNotEmpty() }
+
+    private fun changedKinds(before: Snapshot?, now: Snapshot): Set<WidgetKind> {
+        if (before == null || before.settings != now.settings) return WidgetKind.entries.toSet()
+        return buildSet {
+            if (before.quit != now.quit) add(WidgetKind.QUIT_COUNTER)
+            if (before.good != now.good) add(WidgetKind.GOOD_QUICK_LOG)
+            if (before.events != now.events) add(WidgetKind.EVENT)
+        }
+    }
 }

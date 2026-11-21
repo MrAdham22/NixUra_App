@@ -226,7 +226,8 @@ class WidgetUseCasesTest {
         var emissions = 0
         val job = CoroutineScope(Dispatchers.Unconfined).launch { obs().collect { emissions++ } }
         val afterInitial = emissions
-        assertTrue(afterInitial >= 1, "initial state should be emitted")
+        // The current state is not a change: widgets are already drawn for it.
+        assertEquals(0, afterInitial, "initial state should not be emitted")
         events.state.value = listOf(event(1, 5))
         val afterEvent = emissions
         assertTrue(afterEvent > afterInitial, "event change should emit")

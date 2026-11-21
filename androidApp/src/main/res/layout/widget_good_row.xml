@@ -102,7 +102,8 @@
         android:layout_height="34dp"
         android:layout_marginStart="8dp"
         android:clickable="true"
-        android:focusable="true">
+        android:focusable="true"
+        android:foreground="@drawable/widget_btn_ripple">
 <ImageView
         android:id="@+id/w_minus_bg"
         android:layout_width="match_parent"
@@ -129,7 +130,8 @@
         android:layout_height="40dp"
         android:layout_marginStart="8dp"
         android:clickable="true"
-        android:focusable="true">
+        android:focusable="true"
+        android:foreground="@drawable/widget_btn_ripple">
 <ImageView
         android:id="@+id/w_plus_bg"
         android:layout_width="match_parent"

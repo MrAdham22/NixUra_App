@@ -11,7 +11,9 @@ import org.koin.mp.KoinPlatform
 
 /**
  * Handles the "+" / "-" buttons. Works with the app closed: Android starts the process, `NixUraApplication.onCreate`
- * starts Koin, then this runs the write and re-renders all widgets right away (no waiting for the debounce).
+ * starts Koin, then this runs the write and redraws the widgets that show this habit right away (the touched one
+ * first; no waiting for the debounce). Every tap is its own write: taps are serialized by the use case's lock,
+ * never dropped or merged; only the redraws of taps that arrive while one is drawing are merged.
  */
 class WidgetActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -37,7 +39,7 @@ class WidgetActionReceiver : BroadcastReceiver() {
             } finally {
                 // Always re-render: on success to show the new count, on failure (e.g. habit deleted) to show the safe state.
                 try {
-                    WidgetUpdater.refresh(app, if (widgetId > 0) intArrayOf(widgetId) else null)
+                    WidgetUpdater.redrawAfterTap(app, widgetId, habitId)
                 } finally {
                     pending.finish()
                 }
