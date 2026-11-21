@@ -25,6 +25,12 @@ data class GoodHabitEntity(
     @ColumnInfo(name = "water_goal_ml") val waterGoalMl: Int? = null,
     @ColumnInfo(name = "water_serving_ml") val waterServingMl: Int? = null,
     @ColumnInfo(name = "water_unit") val waterUnit: String? = null,
+    /** Reminder choices (v9, phase C). All null = not chosen: the defaults for the habit's type apply. */
+    @ColumnInfo(name = "reminder_enabled") val reminderEnabled: Boolean? = null,
+    @ColumnInfo(name = "reminder_time") val reminderTime: Int? = null,
+    @ColumnInfo(name = "reminder_window_start") val reminderWindowStart: Int? = null,
+    @ColumnInfo(name = "reminder_window_end") val reminderWindowEnd: Int? = null,
+    @ColumnInfo(name = "reminder_paused_until") val reminderPausedUntil: Long? = null,
 )
 
 /** [syncId] is `<good habit sync id>:<day>`, so two devices logging the same day update one row instead of adding two. */

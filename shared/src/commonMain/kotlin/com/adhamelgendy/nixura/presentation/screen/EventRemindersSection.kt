@@ -153,7 +153,7 @@ fun EventRemindersSection(
 }
 
 @Composable
-private fun NoticeCard(message: String, actionText: String, onAction: () -> Unit) {
+internal fun NoticeCard(message: String, actionText: String, onAction: () -> Unit) {
     val c = Nix.colors
     NixCard(color = c.surfaceRaised, padding = PaddingValues(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {

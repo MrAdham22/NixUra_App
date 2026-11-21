@@ -43,6 +43,9 @@ fun platformModule(
     factory { IncrementGoodHabitTodayUseCase(get(), get(), get()) }
     factory { DecrementGoodHabitTodayUseCase(get(), get(), get()) }
     factory { ObserveWidgetDataChangesUseCase(get(), get(), get(), get()) }
+    // Reminder buttons ("+1 glass", "Prayed", Snooze): the same quick-log use cases as the widget.
+    factory { com.adhamelgendy.nixura.domain.usecase.MarkGoodHabitTodayAtLeastUseCase(get(), get(), get()) }
+    single { com.adhamelgendy.nixura.domain.reminder.ReminderActionHandler(get(), get(), get(), get(), get(), get()) }
 
     // Accounts: encrypted token storage + device label. ApiConfig is bound by NixUraApplication (needs BuildConfig).
     single<SecureStore> { AndroidSecureStore(context) }

@@ -83,6 +83,7 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
     var weekly by rememberSaveable { mutableStateOf(false) }
     var daysPerWeek by rememberSaveable { mutableStateOf(DEFAULT_DAYS_PER_WEEK) }
     var loadedEdit by rememberSaveable { mutableStateOf(false) }
+    var remindersOn by rememberSaveable { mutableStateOf(true) }
     val nameFocus = remember { FocusRequester() }
 
     // The theme the name would get if saved now (debounced, detected off the main thread by the view model). It picks
@@ -253,13 +254,23 @@ fun GoodHabitFormScreen(editId: Long?, navigator: Navigator) {
             }
         }
 
+        // Phase C: prayer and water habits get reminders by default; one line to turn them off right here.
+        val remindable = !editing && !weekly && (water || (prayer && target == PrayerHabitDetector.DAILY_PRAYERS))
+        if (remindable) {
+            com.adhamelgendy.nixura.presentation.goodhabits.reminders.ReminderFormCard(
+                prayer = !water,
+                on = remindersOn,
+                onChange = { remindersOn = it },
+            )
+        }
+
         val save = {
             val weeklyTarget = if (weekly) daysPerWeek else null
             // Every save of a water habit carries its goal (null would reset a custom cup size).
             val goal = if (water) waterForm.toGoal() else null
             val dailyTarget = goal?.servingsPerDay ?: target
             if (editId != null) vm.onUpdate(editId, name, dailyTarget, null, weeklyTarget, water = goal) { navigator.back() }
-            else vm.onCreate(name, dailyTarget, null, weeklyTarget, water = goal) { navigator.back() }
+            else vm.onCreate(name, dailyTarget, null, weeklyTarget, water = goal, remindersOn = remindersOn.takeIf { remindable }) { navigator.back() }
         }
         if (prayer) {
             PrayerGoldButton(

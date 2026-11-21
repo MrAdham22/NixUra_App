@@ -112,10 +112,15 @@ fun HomeScreen(navigator: Navigator) {
     val voiceVm: com.adhamelgendy.nixura.presentation.voice.VoiceNoteViewModel = koinViewModel()
     val deleteFlow = rememberDeleteFlow()
     val addToHome = rememberAddToHomeAction()
+    val reminders = com.adhamelgendy.nixura.presentation.goodhabits.reminders.rememberHabitReminders()
     // Long-press sheet of a good habit: Edit, Add to Home screen (where widgets exist), then Delete.
     fun goodHabitSheetActions(id: Long): List<SheetAction> = listOf(
         SheetAction(s.editHabit, NixIcon.Pencil) { navigator.push(Route.GoodHabitForm(id)) },
-    ) + listOfNotNull(addToHome?.let { pin -> SheetAction(s.widgetAddToHome, NixIcon.Home) { pin(WidgetKind.GOOD_QUICK_LOG, id) } })
+    ) + listOfNotNull(
+        // Phase C: "Reminders: On · every 2 h", between Edit and Add to Home screen (PLAN.md).
+        reminders.sheetAction(id),
+        addToHome?.let { pin -> SheetAction(s.widgetAddToHome, NixIcon.Home) { pin(WidgetKind.GOOD_QUICK_LOG, id) } },
+    )
     val quitActions = rememberQuitCardActions(navigator, deleteFlow)
 
     val hour = (days.millisOfDay(now) / 3_600_000L).toInt()

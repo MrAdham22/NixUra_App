@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.domain.usecase
 
+import com.adhamelgendy.nixura.domain.reminder.HabitReminderSettings
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
 import com.adhamelgendy.nixura.domain.theme.HabitThemeDetector
 import com.adhamelgendy.nixura.domain.theme.WaterGoal
@@ -57,7 +58,11 @@ private suspend fun shapeOf(
     return GoodHabitShape(goal.servingsPerDay.coerceAtMost(MAX_DAILY_TARGET), theme, goal)
 }
 
-/** [water] is the goal chosen on the form; null = N cups of 250 ml from [dailyTarget]. Ignored unless it is water. */
+/**
+ * [water] is the goal chosen on the form; null = N cups of 250 ml from [dailyTarget]. Ignored unless it is water.
+ * [remindersOn] is the form's "Reminders on, change anytime" switch (prayer and water habits): `false` stores the
+ * user's "off"; `null` / `true` keep the default for the habit's type (on for prayer and water).
+ */
 class CreateGoodHabitUseCase(private val repository: GoodHabitRepository, private val themes: HabitThemeDetector) {
     suspend operator fun invoke(
         name: String,
@@ -65,10 +70,13 @@ class CreateGoodHabitUseCase(private val repository: GoodHabitRepository, privat
         colorArgb: Long?,
         weeklyTarget: Int? = null,
         water: WaterGoal? = null,
+        remindersOn: Boolean? = null,
     ): Result<Long> =
         HabitNameValidator.validate(name).mapCatching { valid ->
             val shape = shapeOf(themes, valid, dailyTarget, weeklyTarget, water)
-            repository.create(valid, shape.dailyTarget, colorArgb, weeklyTarget, shape.theme, shape.water)
+            val id = repository.create(valid, shape.dailyTarget, colorArgb, weeklyTarget, shape.theme, shape.water)
+            if (remindersOn == false) repository.setReminder(id, HabitReminderSettings(enabled = false))
+            id
         }
 }
 

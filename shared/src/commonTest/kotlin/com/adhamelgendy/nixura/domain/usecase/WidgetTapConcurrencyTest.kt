@@ -65,6 +65,7 @@ class WidgetTapConcurrencyTest {
         override suspend fun create(name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?, theme: HabitTheme, water: WaterGoal?): Long = error("unused")
         override suspend fun update(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?, theme: HabitTheme, water: WaterGoal?) = error("unused")
         override suspend fun archive(id: Long) = error("unused")
+        override suspend fun setReminder(id: Long, reminder: com.adhamelgendy.nixura.domain.reminder.HabitReminderSettings) = error("unused")
     }
 
     private fun habit(id: Long) = GoodHabit(id, "Pray", 5, createdAtEpochMillis = 0L)

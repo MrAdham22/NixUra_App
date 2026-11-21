@@ -15,6 +15,8 @@ Fill the form from the real data flows below. Other agents append their own rows
 
 Not collected by this release: location, contacts, photos, files, financial info, advertising ID. Guests send nothing.
 
+Approximate location (`ACCESS_COARSE_LOCATION`, UX phase C): read once on the device, only when the user asks for prayer-time reminders, rounded to about 1 km and used only on the device to calculate prayer times. It is never transmitted off the device, so under Play's definition it is **not collected** (data processed only on the device). Declare the permission's use in the store listing / permissions section if asked; re-check if prayer reminders ever sync the location.
+
 ## Security practices section
 - Data is encrypted in transit (HTTPS): **Yes**.
 - You can request data deletion: **Yes** (in-app and web path in `ACCOUNT_DELETION.md`).

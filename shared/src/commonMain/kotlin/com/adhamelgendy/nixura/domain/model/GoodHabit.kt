@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.domain.model
 
+import com.adhamelgendy.nixura.domain.reminder.HabitReminderSettings
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
 import com.adhamelgendy.nixura.domain.theme.WaterGoal
 
@@ -21,6 +22,8 @@ data class GoodHabit(
     val theme: HabitTheme = HabitTheme.DEFAULT,
     /** Daily water habits only: the goal in ml. Then [dailyTarget] is [WaterGoal.servingsPerDay]. */
     val water: WaterGoal? = null,
+    /** Reminder choices (phase C). The defaults mean "not chosen": prayer and water are on, the rest off. */
+    val reminder: HabitReminderSettings = HabitReminderSettings(),
 ) {
     val isWeekly: Boolean get() = weeklyTarget != null
 }
