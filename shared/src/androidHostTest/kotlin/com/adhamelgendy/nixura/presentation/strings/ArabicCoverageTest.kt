@@ -43,8 +43,54 @@ class ArabicCoverageTest {
             a.voiceAdd(2) to e.voiceAdd(2),
             a.coachModeAiLeft(5) to e.coachModeAiLeft(5),
             a.errorText("Habit name cannot be empty") to e.errorText("Habit name cannot be empty"),
-        )
+        ) + reminderSamples(a, e)
         samples.forEach { (ar, en) -> assertTrue(ar != en, "still English: $en") }
+    }
+
+    /** Phase C: every reminder text the notifications use (they are functions, so the getter scan misses them). */
+    private fun reminderSamples(a: Strings, e: Strings): List<Pair<String, String>> {
+        val p = com.adhamelgendy.nixura.domain.reminder.Prayer.ASR
+        val t = com.adhamelgendy.nixura.domain.theme.HabitTheme.entries
+        return buildList {
+            com.adhamelgendy.nixura.domain.reminder.Prayer.entries.forEach {
+                add(a.prayerName(it) to e.prayerName(it))
+                add(a.reminderPrayerTitle(it) to e.reminderPrayerTitle(it))
+            }
+            add(a.reminderPrayerBody(p, 0) to e.reminderPrayerBody(p, 0))
+            add(a.reminderPrayerBody(p, 2) to e.reminderPrayerBody(p, 2))
+            (0..2).forEach { add(a.reminderWaterTitle(it) to e.reminderWaterTitle(it)) }
+            add(a.reminderWaterBody(3, 8) to e.reminderWaterBody(3, 8))
+            add(a.reminderWaterLastBody(7, 8) to e.reminderWaterLastBody(7, 8))
+            // Water and prayer titles are the emoji and the habit's own name in both languages, on purpose.
+            t.filter { it != com.adhamelgendy.nixura.domain.theme.HabitTheme.WATER && it != com.adhamelgendy.nixura.domain.theme.HabitTheme.PRAYER }
+                .forEach { theme -> add(a.reminderHabitTitle(theme, "Gym", 0) to e.reminderHabitTitle(theme, "Gym", 0)) }
+            add(a.reminderDailyBody("Gym", 1, 3) to e.reminderDailyBody("Gym", 1, 3))
+            add(a.reminderDailyBody("Gym", 0, 1) to e.reminderDailyBody("Gym", 0, 1))
+            add(a.reminderWeeklyBody("Gym", 1, 3) to e.reminderWeeklyBody("Gym", 1, 3))
+            add(a.reminderActionGlass(250) to e.reminderActionGlass(250))
+            add(a.reminderActionPrayed(p) to e.reminderActionPrayed(p))
+            add(a.reminderActionDone() to e.reminderActionDone())
+            add(a.reminderActionSnooze(15) to e.reminderActionSnooze(15))
+            add(a.reminderActionSnooze(60) to e.reminderActionSnooze(60))
+            add(a.reminderLoggedWater(5, 8) to e.reminderLoggedWater(5, 8))
+            add(a.reminderWaterGoalDone() to e.reminderWaterGoalDone())
+            add(a.reminderLoggedPrayer(p, 3) to e.reminderLoggedPrayer(p, 3))
+            add(a.reminderLoggedHabit("Gym", 1, 3) to e.reminderLoggedHabit("Gym", 1, 3))
+            add(a.reminderLoggedHabit("Gym", 3, 3) to e.reminderLoggedHabit("Gym", 3, 3))
+            add(a.reminderSnoozed(60) to e.reminderSnoozed(60))
+            add(a.reminderSheetRow("x") to e.reminderSheetRow("x"))
+            add(a.reminderStatusAt("7:00") to e.reminderStatusAt("7:00"))
+            add(a.reminderStatusPausedUntil("Sat") to e.reminderStatusPausedUntil("Sat"))
+            add(a.reminderQuietNote("22:00", "08:00") to e.reminderQuietNote("22:00", "08:00"))
+        }
+    }
+
+    @Test
+    fun arabicSnoozeAndPrayerCountsReadNaturally() {
+        val a = ArabicStrings
+        assertTrue(a.reminderActionSnooze(60) == "أجّل ساعة")
+        assertTrue(a.reminderActionSnooze(15) == "أجّل 15 دقيقة")
+        assertTrue(a.reminderPrayerBody(com.adhamelgendy.nixura.domain.reminder.Prayer.ASR, 2).startsWith("سجّلت صلاتين"))
     }
 
     @Test

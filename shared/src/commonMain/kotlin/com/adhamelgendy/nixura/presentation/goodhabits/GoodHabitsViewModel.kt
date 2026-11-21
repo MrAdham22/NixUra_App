@@ -153,10 +153,18 @@ class GoodHabitsViewModel(
         themes?.let { t -> withContext(Dispatchers.Default) { t.themeFor(name) } } ?: HabitTheme.DEFAULT
 
     /** [weeklyTarget] `null` = daily habit. [water]: the goal chosen on the form, for a daily water habit. */
-    fun onCreate(name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int? = null, water: WaterGoal? = null, onSuccess: () -> Unit) {
+    fun onCreate(
+        name: String,
+        dailyTarget: Int,
+        colorArgb: Long?,
+        weeklyTarget: Int? = null,
+        water: WaterGoal? = null,
+        remindersOn: Boolean? = null,
+        onSuccess: () -> Unit,
+    ) {
         viewModelScope.launch {
             transient.update { it.copy(isSaving = true, errorMessage = null) }
-            val result = createGoodHabit(name, dailyTarget, colorArgb, weeklyTarget, water)
+            val result = createGoodHabit(name, dailyTarget, colorArgb, weeklyTarget, water, remindersOn)
             transient.update { state ->
                 state.copy(isSaving = false, errorMessage = result.exceptionOrNull()?.message)
             }

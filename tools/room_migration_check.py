@@ -93,6 +93,10 @@ try:
     print('V5 DUPLICATE IMPORT ALLOWED'); ok=False
 except sqlite3.IntegrityError: pass
 print('v4->v5 defaults and import dedupe checked')
+# v8 -> v9: existing good habits keep "not chosen" reminders (the app's defaults apply), nothing invented
+if db.execute('select count(*) from good_habits where reminder_enabled is not null or reminder_time is not null or reminder_paused_until is not null').fetchone()[0]:
+    print('V9 INVENTED A REMINDER CHOICE'); ok=False
+print('v8->v9 reminder defaults checked')
 for table,cols in ents.items():
     got={r[1]:(r[2],r[3],r[5]>0) for r in db.execute(f'PRAGMA table_info({table})')}
     exp={c[0]:(c[1],c[2],c[3]) for c in cols}

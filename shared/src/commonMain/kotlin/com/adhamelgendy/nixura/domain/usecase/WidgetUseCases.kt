@@ -36,7 +36,7 @@ private suspend fun adjustTodayCount(
     clock: Clock,
     days: DayCalculator,
     habitId: Long,
-    delta: Int,
+    next: (current: Int) -> Int,
 ): Result<Int> = runCatching {
     require(habitId > 0) { "Invalid habit id" }
     goodHabitWidgetWriteLock.withLock {
@@ -45,9 +45,9 @@ private suspend fun adjustTodayCount(
         // One habit, one day: an archived or deleted habit is "not found".
         val item = repository.dayCountOf(habitId, today) ?: throw IllegalStateException("Habit not found")
         val current = item.count
-        val next = (current + delta).coerceIn(0, item.habit.maxCountPerDay)
-        if (next != current) repository.setCount(habitId, today, next)
-        next
+        val updated = next(current).coerceIn(0, item.habit.maxCountPerDay)
+        if (updated != current) repository.setCount(habitId, today, updated)
+        updated
     }
 }
 
@@ -57,7 +57,7 @@ class IncrementGoodHabitTodayUseCase(
     private val clock: Clock,
     private val days: DayCalculator,
 ) {
-    suspend operator fun invoke(habitId: Long): Result<Int> = adjustTodayCount(repository, clock, days, habitId, +1)
+    suspend operator fun invoke(habitId: Long): Result<Int> = adjustTodayCount(repository, clock, days, habitId) { it + 1 }
 }
 
 /** Removes 1 from today's count (floor 0; reaching 0 clears the day). Returns the new count. */
@@ -66,7 +66,21 @@ class DecrementGoodHabitTodayUseCase(
     private val clock: Clock,
     private val days: DayCalculator,
 ) {
-    suspend operator fun invoke(habitId: Long): Result<Int> = adjustTodayCount(repository, clock, days, habitId, -1)
+    suspend operator fun invoke(habitId: Long): Result<Int> = adjustTodayCount(repository, clock, days, habitId) { it - 1 }
+}
+
+/**
+ * Makes today's count at least [atLeast] (the prayer reminder's "Prayed" button: prayer N marked = count ≥ N, the same
+ * rule the prayer card uses). Same lock and write path as the widget's "+", and naturally idempotent: pressing it
+ * twice, or after the prayer was already marked in the app, changes nothing. Returns the new count.
+ */
+class MarkGoodHabitTodayAtLeastUseCase(
+    private val repository: GoodHabitRepository,
+    private val clock: Clock,
+    private val days: DayCalculator,
+) {
+    suspend operator fun invoke(habitId: Long, atLeast: Int): Result<Int> =
+        adjustTodayCount(repository, clock, days, habitId) { current -> maxOf(current, atLeast) }
 }
 
 /** One-shot reads that turn repository data into widget states (the widget process has no ViewModels). */

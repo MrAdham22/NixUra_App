@@ -110,6 +110,12 @@ class GoodHabitRepositoryImpl(
 
     override suspend fun archive(id: Long) = goodHabitDao.archive(id, clock.nowEpochMillis())
 
+    override suspend fun setReminder(id: Long, reminder: com.adhamelgendy.nixura.domain.reminder.HabitReminderSettings) =
+        goodHabitDao.updateReminder(
+            id, reminder.enabled, reminder.timeMinutes, reminder.windowStartMinutes, reminder.windowEndMinutes,
+            reminder.pausedUntilEpochMillis, clock.nowEpochMillis(),
+        )
+
     override suspend fun dayCountOf(id: Long, dayIndex: Long): GoodHabitDayCount? {
         val entity = goodHabitDao.activeById(id) ?: return null
         val habit = entity.toDomain(entity.storedTheme() ?: themes.themeFor(entity.name))

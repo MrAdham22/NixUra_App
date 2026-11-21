@@ -78,6 +78,13 @@ fun GoodHabitEntity.toDomain(theme: HabitTheme): GoodHabit = GoodHabit(
     weeklyTarget = weeklyTarget,
     theme = theme,
     water = if (theme == HabitTheme.WATER && weeklyTarget == null) storedWaterGoal() ?: WaterGoal.defaultFor(dailyTarget) else null,
+    reminder = com.adhamelgendy.nixura.domain.reminder.HabitReminderSettings(
+        enabled = reminderEnabled,
+        timeMinutes = reminderTime,
+        windowStartMinutes = reminderWindowStart,
+        windowEndMinutes = reminderWindowEnd,
+        pausedUntilEpochMillis = reminderPausedUntil,
+    ),
 )
 
 /** The stored goal, or null when there is none or it is out of range (e.g. a hand-edited synced record). */

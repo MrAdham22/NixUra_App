@@ -4,6 +4,9 @@ import com.adhamelgendy.nixura.domain.money.CostUnit
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.adhamelgendy.nixura.domain.model.EventCategory
+import com.adhamelgendy.nixura.domain.reminder.HabitReminderCopy
+import com.adhamelgendy.nixura.domain.reminder.Prayer
+import com.adhamelgendy.nixura.domain.theme.HabitTheme
 
 /**
  * All user-visible UI text. Defaults are English. To add a language, subclass it and override only
@@ -20,7 +23,7 @@ import com.adhamelgendy.nixura.domain.model.EventCategory
  * Note: the offline coach's habit knowledge base (domain/coach) is English-only for now.
  */
 @Immutable
-open class Strings {
+open class Strings : HabitReminderCopy {
     // Navigation
     open val navHome: String = "Home"
     open val navQuit: String = "Quit"
@@ -1015,6 +1018,108 @@ open class Strings {
     open val notificationTypes: String = "Notification types"
     open val notificationTypesHint: String = "Sound or silence for events, habits, coach and app, in system settings."
     // ---- end of UX B ----
+
+    // ---- UX C: good-habit reminders (notification text, buttons, the reminders sheet). ----
+    open fun prayerName(prayer: Prayer): String = when (prayer) {
+        Prayer.FAJR -> "Fajr"
+        Prayer.DHUHR -> "Dhuhr"
+        Prayer.ASR -> "Asr"
+        Prayer.MAGHRIB -> "Maghrib"
+        Prayer.ISHA -> "Isha"
+    }
+    override fun reminderPrayerTitle(prayer: Prayer): String = when (prayer) {
+        Prayer.FAJR -> "🌙 Fajr has started"
+        Prayer.DHUHR -> "☀️ Dhuhr time"
+        Prayer.ASR -> "🌤️ Asr time"
+        Prayer.MAGHRIB -> "🌅 Maghrib time"
+        Prayer.ISHA -> "🌌 Isha time"
+    }
+    override fun reminderPrayerBody(prayer: Prayer, marked: Int): String =
+        if (marked <= 0) "Mark it here once you've prayed." else "$marked of 5 marked today. Mark ${prayerName(prayer)} here once you've prayed."
+    override fun reminderWaterTitle(variant: Int): String = when (variant.mod(3)) {
+        0 -> "💧 Time for a glass"
+        1 -> "💧 Water break"
+        else -> "💧 A glass of water?"
+    }
+    override fun reminderWaterBody(count: Int, target: Int): String = "$count of $target so far today. Tap +1 when you drink it."
+    override fun reminderWaterLastBody(count: Int, target: Int): String = "One more glass and today's water is done."
+    override fun reminderHabitTitle(theme: HabitTheme, name: String, variant: Int): String = when (theme) {
+        HabitTheme.READING -> "📖 Your reading time"
+        HabitTheme.WALK -> "🚶 A short walk?"
+        HabitTheme.WORKOUT -> "💪 Time to move"
+        HabitTheme.SLEEP -> "🌙 Time to wind down"
+        HabitTheme.WATER -> "💧 $name"
+        HabitTheme.PRAYER -> "🕌 $name"
+        HabitTheme.DEFAULT -> if (variant.mod(2) == 0) "🌱 Time for $name" else "🌱 $name?"
+    }
+    override fun reminderDailyBody(name: String, count: Int, target: Int): String =
+        if (target <= 1) "$name: once today is the goal." else "$name: $count of $target today."
+    override fun reminderWeeklyBody(name: String, doneDays: Int, goalDays: Int): String =
+        "$name: $doneDays of $goalDays days this week."
+    override fun reminderActionGlass(servingMl: Int): String = "+1 glass · $servingMl ml"
+    override fun reminderActionPrayed(prayer: Prayer): String = "Prayed ✓"
+    override fun reminderActionDone(): String = "Done ✓"
+    override fun reminderActionSnooze(minutes: Int): String =
+        if (minutes % 60 == 0) "Snooze ${minutes / 60} h" else "Snooze $minutes min"
+    override fun reminderLoggedWater(count: Int, target: Int): String = "$count of $target glasses today"
+    override fun reminderWaterGoalDone(): String = "💧 Today's water is done. Nice."
+    override fun reminderLoggedPrayer(prayer: Prayer, marked: Int): String = "${prayerName(prayer)} marked · $marked of 5 today"
+    override fun reminderLoggedHabit(name: String, count: Int, target: Int): String =
+        if (count >= target) "$name: done for today ✓" else "$name: $count of $target today"
+    override fun reminderSnoozed(minutes: Int): String =
+        if (minutes % 60 == 0) "OK, again in ${minutes / 60} h." else "OK, again in $minutes min."
+
+    /** The row in a good habit's long-press sheet, e.g. "Reminders: On · every 2 h". */
+    open fun reminderSheetRow(status: String): String = "Reminders: $status"
+    open val reminderStatusOff: String = "Off"
+    open val reminderStatusWater: String = "On · every 2 h"
+    open val reminderStatusPrayer: String = "On · at prayer times"
+    open fun reminderStatusAt(time: String): String = "On · $time"
+    open val reminderStatusNeedsLocation: String = "Needs your location"
+    open fun reminderStatusPausedUntil(date: String): String = "Paused until $date"
+    open val reminderSwitch: String = "Remind me"
+    open val reminderExplainPrayer: String =
+        "About 10 minutes after each prayer starts, for the prayer you haven't marked yet. Times come from your location, worked out on this phone."
+    open val reminderExplainWater: String =
+        "Every 2 hours inside the times below, only when you're behind today's goal. They stop once today's water is done."
+    open val reminderExplainDaily: String =
+        "At the time below, once a day (a second one 3 hours later when your goal is more than once). Skipped once today's goal is done."
+    open val reminderExplainWeekly: String =
+        "At the time below, on days your weekly goal can still be reached. Skipped on days you've already done it."
+    open fun reminderQuietNote(from: String, until: String): String = "Quiet hours: nothing between $from and $until (Fajr excepted)."
+    open val reminderFrom: String = "From"
+    open val reminderUntil: String = "Until"
+    open val reminderTime: String = "Time"
+    open val reminderTimeIsQuiet: String = "That's inside quiet hours, so no reminder will come at that time."
+    open val reminderPauseToday: String = "Pause for today"
+    open val reminderPauseWeek: String = "Pause for 1 week"
+    open val reminderResume: String = "Resume reminders"
+    open val reminderChannelOff: String = "Habit reminders are turned off in system settings."
+    open val habitReminderNotificationsOff: String = "Notifications are blocked for NixUra, so reminders can't reach you."
+    open val notificationAskHabitReason: String =
+        "So NixUra can remind you of this habit at the right moment. You can turn it off here anytime."
+    open val reminderFormLine: String = "Reminders on, change anytime"
+    open val reminderFormHintPrayer: String = "About 10 minutes after each prayer time."
+    open val reminderFormHintWater: String = "Every 2 hours from 9:00 to 21:00, only when you're behind."
+    open val reminderAllowNotifications: String = "Allow notifications"
+
+    // Prayer times need the phone's location (PLAN.md decision 1).
+    open val locationTitle: String = "Prayer times need your location"
+    open val locationBody: String =
+        "Your city-level location is read once and stays on this phone: never synced, never sent anywhere. Without it, prayer reminders stay off."
+    open val locationUse: String = "Use my location"
+    open val locationUpdate: String = "Update location"
+    open val locationSaved: String = "Prayer times follow your saved location."
+    open val locationBlocked: String = "Location is off for NixUra, so prayer times can't be worked out."
+    open val locationFailed: String = "Couldn't get your location. Turn on location on your phone and try again."
+    open val locationReading: String = "Finding your location…"
+
+    // Settings → Notifications: pause every habit reminder on this phone.
+    open val pauseRemindersTitle: String = "Pause habit reminders"
+    open val pauseRemindersHint: String = "On this phone only. Events, milestones and your check-in still come."
+    open val pauseForToday: String = "For today"
+    open val pauseForWeek: String = "For 1 week"
+    // ---- end of UX C ----
 }
 
 /** One question and its answer on the Help screen. */

@@ -26,6 +26,8 @@ import org.koin.dsl.module
 class NixUraApplication : Application() {
 
     val notificationPermission by lazy { AndroidNotificationPermission(this) }
+    /** Prayer-time location (phase C); MainActivity attaches its permission launcher. */
+    val deviceLocation by lazy { com.adhamelgendy.nixura.notifications.AndroidDeviceLocation(this) }
     val voiceRecorder by lazy { com.adhamelgendy.nixura.voice.AndroidVoiceRecorder(this) }
 
     /**
@@ -56,8 +58,11 @@ class NixUraApplication : Application() {
                 single<BackgroundSyncScheduler> { AndroidBackgroundSync(applicationContext) }
                 single { AndroidGoogleAuthorizer(applicationContext) }
                 single<GoogleAuthorizer> { get<AndroidGoogleAuthorizer>() }
+                single<com.adhamelgendy.nixura.domain.reminder.DeviceLocationGateway> { deviceLocation }
             },
         )
+        // Good-habit reminders: a daily re-plan as a safety net (phase C). Never let it stop the app from starting.
+        runCatching { com.adhamelgendy.nixura.notifications.ReminderRefreshWorker.schedule(this) }
         // Home-screen widgets: keep them in sync with data/time changes while the process is alive.
         // Never let a widget problem stop the app from starting.
         runCatching {
