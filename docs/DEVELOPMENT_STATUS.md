@@ -16,8 +16,8 @@ Branch `perf/widget-tap-latency`, details and the before/after table in `docs/ux
   redraws (never writes); cached prayer bitmap pieces; Facebook SDK starts with `MainActivity`.
 - **After:** warm 70–90 ms, cold ≈ 980 ms (`onCreate` 53 ms), observer pass 35 ms without drawing, counts exact.
 - **Verified:** `:androidApp:assembleDebug`, `:shared:testAndroidHostTest` (all pass, new `WidgetTapConcurrencyTest`,
-  `RefreshCoalescerTest`), installed on the Oppo, before/after runs there. **Not verified:** the owner's finger test
-  after a long lock (steps in the A1 doc), a release build (R8 should cut class loading), iOS (no widgets there).
+  `RefreshCoalescerTest`), installed on the Oppo, before/after runs there. **Owner finger test on the Oppo: passed (2026-11-21).**
+  **Not verified:** a release build (R8 should cut class loading), iOS (no widgets there).
 - **Found:** `tools/gen_widget_layouts.py` is out of sync with the committed layouts; do not run it before fixing it.
 
 ## Session 4 of 4 (2026-11-17): Arabic and right-to-left

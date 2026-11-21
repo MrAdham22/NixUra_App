@@ -126,7 +126,10 @@ Emulator (Pixel 9, before only): warm 45–70 ms to the touched widget; cold 860
 - `WidgetUseCasesTest.changeObserverEmitsOnEveryRepositoryChange` updated: the current state is no longer emitted.
 - `:shared:testAndroidHostTest`: all pass (2026-11-21). `:androidApp:assembleDebug` OK; installed on the Oppo.
 
-## Owner test on the phone (please do before merging)
+## Owner test on the phone
+
+**Passed (owner, 2026-11-21)**, then merged as PR #16.
+
 
 1. Leave the phone locked for 30+ minutes (or overnight), unlock, tap "+" on the Prayer widget once with your finger.
    Expected: the star button flashes at once; the number changes within about a second; one tap = +1.
