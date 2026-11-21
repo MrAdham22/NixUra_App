@@ -72,6 +72,10 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="nixura" android:host="integrations" />
             </intent-filter>
+            <!-- Launcher App Shortcuts (long-press the icon): defined in res/xml/shortcuts.xml. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <receiver

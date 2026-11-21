@@ -24,7 +24,7 @@ Reminders exist to support the habit, not to raise engagement: no guilt, no dark
 |---|---|---|---|---|
 | Plan | Questions answered 2026-11-21; PR waiting for owner approval | `docs/ux-upgrade-plan` | this file | n/a |
 | A1 | Done, merged 2026-11-21 (PR #16) | `perf/widget-tap-latency` (deleted) | `docs/ux-upgrade/A1-widget-latency.md` | yes: adb before/after + owner finger test passed 2026-11-21 |
-| A2 | Not started, ready | | `docs/ux-upgrade/A2.md` | no |
+| A2 | Built, PR open, waiting for the owner's Oppo test | `feature/app-shortcuts` | `docs/ux-upgrade/A2-app-shortcuts.md` | installed, shortcuts registered; finger test pending |
 | B | Not started, ready | | `docs/ux-upgrade/B.md` | no |
 | C | Not started (needs B merged) | | `docs/ux-upgrade/C.md` | no |
 | D | Not started | | `docs/ux-upgrade/D.md` | n/a (research) |
@@ -59,7 +59,7 @@ Update this table at the end of every phase.
    **email and Firestore**.
 5. **"Don't delete NixUra!" screen:** the draft is accepted (what you'd lose, "Tell me what's wrong" → bug screen,
    "Uninstall anyway" → system app page), **plus funny, light guilt wording** (playful, never shaming, never hiding
-   the uninstall button). Examples in A2 below.
+   the uninstall button). Re-confirmed by the owner on 2026-11-21: funny guilt wins over "no guilt-tripping" in the A2 prompt. Examples in A2 below.
 6. **Test phone:** OPPO Reno 10 5G (CPH2531), **Android 15**, ColorOS 15 (confirmed).
 
 ---

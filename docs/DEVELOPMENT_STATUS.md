@@ -2,6 +2,20 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## UX upgrade A2 (2026-11-21): launcher App Shortcuts
+
+Branch `feature/app-shortcuts`, details and the Oppo test steps in `docs/ux-upgrade/A2-app-shortcuts.md`.
+
+- **Built:** 4 static App Shortcuts (Don't delete NixUra!, Bugs or issues?, Need help?, Talk to your AI Coach) with
+  EN + AR labels and brand icons; three new screens (Keep NixUra with funny light-guilt wording from real data, Report
+  a problem, Help FAQ); bug reports by email (everyone) and Firestore `bugReports` (signed-in only, create-only rules);
+  iOS quick actions (unverified).
+- **Verified:** `:shared:testAndroidHostTest` 657 tests, 0 failures; `:androidApp:assembleDebug`; Firestore rules 11/11
+  on the emulator; on the Android 17 emulator all four shortcuts registered and open the right screen with the right
+  back stack, dark mode and Arabic RTL checked; installed on the owner's Oppo and all four shortcuts registered there.
+- **Not verified:** the long-press menu and emoji on ColorOS, the mail app on the Oppo, a real Firestore write
+  (**the `bugReports` rules are not deployed**, owner's OK needed), iOS (needs a Mac).
+
 ## UX upgrade A1 (2026-11-21): widget "+" tap latency
 
 Branch `perf/widget-tap-latency`, details and the before/after table in `docs/ux-upgrade/A1-widget-latency.md`.

@@ -81,6 +81,18 @@ fun authModule() = module {
         )
     }
     single<SyncRemote> { get<FirestoreSyncRemote>() }
+
+    // Bug reports from the launcher shortcut: create-only Firestore writes, same FirebaseSession for the token.
+    // Platform modules provide SupportEnvironmentProvider and SupportActions.
+    single<com.adhamelgendy.nixura.domain.support.BugReportRemote> {
+        com.adhamelgendy.nixura.data.support.FirestoreBugReportRemote(
+            AuthorizedApi(KtorApiTransport(ApiConfig(FIRESTORE_BASE_URL)), get()),
+            get<FirebaseConfig>().projectId,
+        )
+    }
+    factory { com.adhamelgendy.nixura.domain.support.SendBugReportUseCase(get(), get(), get(), get(), get()) }
+    viewModel { com.adhamelgendy.nixura.presentation.support.ReportBugViewModel(get(), get()) }
+    viewModel { com.adhamelgendy.nixura.presentation.support.KeepNixUraViewModel(get(), get(), get(), get()) }
     single<SyncLocalStore> { RoomSyncLocalStore(get<NixUraDatabase>().syncDao(), get(), get(), get()) }
     single { SyncEngine(get(), get(), get(), get()) }
     single { SyncCoordinator(get(), get(), get(), get()) }

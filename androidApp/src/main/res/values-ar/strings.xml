@@ -12,4 +12,15 @@
 
     <string name="channel_reminders_name">التذكيرات والتشجيع</string>
     <string name="channel_reminders_description">تذكيرات المناسبات، وإنجازات أيامك المتتالية، ورسالة يومية قصيرة</string>
+
+    <!-- اختصارات المشغّل (res/xml/shortcuts.xml). الاسم القصير 10 أحرف على الأكثر، والطويل 25. -->
+    <string name="shortcut_keep_short">🥺 ابقَ؟</string>
+    <string name="shortcut_keep_long">🥺 لا تحذف NixUra!</string>
+    <string name="shortcut_bug_short">🐛 خلل؟</string>
+    <string name="shortcut_bug_long">🐛 مشكلة أو خلل؟</string>
+    <string name="shortcut_help_short">💡 مساعدة</string>
+    <string name="shortcut_help_long">💡 تحتاج مساعدة؟</string>
+    <string name="shortcut_coach_short">🧠 المدرب</string>
+    <string name="shortcut_coach_long">🧠 تحدّث مع مدربك الذكي</string>
+    <string name="shortcut_disabled">هذا الاختصار لم يعد متاحًا.</string>
 </resources>

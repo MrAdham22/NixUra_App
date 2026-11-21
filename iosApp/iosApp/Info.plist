@@ -15,5 +15,47 @@
 		<string>en</string>
 		<string>ar</string>
 	</array>
+	<!-- The bug-report screen opens the Mail app with a mailto: link; canOpenURL needs the scheme listed. -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>mailto</string>
+	</array>
+	<!-- Home-screen quick actions (long-press the icon), the iOS twin of Android's res/xml/shortcuts.xml.
+	     The type suffix is the shared AppShortcut id; iOSApp.swift hands it to IosShortcuts.handle. -->
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.adhamelgendy.nixura.keep_nixura</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>🥺 Don't delete NixUra!</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>heart.fill</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.adhamelgendy.nixura.report_bug</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>🐛 Bugs or issues?</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>ladybug.fill</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.adhamelgendy.nixura.help</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>💡 Need help?</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>questionmark.circle.fill</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.adhamelgendy.nixura.ai_coach</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>🧠 Talk to your AI Coach</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>sparkles</string>
+		</dict>
+	</array>
 </dict>
 </plist>

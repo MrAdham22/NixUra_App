@@ -912,6 +912,122 @@ object ArabicStrings : Strings() {
     override val calendarMore: String = "أكثر"
     override val calendarLegendA11y: String = "يدلّ اللون على مقدار ما أُنجز في كل يوم، من الأقل إلى الأكثر"
 
+    // ---- UX A2: launcher shortcut screens ----
+    override val keepTitle: String = "لا تحذف NixUra!"
+    override val keepHeadline: String = "لحظة… هل تنفصل عني؟ 🥺"
+    override val keepIntro: String = "هل قلتُ شيئًا أزعجك؟ أم عددتُ شيئًا خطأ؟"
+    override fun keepStreak(habit: String, days: Long): String =
+        if (days < 1) "عدّاد «$habit» بدأ للتو، ويسأل من الآن: إلى أين ستذهب؟"
+        else "سلسلة " + when (days) {
+            1L -> "اليوم الواحد"
+            2L -> "اليومين"
+            else -> "الـ${nDays(days)}"
+        } + " في «$habit» تسأل إن كانت أخطأت في شيء."
+    override fun keepWater(glasses: Int): String =
+        "أكواب الماء تبكي الآن. حرفيًا. هذه " +
+            ArabicPlurals.format(glasses.toLong(), "%d كوب", "كوب واحد", "كوبان", "%d أكواب", "%d كوبًا", "%d كوب") +
+            " من الدموع. 💧"
+    override fun keepTracking(habits: Int): String =
+        if (habits == 1) "عادتك تتظاهر بأنها بخير. وهي ليست بخير."
+        else "عاداتك ($habits) متلاصقة الآن، تتظاهر بأنها بخير."
+    override val keepNoProgress: String = "سلاسلك القادمة حزينة من الآن."
+    override val keepGuestNote: String =
+        "وأيضًا، أنت ضيف، فعاداتك محفوظة على هذا الهاتف فقط. إن رحلتُ رحلت معي. 💔"
+    override val keepSignedInNote: String = "تقدّمك في أمان داخل حسابك. سينتظرك. كما كنت سأفعل."
+    override val keepCanChange: String = "قل لي ما الذي حدث. يمكنني أن أتغيّر. (أنا تطبيق، أستطيع فعلًا، بتحديث.)"
+    override val keepBack: String = "حسنًا، سأبقى"
+    override val keepFeedback: String = "أخبرني ما المشكلة"
+    override val keepUninstall: String = "احذفه على أي حال"
+    override val keepUninstallNote: String = "لا ضغينة. تقريبًا."
+    override val keepSettingsFailed: String = "تعذّر فتح صفحة التطبيق في النظام. يمكنك حذف NixUra من إعدادات الهاتف ← التطبيقات."
+
+    override val bugTitle: String = "الإبلاغ عن مشكلة"
+    override val bugIntro: String = "أخبرني بما حدث. الكلمات البسيطة تكفي تمامًا."
+    override val bugCategoryLabel: String = "ما نوع المشكلة؟ (اختياري)"
+    override fun bugCategory(category: com.adhamelgendy.nixura.domain.support.BugCategory): String = when (category) {
+        com.adhamelgendy.nixura.domain.support.BugCategory.CRASH -> "أُغلق أو توقّف"
+        com.adhamelgendy.nixura.domain.support.BugCategory.WRONG_DATA -> "أرقام خاطئة"
+        com.adhamelgendy.nixura.domain.support.BugCategory.LOOKS_WRONG -> "الشكل غير صحيح"
+        com.adhamelgendy.nixura.domain.support.BugCategory.NOTIFICATIONS -> "التذكيرات"
+        com.adhamelgendy.nixura.domain.support.BugCategory.IDEA -> "فكرة"
+        com.adhamelgendy.nixura.domain.support.BugCategory.OTHER -> "شيء آخر"
+    }
+    override val bugMessageLabel: String = "ماذا حدث؟"
+    override val bugMessagePlaceholder: String = "مثلًا: بطاقة الماء لم تمتلئ بعد أن لمست ‎+1"
+    override val bugStepsLabel: String = "كيف أرى المشكلة بنفسي؟ (اختياري)"
+    override val bugStepsPlaceholder: String = "1. افتح…  2. المس…  3. ثم…"
+    override val bugPrivacyNote: String = "نضيف إصدار التطبيق وطراز الهاتف وإصدار النظام. لا اسمك ولا بريدك ولا عاداتك أبدًا."
+    override val bugSignedInNote: String = "يُرسل بالبريد، وتُحفظ نسخة مع حسابك لأتابع معك."
+    override val bugGuestNote: String = "بصفتك ضيفًا، يُرسل بلاغك بالبريد فقط: يبقى NixUra بلا اتصال."
+    override val bugSend: String = "أرسل البلاغ"
+    override val bugEmpty: String = "اكتب بضع كلمات عن المشكلة أولًا."
+    override fun bugTooShort(min: Int): String = "بعض التفاصيل الإضافية من فضلك (" + pl(min.toLong(), "حرف واحد", "حرفان", "أحرف", "حرفًا", "حرف") + " على الأقل)."
+    override fun bugTooLong(max: Int): String = "هذا كثير! اجعله أقل من $max حرف من فضلك."
+    override val bugSentTitle: String = "شكرًا لك! 💛"
+    override val bugSentSaved: String = "حُفظ بلاغك."
+    override val bugSentOffline: String = "يبدو أنك غير متصل، فلم تُحفظ النسخة. البريد سيصل."
+    override val bugSentFailed: String = "لم تُحفظ النسخة، لكن البريد سيصل."
+    override val bugSentEmailOpened: String = "فُتح تطبيق البريد وكل شيء مكتوب. اضغط «إرسال» هناك فقط."
+    override fun bugSentNoEmailApp(address: String): String = "لا يوجد تطبيق بريد على هذا الهاتف. يمكنك مراسلتنا على $address."
+    override val bugDone: String = "عودة إلى التطبيق"
+
+    override val helpTitle: String = "المساعدة"
+    override val helpIntro: String = "إجابات سريعة عن NixUra. المس السؤال لتفتحه."
+    override val helpFaq: List<FaqItem> = listOf(
+        FaqItem(
+            "كيف أضيف عادة؟",
+            "استخدم تبويب «الإقلاع» للعادات التي تريد تركها، وتبويب «البناء» للعادات الجيدة. المس +، واكتب الاسم (بأي لغة، " +
+                "والأخطاء الإملائية لا تهم) واحفظ. عادة الإقلاع يبدأ عدّادها فورًا، ويمكنك أيضًا أن تحدّد متى فعلتها آخر مرة.",
+        ),
+        FaqItem(
+            "تعثّرت. ماذا الآن؟",
+            "يحدث هذا. افتح قائمة ⋯ في بطاقة الإقلاع (أو اضغط مطوّلًا على البطاقة) واختر «تعثّرت». يبدأ العدّاد من جديد، " +
+                "وتبقى أطول سلسلة لك محفوظة، ويستطيع المدرّب مساعدتك على التخطيط للسلسلة القادمة.",
+        ),
+        FaqItem(
+            "كيف أسجّل عادة جيدة؟",
+            "المس + على بطاقتها في الرئيسية أو في تبويب «البناء»، أو على أداتها في الشاشة الرئيسية. لمستها بالخطأ؟ المس −، " +
+                "أو افتح العادة والمس أي يوم سابق في التقويم لتصحيحه.",
+        ),
+        FaqItem(
+            "كيف أضع عادة على الشاشة الرئيسية؟",
+            "على أندرويد، افتح عادة أو مناسبة والمس «أضف إلى الشاشة الرئيسية»، أو اضغط مطوّلًا على مكان فارغ في الشاشة " +
+                "الرئيسية واختر NixUra من الأدوات. هناك عدّاد للإقلاع، وتسجيل سريع للعادات الجيدة، وعدّ تنازلي للمناسبات.",
+        ),
+        FaqItem(
+            "لماذا لا تصلني التذكيرات؟",
+            "تأكّد أن الإشعارات مفعّلة في إعدادات NixUra وفي إعدادات الهاتف. بعض الهواتف (OPPO وXiaomi وHuawei وغيرها) " +
+                "توقف التطبيقات لتوفير البطارية: من إعدادات الهاتف ← البطارية، اسمح لـNixUra بالعمل بلا قيود وبالتشغيل التلقائي.",
+        ),
+        FaqItem(
+            "ماذا يعرف المدرّب الذكي؟ وهل هو خاص؟",
+            "إن كنت مسجّلًا ووافقت، يجيبك مدرّب ذكاء اصطناعي حقيقي، مع بضع رسائل مجانية كل يوم. وإلا يجيبك مدرّب يعمل " +
+                "على هاتفك بالكامل. الذكاء الاصطناعي لا يحصل أبدًا على اسمك أو بريدك أو حسابك.",
+        ),
+        FaqItem(
+            "هل أحتاج إلى حساب؟ وهل بياناتي محفوظة احتياطيًا؟",
+            "لا تحتاج إلى حساب. بصفتك ضيفًا، يبقى كل شيء على هذا الهاتف ويعمل NixUra بلا اتصال، لذا فحذف التطبيق يحذف " +
+                "بياناتك. مع حساب، تتزامن عاداتك وتعود حين تسجّل الدخول على هاتف جديد.",
+        ),
+        FaqItem(
+            "كيف أغيّر اللغة؟",
+            "الإعدادات ← المظهر ← اللغة: لغة النظام أو English أو العربية. ويمكنك هناك أيضًا اختيار الأرقام 123 أو ١٢٣.",
+        ),
+        FaqItem(
+            "لماذا يتغيّر لون بطاقة الإقلاع؟",
+            "تصبح أفتح كلما طالت سلسلتك، عند 1 و3 و7 و14 و30 يومًا. ويمكنك اختيار لونك الخاص عند تعديل العادة.",
+        ),
+        FaqItem(
+            "كيف أحذف عادة أو بياناتي أو حسابي؟",
+            "عادة واحدة: اضغط مطوّلًا على بطاقتها واختر «حذف» (لديك 5 ثوانٍ للتراجع). كل عاداتك ومناسباتك ومحادثاتك: " +
+                "الإعدادات ← الخصوصية والبيانات ← امسح كل البيانات (ومن حسابك أيضًا إن كنت مسجّلًا). الحساب نفسه: " +
+                "الإعدادات ← الحساب ← حذف الحساب.",
+        ),
+    )
+    override val helpStillStuck: String = "ما زلت عالقًا؟"
+    override val helpStillStuckBody: String = "أخبرني بما يحدث وسأبحث فيه."
+    override val helpReport: String = "الإبلاغ عن مشكلة"
+
     /** The noun after a written number: 3–10 أكواب, 11–99 كوبًا, otherwise كوب. */
     private fun cupNoun(n: Int): String = when (ArabicPlurals.category(n.toLong())) {
         PluralCategory.FEW -> "أكواب"
