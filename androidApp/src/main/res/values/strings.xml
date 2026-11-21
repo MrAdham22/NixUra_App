@@ -13,4 +13,15 @@
     <!-- Notification channel (Settings → Apps → NixUra → Notifications). -->
     <string name="channel_reminders_name">Reminders &amp; coaching</string>
     <string name="channel_reminders_description">Event reminders, streak milestones and your daily check-in</string>
+
+    <!-- Launcher App Shortcuts (res/xml/shortcuts.xml). Short label <= 10 characters, long label <= 25. -->
+    <string name="shortcut_keep_short">🥺 Stay?</string>
+    <string name="shortcut_keep_long">🥺 Don\'t delete NixUra!</string>
+    <string name="shortcut_bug_short">🐛 Bugs?</string>
+    <string name="shortcut_bug_long">🐛 Bugs or issues?</string>
+    <string name="shortcut_help_short">💡 Help</string>
+    <string name="shortcut_help_long">💡 Need help?</string>
+    <string name="shortcut_coach_short">🧠 Coach</string>
+    <string name="shortcut_coach_long">🧠 Talk to your AI Coach</string>
+    <string name="shortcut_disabled">This shortcut is no longer available.</string>
 </resources>

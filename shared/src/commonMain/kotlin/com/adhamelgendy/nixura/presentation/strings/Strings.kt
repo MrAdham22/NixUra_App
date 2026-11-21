@@ -882,7 +882,129 @@ open class Strings {
     open val calendarLegendA11y: String = "Colour shows how much of each day was done, from less to more"
 
     // ---- end of Session 3 ----
+
+    // ---- UX A2: screens opened by the launcher shortcuts (Don't delete, Bugs, Help). ----
+    // "Don't delete NixUra!": funny, light guilt (owner decision 5, confirmed again 2026-11-21); playful, never
+    // shaming, and the uninstall button is never hidden or smaller than the others.
+    open val keepTitle: String = "Don't delete NixUra!"
+    open val keepHeadline: String = "Wait… are you breaking up with me? 🥺"
+    open val keepIntro: String = "Was it something I said? Something I counted?"
+    /** Longest streak running now: name of the habit and whole days. */
+    open fun keepStreak(habit: String, days: Long): String =
+        if (days < 1) "Your “$habit” counter just started and it's already asking where you're going."
+        else "Your $days-day “$habit” streak just asked if it did something wrong."
+    /** The water habit's daily goal in cups. */
+    open fun keepWater(glasses: Int): String =
+        "The water glasses are already crying. Literally. That's ${if (glasses == 1) "1 glass" else "$glasses glasses"} of tears. 💧"
+    open fun keepTracking(habits: Int): String =
+        if (habits == 1) "Your habit is pretending it's fine. It's not fine." else "Your $habits habits are huddled together, pretending they're fine."
+    open val keepNoProgress: String = "Your future streaks are already sad about this."
+    open val keepGuestNote: String =
+        "Also, you're a guest, so your habits live only on this phone. If I go, they come with me. 💔"
+    open val keepSignedInNote: String = "Your progress is safe in your account. It'll wait for you. Like I would."
+    open val keepCanChange: String = "Tell me what went wrong. I can change. (I'm an app. I really can, with an update.)"
+    open val keepBack: String = "Fine, I'll stay"
+    open val keepFeedback: String = "Tell me what's wrong"
+    open val keepUninstall: String = "Uninstall anyway"
+    open val keepUninstallNote: String = "No hard feelings. Mostly."
+    open val keepSettingsFailed: String = "Couldn't open the app's system page. You can uninstall NixUra from your phone's Settings → Apps."
+
+    // "Bugs or issues?"
+    open val bugTitle: String = "Report a problem"
+    open val bugIntro: String = "Tell me what went wrong. Plain words are perfect."
+    open val bugCategoryLabel: String = "What kind of problem? (optional)"
+    open fun bugCategory(category: com.adhamelgendy.nixura.domain.support.BugCategory): String = when (category) {
+        com.adhamelgendy.nixura.domain.support.BugCategory.CRASH -> "It closed or froze"
+        com.adhamelgendy.nixura.domain.support.BugCategory.WRONG_DATA -> "Wrong numbers"
+        com.adhamelgendy.nixura.domain.support.BugCategory.LOOKS_WRONG -> "Looks wrong"
+        com.adhamelgendy.nixura.domain.support.BugCategory.NOTIFICATIONS -> "Reminders"
+        com.adhamelgendy.nixura.domain.support.BugCategory.IDEA -> "An idea"
+        com.adhamelgendy.nixura.domain.support.BugCategory.OTHER -> "Something else"
+    }
+    open val bugMessageLabel: String = "What happened?"
+    open val bugMessagePlaceholder: String = "For example: the water card didn't fill after I tapped +1"
+    open val bugStepsLabel: String = "How can I see it happen? (optional)"
+    open val bugStepsPlaceholder: String = "1. Open…  2. Tap…  3. Then…"
+    open val bugPrivacyNote: String =
+        "Your app version, phone model and system version are added. Never your name, email or habits."
+    open val bugSignedInNote: String = "It's sent by email, and a copy is saved with your account so I can follow up."
+    open val bugGuestNote: String = "As a guest, your report goes by email only: NixUra stays offline."
+    open val bugSend: String = "Send report"
+    open val bugEmpty: String = "Write a few words about the problem first."
+    open fun bugTooShort(min: Int): String = "A little more detail, please (at least $min letters)."
+    open fun bugTooLong(max: Int): String = "That's a lot! Please keep it under $max characters."
+    open val bugSentTitle: String = "Thank you! 💛"
+    open val bugSentSaved: String = "Your report is saved."
+    open val bugSentOffline: String = "You seem to be offline, so the saved copy didn't go. The email will."
+    open val bugSentFailed: String = "The saved copy didn't go through, but the email will."
+    open val bugSentEmailOpened: String = "Your email app is open with everything filled in. Just press Send there."
+    open fun bugSentNoEmailApp(address: String): String = "No email app found on this phone. You can write to $address."
+    open val bugDone: String = "Back to the app"
+
+    // "Need help?"
+    open val helpTitle: String = "Help"
+    open val helpIntro: String = "Quick answers about NixUra. Tap a question to open it."
+    open val helpFaq: List<FaqItem> = listOf(
+        FaqItem(
+            "How do I add a habit?",
+            "Use the Quit tab for habits you want to stop and the Build tab for good ones. Tap +, type a name (any " +
+                "language, typos are fine) and save. A quit habit starts counting right away; you can also say when you last did it.",
+        ),
+        FaqItem(
+            "I slipped. What now?",
+            "It happens. Open the quit card's ⋯ menu (or long-press the card) and choose “I slipped”. The counter starts " +
+                "again, your longest streak is kept, and the Coach can help you plan the next one.",
+        ),
+        FaqItem(
+            "How do I log a good habit?",
+            "Tap + on its card on Home or the Build tab, or on its home-screen widget. Tapped by mistake? Tap −, or open " +
+                "the habit and tap any past day in the calendar to correct it.",
+        ),
+        FaqItem(
+            "How do I put a habit on my home screen?",
+            "On Android, open a habit or an event and tap “Add to Home screen”, or long-press an empty spot on your home " +
+                "screen and pick NixUra under Widgets. There's a quit counter, a quick log for good habits and an events countdown.",
+        ),
+        FaqItem(
+            "Why don't my reminders arrive?",
+            "Check that notifications are on in NixUra's Settings and in your phone's settings. Some phones (OPPO, Xiaomi, " +
+                "Huawei and others) stop apps to save battery: in the phone's Settings → Battery, let NixUra run without " +
+                "restrictions and allow it to start by itself.",
+        ),
+        FaqItem(
+            "What does the AI Coach know? Is it private?",
+            "If you're signed in and agree, a real AI coach answers, with a few free messages a day. Otherwise a coach " +
+                "that runs entirely on your phone answers. The AI never gets your name, email or account.",
+        ),
+        FaqItem(
+            "Do I need an account? Is my data backed up?",
+            "No account needed. As a guest, everything stays on this phone and NixUra stays offline, so deleting the app " +
+                "deletes your data. With an account, your habits sync and come back when you sign in on a new phone.",
+        ),
+        FaqItem(
+            "How do I change the language?",
+            "Settings → Appearance → Language: System default, English or العربية. You can also choose 123 or ١٢٣ digits there.",
+        ),
+        FaqItem(
+            "Why does my quit card change colour?",
+            "It gets lighter as your streak grows, at 1, 3, 7, 14 and 30 days. You can pick your own colour when you edit the habit.",
+        ),
+        FaqItem(
+            "How do I delete a habit, my data or my account?",
+            "One habit: long-press its card and choose Delete (you get 5 seconds to undo). All your habits, events and " +
+                "chats: Settings → Privacy and data → Erase all data (also from your account if you're signed in). " +
+                "The account itself: Settings → Account → Delete account.",
+        ),
+    )
+    open val helpStillStuck: String = "Still stuck?"
+    open val helpStillStuckBody: String = "Tell me what's going on and I'll look into it."
+    open val helpReport: String = "Report a problem"
+    // ---- end of UX A2 ----
 }
+
+/** One question and its answer on the Help screen. */
+@Immutable
+data class FaqItem(val question: String, val answer: String)
 
 /** A choice in Settings → Language. [nativeName] is null for "System default", which is shown in the UI language. */
 data class AppLanguage(val code: String, val nativeName: String?)

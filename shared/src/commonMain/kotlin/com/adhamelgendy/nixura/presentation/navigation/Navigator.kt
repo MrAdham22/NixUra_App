@@ -41,6 +41,15 @@ sealed interface Route {
     data object ChangePassword : Route
     data object DeleteAccount : Route
     data class Legal(val document: com.adhamelgendy.nixura.presentation.legal.LegalDocument) : Route
+
+    /** Launcher shortcut "Don't delete NixUra!": what the user would lose, with a way back and a way to tell us why. */
+    data object KeepNixUra : Route
+
+    /** "Bugs or issues?": describe a problem; sent by email (everyone) and to Firestore (signed-in users). */
+    data object ReportBug : Route
+
+    /** "Need help?": offline FAQ about the app's real features. */
+    data object Help : Route
 }
 
 /** Minimal back-stack navigator (no external navigation library). Registered as a Koin singleton. */

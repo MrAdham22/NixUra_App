@@ -3,4 +3,7 @@
     <color name="nixura_navy">#FF1D1A39</color>
     <!-- Launcher icon backdrop, matches the dark interior of the NixUra icon artwork. -->
     <color name="ic_launcher_background">#FF110721</color>
+    <!-- Launcher App Shortcut icons: brand plum badge with a blush glyph (one colour, so launchers can theme them). -->
+    <color name="shortcut_background">#FF451952</color>
+    <color name="shortcut_glyph">#FFE8BCB9</color>
 </resources>

@@ -17,6 +17,7 @@ import com.adhamelgendy.nixura.integrations.AndroidGoogleAuthorizer
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import com.adhamelgendy.nixura.presentation.navigation.Navigator
+import com.adhamelgendy.nixura.shortcuts.ShortcutDeepLink
 import com.adhamelgendy.nixura.widgets.WidgetDeepLink
 import com.adhamelgendy.nixura.widgets.WidgetUpdater
 import org.koin.android.ext.android.inject
@@ -53,7 +54,12 @@ class MainActivity : ComponentActivity() {
 
         // Opened from a home-screen widget? Only on a fresh start: after rotation / process restore the
         // navigator already holds (or deliberately reset) the stack and the extras were consumed.
-        if (savedInstanceState == null) WidgetDeepLink.apply(intent, appNavigator)
+        // The same for launcher App Shortcuts (long-press the icon). Static shortcuts start the activity with
+        // NEW_TASK | CLEAR_TASK, so even when the app was already running they arrive here, not in onNewIntent.
+        if (savedInstanceState == null) {
+            WidgetDeepLink.apply(intent, appNavigator)
+            ShortcutDeepLink.apply(this, intent, appNavigator)
+        }
 
         googleAuthorizer.consent = { pending ->
             suspendCancellableCoroutine { cont ->
@@ -82,6 +88,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         WidgetDeepLink.apply(intent, appNavigator)
+        ShortcutDeepLink.apply(this, intent, appNavigator) // some launchers deliver shortcuts to the running activity
     }
 
     override fun onDestroy() {

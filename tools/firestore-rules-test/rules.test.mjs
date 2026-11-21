@@ -156,3 +156,48 @@ test('nothing outside users/{uid}/sync is reachable', async () => {
   const r = await write('hank', { update: { name: `${DB}/users/hank`, fields: { a: int(1) } } });
   assert.deepEqual(r, [7]);
 });
+
+// ---- bugReports (UX A2, data/support/FirestoreBugReportRemote.kt) ----
+
+function report(uid, id, overrides = {}) {
+  return {
+    update: {
+      name: `${DB}/bugReports/${id}`,
+      fields: {
+        uid: str(uid), category: str('crash'), message: str('The app closed when I tapped +'), steps: str(''),
+        appVersion: str('1.0 (1)'), platform: str('android'), osVersion: str('15 (API 35)'),
+        deviceModel: str('OPPO CPH2531'), language: str('en'), ...overrides,
+      },
+    },
+    currentDocument: { exists: false },
+    updateTransforms: [{ fieldPath: 'createdAt', setToServerValue: 'REQUEST_TIME' }],
+  };
+}
+
+test('a signed-in user can create a bug report as themselves', async () => {
+  assert.deepEqual(await write('rita', report('rita', 'r1')), [0]);
+});
+
+test('guests, other uids, bad fields and oversized text cannot create a report', async () => {
+  assert.deepEqual(await write(null, report('rita', 'r2')), [7]);
+  assert.deepEqual(await write('sam', report('rita', 'r3')), [7]);
+  assert.deepEqual(await write('sam', report('sam', 'r4', { category: str('spam') })), [7]);
+  assert.deepEqual(await write('sam', report('sam', 'r5', { message: str('') })), [7]);
+  assert.deepEqual(await write('sam', report('sam', 'r6', { message: str('x'.repeat(2001)) })), [7]);
+  assert.deepEqual(await write('sam', report('sam', 'r7', { email: str('a@b.c') })), [7]);
+  const noTime = report('sam', 'r8');
+  delete noTime.updateTransforms;
+  assert.deepEqual(await write('sam', noTime), [7]);
+});
+
+test('nobody can read, change or delete a bug report, not even its author', async () => {
+  await write('tom', report('tom', 'r9'));
+  const read = await call('tom', `${DB}:batchGet`, { documents: [`${DB}/bugReports/r9`] });
+  assert.equal(read.status, 403);
+  const list = await call('tom', `${DB}:runQuery`, { structuredQuery: { from: [{ collectionId: 'bugReports' }] } });
+  assert.equal(list.status, 403);
+  const overwrite = report('tom', 'r9', { message: str('changed text here') });
+  delete overwrite.currentDocument;
+  assert.deepEqual(await write('tom', overwrite), [7]);
+  assert.deepEqual(await write('tom', { delete: `${DB}/bugReports/r9` }), [7]);
+});

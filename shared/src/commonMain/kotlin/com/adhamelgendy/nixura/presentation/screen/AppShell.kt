@@ -385,6 +385,9 @@ private fun RouteContent(route: Route, navigator: Navigator) {
         Route.ChangePassword -> ChangePasswordScreen(navigator)
         Route.DeleteAccount -> DeleteAccountScreen(navigator)
         is Route.Legal -> LegalScreen(route.document, navigator)
+        Route.KeepNixUra -> com.adhamelgendy.nixura.presentation.support.KeepNixUraScreen(navigator)
+        Route.ReportBug -> com.adhamelgendy.nixura.presentation.support.ReportBugScreen(navigator)
+        Route.Help -> com.adhamelgendy.nixura.presentation.support.HelpScreen(navigator)
     }
 }
 

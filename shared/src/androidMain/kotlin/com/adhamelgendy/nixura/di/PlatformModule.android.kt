@@ -18,6 +18,10 @@ import com.adhamelgendy.nixura.domain.integration.DeviceRegion
 import com.adhamelgendy.nixura.data.auth.AndroidSecureStore
 import com.adhamelgendy.nixura.data.auth.DeviceInfoProvider
 import com.adhamelgendy.nixura.data.auth.SecureStore
+import com.adhamelgendy.nixura.data.support.AndroidSupportActions
+import com.adhamelgendy.nixura.data.support.AndroidSupportEnvironment
+import com.adhamelgendy.nixura.domain.support.SupportActions
+import com.adhamelgendy.nixura.domain.support.SupportEnvironmentProvider
 import org.koin.dsl.module
 
 fun platformModule(
@@ -45,4 +49,8 @@ fun platformModule(
     single<DeviceInfoProvider> { AndroidDeviceInfo() }
     single<DeviceRegion> { AndroidDeviceRegion(context) }
     single<com.adhamelgendy.nixura.presentation.locale.AppLocaleGateway> { com.adhamelgendy.nixura.presentation.locale.AndroidAppLocaleGateway(context) }
+
+    // Launcher-shortcut screens: device facts for bug reports, the mail app and the system "App info" page.
+    single<SupportEnvironmentProvider> { AndroidSupportEnvironment(context) }
+    single<SupportActions> { AndroidSupportActions(context) }
 }

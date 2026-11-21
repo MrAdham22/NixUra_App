@@ -1,7 +1,8 @@
 rules_version = '2';
 
 // NixUra cloud sync (see docs/DEVELOPMENT_STATUS.md, "Firestore sync design").
-// Each signed-in user reaches only users/{their uid}/sync. Everything else is closed.
+// Each signed-in user reaches only users/{their uid}/sync, and may create (never read) bug reports.
+// Everything else is closed.
 // Deploy: firebase deploy --only firestore:rules,firestore:indexes --project nixura
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -9,6 +10,30 @@ service cloud.firestore {
     match /users/{uid}/sync/{docId} {
       allow read, delete: if isOwner(uid);
       allow create, update: if isOwner(uid) && validWrite(docId);
+    }
+
+    // Bug reports from the "Bugs or issues?" shortcut (docs/ux-upgrade/A2-app-shortcuts.md). Signed-in users may only
+    // create a report as themselves; nobody can read, change or delete one from the app (the owner reads them in the
+    // Firebase console). Limits match domain/support/BugReportRules.kt.
+    match /bugReports/{reportId} {
+      allow create: if request.auth != null && validBugReport();
+      allow read, update, delete: if false;
+    }
+
+    function validBugReport() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['uid', 'category', 'message', 'steps', 'appVersion', 'platform', 'osVersion', 'deviceModel', 'language', 'createdAt'])
+        && d.keys().hasAll(['uid', 'category', 'message', 'steps', 'appVersion', 'platform', 'osVersion', 'deviceModel', 'language', 'createdAt'])
+        && d.uid == request.auth.uid
+        && d.createdAt == request.time
+        && d.category in ['crash', 'wrong_data', 'looks_wrong', 'notifications', 'idea', 'other']
+        && d.message is string && d.message.size() > 0 && d.message.size() <= 2000
+        && d.steps is string && d.steps.size() <= 2000
+        && d.appVersion is string && d.appVersion.size() <= 40
+        && d.platform in ['android', 'ios']
+        && d.osVersion is string && d.osVersion.size() <= 40
+        && d.deviceModel is string && d.deviceModel.size() <= 80
+        && d.language is string && d.language.size() <= 10;
     }
 
     function isOwner(uid) {

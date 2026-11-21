@@ -67,6 +67,10 @@ fun platformModule() = module {
     // Language: the app switches by itself; "System default" follows iOS (including Settings → NixUra → Language,
     // offered because Info.plist lists en and ar in CFBundleLocalizations). Nothing to tell the OS.
     single<com.adhamelgendy.nixura.presentation.locale.AppLocaleGateway> { com.adhamelgendy.nixura.presentation.locale.NoOpAppLocaleGateway }
+
+    // Home-screen quick-action screens (bug report email, Settings page). Unverified: needs a Mac.
+    single<com.adhamelgendy.nixura.domain.support.SupportEnvironmentProvider> { com.adhamelgendy.nixura.data.support.IosSupportEnvironment() }
+    single<com.adhamelgendy.nixura.domain.support.SupportActions> { com.adhamelgendy.nixura.data.support.IosSupportActions() }
 }
 
 private object NotAvailableSocialSignIn : SocialSignIn {

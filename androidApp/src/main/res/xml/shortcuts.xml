@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Launcher App Shortcuts (long-press the NixUra icon). The ONE place to add, remove or reword a shortcut:
+  - labels: res/values/strings.xml and res/values-ar/strings.xml (shortcut_*), short label <= 10 characters,
+    long label <= 25 (the launcher cuts longer text);
+  - where each one opens: the "nixura.shortcut" extra, mapped to a screen by AppShortcut in shared
+    presentation/navigation/AppShortcut.kt (the same ids are used by the iOS quick actions);
+  - shortcutId is stable: launchers and pinned shortcuts remember it, so never rename one, only add new ids.
+  targetPackage is the applicationId; static shortcuts cannot use ${applicationId}, keep it in sync by hand.
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="keep_nixura"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_keep"
+        android:shortcutShortLabel="@string/shortcut_keep_short"
+        android:shortcutLongLabel="@string/shortcut_keep_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.adhamelgendy.nixura"
+            android:targetClass="com.adhamelgendy.nixura.MainActivity">
+            <extra android:name="nixura.shortcut" android:value="keep_nixura" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="report_bug"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_bug"
+        android:shortcutShortLabel="@string/shortcut_bug_short"
+        android:shortcutLongLabel="@string/shortcut_bug_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.adhamelgendy.nixura"
+            android:targetClass="com.adhamelgendy.nixura.MainActivity">
+            <extra android:name="nixura.shortcut" android:value="report_bug" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="help"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_help"
+        android:shortcutShortLabel="@string/shortcut_help_short"
+        android:shortcutLongLabel="@string/shortcut_help_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.adhamelgendy.nixura"
+            android:targetClass="com.adhamelgendy.nixura.MainActivity">
+            <extra android:name="nixura.shortcut" android:value="help" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="ai_coach"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_coach"
+        android:shortcutShortLabel="@string/shortcut_coach_short"
+        android:shortcutLongLabel="@string/shortcut_coach_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.adhamelgendy.nixura"
+            android:targetClass="com.adhamelgendy.nixura.MainActivity">
+            <extra android:name="nixura.shortcut" android:value="ai_coach" />
+        </intent>
+    </shortcut>
+</shortcuts>

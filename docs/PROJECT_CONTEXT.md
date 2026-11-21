@@ -184,6 +184,17 @@ Concurrency notes: `EnsureCoachGreetingUseCase` and `UpdateSettingsUseCase` use 
 - **Voice notes:** started only from the Home voice card (the coach's mic was removed 2026-11-17). `VoiceRecorder` port (Android: `androidApp/.../voice/AndroidVoiceRecorder`, AAC, at most 60 s, never kept; iOS: not built, the mic is hidden). `VoiceNoteViewModel` runs record → understand → review → add; `VoiceNoteHost` in `AppShell` shows the sheet. `ApplyCoachActionsUseCase` creates the confirmed items with the normal use cases. Every item can be edited before it is added (2026-11-14): the pencil on a review card opens `VoiceItemEditor` (same `NixTextField`, chips, `Stepper` and `DateTimePickerDialog` as the add forms) inside the sheet; `domain/coach/ai/CoachActionRules` holds the add form rules (name, 1 to 99 a day, 1 to 7 days a week, event title up to 60, a real date in the future) and the edit helpers. Items that break a rule are marked and, on "Add", the form opens on the first one. `CoachAction.Event` now carries a `category` (default Event). The chat can suggest the same kind of items; they go through the same review sheet.
 - **Server:** `workers/notion/src/ai`: the provider chain, prompts, answer cleaning and the daily limits (D1 `ai_usage`). Setup and keys: README, "AI coach and voice notes".
 
+## Launcher shortcuts and support screens (UX A2, 2026-11-21)
+
+Four static Android App Shortcuts (`androidApp/src/main/res/xml/shortcuts.xml`, ids `keep_nixura`, `report_bug`, `help`,
+`ai_coach`) carry an extra `nixura.shortcut`; `shortcuts/ShortcutDeepLink.kt` hands it to the shared
+`presentation/navigation/AppShortcut`, which opens `Route.KeepNixUra`, `Route.ReportBug` or `Route.Help` over Home, or
+selects the Coach tab. iOS quick actions (Info.plist + `iOSApp.swift` + `IosShortcuts.kt`) use the same ids (unverified).
+Logic in `domain/support` (bug-report rules, email draft, `SendBugReportUseCase`: signed-in → Firestore `bugReports`
+create-only + email, guest → email only; `KeepNixUraSummary` from existing use cases, nothing stored). Platform ports
+`SupportEnvironmentProvider` (app version, OS, model) and `SupportActions` (mail app, system app page) are bound in
+both platform modules. No Room change. Details: `docs/ux-upgrade/A2-app-shortcuts.md`.
+
 ## Arabic and RTL (Session 4, 2026-11-17)
 
 - **Text:** all UI text stays in `presentation/strings/Strings.kt` (English); `ArabicStrings` overrides every member (a JVM test, `ArabicCoverageTest`, fails when one is left in English). Counts use `domain/locale/ArabicPlurals` (six CLDR forms). Domain errors arrive in English and are turned into the UI language by `Strings.errorText` (shown by `ErrorBanner`). Legal drafts stay English (with a note, laid out left to right).
