@@ -144,8 +144,8 @@ since stored times were computed for the old local time. Reboot / update / exact
 - `:androidApp:assembleDebug`: OK.
 - `:shared:testAndroidHostTest`: **689 tests, 0 failures** (new: `NotificationChannelsTest` 9, `NotificationAccessPolicyTest` 7,
   `NotificationArmingTest` 13, 3 planner tests for late items).
-- The 50 ms measurement above was taken with alarm clocks for every reminder. The hybrid hand-off on the phone is
-  **not measured yet** (the phone was disconnected); see DEVELOPMENT_STATUS.md.
+- Hybrid hand-off measured on the Oppo (screen off): an event 81 min ahead was an ordinary exact alarm (1 h window);
+  the wake-up armed for 21:10 fired by 21:13 and made it an alarm clock (window 0); a check-in 2 min ahead posted 0.6 s late.
 - Installed on the owner's Oppo Reno 10 5G (Android 15). `adb shell dumpsys notification` there shows the five
   channels with the right importance and groups, and `nixura_reminders` renamed to "Events".
 - **Not verified yet:** what each notification looks like on the phone, taps, the permission flow (the Oppo already
