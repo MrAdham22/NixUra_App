@@ -10,9 +10,21 @@
     <string name="widget_event_description">Countdown to your next event, or to one you choose.</string>
     <string name="widget_config_label">Choose for widget</string>
 
-    <!-- Notification channel (Settings → Apps → NixUra → Notifications). -->
-    <string name="channel_reminders_name">Reminders &amp; coaching</string>
-    <string name="channel_reminders_description">Event reminders, streak milestones and your daily check-in</string>
+    <!-- Notification channels and their groups (Settings → Apps → NixUra → Notifications). The OS reads these.
+         channel_reminders_* is the events channel: its ID nixura_reminders predates phase B and is kept. -->
+    <string name="channel_reminders_name">Events</string>
+    <string name="channel_reminders_description">Reminders before the events you add</string>
+    <string name="channel_good_habits_name">Good-habit reminders</string>
+    <string name="channel_good_habits_description">Nudges at the right moment for water, prayer and your other good habits</string>
+    <string name="channel_quit_progress_name">Quit progress</string>
+    <string name="channel_quit_progress_description">Quiet notes when a quit streak reaches a milestone</string>
+    <string name="channel_coach_name">Coach</string>
+    <string name="channel_coach_description">Your daily check-in and notes from the coach</string>
+    <string name="channel_app_name">App &amp; account</string>
+    <string name="channel_app_description">Sync problems and account messages</string>
+    <string name="channel_group_habits">Habits</string>
+    <string name="channel_group_events">Events</string>
+    <string name="channel_group_coach_app">Coach &amp; app</string>
 
     <!-- Launcher App Shortcuts (res/xml/shortcuts.xml). Short label <= 10 characters, long label <= 25. -->
     <string name="shortcut_keep_short">🥺 Stay?</string>

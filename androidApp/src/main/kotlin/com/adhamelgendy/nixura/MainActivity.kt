@@ -3,6 +3,7 @@ package com.adhamelgendy.nixura
 import android.Manifest
 import android.content.Intent
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -17,6 +18,7 @@ import com.adhamelgendy.nixura.integrations.AndroidGoogleAuthorizer
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import com.adhamelgendy.nixura.presentation.navigation.Navigator
+import com.adhamelgendy.nixura.notifications.NotificationDeepLink
 import com.adhamelgendy.nixura.shortcuts.ShortcutDeepLink
 import com.adhamelgendy.nixura.widgets.WidgetDeepLink
 import com.adhamelgendy.nixura.widgets.WidgetUpdater
@@ -59,6 +61,7 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) {
             WidgetDeepLink.apply(intent, appNavigator)
             ShortcutDeepLink.apply(this, intent, appNavigator)
+            NotificationDeepLink.apply(intent, appNavigator)
         }
 
         googleAuthorizer.consent = { pending ->
@@ -76,6 +79,9 @@ class MainActivity : ComponentActivity() {
         (application as NixUraApplication).notificationPermission.launcher = {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+        (application as NixUraApplication).notificationPermission.rationale = {
+            Build.VERSION.SDK_INT >= 33 && shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
+        }
 
         setContent {
             val navigator = koinInject<Navigator>()
@@ -89,6 +95,7 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         WidgetDeepLink.apply(intent, appNavigator)
         ShortcutDeepLink.apply(this, intent, appNavigator) // some launchers deliver shortcuts to the running activity
+        NotificationDeepLink.apply(intent, appNavigator) // a tap while the app is open
     }
 
     override fun onDestroy() {

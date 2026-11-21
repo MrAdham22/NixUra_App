@@ -6,7 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import com.adhamelgendy.nixura.domain.notification.NotificationScheduler
+import com.adhamelgendy.nixura.domain.notification.NotificationKind
 import com.adhamelgendy.nixura.domain.notification.PlannedNotification
+import com.adhamelgendy.nixura.domain.theme.HabitTheme
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -49,7 +51,7 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
 
     private fun schedule(item: PlannedNotification) {
         val operation = pendingIntent(item)
-        val exact = item.key.startsWith(EVENT_KEY_PREFIX) && AndroidNotificationPermission.canScheduleExactAlarms(appContext)
+        val exact = item.kind == NotificationKind.EVENT && AndroidNotificationPermission.canScheduleExactAlarms(appContext)
         try {
             if (exact) {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, item.triggerAtEpochMillis, operation)
@@ -68,7 +70,12 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
             .setData(Uri.parse("nixura://reminder/${Uri.encode(item.key)}"))
             .putExtra(ReminderReceiver.EXTRA_TITLE, item.title)
             .putExtra(ReminderReceiver.EXTRA_BODY, item.body)
-            .putExtra(ReminderReceiver.EXTRA_ID, item.key.hashCode())
+            .putExtra(ReminderReceiver.EXTRA_KEY, item.key)
+            .putExtra(ReminderReceiver.EXTRA_KIND, item.kind.name)
+            .apply {
+                item.targetId?.let { putExtra(ReminderReceiver.EXTRA_TARGET, it) }
+                item.theme?.let { putExtra(ReminderReceiver.EXTRA_THEME, it.name) }
+            }
         return PendingIntent.getBroadcast(appContext, item.key.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
@@ -80,19 +87,35 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
                     .put("key", it.key)
                     .put("at", it.triggerAtEpochMillis)
                     .put("title", it.title)
-                    .put("body", it.body),
+                    .put("body", it.body)
+                    .put("kind", it.kind.name)
+                    .apply {
+                        it.targetId?.let { id -> put("target", id) }
+                        it.theme?.let { theme -> put("theme", theme.name) }
+                    },
             )
         }
         return array.toString()
     }
 
+    /** Reads the stored plan. Entries written before phase B have no kind / target / theme: the key prefix decides the kind. */
     private fun decode(raw: String?): List<PlannedNotification> {
         if (raw.isNullOrEmpty()) return emptyList()
         return runCatching {
             val array = JSONArray(raw)
             (0 until array.length()).map {
                 val o = array.getJSONObject(it)
-                PlannedNotification(o.getString("key"), o.getLong("at"), o.getString("title"), o.getString("body"))
+                val key = o.getString("key")
+                PlannedNotification(
+                    key = key,
+                    triggerAtEpochMillis = o.getLong("at"),
+                    title = o.getString("title"),
+                    body = o.getString("body"),
+                    kind = o.optString("kind").let { name -> NotificationKind.entries.firstOrNull { k -> k.name == name } }
+                        ?: NotificationKind.fromKey(key),
+                    targetId = if (o.has("target")) o.getLong("target") else null,
+                    theme = o.optString("theme").let { name -> HabitTheme.entries.firstOrNull { t -> t.name == name } },
+                )
             }
         }.getOrDefault(emptyList())
     }
@@ -101,6 +124,5 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
         const val PREFS = "nixura_notifications"
         const val KEY_PLAN = "plan"
         const val MAX_SCHEDULED = 60
-        const val EVENT_KEY_PREFIX = "event:"
     }
 }

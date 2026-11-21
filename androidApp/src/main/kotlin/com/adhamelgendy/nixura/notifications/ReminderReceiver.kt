@@ -1,69 +1,44 @@
 package com.adhamelgendy.nixura.notifications
 
-import android.Manifest
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
-import com.adhamelgendy.nixura.MainActivity
-import com.adhamelgendy.nixura.R
+import com.adhamelgendy.nixura.domain.notification.NotificationKind
+import com.adhamelgendy.nixura.domain.theme.HabitTheme
 
-/** Shows one scheduled notification (event reminder, streak milestone or daily check-in). */
+/**
+ * Fires when a scheduled alarm goes off and posts it through [NixNotifications] (event reminder, streak milestone,
+ * daily check-in; good-habit reminders from phase C). Building the notification is not this class's job.
+ */
 class ReminderReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val title = intent.getStringExtra(EXTRA_TITLE) ?: return
-        val body = intent.getStringExtra(EXTRA_BODY).orEmpty()
-        val id = intent.getIntExtra(EXTRA_ID, title.hashCode())
-        ensureChannel(context)
-
-        if (Build.VERSION.SDK_INT >= 33 &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) return
-
-        val open = PendingIntent.getActivity(
+        // Pre-phase-B alarms have no key extra, but their data URI is nixura://reminder/<key>.
+        val key = intent.getStringExtra(EXTRA_KEY) ?: intent.data?.lastPathSegment ?: return
+        // Alarms armed before phase B carry no kind: the key prefix says what they are.
+        val kind = intent.getStringExtra(EXTRA_KIND)?.let { name -> NotificationKind.entries.firstOrNull { it.name == name } }
+            ?: NotificationKind.fromKey(key)
+        NixNotifications.post(
             context,
-            0,
-            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            NixNotificationRequest(
+                key = key,
+                kind = kind,
+                title = title,
+                body = intent.getStringExtra(EXTRA_BODY).orEmpty(),
+                targetId = intent.getLongExtra(EXTRA_TARGET, -1L).takeIf { it > 0 },
+                theme = intent.getStringExtra(EXTRA_THEME)?.let { name -> HabitTheme.entries.firstOrNull { it.name == name } },
+            ),
         )
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setColor(0xFFAE445A.toInt())
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setAutoCancel(true)
-            .setContentIntent(open)
-            .build()
-        NotificationManagerCompat.from(context).notify(id, notification)
     }
 
     companion object {
         const val ACTION = "com.adhamelgendy.nixura.REMINDER"
         const val EXTRA_TITLE = "title"
         const val EXTRA_BODY = "body"
-        const val EXTRA_ID = "id"
-        const val CHANNEL_ID = "nixura_reminders"
-
-        fun ensureChannel(context: Context) {
-            if (Build.VERSION.SDK_INT < 26) return
-            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            // Created every time on purpose: creating an existing channel only renames it, so its name follows the
-            // app's language (Android resources, values / values-ar) after a language switch.
-            manager.createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, context.getString(R.string.channel_reminders_name), NotificationManager.IMPORTANCE_DEFAULT).apply {
-                    description = context.getString(R.string.channel_reminders_description)
-                },
-            )
-        }
+        const val EXTRA_KEY = "key"
+        const val EXTRA_KIND = "kind"
+        const val EXTRA_TARGET = "target"
+        const val EXTRA_THEME = "theme"
     }
 }

@@ -2,6 +2,24 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## UX upgrade B (2026-11-21): notification foundation
+
+Branch `feature/notification-foundation`, details, the phase C API guide and the Oppo test steps in
+`docs/ux-upgrade/B-notifications.md`.
+
+- **Built:** one Android notification layer (`notifications/NixNotifications.kt`: channels + groups, icon/colour/
+  category per type, grouping with summaries, tap targets); 5 channels (`nixura_reminders` kept and renamed "Events";
+  new Good-habit reminders, Quit progress (silent), Coach (silent), App & account (silent)); milestones and the check-in
+  moved to the silent channels; taps open the event / quit habit / Coach (owner decisions 2026-11-21);
+  `NotificationKind` + `targetId` + `theme` on `PlannedNotification` (old stored plans read by key prefix);
+  in-context permission with a reason card and a settings path after two denials (`NotificationAccessPolicy`,
+  `rememberNotificationAsk`); Events-channel-off notice in the event form; Settings "Notification types" link;
+  re-plan on time-zone / clock change.
+- **Verified:** `:androidApp:assembleDebug`; `:shared:testAndroidHostTest` 673 tests, 0 failures; installed on the
+  owner's Oppo, `dumpsys notification` shows the 5 channels with the right importance and groups.
+- **Not verified:** the look, taps, permission flow and grouping on the phone (owner device test pending); iOS
+  (still a no-op scheduler, unchanged).
+
 ## UX upgrade A2 (2026-11-21): launcher App Shortcuts
 
 Branch `feature/app-shortcuts`, details and the Oppo test steps in `docs/ux-upgrade/A2-app-shortcuts.md`.

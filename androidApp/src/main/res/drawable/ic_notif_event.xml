@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notification small icon (events: calendar). Monochrome: Android draws it in the accent colour / system tint. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M6.5,5.5 L17.5,5.5 C18.9,5.5 20,6.6 20,8 L20,17.5 C20,18.9 18.9,20 17.5,20 L6.5,20 C5.1,20 4,18.9 4,17.5 L4,8 C4,6.6 5.1,5.5 6.5,5.5 Z M4,10 L20,10 M8.5,3.5 L8.5,7 M15.5,3.5 L15.5,7" android:strokeColor="#FFFFFFFF" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

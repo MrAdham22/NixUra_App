@@ -12,7 +12,7 @@ import com.facebook.FacebookSdk
 import com.adhamelgendy.nixura.di.initAndroidKoin
 import com.adhamelgendy.nixura.notifications.AndroidNotificationPermission
 import com.adhamelgendy.nixura.notifications.AndroidNotificationScheduler
-import com.adhamelgendy.nixura.notifications.ReminderReceiver
+import com.adhamelgendy.nixura.notifications.NixNotifications
 import com.adhamelgendy.nixura.domain.sync.BackgroundSyncScheduler
 import com.adhamelgendy.nixura.domain.widget.WidgetPinner
 import com.adhamelgendy.nixura.domain.integration.GoogleAuthorizer
@@ -41,7 +41,7 @@ class NixUraApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        ReminderReceiver.ensureChannel(this)
+        NixNotifications.ensureChannels(this) // channels and groups; names follow the app language
         initAndroidKoin(this, AndroidNotificationScheduler(this), notificationPermission)
         // Backend address comes from BuildConfig (the shared module cannot see it). Cleartext only in debug builds.
         loadKoinModules(

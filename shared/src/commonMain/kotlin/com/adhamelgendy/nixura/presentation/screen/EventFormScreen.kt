@@ -38,7 +38,8 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.adhamelgendy.nixura.domain.clock.Clock
 import com.adhamelgendy.nixura.domain.model.EventCategory
-import com.adhamelgendy.nixura.domain.notification.NotificationPermissionGateway
+import com.adhamelgendy.nixura.domain.notification.NotificationKind
+import com.adhamelgendy.nixura.presentation.components.rememberNotificationAsk
 import com.adhamelgendy.nixura.domain.notification.ReminderCapabilities
 import com.adhamelgendy.nixura.domain.time.DayCalculator
 import com.adhamelgendy.nixura.presentation.components.ConfirmDialog
@@ -79,7 +80,7 @@ fun EventFormScreen(editId: Long?, navigator: Navigator) {
     val c = Nix.colors
     val days = koinInject<DayCalculator>()
     val clock = koinInject<Clock>()
-    val permission = koinInject<NotificationPermissionGateway>()
+    val notificationAsk = rememberNotificationAsk()
     val capabilities = koinInject<ReminderCapabilities>()
     val editing = editId != null
     val scope = rememberCoroutineScope()
@@ -165,7 +166,11 @@ fun EventFormScreen(editId: Long?, navigator: Navigator) {
 
             val nowMillis = clock.nowEpochMillis()
             val permissionState = remember(resumeTick, leads.isEmpty()) {
-                ReminderPermissionState(capabilities.notificationsAllowed(), capabilities.exactAlarmsAllowed())
+                ReminderPermissionState(
+                    capabilities.notificationsAllowed(),
+                    capabilities.exactAlarmsAllowed(),
+                    capabilities.channelEnabled(NotificationKind.EVENT),
+                )
             }
             EventRemindersSection(
                 leads = leads,
@@ -175,7 +180,7 @@ fun EventFormScreen(editId: Long?, navigator: Navigator) {
                 },
                 validate = { lead, others -> vm.validateReminder(lead, others, target) },
                 onAdd = { lead ->
-                    if (!permission.isGranted()) permission.request()
+                    notificationAsk.ensure(s.notificationAskEventReason)
                     if (editId != null) vm.onAddReminder(editId, lead) else draftLeadsCsv = encodeLeads(leads + lead)
                 },
                 onEdit = { old, new ->
@@ -193,12 +198,12 @@ fun EventFormScreen(editId: Long?, navigator: Navigator) {
                 },
                 onOpenNotificationSettings = capabilities::openNotificationSettings,
                 onOpenExactAlarmSettings = capabilities::openExactAlarmSettings,
+                onOpenChannelSettings = { capabilities.openChannelSettings(NotificationKind.EVENT) },
             )
 
             NixButton(
                 text = if (editing) s.saveChanges else s.addEvent,
                 onClick = {
-                    if (leads.isNotEmpty() && !permission.isGranted()) permission.request()
                     vm.onSave(editId, title, category, target, leads.toList()) { navigator.back() }
                 },
                 enabled = title.isNotBlank(),

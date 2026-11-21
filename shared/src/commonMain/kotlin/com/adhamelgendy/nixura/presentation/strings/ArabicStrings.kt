@@ -1028,6 +1028,21 @@ object ArabicStrings : Strings() {
     override val helpStillStuckBody: String = "أخبرني بما يحدث وسأبحث فيه."
     override val helpReport: String = "الإبلاغ عن مشكلة"
 
+    // ---- UX B ----
+    override val notificationAskTitle: String = "السماح بالإشعارات؟"
+    override val notificationAskEventReason: String = "حتى يذكّرك NixUra قبل هذه المناسبة. يمكنك إسكات كل نوع من الإشعارات لاحقًا."
+    override val notificationAskSettingsReason: String = "حتى تصلك تذكيرات المناسبات والمحطات ورسالتك اليومية. أنت تختار الأنواع التي تبقى مفعّلة."
+    override val notificationAskAllow: String = "اسمح"
+    override val notNow: String = "ليس الآن"
+    override val notificationBlockedTitle: String = "الإشعارات محظورة"
+    override val notificationBlockedBody: String = "لن يسأل أندرويد مرة أخرى. لتصلك التذكيرات، فعّل إشعارات NixUra من إعدادات النظام."
+    override val notificationsBlockedNotice: String = "إشعارات NixUra محظورة، لذا لن يصلك شيء."
+    override val eventChannelOff: String = "تذكيرات المناسبات متوقفة من إعدادات النظام."
+    override val turnOnInSettings: String = "فعّلها من الإعدادات"
+    override val notificationTypes: String = "أنواع الإشعارات"
+    override val notificationTypesHint: String = "الصوت أو الصمت للمناسبات والعادات والمدرب والتطبيق، من إعدادات النظام."
+    // ---- end of UX B ----
+
     /** The noun after a written number: 3–10 أكواب, 11–99 كوبًا, otherwise كوب. */
     private fun cupNoun(n: Int): String = when (ArabicPlurals.category(n.toLong())) {
         PluralCategory.FEW -> "أكواب"

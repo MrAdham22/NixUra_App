@@ -48,8 +48,10 @@ class NotificationPlanner(
                 val trigger = event.targetAtEpochMillis - lead
                 if (trigger <= nowMillis) continue
                 planned += PlannedNotification(
-                    key = "event:${event.id}:$lead",
+                    key = "${NotificationKind.EVENT_PREFIX}${event.id}:$lead",
                     triggerAtEpochMillis = trigger,
+                    kind = NotificationKind.EVENT,
+                    targetId = event.id,
                     title = event.title,
                     body = when {
                         arabic && lead <= 0L -> "حان الوقت."
@@ -68,8 +70,10 @@ class NotificationPlanner(
             MILESTONES.filter { it > elapsed }.take(2).forEach { threshold ->
                 val note = coach.milestoneNote(item.habit.name, threshold)
                 planned += PlannedNotification(
-                    key = "milestone:${item.habit.id}:${threshold.inWholeDays}:$start",
+                    key = "${NotificationKind.MILESTONE_PREFIX}${item.habit.id}:${threshold.inWholeDays}:$start",
                     triggerAtEpochMillis = start + threshold.inWholeMilliseconds,
+                    kind = NotificationKind.QUIT_MILESTONE,
+                    targetId = item.habit.id,
                     title = note.title,
                     body = note.body,
                 )
@@ -115,8 +119,9 @@ class NotificationPlanner(
             )
             val note = coach.dailyCheckIn(snapshot, seed = day)
             planned += PlannedNotification(
-                key = "daily:$day",
+                key = "${NotificationKind.DAILY_PREFIX}$day",
                 triggerAtEpochMillis = trigger,
+                kind = NotificationKind.COACH,
                 title = note.title,
                 body = note.body,
             )
