@@ -1,7 +1,7 @@
 # UX A2: launcher App Shortcuts
 
-**Date:** 2026-11-21. **Branch:** `feature/app-shortcuts`. **Status:** built, tested on the emulator, installed on the
-owner's Oppo; waiting for the owner's finger test on the Oppo before merging.
+**Date:** 2026-11-21. **Branch:** `feature/app-shortcuts`. **Status:** done, merged 2026-11-21 (PR #17). **Owner device
+test on the Oppo: passed (2026-11-21).**
 
 Long-press the NixUra icon: four real Android App Shortcuts appear under the launcher's own items (App info, ...).
 
@@ -77,7 +77,7 @@ feature table and the real Settings labels.
 | `:androidApp:assembleDebug` | OK |
 | Firestore rules on the emulator (`firebase emulators:exec ... node --test tools/firestore-rules-test/rules.test.mjs`, demo project) | 11/11 (3 new: create as self; guest / other uid / bad fields / too long / extra field / no server time refused; nobody can read, list, overwrite or delete) |
 | Android 17 emulator (Pixel launcher) | `dumpsys shortcut`: all 4 registered. Each shortcut intent (launcher flags) opens the right screen; Help → Back → Home → Back → launcher; empty Send shows the hint; dark mode; Arabic RTL (Keep, Help with an open answer, mirrored chevrons); emoji render (Noto Color Emoji) |
-| Owner's Oppo (CPH2531, Android 15, ColorOS 15) | Installed; `dumpsys shortcut` shows all 4 registered. **Not yet seen:** the long-press menu, emoji in ColorOS's launcher font, icon shape, the mail app opening (the phone was locked) |
+| Owner's Oppo (CPH2531, Android 15, ColorOS 15) | Installed; `dumpsys shortcut` shows all 4 registered. **Owner device test passed (2026-11-21).** |
 | iOS | **Unverified** (Windows). Static quick actions in `Info.plist` (English titles only), `iOSApp.swift` scene delegate, `IosShortcuts.kt`, `IosSupport.kt`. On a Mac: `./gradlew :shared:compileKotlinIosSimulatorArm64 :shared:linkDebugFrameworkIosSimulatorArm64 :shared:iosSimulatorArm64Test`, then build `iosApp` in Xcode and long-press the icon |
 
 ## Test steps for the Oppo Reno 10 5G

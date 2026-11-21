@@ -13,7 +13,8 @@ Branch `feature/app-shortcuts`, details and the Oppo test steps in `docs/ux-upgr
 - **Verified:** `:shared:testAndroidHostTest` 657 tests, 0 failures; `:androidApp:assembleDebug`; Firestore rules 11/11
   on the emulator; on the Android 17 emulator all four shortcuts registered and open the right screen with the right
   back stack, dark mode and Arabic RTL checked; installed on the owner's Oppo and all four shortcuts registered there.
-- **Not verified:** the long-press menu and emoji on ColorOS, the mail app on the Oppo, a real Firestore write
+- **Owner device test on the Oppo: passed (2026-11-21).** Merged as PR #17.
+- **Not verified:** a real Firestore write
   (**the `bugReports` rules are not deployed**, owner's OK needed), iOS (needs a Mac).
 
 ## UX upgrade A1 (2026-11-21): widget "+" tap latency
