@@ -13,7 +13,8 @@ lock-screen privacy, an opt-in ongoing "Today" notification, `keyguard` on the g
 **Owner decisions 2026-11-22 (not built):** Today is approved (the one exception to PLAN.md's no-summary rule); event
 and coach notifications follow the phone's setting; a per-habit option hides a bad habit's name everywhere outside
 the app (needs Room v10; milestone text and widget icon must be neutral too, as both reveal the habit).
-**Open:** whether quit habits stay off the lock screen (the coach's daily check-in names one). About 6-7 days.
+Quit-habit notifications follow the phone's setting too (replaces "hidden by default"). **Open:** whether the quit
+widget may be placed on the lock screen. About 6-7 days.
 
 ## UX upgrade C (2026-11-21): good-habit reminders and notification buttons
 

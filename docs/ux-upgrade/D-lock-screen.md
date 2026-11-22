@@ -8,16 +8,18 @@
 2. Event and coach notifications **follow the phone's lock-screen setting**.
 3. The user can **hide a bad habit's name everywhere it shows outside the app** (notifications, widgets, anything
    else), with all other details unchanged (section 4.1).
+4. Quit habits' notifications **follow the phone's lock-screen setting** too. This replaces PLAN.md's earlier rule
+   "hidden on the lock screen by default"; hiding a name is the user's choice (decision 3).
 
-**Still open:** whether quit habits stay off the lock screen now that their names can be hidden (section 4).
+**Still open:** may the quit-counter widget be placed on the lock screen (section 4)? It is a widget, so the phone's
+notification setting does not control it.
 
 **Question.** Can NixUra show habit progress, the next reminder, the nearest event or a streak on the lock screen,
 truthfully, on NixUra's SDK range and on the owner's Oppo Reno 10 5G? What does each mechanism cost, and which one
 should be built?
 
-**Ground rules from the brief.** Nothing fake (no "pinned forever" claims Android does not honour), quit habits stay
-off the lock screen by default (PLAN.md), the app is not released so nothing has to stay compatible, recommend the
-best design rather than the safest change.
+**Ground rules from the brief.** Nothing fake (no "pinned forever" claims Android does not honour), the app is not
+released so nothing has to stay compatible, recommend the best design rather than the safest change.
 
 ---
 
@@ -32,7 +34,7 @@ best design rather than the safest change.
 | What the lock screen shows of NixUra today | `NixNotifications` never calls `setVisibility`, so every notification is `VISIBILITY_PRIVATE` (the default). See the privacy finding below. | `androidApp/.../notifications/NixNotifications.kt` |
 | Home-screen widgets | Three widgets, all `android:widgetCategory="home_screen"` | `res/xml/widget_*_info.xml` |
 
-### Privacy finding (fix it whatever else is chosen)
+### Privacy finding
 
 How Android decides, read in the AOSP source (stock Android; ColorOS not checked):
 
@@ -52,7 +54,8 @@ How Android decides, read in the AOSP source (stock Android; ColorOS not checked
   system and notification ranker", and Android resets the app's value ([source][src-prefs]).
 
 So today, on a phone set to show all content, the quit-milestone notification ("7 days free of smoking") shows in
-full, while PLAN.md says quit habits must be hidden by default. **Not checked on the Oppo yet** (section 6).
+full. **Not checked on the Oppo yet** (section 6). The owner accepted this on 2026-11-22 (decision 4): what is
+missing is the option to hide the name (4.1) and a neutral public version for phones that hide sensitive content.
 
 ---
 
@@ -71,7 +74,7 @@ Effort is **on top of phase B/C** (S = under a day, M = 2-3 days, L = a week or 
 | **Battery** | None beyond posting. |
 | **Annoyance** | None added; it only changes what an existing notification reveals. |
 | **Play policy** | Nothing to declare. |
-| **Effort** | **S.** A pure `LockScreenPrivacy` rule in `domain/notification` (kind + user setting → PUBLIC / PRIVATE-with-public-version / SECRET), applied in `NixNotifications.post`; the public version's text in `Strings` + `ArabicStrings`; unit tests. |
+| **Effort** | **S.** A pure `LockScreenPrivacy` rule in `domain/notification` (kind → PUBLIC / PRIVATE-with-public-version), applied in `NixNotifications.post`; the public version's text in `Strings` + `ArabicStrings`; unit tests. |
 
 ### 2.2 An ongoing "Today" notification (`setOngoing(true)`, no foreground service)
 
@@ -120,7 +123,7 @@ Effort is **on top of phase B/C** (S = under a day, M = 2-3 days, L = a week or 
 | **Is it permanent?** | Yes, in the honest sense: the user places it and it stays until they remove it. It is the only mechanism here that is truly "always on the lock screen". |
 | **Battery** | Same as today's home-screen widgets (system `Chronometer`, one inexact refresh alarm). |
 | **Annoyance** | None: the user chose it. |
-| **Privacy** | The +/- buttons work without unlocking; logging a glass of water from a locked phone is harmless. The **quit** widget should get `not_keyguard` (keeps PLAN.md's rule: quit off the lock screen unless the user opts in inside the app, which a widget picker cannot show). |
+| **Privacy** | The +/- buttons work without unlocking; logging a glass of water from a locked phone is harmless. The **quit** widget is proposed as `not_keyguard` until the owner decides (section 4): a widget ignores the phone's notification setting. |
 | **Play policy** | Nothing to declare. |
 | **Effort** | **XS-S.** Add `keyguard` to `widget_good_info.xml` and `widget_event_info.xml`, `not_keyguard` to `widget_quit_info.xml`; check the layout planner at lock-screen sizes on a Pixel API 36.1+ emulator. |
 
@@ -140,7 +143,7 @@ Effort is **on top of phase B/C** (S = under a day, M = 2-3 days, L = a week or 
 |---|---|
 | **Lock-screen widgets** (WidgetKit accessory families, iOS 16+) | **The iOS equivalent of 2.5, and better supported than on Android.** Comes with the already-planned iOS widget work (WidgetKit extension + App Group). |
 | **Live Activities** (ActivityKit, iOS 16.1+) | Apple limits them to activities with a start and end (they end after at most 8 hours, and can stay on the lock screen a few hours more). Same verdict as Live Updates: only for a future user-started timer, not an all-day summary. Needs a Swift widget extension. |
-| **Notifications** (`UNUserNotificationCenter`) | Phase B's iOS scheduler is still a no-op. Lock-screen previews are the user's setting on iOS; a category's hidden-preview placeholder applies only when the user hides previews, so quit text must be written neutrally for iOS. |
+| **Notifications** (`UNUserNotificationCenter`) | Phase B's iOS scheduler is still a no-op. Lock-screen previews are the user's setting on iOS; a category's hidden-preview placeholder applies only when the user hides previews, so quit notifications need that placeholder, plus the masked text of 4.1 when the user hid the name. |
 
 Apple references: [WidgetKit, lock screen accessories][wk-acc], [ActivityKit][activitykit]. Unverified on this machine.
 
@@ -160,7 +163,7 @@ Apple references: [WidgetKit, lock screen accessories][wk-acc], [ActivityKit][ac
 
 ---
 
-## 4. Recommendation: a private-by-default "Today" presence
+## 4. Recommendation: an opt-in "Today" presence
 
 Build these three together (plus 4.1, the owner's hide-name option); together they are the best honest lock-screen presence Android allows, and the first two
 should work on the owner's Android 15 phone (untested on ColorOS).
@@ -170,7 +173,7 @@ should work on the owner's Android 15 phone (untested on ColorOS).
    | Type | Visibility | What a stranger sees |
    |---|---|---|
    | Good habit (water, prayer, other) | PUBLIC | full content |
-   | Quit milestone | SECRET (PLAN.md's rule; see the open question below) | nothing |
+   | Quit milestone | PRIVATE + neutral public version | follows the phone's setting: the milestone (without the name if hidden, 4.1), or "A milestone reached" / "وصلت إلى محطة جديدة" |
    | Today (item 2) | PUBLIC | its own content, written to be safe: never an event name or a quit-habit name |
    | App / account | PRIVATE | follows the phone's setting |
    | Event | PRIVATE + neutral public version | follows the phone's setting: the name, or "Event in 2 hours" |
@@ -206,17 +209,25 @@ hours" / "A note from your coach". (The alternative, always hiding them, could m
 
 **Decided 2026-11-22: the user can hide a bad habit's name outside the app.** Design in 4.1.
 
-**Open: do quit habits stay off the lock screen?** The last two decisions touch PLAN.md's rule "quit habits must be
-hidden on the lock screen by default": the coach's daily check-in **names a quit habit** in its text
-(`CoachEngine.dailyCheckIn`), so following the phone's setting would show that name on a show-all phone.
+**Decided 2026-11-22: quit habits follow the phone's setting**, replacing PLAN.md's "hidden on the lock screen by
+default". (The alternative was to keep milestones off the lock screen and never name a quit habit in the check-in.)
 
-| Option | Milestone on the lock screen | Daily check-in | Cost |
+| Phone's lock-screen setting | Milestone | Daily check-in | With "hide name" on (4.1) |
 |---|---|---|---|
-| **A. Keep them off (recommended)** | never (SECRET) | shows, but never names a quit habit, for any habit | the check-in is less specific |
-| **B. Follow the phone's setting** | shows; without the name if the user hid it | names the habit unless the user hid it | a habit is exposed until its owner finds the option |
+| Show all content | full text, with the name | full text, can name a quit habit | the same, without the name |
+| Hide sensitive content | "A milestone reached" | "A note from your coach" | the same |
+| No notifications on the lock screen | nothing | nothing | nothing |
 
-A is recommended because it protects people who never open the option. "Hide name" still matters under A: for the
-notification shade of an unlocked phone and for widgets.
+Both use quiet (LOW) channels, so a phone set to hide silent notifications on the lock screen shows neither.
+Consequence: on a show-all phone a quit habit's name is visible until the user turns on "hide name" for it.
+
+**Open: may the quit-counter widget go on the lock screen?** It only appears if the user places it there, and only
+on phones that have lock-screen widgets (not the test phone).
+
+| Option | Result |
+|---|---|
+| **Allow (recommended, consistent with decision 4)**: `keyguard` | the user may place it; "hide name" masks it there too |
+| **Block**: `not_keyguard` (written in item 3 until decided) | never offered for the lock screen |
 
 ### 4.1 Hide a bad habit's name outside the app
 
@@ -273,7 +284,7 @@ fixed text or pictures. Watches and other devices that mirror notifications rece
 | MetricStyle branch (API 37) | `NixNotifications.kt` | S |
 | Widget categories | `res/xml/widget_*_info.xml` | XS |
 | Hide a bad habit's name outside the app (4.1) | `Habit`, Room v10, sync payload, form + sheet, `NotificationPlanner`, `WidgetStateMapper`, `WidgetRenderer`, `MainActivity`, strings | M (1.5-2 days) |
-| iOS | lock-screen accessory widgets with the planned WidgetKit work; neutral quit wording in the iOS notification scheduler | unverified (Mac) |
+| iOS | lock-screen accessory widgets with the planned WidgetKit work; hidden-preview placeholder and masked names (4.1) in the iOS notification scheduler | unverified (Mac) |
 | Docs | README features, PROJECT_CONTEXT, DEVELOPMENT_STATUS, B-notifications channel table | S |
 
 About **6-7 days** on Android (4-5 for items 1-3, 1.5-2 for hiding names), tested with `:shared:testAndroidHostTest` and

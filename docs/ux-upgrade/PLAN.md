@@ -27,7 +27,7 @@ Reminders exist to support the habit, not to raise engagement: no guilt, no dark
 | A2 | Done, merged 2026-11-21 (PR #17) | `feature/app-shortcuts` (deleted) | `docs/ux-upgrade/A2-app-shortcuts.md` | yes: owner device test passed 2026-11-21 |
 | B | Done, merged 2026-11-21 (PR #19) | `feature/notification-foundation` (deleted) | `docs/ux-upgrade/B-notifications.md` | yes: adb timing measurements + owner device test passed 2026-11-21 |
 | C | Done, merged 2026-11-22 (PR #21) | `feature/habit-reminders` (deleted) | `docs/ux-upgrade/C-reminders.md` | installed and `dumpsys alarm` checked; owner approved the merge 2026-11-22 |
-| D | Research written 2026-11-22; PR waiting for owner review ("Today", event/coach visibility and "hide bad-habit name outside the app" decided; open: do quit habits stay off the lock screen) | `docs/lock-screen-research` | `docs/ux-upgrade/D-lock-screen.md` | n/a (research; Oppo checks listed in the doc) |
+| D | Research written 2026-11-22; PR waiting for owner review ("Today", event/coach visibility and "hide bad-habit name outside the app" decided; quit habits follow the phone's setting; open: quit widget on the lock screen) | `docs/lock-screen-research` | `docs/ux-upgrade/D-lock-screen.md` | n/a (research; Oppo checks listed in the doc) |
 
 Update this table at the end of every phase.
 
@@ -311,7 +311,8 @@ owner in the C session.
 ### D: lock screen (research only)
 Answered in `D-lock-screen.md` (2026-11-22). Questions to answer, no code: Android lock-screen widgets (Android 16+ on some devices, not ColorOS 15),
 ongoing notification with progress (water) vs Play policy for ongoing notifications, `setPublicVersion` / visibility
-for private habits (quit habits must be hidden on the lock screen by default), Live Updates / progress-style
+for private habits (owner decision 2026-11-22, replacing "hidden by default": quit habits follow the phone's
+lock-screen setting, with a per-habit "hide name outside the app" option), Live Updates / progress-style
 notifications on Android 16, ColorOS "Fluid Cloud" support for third-party apps, iOS Live Activities (needs
 ActivityKit + Swift target). Recommendation and cost for each.
 
