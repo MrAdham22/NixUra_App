@@ -14,9 +14,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import com.adhamelgendy.nixura.presentation.components.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,7 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.adhamelgendy.nixura.domain.time.CivilCalendar
@@ -35,29 +40,31 @@ import com.adhamelgendy.nixura.presentation.theme.Nix
 import com.adhamelgendy.nixura.presentation.theme.NixType
 import org.koin.compose.koinInject
 
-/** Hour / minute / AM-PM selector. [minutesOfDay] is 0 until 1440. */
+/**
+ * Hour and minute wheels (every minute, both wrap around) with AM / PM. [minutesOfDay] is 0 until 1440.
+ * [visibleRows] is 5 when the picker is alone in its dialog, 3 under a calendar.
+ */
 @Composable
-fun TimeOfDayPicker(minutesOfDay: Int, onChange: (Int) -> Unit, modifier: Modifier = Modifier) {
+fun TimeOfDayPicker(minutesOfDay: Int, onChange: (Int) -> Unit, modifier: Modifier = Modifier, visibleRows: Int = 5) {
     val s = LocalStrings.current
-    val hour24 = (minutesOfDay / 60).coerceIn(0, 23)
-    val minute = (minutesOfDay % 60).coerceIn(0, 59)
-    val isPm = hour24 >= 12
-    val hour12 = (hour24 % 12).let { if (it == 0) 12 else it }
+    val time = ClockSelection.of(minutesOfDay)
+    fun emit(next: ClockSelection) = onChange(next.minutesOfDay)
 
-    fun emit(h12: Int, m: Int, pm: Boolean) {
-        val h24 = (h12 % 12) + if (pm) 12 else 0
-        onChange(h24 * 60 + m)
-    }
-
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Stepper(hour12, { emit(it, minute, isPm) }, min = 1, max = 12, valueWidth = 44.dp)
-            Text(":", style = NixType.Heading, color = Nix.colors.textMuted)
-            Stepper(minute, { emit(hour12, it, isPm) }, min = 0, max = 59, step = 5, valueWidth = 44.dp)
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        // A clock reads hour:minute from the left in Arabic too.
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                NumberWheel(time.hour12, 1..12, { emit(time.copy(hour12 = it)) }, s.pickerHour, loop = true, visibleRows = visibleRows)
+                Text(":", style = NixType.Heading, color = Nix.colors.textMuted)
+                NumberWheel(
+                    time.minute, 0..59, { emit(time.copy(minute = it)) }, s.pickerMinute,
+                    loop = true, visibleRows = visibleRows, format = { it.toString().padStart(2, '0') },
+                )
+            }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            NixChip(s.am, selected = !isPm, onClick = { emit(hour12, minute, false) })
-            NixChip(s.pm, selected = isPm, onClick = { emit(hour12, minute, true) })
+            NixChip(s.am, selected = !time.pm, onClick = { emit(time.copy(pm = false)) })
+            NixChip(s.pm, selected = time.pm, onClick = { emit(time.copy(pm = true)) })
         }
     }
 }
@@ -72,7 +79,7 @@ fun TimePickerDialog(
     val s = LocalStrings.current
     var minutes by remember { mutableStateOf(initialMinutes) }
     Dialog(onDismissRequest = onDismiss) {
-        NixCard(padding = PaddingValues(22.dp)) {
+        NixCard(Modifier.verticalScroll(rememberScrollState()), padding = PaddingValues(22.dp)) {
             Text(title, style = NixType.Heading, color = Nix.colors.textPrimary)
             Spacer(Modifier.height(16.dp))
             TimeOfDayPicker(minutes, { minutes = it })
@@ -110,7 +117,7 @@ fun DateTimePickerDialog(
     val rows = (lead + length + 6) / 7
 
     Dialog(onDismissRequest = onDismiss) {
-        NixCard(padding = PaddingValues(20.dp)) {
+        NixCard(Modifier.verticalScroll(rememberScrollState()), padding = PaddingValues(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(s.monthYear(s.monthNames[month - 1], year), style = NixType.Heading, color = c.textPrimary, modifier = Modifier.weight(1f))
                 NixIconButton(NixIcon.Back, { monthIndex -= 1 }, size = 34.dp)
@@ -151,7 +158,7 @@ fun DateTimePickerDialog(
                 }
             }
             Spacer(Modifier.height(14.dp))
-            TimeOfDayPicker(minutes, { minutes = it })
+            TimeOfDayPicker(minutes, { minutes = it }, visibleRows = 3)
             Spacer(Modifier.height(18.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 NixButton(s.cancel, onDismiss, Modifier.weight(1f), style = NixButtonStyle.Secondary)

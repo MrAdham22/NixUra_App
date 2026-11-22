@@ -85,6 +85,19 @@ Branch `feature/notification-foundation`, details, the phase C API guide and the
   Settings link and timing all confirmed on the Oppo. **Still not verified:** a fresh install on Android 14+ may start with exact alarms denied (then reminders are inexact again; the event form shows a notice);
   iOS (still a no-op scheduler, unchanged).
 
+## Time wheels (2026-11-22)
+
+Branch `feature/time-wheels`. Owner request: scrolling wheels instead of +/- for every time, with every minute
+(`NumberWheel`, `WheelMath`). Goal counts keep +/-. Also fixes the old minute stepper that went from 55 to 59.
+
+- **Verified:** `:shared:testAndroidHostTest` 738 tests, 0 failures; `:androidApp:assembleDebug`; used on the Pixel 9
+  emulator in English and Arabic (drag, tap, fling then Done, 59 to 00, save) for the check-in, a custom start, an
+  event's time and a reminder lead time, plus the two event dialogs on a 360x640 dp screen at 1.6x text.
+- **Installed** on the owner's Oppo 2026-11-22 (starts without a crash).
+- **Used on the phone by the owner:** a check-in at 18:11 set with the wheels was saved and arrived at 18:11:04.
+- **Not verified:** the light theme, TalkBack, iOS.
+- **Seen, not changed:** at 1.6x text on a 360 dp screen "Save reminder" breaks inside the word.
+
 ## UX upgrade A2 (2026-11-21): launcher App Shortcuts
 
 Branch `feature/app-shortcuts`, details and the Oppo test steps in `docs/ux-upgrade/A2-app-shortcuts.md`.

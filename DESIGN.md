@@ -313,6 +313,13 @@ Playful and physical: they dip under the finger and spring back, with no ripple.
 - **Focus:** a rose cursor. There is no focus ring yet.
 - **Switch:** a 48 by 28dp pill track, rose when on, with a 24dp thumb that slides in 160ms.
 
+### Number wheels (every time choice)
+- **Use:** every time choice (clock times, a custom start's days and hours, how long before an event). Goal counts keep the stepper.
+- **Shape:** 72dp wide, 40dp rows (both grow with the text size). 5 rows alone in a dialog, 3 under a calendar or inside a form.
+- **Chosen:** the middle row, in a Raised Dusk band with a hairline and 14dp corners, Heading in primary text. The others are Body in Fog.
+- **Behaviour:** drag or tap. It snaps, follows the finger with a light haptic tick, and never scrolls the screen behind it. Hours and minutes wrap around. Hour:minute stays left-to-right in Arabic. A tap jumps without animation when animations are removed.
+- **Dialogs with a wheel scroll**, so the buttons stay reachable on small screens and with large text.
+
 ### Navigation
 - **Droplet nav bar:** a floating pill (24dp corners, Dusk Surface, hairline, 6dp padding) with 12dp outside margin. Items are at least 56dp tall with a 22dp icon over a small label. Muted by default, rose when selected. A liquid droplet follows the finger while the pages are dragged, stretches toward the new tab and settles with a small overshoot. With reduced motion it simply jumps.
 - **Top bar:** logo and "NixUra" on the left, avatar on the right. The avatar is a circle with a rose-to-orange gradient.
