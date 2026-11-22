@@ -27,7 +27,7 @@ Reminders exist to support the habit, not to raise engagement: no guilt, no dark
 | A2 | Done, merged 2026-11-21 (PR #17) | `feature/app-shortcuts` (deleted) | `docs/ux-upgrade/A2-app-shortcuts.md` | yes: owner device test passed 2026-11-21 |
 | B | Done, merged 2026-11-21 (PR #19) | `feature/notification-foundation` (deleted) | `docs/ux-upgrade/B-notifications.md` | yes: adb timing measurements + owner device test passed 2026-11-21 |
 | C | Done, merged 2026-11-22 (PR #21) | `feature/habit-reminders` (deleted) | `docs/ux-upgrade/C-reminders.md` | installed and `dumpsys alarm` checked; owner approved the merge 2026-11-22 |
-| D | Research written 2026-11-22; PR waiting for owner review; all decisions taken, nothing built | `docs/lock-screen-research` | `docs/ux-upgrade/D-lock-screen.md` | partly: hidden-content test passed 2026-11-22 (see the doc, section 6) |
+| D | Research merged 2026-11-22 (PR #22); all decisions taken (including habit icons in notifications); build next, in its own session | `docs/lock-screen-research` | `docs/ux-upgrade/D-lock-screen.md` | partly: hidden-content test passed 2026-11-22 (see the doc, section 6) |
 
 Update this table at the end of every phase.
 

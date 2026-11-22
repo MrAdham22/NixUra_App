@@ -12,6 +12,7 @@
    "hidden on the lock screen by default"; hiding a name is the user's choice (decision 3).
 5. The quit-counter widget **may be placed on the lock screen**, like the other two widgets. The user places it;
    "hide name" applies there too.
+6. A good habit's notification shows **that habit's own icon**, the one on its card, instead of the leaf (section 4.2).
 
 **No decisions are open.**
 
@@ -271,6 +272,28 @@ fixed text or pictures. Watches and other devices that mirror notifications rece
 5. Tests: for a hidden habit no planned notification or widget state contains the name, a category milestone or a
    category icon, in English and Arabic.
 
+### 4.2 Good-habit notifications show the habit's icon
+
+**Owner request, 2026-11-22:** "I like the icon of the pray and the water, make other habits instead of a leaf icon
+make it the category or habit icon." The water and prayer notification icons stay as they are.
+
+- **Today:** `NixNotificationStyles.of` knows only the stored theme, and has an icon for WATER and PRAYER. Every other
+  habit gets the leaf (`ic_notif_good`).
+- **The card's rule:** cards and widgets take the glyph from the name, `HabitTopicDetector.buildTopic(name)` →
+  `HabitTopic.icon()` → `NixIcon` (`TopicIcons.kt`). The stored theme is **not** enough: it has 7 values, while the
+  detector knows about 20 kinds of good habit (meditation, writing, music, healthy food...).
+- **Build:** resolve the topic in the shared planner with that same detector, carry it on `PlannedNotification` through
+  the stored plan (`PlannedNotificationJson`), the alarm, and every re-post (the "+1" / Done confirmation and
+  "snoozed"). Draw the small icon from the same glyph, white on transparent: either `IconCompat.createWithBitmap` with
+  the existing `WidgetCardPainter.icon` / `drawNixIcon`, or vector drawables from the same path data. It must be
+  readable at 24 dp in the status bar, in the shade and on the lock screen.
+- **Leaf:** only for a habit that is not recognised (`OTHER_BUILD`), as on its card. A bundle of several good-habit
+  reminders keeps the leaf, because it stands for more than one habit.
+- **Quit habits keep the broken chain:** a category icon there would reveal the habit (4.1).
+- **Check on the Oppo:** ColorOS may show the app's icon instead of the small icon in some places.
+- **Tests:** for every `HabitTopic` a good habit can get, the notification's glyph is the card's glyph, and a renamed
+  habit's next notification follows the new name.
+
 ### What it would take
 
 | Step | Files (planned) | Size |
@@ -281,10 +304,11 @@ fixed text or pictures. Watches and other devices that mirror notifications rece
 | MetricStyle branch (API 37) | `NixNotifications.kt` | S |
 | Widget categories | `res/xml/widget_*_info.xml` | XS |
 | Hide a bad habit's name outside the app (4.1) | `Habit`, Room v10, sync payload, form + sheet, `NotificationPlanner`, `WidgetStateMapper`, `WidgetRenderer`, `MainActivity`, strings | M (1.5-2 days) |
+| A good habit's own icon (4.2) | `PlannedNotification` + JSON, `HabitReminderPlanner`, `NixNotificationStyle`, `NixNotifications`, `ReminderActionReceiver`, DESIGN.md | S |
 | iOS | lock-screen accessory widgets with the planned WidgetKit work; hidden-preview placeholder and masked names (4.1) in the iOS notification scheduler | unverified (Mac) |
 | Docs | README features, PROJECT_CONTEXT, DEVELOPMENT_STATUS, B-notifications channel table | S |
 
-About **6-7 days** on Android (4-5 for items 1-3, 1.5-2 for hiding names), tested with `:shared:testAndroidHostTest` and
+About **7-8 days** on Android (4-5 for items 1-3, 1.5-2 for hiding names, under 1 for habit icons), tested with `:shared:testAndroidHostTest` and
 `:androidApp:assembleDebug`, then on the Oppo (items 1-2 and hidden names), a Pixel API 36.1+ emulator (item 3) and an API 37 emulator
 (MetricStyle).
 

@@ -15,7 +15,8 @@ lock-screen privacy, an opt-in ongoing "Today" notification, `keyguard` on all t
 and coach notifications follow the phone's setting; a per-habit option hides a bad habit's name everywhere outside
 the app (needs Room v10; milestone text and widget icon must be neutral too, as both reveal the habit).
 Quit-habit notifications follow the phone's setting too (replaces "hidden by default"), and the quit widget may be
-placed on the lock screen. No decisions are open. About 6-7 days to build.
+placed on the lock screen. Good-habit notifications will show the habit's own icon instead of the leaf (section 4.2).
+No decisions are open. About 7-8 days to build, in its own session.
 
 ## UX upgrade C (2026-11-21): good-habit reminders and notification buttons
 
