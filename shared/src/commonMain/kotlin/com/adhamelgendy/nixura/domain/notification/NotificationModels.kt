@@ -16,6 +16,7 @@ import com.adhamelgendy.nixura.domain.recognition.HabitTopic
  *   reminder for a habit replaces the one already showing instead of stacking. Defaults to [key].
  * @param actions buttons shown on the notification (phase C: "+1 glass", "Prayed", Snooze).
  * @param progress shown with the platform's own progress style ("3 / 8 glasses"); `null` = none.
+ * @param publicTitle the neutral line shown instead on a phone that hides sensitive content (see [LockScreenPrivacy]).
  * @param timing how precisely the OS must fire it (see [NotificationTiming]).
  */
 data class PlannedNotification(
@@ -31,6 +32,7 @@ data class PlannedNotification(
     val actions: List<NotificationAction> = emptyList(),
     val progress: NotificationProgress? = null,
     val timing: NotificationTiming = NotificationTiming.ON_TIME,
+    val publicTitle: String? = null,
 )
 
 /** How precisely a notification must fire. */

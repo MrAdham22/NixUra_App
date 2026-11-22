@@ -7,6 +7,7 @@ import com.adhamelgendy.nixura.domain.model.EventCategory
 import com.adhamelgendy.nixura.domain.reminder.HabitReminderCopy
 import com.adhamelgendy.nixura.domain.reminder.Prayer
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
+import com.adhamelgendy.nixura.domain.notification.LockScreenCopy
 
 /**
  * All user-visible UI text. Defaults are English. To add a language, subclass it and override only
@@ -23,7 +24,7 @@ import com.adhamelgendy.nixura.domain.theme.HabitTheme
  * Note: the offline coach's habit knowledge base (domain/coach) is English-only for now.
  */
 @Immutable
-open class Strings : HabitReminderCopy {
+open class Strings : HabitReminderCopy, LockScreenCopy {
     // Navigation
     open val navHome: String = "Home"
     open val navQuit: String = "Quit"
@@ -1121,6 +1122,13 @@ open class Strings : HabitReminderCopy {
     open val pauseForToday: String = "For today"
     open val pauseForWeek: String = "For 1 week"
     // ---- end of UX C ----
+
+    // ---- UX D: lock screen, names hidden outside the app, the Today notification. ----
+    // What a phone that hides sensitive content shows instead. Never a name.
+    override fun lockScreenEvent(inText: String?): String = if (inText == null) "Event now" else "Event in $inText"
+    override fun lockScreenMilestone(): String = "A milestone reached"
+    override fun lockScreenCoach(): String = "A note from your coach"
+    // ---- end of UX D ----
 }
 
 /** One question and its answer on the Help screen. */

@@ -62,6 +62,10 @@ class ArabicCoverageTest {
             add(a.reminderWaterBody(3, 8) to e.reminderWaterBody(3, 8))
             add(a.reminderWaterLastBody(7, 8) to e.reminderWaterLastBody(7, 8))
             // Water and prayer titles are the emoji and the habit's own name in both languages, on purpose.
+            add(a.lockScreenEvent(null) to e.lockScreenEvent(null))
+            add(a.lockScreenEvent("2") to e.lockScreenEvent("2"))
+            add(a.lockScreenMilestone() to e.lockScreenMilestone())
+            add(a.lockScreenCoach() to e.lockScreenCoach())
             t.filter { it != com.adhamelgendy.nixura.domain.theme.HabitTheme.WATER && it != com.adhamelgendy.nixura.domain.theme.HabitTheme.PRAYER }
                 .forEach { theme -> add(a.reminderHabitTitle(theme, "Gym", 0) to e.reminderHabitTitle(theme, "Gym", 0)) }
             add(a.reminderDailyBody("Gym", 1, 3) to e.reminderDailyBody("Gym", 1, 3))

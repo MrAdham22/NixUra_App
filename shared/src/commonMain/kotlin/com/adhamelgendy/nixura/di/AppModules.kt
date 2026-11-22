@@ -111,7 +111,12 @@ fun appModule() = module {
     single<CoachResponder> { RuleBasedCoachResponder(get(), get()) }
 
     // Notifications
-    single { NotificationPlanner(get(), get(), get()) }
+    single<com.adhamelgendy.nixura.domain.notification.LockScreenCopyProvider> {
+        com.adhamelgendy.nixura.domain.notification.LockScreenCopyProvider { language ->
+            com.adhamelgendy.nixura.presentation.strings.stringsFor(language)
+        }
+    }
+    single { NotificationPlanner(get(), get(), get(), get()) }
     // Good-habit reminders (phase C): the words come from the app's Strings / ArabicStrings.
     single<com.adhamelgendy.nixura.domain.reminder.ReminderDeviceRepository> {
         com.adhamelgendy.nixura.data.repository.ReminderDeviceRepositoryImpl(get())

@@ -1147,6 +1147,16 @@ object ArabicStrings : Strings() {
     override val pauseForWeek: String = "لأسبوع"
     // ---- end of UX C ----
 
+    // ---- UX D: lock screen, names hidden outside the app, the Today notification. ----
+    override fun lockScreenEvent(inText: String?): String = if (inText == null) "مناسبة الآن" else "مناسبة بعد ${afterPreposition(inText)}"
+    override fun lockScreenMilestone(): String = "وصلت إلى محطة جديدة"
+    override fun lockScreenCoach(): String = "ملاحظة من مدربك"
+    // ---- end of UX D ----
+
+    /** A duration after "بعد": the dual changes case (ساعتان becomes ساعتين). */
+    private fun afterPreposition(duration: String): String =
+        duration.replace("ساعتان", "ساعتين").replace("يومان", "يومين").replace("دقيقتان", "دقيقتين")
+
     /** The noun after a written number: 3–10 أكواب, 11–99 كوبًا, otherwise كوب. */
     private fun cupNoun(n: Int): String = when (ArabicPlurals.category(n.toLong())) {
         PluralCategory.FEW -> "أكواب"

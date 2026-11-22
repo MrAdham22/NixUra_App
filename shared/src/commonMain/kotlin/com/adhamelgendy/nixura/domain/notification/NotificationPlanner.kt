@@ -26,6 +26,8 @@ import kotlin.time.Duration.Companion.milliseconds
 class NotificationPlanner(
     private val coach: CoachEngine,
     private val dayCalculator: DayCalculator,
+    /** What a phone that hides sensitive content shows instead ([LockScreenPrivacy]). */
+    private val copies: LockScreenCopyProvider,
     /** Notifications are written in the saved language (resolved here, so background re-planning gets it right). */
     private val language: ContentLanguage = ContentLanguage.English,
 ) {
@@ -39,7 +41,9 @@ class NotificationPlanner(
         events: List<Event>,
     ): List<PlannedNotification> {
         if (!settings.notificationsEnabled) return emptyList()
-        val arabic = language.update(settings.languageCode) == AppLocales.ARABIC
+        val shownLanguage = language.update(settings.languageCode)
+        val arabic = shownLanguage == AppLocales.ARABIC
+        val neutral = copies.forLanguage(shownLanguage)
         val planned = mutableListOf<PlannedNotification>()
         // Items up to this late are still planned, so a re-plan does not cancel an alarm the OS has not delivered yet
         // (NotificationArming decides whether it is armed again).
@@ -56,6 +60,7 @@ class NotificationPlanner(
                     kind = NotificationKind.EVENT,
                     targetId = event.id,
                     title = event.title,
+                    publicTitle = neutral.lockScreenEvent(if (lead <= 0L) null else durationText(lead.milliseconds, arabic)),
                     body = when {
                         arabic && lead <= 0L -> "حان الوقت."
                         arabic -> "تبدأ بعد ${durationText(lead.milliseconds, arabic = true)}."
@@ -80,6 +85,7 @@ class NotificationPlanner(
                     targetId = item.habit.id,
                     title = note.title,
                     body = note.body,
+                    publicTitle = neutral.lockScreenMilestone(),
                 )
             }
         }
@@ -128,6 +134,7 @@ class NotificationPlanner(
                 kind = NotificationKind.COACH,
                 title = note.title,
                 body = note.body,
+                publicTitle = neutral.lockScreenCoach(),
             )
         }
 

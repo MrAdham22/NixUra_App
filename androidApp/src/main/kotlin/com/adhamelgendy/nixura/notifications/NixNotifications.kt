@@ -21,6 +21,8 @@ import com.adhamelgendy.nixura.domain.notification.NotificationKind
 import com.adhamelgendy.nixura.domain.notification.NotificationProgress
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
 import com.adhamelgendy.nixura.domain.recognition.HabitTopic
+import com.adhamelgendy.nixura.domain.notification.LockScreenPrivacy
+import com.adhamelgendy.nixura.domain.notification.LockScreenVisibility
 
 /**
  * What to show. Built by the scheduler's receiver today; phase C builds it for good-habit reminders.
@@ -49,6 +51,8 @@ data class NixNotificationRequest(
     val timeoutAfterMillis: Long? = null,
     /** Told when the user swipes it away; `null` = nothing to tell. */
     val deleteIntent: PendingIntent? = null,
+    /** The neutral line shown instead on a lock screen that hides sensitive content; `null` = the app's name only. */
+    val publicTitle: String? = null,
 )
 
 /**
@@ -57,6 +61,7 @@ data class NixNotificationRequest(
  * - the channels and channel groups (from the shared [NotificationChannels] catalog, names from Android resources),
  * - the look per kind ([NixNotificationStyles]: small icon, accent colour, category, priority),
  * - grouping (one group per kind, with a summary once two or more of that kind are showing),
+ * - what a locked screen shows ([LockScreenPrivacy]), set on every notification and every summary,
  * - the tap target ([NotificationDeepLink]).
  */
 object NixNotifications {
@@ -101,6 +106,7 @@ object NixNotifications {
             .setAutoCancel(true)
             .setContentIntent(NotificationDeepLink.contentIntent(context, request.key, request.kind, request.targetId))
             .setOnlyAlertOnce(request.onlyAlertOnce)
+            .lockScreen(context, request.kind, channel, style, request.publicTitle)
             .apply {
                 request.actions.forEach(::addAction)
                 request.progress?.let { setProgress(it.max.coerceAtLeast(1), it.current.coerceIn(0, it.max.coerceAtLeast(1)), false) }
@@ -167,11 +173,38 @@ object NixNotifications {
             .setContentTitle(context.getString(NixNotificationStyles.nameOf(channel)))
             .setGroup(group)
             .setGroupSummary(true)
+            .lockScreen(context, kind, channel, style, context.getString(NixNotificationStyles.nameOf(channel)))
             .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
             .setAutoCancel(true)
             .setContentIntent(NotificationDeepLink.contentIntent(context, SUMMARY_PREFIX + group, kind, targetId = null))
             .build()
         NotificationManagerCompat.from(context).notify(summaryId, summary)
+    }
+
+    /**
+     * What a locked screen shows. It must be on each notification: Android resets an app's channel-level value.
+     * The public version is used only where the phone hides sensitive content.
+     */
+    private fun NotificationCompat.Builder.lockScreen(
+        context: Context,
+        kind: NotificationKind,
+        channel: NixChannel,
+        style: NixNotificationStyle,
+        publicTitle: String?,
+    ): NotificationCompat.Builder {
+        if (LockScreenPrivacy.visibilityOf(kind) == LockScreenVisibility.PUBLIC) {
+            return setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+        }
+        setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+        if (publicTitle == null) return this
+        val neutral = NotificationCompat.Builder(context, channel.id)
+            .setSmallIcon(style.smallIcon) // the type's own icon, never a habit's
+            .setColor(style.accent)
+            .setCategory(style.category)
+            .setContentTitle(publicTitle)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .build()
+        return setPublicVersion(neutral)
     }
 
     private fun ChannelImportance.toAndroid(): Int = when (this) {
