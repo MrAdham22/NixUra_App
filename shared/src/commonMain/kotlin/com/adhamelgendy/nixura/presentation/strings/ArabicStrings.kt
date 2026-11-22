@@ -1202,8 +1202,7 @@ object ArabicStrings : Strings() {
     // ---- end of UX D ----
 
     /** A duration after "بعد": the dual changes case (ساعتان becomes ساعتين). */
-    private fun afterPreposition(duration: String): String =
-        duration.replace("ساعتان", "ساعتين").replace("يومان", "يومين").replace("دقيقتان", "دقيقتين")
+    private fun afterPreposition(duration: String): String = com.adhamelgendy.nixura.domain.coach.arAfterPreposition(duration)
 
     /** The noun after a written number: 3–10 أكواب, 11–99 كوبًا, otherwise كوب. */
     private fun cupNoun(n: Int): String = when (ArabicPlurals.category(n.toLong())) {

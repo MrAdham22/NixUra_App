@@ -6,6 +6,7 @@ import com.adhamelgendy.nixura.domain.coach.BadHabitSnapshot
 import com.adhamelgendy.nixura.domain.coach.CoachEngine
 import com.adhamelgendy.nixura.domain.coach.CoachSnapshot
 import com.adhamelgendy.nixura.domain.coach.GoodHabitSnapshot
+import com.adhamelgendy.nixura.domain.coach.arAfterPreposition
 import com.adhamelgendy.nixura.domain.coach.durationText
 import com.adhamelgendy.nixura.domain.model.AppSettings
 import com.adhamelgendy.nixura.domain.locale.AppLocales
@@ -65,7 +66,7 @@ class NotificationPlanner(
                     publicTitle = neutral.lockScreenEvent(if (lead <= 0L) null else durationText(lead.milliseconds, arabic)),
                     body = when {
                         arabic && lead <= 0L -> "حان الوقت."
-                        arabic -> "تبدأ بعد ${durationText(lead.milliseconds, arabic = true)}."
+                        arabic -> "تبدأ بعد ${arAfterPreposition(durationText(lead.milliseconds, arabic = true))}."
                         lead <= 0L -> "It's time."
                         else -> "Starts in ${durationText(lead.milliseconds)}."
                     },
