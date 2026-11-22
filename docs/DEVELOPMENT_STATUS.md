@@ -27,7 +27,8 @@ Branch `feature/habit-reminders`, details, scheduling choices, ColorOS notes and
   habit were deleted, and a shared limit of 8 a day deleted the rest. Water now moves instead. Owner decisions the
   same day: no quiet hours, no shared limit, water windows may pass midnight (details in C-reminders.md).
   **Verified:** 12 new or changed tests failed before the fix; `:shared:testAndroidHostTest` 741 tests, 0 failures;
-  `:androidApp:assembleDebug` OK. **Not verified:** on the phone (it was disconnected), and iOS compilation.
+  `:androidApp:assembleDebug` OK; on the Pixel 9 emulator a 2 PM to 2 AM window set in the sheet planned 18, 20, 22, 00
+  and 02. **Not verified:** on the phone (it was disconnected), and iOS compilation.
 
 ## UX upgrade B (2026-11-21): notification foundation
 
