@@ -28,7 +28,9 @@ Branch `feature/habit-reminders`, details, scheduling choices, ColorOS notes and
   same day: no quiet hours, no shared limit, water windows may pass midnight (details in C-reminders.md).
   **Verified:** 12 new or changed tests failed before the fix; `:shared:testAndroidHostTest` 741 tests, 0 failures;
   `:androidApp:assembleDebug` OK; on the Pixel 9 emulator a 2 PM to 2 AM window set in the sheet planned 18, 20, 22, 00
-  and 02. **Not verified:** on the phone (it was disconnected), and iOS compilation.
+  and 02. Installed on the owner's Oppo 2026-11-22 18:09 (data unchanged, no crash): the next day's plan
+  has all six water reminders (11:00, 13:00, 16:00, 17:39, 19:01, 21:00) and the chosen times the old rules deleted
+  (17:00, 00:50, 03:50). **Not verified:** those reminders actually firing on the phone, and iOS compilation.
 
 ## UX upgrade B (2026-11-21): notification foundation
 
