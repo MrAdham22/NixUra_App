@@ -3,8 +3,13 @@
 **Written:** 2026-11-22. **Branch:** `docs/lock-screen-research`. **Research only: no app code changed.**
 (PLAN.md called this file `D.md`; the owner's brief named it `D-lock-screen.md`.)
 
-**Owner decision (2026-11-22):** the opt-in "Today" notification is **approved**, as an exception to PLAN.md's
-no-summary rule. It is not built. **Still open:** event and coach notifications on the lock screen (section 4).
+**Owner decisions (2026-11-22), none built yet:**
+1. The opt-in "Today" notification is **approved**, as an exception to PLAN.md's no-summary rule.
+2. Event and coach notifications **follow the phone's lock-screen setting**.
+3. The user can **hide a bad habit's name everywhere it shows outside the app** (notifications, widgets, anything
+   else), with all other details unchanged (section 4.1).
+
+**Still open:** whether quit habits stay off the lock screen now that their names can be hidden (section 4).
 
 **Question.** Can NixUra show habit progress, the next reminder, the nearest event or a streak on the lock screen,
 truthfully, on NixUra's SDK range and on the owner's Oppo Reno 10 5G? What does each mechanism cost, and which one
@@ -157,7 +162,7 @@ Apple references: [WidgetKit, lock screen accessories][wk-acc], [ActivityKit][ac
 
 ## 4. Recommendation: a private-by-default "Today" presence
 
-Build these three together; together they are the best honest lock-screen presence Android allows, and the first two
+Build these three together (plus 4.1, the owner's hide-name option); together they are the best honest lock-screen presence Android allows, and the first two
 should work on the owner's Android 15 phone (untested on ColorOS).
 
 1. **Lock-screen privacy rules (do first, S).** Per type, by default:
@@ -165,15 +170,15 @@ should work on the owner's Android 15 phone (untested on ColorOS).
    | Type | Visibility | What a stranger sees |
    |---|---|---|
    | Good habit (water, prayer, other) | PUBLIC | full content |
-   | Quit milestone | **SECRET, always** | nothing |
+   | Quit milestone | SECRET (PLAN.md's rule; see the open question below) | nothing |
    | Today (item 2) | PUBLIC | its own content, written to be safe: never an event name or a quit-habit name |
    | App / account | PRIVATE | follows the phone's setting |
-   | Event | **open decision** (below) | |
-   | Coach (can greet by name) | **open decision** (below) | |
+   | Event | PRIVATE + neutral public version | follows the phone's setting: the name, or "Event in 2 hours" |
+   | Coach | PRIVATE + neutral public version | follows the phone's setting: the note, or "A note from your coach" |
 
    One opt-in, **"Show quit streaks on Today"** (default **off**): adds a streak with no habit name to the Today
-   notification. Milestone notifications stay SECRET either way, because a public version could not keep the habit
-   name hidden. The rule is a pure, tested function in `domain/notification`.
+   notification. It is separate from "hide name" (4.1): Today never shows a quit habit's name. The rule is a pure,
+   tested function in `domain/notification`.
 
 2. **"Today" notification, opt-in (M).** One quiet ongoing notification on a new DEFAULT-importance, soundless,
    vibration-less channel `nixura_today`, with: good-habit progress for today, the next planned reminder with a
@@ -195,31 +200,84 @@ tricks, wallpaper. **Later, optional:** a water QS tile.
 **Decided 2026-11-22: "Today" is approved.** PLAN.md said notifications never duplicate the widget's dashboard
 ("no 'today's summary' notifications"). Today is the one exception: opt-in, silent, never alerts, one row.
 
-**Open: event and coach notifications on the lock screen.** Android offers no "always show, but always hide the
-name" for a notification that has the name in it.
+**Decided 2026-11-22: event and coach notifications follow the phone's setting** (PRIVATE + neutral public version).
+A phone set to show all content shows the event's name; a phone set to hide sensitive content shows "Event in 2
+hours" / "A note from your coach". (The alternative, always hiding them, could make reminders easy to miss.)
 
-| Option | Phone shows all content | Phone hides sensitive content | Cost |
+**Decided 2026-11-22: the user can hide a bad habit's name outside the app.** Design in 4.1.
+
+**Open: do quit habits stay off the lock screen?** The last two decisions touch PLAN.md's rule "quit habits must be
+hidden on the lock screen by default": the coach's daily check-in **names a quit habit** in its text
+(`CoachEngine.dailyCheckIn`), so following the phone's setting would show that name on a show-all phone.
+
+| Option | Milestone on the lock screen | Daily check-in | Cost |
 |---|---|---|---|
-| **A. Follow the phone's setting (recommended)**: PRIVATE + neutral public version | name visible | "Event in 2 hours" / "A note from your coach" | names can be read on show-all phones |
-| **B. Always hide**: SECRET | nothing | nothing | an event reminder is not seen until unlock, so it can be missed |
+| **A. Keep them off (recommended)** | never (SECRET) | shows, but never names a quit habit, for any habit | the check-in is less specific |
+| **B. Follow the phone's setting** | shows; without the name if the user hid it | names the habit unless the user hid it | a habit is exposed until its owner finds the option |
 
-A is recommended because a reminder nobody sees fails at its job, and show-all is the user's own choice for the
-phone. Quit milestones are SECRET under both options.
+A is recommended because it protects people who never open the option. "Hide name" still matters under A: for the
+notification shade of an unlocked phone and for widgets.
+
+### 4.1 Hide a bad habit's name outside the app
+
+**The option.** One switch per bad habit, **"Hide name outside the app"** / "إخفاء الاسم خارج التطبيق", off by
+default, in the add/edit form and in the card's long-press sheet. Inside the app nothing changes. Everything else
+stays: days, live clock, longest streak, money saved, colour, buttons, tap target.
+
+**Removing the name alone is not enough.** Two other things identify the habit today: the milestone's body comes
+from the habit's category ("Nicotine level dropping", "A day gambling-free") and the widget's badge is the category's
+icon (a cigarette for smoking). Both become neutral when the name is hidden.
+
+| Surface | Today | With the name hidden |
+|---|---|---|
+| Milestone title | "7 days clear: Smoking" | "7 days clear" / "صامد منذ 7 أيام" |
+| Milestone body | category text that can name the habit | the existing generic line: "You reached 7 days. Keep going..." |
+| Daily check-in | "Smoking: 7 days clear. (encouragement)" | "7 days clear. (encouragement)"; the encouragement is already generic |
+| Quit widget, name | "Smoking" | no name: the existing "Clear for" / "صامد منذ" label takes its place, once |
+| Quit widget, badge | category icon | the neutral shield (`HabitTopic.OTHER_QUIT`) |
+| Today notification | never names a quit habit | the same |
+| Recent-apps preview | a picture of the open screen, names included | Android 13+: no preview while any habit has a hidden name (`Activity.setRecentsScreenshotEnabled(false)`) |
+| iOS notifications, widgets, app switcher | not built | the same masked text; cover the screen when the app goes inactive (unverified, needs a Mac) |
+
+**Already safe:** the channel and bundle titles ("Quit progress"), app shortcuts and the widget picker's preview are
+fixed text or pictures. Watches and other devices that mirror notifications receive the masked text.
+
+**Limits to tell the user about, not to hide:**
+- The broken-chain icon and "Quit progress" still say that *a* habit is being quit, not which one.
+- Android's own notification history keeps notifications that were shown before the switch was turned on.
+- On Android 12 and older the recent-apps preview can only be blocked with `FLAG_SECURE`, which also blocks
+  screenshots, so it is not used.
+- The widget's "choose a habit" screen shows real names: it is NixUra's own screen, and the user needs them to choose.
+- Several hidden habits look alike on widgets; their colours and day counts tell them apart.
+- It hides what is **displayed**. The name still syncs to the user's account, and the AI coach still sends habit names
+  for users who agreed to it (`AiCoachClient`).
+
+**How to build it (about 1.5-2 days):**
+1. `Habit.hideNameOutside`: Room v10 (`MIGRATION_9_10`, one column on `habits`, default 0), mapper, DAO, schema check.
+2. Sync it with the habit (`HabitPayload`, default false), so a second phone does not expose the name. The Firestore
+   rules accept it as they are (`data` allows up to 24 fields).
+3. One pure rule in `domain` applied at the two exits, `NotificationPlanner` and `WidgetStateMapper`, so renderers
+   and receivers never get the real name. Match the category before masking, never from the masked name.
+4. On a change: re-plan (stored plans and armed alarms carry the old text), remove that habit's posted milestone and
+   any posted check-in, redraw its widgets at once.
+5. Tests: for a hidden habit no planned notification or widget state contains the name, a category milestone or a
+   category icon, in English and Arabic.
 
 ### What it would take
 
 | Step | Files (planned) | Size |
 |---|---|---|
-| Privacy rule + quit-streak opt-in + public versions (if option A) | `domain/notification/LockScreenPrivacy.kt` (+ test), `NixNotifications.kt`, Settings screen + ViewModel, `Strings` / `ArabicStrings` | S |
+| Privacy rule + quit-streak opt-in + public versions | `domain/notification/LockScreenPrivacy.kt` (+ test), `NixNotifications.kt`, Settings screen + ViewModel, `Strings` / `ArabicStrings` | S |
 | Today builder | `domain/notification/TodaySummary.kt` (+ tests: no quit info without opt-in, nearest event, next reminder, Arabic plurals) | S-M |
 | Today channel and posting | `NotificationChannels.kt` (new `nixura_today`, freeze list before release), `NixNotifications.kt` (ongoing, chronometer, actions, delete intent), re-post hooks beside `WidgetUpdater.requestRefresh`, midnight refresh | M |
 | MetricStyle branch (API 37) | `NixNotifications.kt` | S |
 | Widget categories | `res/xml/widget_*_info.xml` | XS |
+| Hide a bad habit's name outside the app (4.1) | `Habit`, Room v10, sync payload, form + sheet, `NotificationPlanner`, `WidgetStateMapper`, `WidgetRenderer`, `MainActivity`, strings | M (1.5-2 days) |
 | iOS | lock-screen accessory widgets with the planned WidgetKit work; neutral quit wording in the iOS notification scheduler | unverified (Mac) |
 | Docs | README features, PROJECT_CONTEXT, DEVELOPMENT_STATUS, B-notifications channel table | S |
 
-About **4-5 days** of work for items 1-3 on Android, tested with `:shared:testAndroidHostTest` and
-`:androidApp:assembleDebug`, then on the Oppo (items 1-2), a Pixel API 36.1+ emulator (item 3) and an API 37 emulator
+About **6-7 days** on Android (4-5 for items 1-3, 1.5-2 for hiding names), tested with `:shared:testAndroidHostTest` and
+`:androidApp:assembleDebug`, then on the Oppo (items 1-2 and hidden names), a Pixel API 36.1+ emulator (item 3) and an API 37 emulator
 (MetricStyle).
 
 ---
@@ -270,6 +328,7 @@ Official Android:
 - [glance](https://developer.android.com/develop/ui/compose/glance/create-app-widget): `widgetCategory` home_screen / keyguard
 - [fgs](https://developer.android.com/develop/background-work/services/fgs/service-types): FGS types, `specialUse` Play review
 - [qs](https://developer.android.com/develop/ui/views/quicksettings-tiles): Quick Settings tiles
+- [recents](https://developer.android.com/reference/android/app/Activity#setRecentsScreenshotEnabled(boolean)): hiding the recent-apps preview, API 33
 
 Android 15 source:
 - [src-notif](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/android/app/Notification.java): the default redacted view (`makePublicContentView`)
