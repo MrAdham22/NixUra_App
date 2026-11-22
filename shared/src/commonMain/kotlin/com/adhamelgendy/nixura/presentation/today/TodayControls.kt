@@ -95,7 +95,7 @@ fun TodaySettingsRows(resumeTick: Int) {
     }
 }
 
-/** The row in a good habit's long-press sheet; `null` where Today is not supported. */
+/** The row in a good habit's long-press sheet; `null` where Today cannot show. */
 @Composable
 fun rememberTodaySheetAction(): SheetAction? {
     val vm: TodayViewModel = koinViewModel()
@@ -103,6 +103,7 @@ fun rememberTodaySheetAction(): SheetAction? {
     val state by vm.uiState.collectAsStateWithLifecycle()
     val ask = rememberNotificationAsk()
     val s = LocalStrings.current
+    if (!state.notificationsOn) return null
     return SheetAction(s.todaySheetRow(state.enabled), NixIcon.Lock) {
         val on = !state.enabled
         if (on) ask.ensure(s.notificationAskTodayReason)
@@ -122,7 +123,7 @@ fun TodayOffer() {
     var offering by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(state.goodHabitCount) {
         val count = state.goodHabitCount ?: return@LaunchedEffect
-        if (lastCount == 1 && count == 2 && !state.enabled && !state.offerSeen) offering = true
+        if (lastCount == 1 && count == 2 && state.notificationsOn && !state.enabled && !state.offerSeen) offering = true
         lastCount = count
     }
     if (!offering) return

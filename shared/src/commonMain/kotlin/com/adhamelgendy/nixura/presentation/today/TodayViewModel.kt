@@ -18,6 +18,8 @@ import kotlinx.coroutines.launch
 /** @param goodHabitCount `null` until first read, so loading never looks like "a second habit was added". */
 data class TodayUiState(
     val enabled: Boolean = false,
+    /** The app-wide switch. While it is off Today cannot show, so it is not offered. */
+    val notificationsOn: Boolean = true,
     val showStreak: Boolean = false,
     val offerSeen: Boolean = true,
     val hiddenToday: Boolean = false,
@@ -41,6 +43,7 @@ class TodayViewModel(
     val uiState: StateFlow<TodayUiState> = combine(observeSettings(), observeGoodHabits(), device.observe()) { settings, habits, state ->
         TodayUiState(
             enabled = settings.todayNotification,
+            notificationsOn = settings.notificationsEnabled,
             showStreak = settings.todayShowStreak,
             offerSeen = settings.todayOfferSeen,
             hiddenToday = state.todayHiddenDay == days.dayIndexOf(clock.nowEpochMillis()),
