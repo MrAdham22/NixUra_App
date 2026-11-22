@@ -91,12 +91,16 @@ fun reminderStatusText(habit: GoodHabit, device: ReminderDeviceState, now: Long,
     if (paused > now) return s.reminderStatusPausedUntil(formatDate(days.dayIndexOf(paused), s, includeWeekday = true, includeYear = false))
     return when (HabitReminderRules.strategyOf(habit)) {
         ReminderStrategy.PRAYER -> if (device.location == null) s.reminderStatusNeedsLocation else s.reminderStatusPrayer
-        ReminderStrategy.WATER -> s.reminderStatusWater
+        ReminderStrategy.WATER ->
+            if (HabitReminderRules.isSpreadOut(HabitReminderRules.waterWindowOf(habit))) s.reminderStatusWaterSpread else s.reminderStatusWater
         ReminderStrategy.DAILY_TIME, ReminderStrategy.WEEKLY_TIME -> s.reminderStatusAt(formatClockMinutes(HabitReminderRules.timeOf(habit), s))
     }
 }
 
 private enum class TimeField { TIME, FROM, UNTIL }
+
+/** A window past midnight ends after 24:00; its time of day is the remainder. */
+private const val MINUTES_PER_DAY = 24 * 60
 
 @Composable
 private fun HabitRemindersSheet(habit: GoodHabit, state: HabitRemindersUiState, vm: HabitRemindersViewModel, onDismiss: () -> Unit) {
@@ -157,19 +161,13 @@ private fun HabitRemindersSheet(habit: GoodHabit, state: HabitRemindersUiState, 
                     ReminderStrategy.WATER -> {
                         val window = HabitReminderRules.waterWindowOf(habit)
                         TimeRow(s.reminderFrom, formatClockMinutes(window.first, s)) { editing = TimeField.FROM }
-                        TimeRow(s.reminderUntil, formatClockMinutes(window.last, s)) { editing = TimeField.UNTIL }
+                        TimeRow(s.reminderUntil, formatClockMinutes(window.last % MINUTES_PER_DAY, s)) { editing = TimeField.UNTIL }
                     }
                     ReminderStrategy.DAILY_TIME, ReminderStrategy.WEEKLY_TIME -> {
                         val time = HabitReminderRules.timeOf(habit)
                         TimeRow(s.reminderTime, formatClockMinutes(time, s)) { editing = TimeField.TIME }
-                        if (HabitReminderRules.isQuiet(time)) Text(s.reminderTimeIsQuiet, style = NixType.Small, color = c.accentWarm)
                     }
                 }
-                Text(
-                    s.reminderQuietNote(formatClockMinutes(HabitReminderRules.QUIET_START_MINUTES, s), formatClockMinutes(HabitReminderRules.QUIET_END_MINUTES, s)),
-                    style = NixType.Small,
-                    color = c.textMuted,
-                )
 
                 val pausedUntil = habit.reminder.pausedUntilEpochMillis?.takeIf { it > clock.nowEpochMillis() }
                 if (pausedUntil != null) {
@@ -195,7 +193,7 @@ private fun HabitRemindersSheet(habit: GoodHabit, state: HabitRemindersUiState, 
             initialMinutes = when (field) {
                 TimeField.TIME -> HabitReminderRules.timeOf(habit)
                 TimeField.FROM -> window.first
-                TimeField.UNTIL -> window.last
+                TimeField.UNTIL -> window.last % MINUTES_PER_DAY
             },
             title = when (field) {
                 TimeField.TIME -> s.reminderTime
@@ -205,8 +203,8 @@ private fun HabitRemindersSheet(habit: GoodHabit, state: HabitRemindersUiState, 
             onConfirm = { minutes ->
                 when (field) {
                     TimeField.TIME -> vm.setTime(habit, minutes)
-                    TimeField.FROM -> vm.setWindow(habit, minutes, window.last)
-                    TimeField.UNTIL -> vm.setWindow(habit, window.first, minutes)
+                    TimeField.FROM -> vm.setWindowStart(habit, minutes)
+                    TimeField.UNTIL -> vm.setWindowEnd(habit, minutes)
                 }
                 editing = null
             },

@@ -32,11 +32,14 @@ data class PlannedNotification(
 
 /** How precisely a notification must fire. */
 enum class NotificationTiming {
-    /** Tied to a moment (an event, a prayer): exact when the user allows exact alarms (phase B's hybrid timing). */
+    /**
+     * Tied to a moment (an event, a prayer, a time the user picked): exact when the user allows exact alarms
+     * (phase B's hybrid timing), and delivered in deep sleep either way.
+     */
     ON_TIME,
 
     /**
-     * A nudge (water, a habit's chosen time): a few minutes either way is fine. Android arms it inside a short
+     * A nudge (water only): a few minutes either way is fine, and deep sleep may hold it. Android arms it inside a short
      * window without the exact-alarm permission and without the status-bar alarm icon.
      */
     FLEXIBLE,

@@ -8,7 +8,7 @@
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <!-- Optional: lets event reminders fire at the exact minute. Without it they use inexact alarms. -->
+    <!-- Optional: lets event, prayer and chosen-time habit reminders fire at the exact minute. Without it they use inexact alarms. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <!-- Prayer times only (phase C): city-level, read once when the user asks from a prayer habit's reminders. Kept on
          the phone, never synced or sent. No fine location, no background location. -->

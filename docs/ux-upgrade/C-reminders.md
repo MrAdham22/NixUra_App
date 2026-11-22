@@ -5,7 +5,8 @@
 
 **Goal.** Help people log a good habit at the moment it happens. A reminder comes at the right time for that habit
 (prayer time, behind on water, the time you picked), carries one button that logs it without opening the app, and
-never nags: it is skipped once the habit is done, capped per day, silent at night, and easy to pause or turn off.
+never nags: it is skipped once the habit is done, capped per habit, only at times the user picked, and easy to pause
+or turn off.
 
 ## Owner decisions used in this phase
 
@@ -15,6 +16,10 @@ never nags: it is skipped once the habit is done, capped per day, silent at nigh
 2. **Suggested on for time-based habits** (prayer, water), off but offered for the rest. Controls live in the habit
    card's long-press sheet.
 3. **The app is not released** (PLAN.md decision 3): the design does not need to stay compatible with earlier builds.
+4. **Changed 2026-11-22 (water bug fix):** no quiet hours, no limit shared between habits, water windows may pass
+   midnight. Why: see "Water bug" below.
+5. **Changed 2026-11-22 (night reminders):** times the user picks ring on time, like prayers and events, and the
+   second daily reminder may pass midnight. Only water stays flexible.
 
 ## What was built
 
@@ -23,7 +28,7 @@ never nags: it is skipped once the habit is done, capped per day, silent at nigh
 
 | File | What |
 |---|---|
-| `HabitReminder.kt` | `HabitReminderSettings` (stored on the habit), `ReminderStrategy`, `HabitReminderRules` (defaults, quiet hours, caps, water pace) |
+| `HabitReminder.kt` | `HabitReminderSettings` (stored on the habit), `ReminderStrategy`, `HabitReminderRules` (defaults, per-habit caps, water window and pace) |
 | `HabitReminderPlanner.kt` | turns habits + today's logs + this phone's state into `PlannedNotification`s for today and tomorrow |
 | `PrayerTimes.kt` | `PrayerTimeCalculator` (offline, Egyptian General Authority method), `GeoPoint`, `Prayer` |
 | `HabitReminderCopy.kt` | the wording interface; implemented by `Strings` / `ArabicStrings` |
@@ -39,13 +44,29 @@ through phase B's one scheduler, receiver and `NixNotifications` layer. No notif
 | Habit | Default | When | Cap/day | Skip |
 |---|---|---|---|---|
 | Prayer (theme PRAYER, 5 a day) | on | 10 min after each prayer starts, for every prayer not marked yet | 5 | that prayer is marked (today's count ≥ its number) |
-| Water (theme WATER, daily) | on | every 2 h inside the window (default 09:00-21:00): 11, 13, 15, 17, 19, 21 | 6 | on or ahead of pace (`goal × elapsed share of the window`, rounded down), or the goal is met |
-| Other daily habits | off | the chosen time (default 19:00); a second one 3 h later when the target is above 1 | 2 | today's target is met |
-| Weekly habits | off | the chosen time on days the week's goal is still reachable | 1 | done today, or the week's goal is met or out of reach |
+| Water (theme WATER, daily) | on | every 2 h inside the window (default 09:00-21:00: 11, 13, 15, 17, 19, 21). A window over 12 h spreads the 6 up to its end. It may pass midnight (14:00-02:00) | 6 | on or ahead of pace (`goal × elapsed share of the window`, rounded down), or the goal is met |
+| Other daily habits | off | the chosen time (default 19:00), on time; a second one 3 h later when the target is above 1, also past midnight (22:50 → 01:50) | 2 | today's target is met |
+| Weekly habits | off | the chosen time, on time, on days the week's goal is still reachable | 1 | done today, or the week's goal is met or out of reach |
 
-Across all good habits, per local day: **at most 8**, **never two within 30 min** (prayer and snoozes win, then a
-chosen time, then water), **quiet hours 22:00-08:00** (Fajr is exempt, and so is a snooze the user asked for). A
-"Tahajjud" prayer habit with 1 a day is a daily habit with a chosen time, not prayer times.
+**No quiet hours and no limit shared between habits.** Prayers, chosen times and snoozes keep their moment, at any
+hour. A water reminder within 30 min of a prayer, a chosen time or another water reminder **moves**: later (up to the
+window's end and before the next slot), else earlier (after the slot before it), else it keeps its time. It is never
+dropped for being close. The move uses the whole schedule, not what is logged, so logging another habit cannot pull a
+water reminder back to a time already past. A "Tahajjud" prayer habit with 1 a day is a daily habit with a chosen
+time, not prayer times.
+
+**Past midnight:** a window's late part, like a second daily reminder, belongs to the day it started. Its reminders and the "+1" confirmation count
+the evening's glasses plus the night's. A glass logged after midnight is still saved on the new calendar day, and
+"Pause for today" lasts until that day's last reminder is over (Settings' phone-wide "For today" still ends at
+midnight). A button pressed, or a snooze, up to an hour after the last reminder still counts the evening.
+
+### Water bug (found on the owner's phone, fixed 2026-11-22)
+
+Symptom: after the late-morning reminders no more water reminders came. With five prayers, a 15:30 workout and water,
+the old planner **deleted** any water reminder within 30 min of another habit's (15:00 next to Asr at 14:49, 17:00
+next to Maghrib at 17:09, 19:00 next to Isha at 18:31), and its shared limit of 8 a day deleted 21:00, because water
+had the lowest priority. The "+1 glass" button was not the cause. Regression test:
+`waterKeepsComingNextToFivePrayersAndAWorkout`.
 
 Each habit has **one notification on screen** (`postKey = good:<habitId>`): a new reminder replaces the one showing.
 Each moment has its own alarm key (`good:<habitId>:<day>:<slot>`), so phase B's delivery records keep working.
@@ -59,8 +80,8 @@ pending water reminder.
 
 | What | Mechanism | Why | Precision |
 |---|---|---|---|
-| Prayer reminders | AlarmManager through phase B's scheduler (`NotificationTiming.ON_TIME`) | tied to a moment, like an event | with "Alarms & reminders" allowed: phase B's hybrid timing (exact; an alarm clock within 75 min, measured on time on the Oppo). Without it: inexact, up to ~1 h late on ColorOS |
-| Water, daily and weekly reminders | AlarmManager `setWindow`, 10-minute window (`NotificationTiming.FLEXIBLE`) | a nudge; a few minutes either way is fine | inside 10 min of the planned time while the phone is awake or in light sleep. In deep Doze (phone still and screen off for a long time) Android holds it until the next maintenance window or the screen turns on. Delivered more than 45 min late = dropped, never shown as "you missed it" |
+| Prayer, daily and weekly reminders (a moment, or a time the user picked) | AlarmManager through phase B's scheduler (`NotificationTiming.ON_TIME`) | tied to a moment, like an event | with "Alarms & reminders" allowed: phase B's hybrid timing (exact; an alarm clock within 75 min, measured on time on the Oppo). Without it: inexact, up to ~1 h late on ColorOS |
+| Water reminders | AlarmManager `setWindow`, 10-minute window (`NotificationTiming.FLEXIBLE`) | a nudge; a few minutes either way is fine | inside 10 min of the planned time while the phone is awake or in light sleep. In deep Doze (phone still and screen off for a long time) Android holds it until the next maintenance window or the screen turns on. Delivered more than 45 min late = dropped, never shown as "you missed it" |
 | Daily re-plan (safety net) | WorkManager periodic, 12 h (`ReminderRefreshWorker`) | the time does not matter; survives reboots, the OS batches it | anywhere in the day |
 | Re-plan after a log / a button / a delivery | `syncOnce()` in the receiver (`goAsync`) | must happen right away, the app may be closed | immediate |
 
@@ -68,8 +89,8 @@ pending water reminder.
   minimum delay, periodic work is at least 15 min apart with a flex window) and ColorOS defers it further. Alarms are
   the tool for "at a time of day".
 - **Exact alarms and Google Play:** no new permission. `SCHEDULE_EXACT_ALARM` was already declared for events (it is
-  user-granted; denied by default on Android 14+ for new installs). Prayer uses it only when the user allowed it.
-  Water and other habits never need it: `setWindow` is an inexact API. **`USE_EXACT_ALARM` is not used** (Play
+  user-granted; denied by default on Android 14+ for new installs). Prayer and chosen times use it only when the user allowed it.
+  Water never needs it: `setWindow` is an inexact API. **`USE_EXACT_ALARM` is not used** (Play
   restricts it to alarm-clock and calendar apps). Flexible reminders do not use alarm clocks, so the status-bar
   alarm icon never shows for them.
 - **Measured on the Oppo (2026-11-21, after install):** `dumpsys alarm` lists the water reminders with
@@ -84,7 +105,8 @@ pending water reminder.
 ### ColorOS (Oppo) and other aggressive phones: what the user may need to allow
 1. **Notifications** for NixUra (asked in context; the sheet links to system settings when blocked or when the
    "Good-habit reminders" type is off).
-2. **Alarms & reminders** (Settings → Apps → NixUra) for on-time prayer reminders. Not needed for water and others.
+2. **Alarms & reminders** (Settings → Apps → NixUra) for prayer and chosen-time reminders to the minute. Without it
+   they still come in deep sleep, but late. Not needed for water.
 3. **Battery: "Allow background activity" / no restriction**, and **Auto-launch** on (Settings → Battery → App battery
    management → NixUra on ColorOS 15). Without it ColorOS may delay alarms and can block the re-plan job. Reminders
    themselves still fire (alarms are kept), at worst late.
@@ -106,7 +128,7 @@ pending water reminder.
   re-delivered broadcast after process death is ignored, and a failed one can be retried. "Prayed" is idempotent
   on its own too (count ≥ N). Tested in `ReminderActionHandlerTest`.
 - **Snooze** stores "show again at" for that habit on this phone; the planner drops that habit's regular moments
-  before it and adds one reminder at that time (even in quiet hours: the user asked for it). Logging clears it.
+  before it and adds one reminder at that time (at any hour, also across midnight). Logging clears it.
 - **Progress** only through `NotificationCompat.setProgress` ("3 / 8" glasses, prayers marked). No fake animation:
   tapping the notification opens the habit (phase B's tap target), where the real card animation plays.
 
@@ -114,7 +136,7 @@ pending water reminder.
 - New row between **Edit** and **Add to Home screen**: "🔔 Reminders: On · every 2 h" (or "Off", "On · at prayer
   times", "On · 7:00 PM", "Paused until Sat", "Needs your location"). It opens the reminders sheet
   (`presentation/goodhabits/reminders/HabitRemindersSheet.kt`): a "Remind me" switch with one line on how it works,
-  the water window (From / Until) or the time, the quiet-hours note, "Pause for today" / "Pause for 1 week" (or
+  the water window (From / Until) or the time, "Pause for today" / "Pause for 1 week" (or
   "Resume reminders"), and for prayer the location card. Notices with a link when notifications are blocked or the
   Good-habit reminders type is switched off (phase B's capabilities).
 - **Create form:** a prayer or water habit shows one card "Reminders on, change anytime" with a switch; turning it
@@ -159,14 +181,14 @@ Specific to each habit, varied (water has three titles, themed habits their own)
 The `ArabicCoverageTest` checks every reminder function and the Arabic plural forms ("أجّل ساعة", "أجّل 15 دقيقة",
 "صلاتين"). Owner review of the final copy is welcome.
 
-## Tests (`:shared:testAndroidHostTest`, 730 tests, 0 failures)
+## Tests (`:shared:testAndroidHostTest`, 747 tests, 0 failures)
 
 | Test | Covers |
 |---|---|
 | `PrayerTimeCalculatorTest` (6) | Cairo winter and summer, Mecca, London against published timetables (±2 min); high-latitude summer; order across a year |
-| `HabitReminderPlannerTest` (20) | next trigger per strategy, water pace and last-glass wording, custom window, skip-if-logged, prayer offset and marked prayers, Fajr quiet-hours exemption, Isha after 22:00 dropped, no location = no prayer reminders, daily cap 8, 30-min gap and priority, snooze (also in quiet hours), habit and phone pause, two-day horizon, time zones, Egypt's DST day |
-| `HabitReminderRulesTest` (7) | default-on rules (prayer and water on, the rest off, weekly water off), user choice wins, strategy for a 1-a-day prayer habit, quiet hours across midnight, water pace, broken window fallback |
-| `ReminderActionHandlerTest` (7) | "+1 glass" once per press (re-delivery ignored), two reminders = two glasses, "Prayed" at-least and idempotent, failed write can be retried, snooze stored and cleared by a log, old press records pruned, location round trip |
+| `HabitReminderPlannerTest` (32) | next trigger per strategy, water pace and last-glass wording, custom window, skip-if-logged, prayer offset and marked prayers, reminders at any hour (Fajr, late Isha, chosen times), no location = no prayer reminders, water next to five prayers and a workout, moving stays stable when others are logged, windows past midnight and over 12 h, snooze (also across midnight), habit and phone pause, two-day horizon, time zones, Egypt's DST day |
+| `HabitReminderRulesTest` (10) | default-on rules (prayer and water on, the rest off, weekly water off), user choice wins, strategy for a 1-a-day prayer habit, water pace, window past midnight, editing and fallback, pause until a late window is over |
+| `ReminderActionHandlerTest` (9) | "+1 glass" once per press (re-delivery ignored), two reminders = two glasses, after midnight the evening's glasses count, "Prayed" at-least and idempotent, failed write can be retried, snooze stored and cleared by a log, old press records pruned, location round trip |
 | `ArabicCoverageTest` (+1, extended) | every reminder text translated, Arabic plurals |
 | `tools/room_migration_check.py` | v9 columns match the entity; old rows keep null ("not chosen"). Still reports the 2 old `$REMOVED_BY_IMPORT_SQL` query errors (script limitation, not new) |
 
@@ -202,8 +224,8 @@ adb shell cmd deviceidle unforce
 9. **Prayer timing:** compare with a local timetable: a reminder ~10 min after each prayer time (gold arch icon,
    "Prayed ✓", "Snooze 15 min"). With "Alarms & reminders" allowed it comes on the minute. Press "Prayed ✓": "Asr
    marked · 3 of 5 today", the card's stars fill; the next prayer's reminder still comes, the marked one never.
-10. **Quiet hours:** a daily habit with reminder time 23:00: the sheet warns it is in quiet hours; nothing comes. Fajr
-    (before 08:00) still comes for the prayer habit.
+10. **No quiet hours:** a daily habit with reminder time 23:00 rings at 23:00 (within the 10-minute window). A water
+    window 2:00 PM to 2:00 AM shows both times in the sheet and lists alarms after midnight in `dumpsys alarm`.
 11. **Pause:** "Pause for today" on a habit: the row says "Paused until <tomorrow>", nothing today, back tomorrow.
     Settings → Notifications → "Pause habit reminders" → For today: no habit reminder today (events still come).
 12. **Default off:** create "Read" (daily): long-press → "Reminders: Off". Turn it on, set 2 min from now: reading
@@ -236,9 +258,18 @@ adb shell cmd deviceidle unforce
   The shared code added here compiles for Android; iOS compilation is **unverified** on this Windows machine.
 - **Not built from PLAN.md:** "auto-quiet" (offer "Fewer reminders?" after 3 dismissed days without logging) needs a
   dismissal record and an agreed meaning of "fewer"; left for a follow-up.
-- **Isha after 22:00** is dropped by the quiet-hours rule as written in PLAN.md (only Fajr is exempt). In summer at high
-  latitudes that removes Isha; exempting all prayers is a one-line change if the owner prefers it.
 - Notification text uses Western digits (as phase B's notifications do); Settings → Digits is not applied to it yet.
-- The water window and the time are per habit and synced; quiet hours are fixed at 22:00-08:00 (no setting yet).
+- The water window and the time are per habit and synced.
+- Water reminders held by deep sleep for over 45 min are dropped (by design: a nudge, not a time the user picked).
+- An on-time reminder shows the status-bar alarm icon and the lock screen's "next alarm" up to 75 min before it.
+
+### Deep-sleep test (Pixel 9 emulator, 2026-11-22, screen off, `deviceidle force-idle deep`)
+
+| Build | Exact alarms | Chosen-time reminder |
+|---|---|---|
+| before (flexible) | allowed | **not delivered**, still held 2 min after its time |
+| fixed (on time) | allowed | delivered 13 ms late (an alarm clock this close also keeps the phone out of deep sleep) |
+| fixed (on time) | denied | delivered 78 s late, while still in deep sleep |
+
 - **Merged 2026-11-22** on the owner's go-ahead. Per-step device results were not reported, so the steps above stay the
   checklist for the next device pass (install + `dumpsys alarm` were checked by the build session).

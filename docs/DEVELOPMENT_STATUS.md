@@ -23,8 +23,8 @@ No decisions are open. About 7-8 days to build, in its own session.
 Branch `feature/habit-reminders`, details, scheduling choices, ColorOS notes and the Oppo test steps in
 `docs/ux-upgrade/C-reminders.md`.
 
-- **Built:** `domain/reminder` (pure planner for prayer / water / daily / weekly habits with quiet hours, daily cap 8,
-  30-min gap, snooze, pause; offline prayer times from a city-level location kept on the phone; button handler that
+- **Built:** `domain/reminder` (pure planner for prayer / water / daily / weekly habits with per-habit caps, 30-min gap
+  for water, snooze, pause; offline prayer times from a city-level location kept on the phone; button handler that
   logs through the widget's use cases once per press); Room v9 (`MIGRATION_8_9`, reminder columns on `good_habits`,
   synced); buttons "+1 glass" / "Prayed ✓" / "Done ✓" / Snooze handled without opening the app, notification updated
   in place with the native progress bar and removed after 4 s; re-plan after widget and button logs, each delivered
@@ -39,6 +39,20 @@ Branch `feature/habit-reminders`, details, scheduling choices, ColorOS notes and
 - **Merged 2026-11-22 (PR #21, squash) on the owner's go-ahead**, after re-running `:shared:testAndroidHostTest`
   (730 tests, 0 failures) and a clean `:androidApp:assembleDebug` on the branch (already on top of `master`).
 - **Not recorded as verified:** the individual device test steps in C-reminders.md (no per-step results were reported). iOS: not implemented (no iOS scheduler yet, location stub). Not built: PLAN.md's "auto-quiet" offer.
+- **Water bug fixed 2026-11-22 (branch `fix/water-reminders`):** water reminders within 30 min of a prayer or another
+  habit were deleted, and a shared limit of 8 a day deleted the rest. Water now moves instead. Owner decisions the
+  same day: no quiet hours, no shared limit, water windows may pass midnight (details in C-reminders.md).
+  **Verified:** 12 new or changed tests failed before the fix; `:shared:testAndroidHostTest` 741 tests, 0 failures;
+  `:androidApp:assembleDebug` OK; on the Pixel 9 emulator a 2 PM to 2 AM window set in the sheet planned 18, 20, 22, 00
+  and 02. Installed on the owner's Oppo 2026-11-22 18:09 (data unchanged, no crash): the next day's plan
+  has all six water reminders (11:00, 13:00, 16:00, 17:39, 19:01, 21:00) and the chosen times the old rules deleted
+  (17:00, 00:50, 03:50). **Not verified:** those reminders actually firing on the phone, and iOS compilation.
+- **Night reminders fixed 2026-11-22 (same branch, owner decision):** a chosen time was a flexible alarm, which deep
+  sleep holds and the receiver drops after 45 min. Chosen times are now on time (only water stays flexible) and the
+  second daily reminder may pass midnight. **Verified:** 6 new tests failed first; `:shared:testAndroidHostTest`
+  747 tests, 0 failures; emulator in forced deep sleep: the old build did not deliver, the fixed one was on time
+  (78 s late with exact alarms denied); installed on the Oppo 18:42 (data unchanged, chosen times armed on time).
+  **Not verified:** a night reminder firing on the Oppo, iOS compilation.
 
 ## UX upgrade B (2026-11-21): notification foundation
 

@@ -242,14 +242,15 @@ All shared paths are under `shared/src/commonMain/kotlin/com/adhamelgendy/nixura
 | Habit | Default | Timing | Cap/day | Skip rule |
 |---|---|---|---|---|
 | Prayer (theme PRAYER, daily 5) | ON (suggested at create; needs location, decision 1) | ~10 min after each prayer's start time (adhan time) for the **next unlogged** prayer, never before it starts | 5 | skip if that prayer (count ≥ index) is already logged; one notification that updates, never stacks |
-| Water (theme WATER) | ON (suggested) | every 2 h inside a waking window (default 09:00–21:00), only while behind pace (`expected = goal × elapsed share of the window`) | 6 | skip if on or ahead of pace or the goal is met; stop for the day when met |
+| Water (theme WATER) | ON (suggested) | every 2 h inside the window the user picks (default 09:00–21:00, may pass midnight), only while behind pace (`expected = goal × elapsed share of the window`) | 6 | skip if on or ahead of pace or the goal is met; stop for the day when met |
 | Other daily counters (walk, reading, workout…) | OFF, offered | one time the user picks (default: the habit's usual logging hour if we learn it later; for now 19:00) | 1 (2 if target > 1, second at +3 h) | skip if today's target is met |
 | Weekly habits | OFF, offered | one time on the remaining days, only when the week is still reachable | 1 | skip if today already done or the week's goal is met |
 
-- **Quiet hours**: global default 22:00–08:00 (Fajr is exempt only for prayer habits when the user keeps the
-  reminder on). Respect Android Do Not Disturb (we never use alarm-style categories).
-- **No spam guard**: across all good habits at most 8 reminders a day and none within 30 min of another; a missed
-  reminder is never re-sent later as "you missed it".
+- **No quiet hours** (owner decision 2026-11-22, replaces 22:00–08:00): the user picks the times. Respect Android Do
+  Not Disturb (we never use alarm-style categories).
+- **No spam guard across habits** (owner decision 2026-11-22, replaces "at most 8 a day"): each habit keeps its own
+  cap; water moves to stay 30 min from the others and is never dropped for it. A missed reminder is never re-sent
+  later as "you missed it".
 - **Auto-quiet**: if a habit's reminders are dismissed 3 days in a row without logging, the sheet next time offers
   "Fewer reminders?" (never turns them off silently, never shames).
 - **Planning stays in the domain**: a new pure `GoodHabitReminderPlanner` (or a section of `NotificationPlanner`)
@@ -257,9 +258,9 @@ All shared paths are under `shared/src/commonMain/kotlin/com/adhamelgendy/nixura
   re-built on every log, **including logs made from a widget or a notification action while the UI is closed**: the
   widget receiver and the action receiver call `NotificationSyncService.syncOnce()` after writing (today only the
   sync worker does). Horizon: today + tomorrow (water/prayer change daily), so the 60-alarm cap is never hit.
-- **Inexact alarms** for good-habit reminders (`setAndAllowWhileIdle`, a few minutes late is fine). Prayer may use
-  exact only if the user already granted exact alarms for events. No new exact-alarm usage that Play would
-  question.
+- **Alarms** (owner decision 2026-11-22, replaces "inexact for all good habits"): prayer and times the user picked are
+  on time (exact only when the user allowed exact alarms; inexact but allowed in deep sleep otherwise). Water stays
+  inexact. No new permission, never `USE_EXACT_ALARM`.
 
 **Bottom-sheet controls** (long-press sheet, existing `SheetAction` list): one new row between Edit and Add to Home
 screen: "🔔 Reminders: On · every 2 h" (or "Off"). Tapping opens a small sheet: on/off switch, the schedule
@@ -322,7 +323,7 @@ ActivityKit + Swift target). Recommendation and cost for each.
 
 | Risk | Detail | Mitigation |
 |---|---|---|
-| Exact alarms / Play policy | `SCHEDULE_EXACT_ALARM` is declared. Play restricts `USE_EXACT_ALARM` to alarm/calendar apps; `SCHEDULE_EXACT_ALARM` is user-granted and denied by default on Android 14+ for new installs. | Good-habit reminders use inexact alarms. Keep exact only for events when the user allowed it. Never add `USE_EXACT_ALARM`. Check the Play declaration form before release. |
+| Exact alarms / Play policy | `SCHEDULE_EXACT_ALARM` is declared. Play restricts `USE_EXACT_ALARM` to alarm/calendar apps; `SCHEDULE_EXACT_ALARM` is user-granted and denied by default on Android 14+ for new installs. | Water uses inexact alarms. Exact only for events, prayer and user-picked times, and only when the user allowed it. Never add `USE_EXACT_ALARM`. Check the Play declaration form before release. |
 | Android 13+ notification permission | Denied = nothing shows; asking at launch hurts trust. | Ask in context with a reason card; show a fix card when denied; check per-channel enabled state. |
 | Reboot / update | Alarms are cleared. | Already re-armed by `BootReceiver`; C extends the stored plan with kind and habit id (backward-compatible decode). |
 | Time zone / clock / DST | `BootReceiver` does not listen to `TIMEZONE_CHANGED`/`TIME_SET`; prayer times and water windows are local-time. | Re-plan on those broadcasts; plan with local dates (`DayCalculator`), never "+24 h"; tests across DST days (Egypt observes DST since 2023). |
@@ -331,7 +332,7 @@ ActivityKit + Swift target). Recommendation and cost for each.
 | Data | Reminder settings need storage. | Additive Room v9 migration (new table only), migration test + `room_migration_check.py`; Firestore payload stays backward-compatible. |
 | Location privacy | Prayer times need the phone's location. | Coarse only, asked only when a prayer habit is added, read once, kept on device, never synced or sent (decision 1); Play Data-safety form and privacy policy (`docs/legal`) updated in C. |
 | Notification actions after process death | Action receiver starts cold like the widget. | Same `goAsync` pattern, same fast path as A1, idempotent per tap. |
-| Spam / trust | Too many nudges = users block the whole app. | Daily cap, quiet hours, skip-when-done, pause, auto-quiet offer, LOW importance for non-time-critical types. |
+| Spam / trust | Too many nudges = users block the whole app. | Per-habit cap, user-picked times, skip-when-done, pause, auto-quiet offer, LOW importance for non-time-critical types. |
 | iOS parity | No iOS notifications exist; nothing can be verified on Windows. | Implement both sides per phase, mark iOS unverified, list Mac commands in each phase doc. |
 
 ---
