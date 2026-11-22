@@ -195,6 +195,13 @@ class TodaySummaryTest {
         assertEquals("أخفِ لليوم", s.hideLabel)
     }
 
+    @Test fun anArabicLineReadsRightToLeftEvenWhenItStartsWithALatinName() {
+        // A notification takes each line's direction from its first strong character.
+        val s = summary(build(at(8), listOf(reading()), language = "ar"))
+        assertTrue(s.text.startsWith("\u200f"), s.text)
+        assertTrue(s.lines.first().startsWith("\u200f"), s.lines.toString())
+    }
+
     @Test fun itFollowsTheDigitSetting() {
         val s = summary(build(at(8), listOf(water()), settings = on.copy(digitStyle = DigitStyle.ARABIC_INDIC)))
         assertEquals(DigitStyle.ARABIC_INDIC, s.digitStyle)

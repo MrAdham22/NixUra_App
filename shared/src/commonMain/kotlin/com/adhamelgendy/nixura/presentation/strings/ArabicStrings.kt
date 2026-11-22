@@ -1163,12 +1163,12 @@ object ArabicStrings : Strings() {
     override val hideNameConfirm: String = "إخفاء الاسم"
     override fun hideNameSheetRow(on: Boolean): String = "$hideNameTitle: ${if (on) "مفعّل" else "متوقف"}"
 
-    // A name may be in Latin letters: the RLM keeps "3 من 8" after it in reading order.
+    // A name may be in Latin letters: the leading RLM keeps the line right to left, the second keeps "3 من 8" in order.
     override fun todayTitle(done: Int, total: Int): String = "اليوم: أنجزت $done من $total"
     override fun todayTitleNoHabits(): String = "اليوم"
     override fun todayWater(count: Int, target: Int): String = "💧 $count من $target"
     override fun todayPrayers(count: Int, target: Int): String = "🕌 $count من $target"
-    override fun todayHabit(name: String, count: Int, target: Int): String = "$name: \u200f$count من $target"
+    override fun todayHabit(name: String, count: Int, target: Int): String = "\u200f$name: \u200f$count من $target"
     override fun todayMore(count: Int): String = ArabicPlurals.format(
         count.toLong(), "", "وعادة أخرى", "وعادتان أخريان", "و%d عادات أخرى", "و%d عادة أخرى", "و%d عادة أخرى",
     )
