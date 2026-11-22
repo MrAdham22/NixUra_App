@@ -55,7 +55,8 @@ How Android decides, read in the AOSP source (stock Android; ColorOS not checked
   system and notification ranker", and Android resets the app's value ([source][src-prefs]).
 
 So today, on a phone set to show all content, the quit-milestone notification ("7 days clear: Smoking") shows in
-full. **Not checked on the Oppo yet** (section 6). The owner accepted this on 2026-11-22 (decision 4): what is
+full. The Oppo is set to hide sensitive content, and there the details were hidden (tested 2026-11-22, section 6).
+The owner accepted this on 2026-11-22 (decision 4): what is
 missing is the option to hide the name (4.1) and a neutral public version for phones that hide sensitive content.
 
 ---
@@ -299,9 +300,20 @@ About **6-7 days** on Android (4-5 for items 1-3, 1.5-2 for hiding names), teste
 | ColorOS 16 and third-party lock-screen widgets | Other Oppo users, not the test phone | Check on a ColorOS 16 device if one becomes available |
 | The Reno 10 5G update list may change | Would bring Live Updates / Fluid Cloud | Re-check OPPO's ColorOS 16 page before building |
 
-## 6. Device checks for the Oppo (before building)
+## 6. Device checks for the Oppo
 
-Connect the phone, then:
+**Results, 2026-11-22 (Oppo Reno 10 5G, Android 15, ColorOS V15.0.0):**
+
+| Check | Result |
+|---|---|
+| `lock_screen_show_notifications` | `1`: notifications show on the lock screen |
+| `lock_screen_allow_private_notifications` | `0`: sensitive content is hidden |
+| `lock_screen_show_silent_notifications` | not set |
+| Daily check-in at 16:55, phone locked (owner's test) | **passed:** posted at 16:55:00, showed on the lock screen with its details hidden |
+| Channel importance | Quit progress, Coach and App are at DEFAULT on this phone although created LOW (`mOriginalImp=2`, importance locked as a settings change). So this phone **cannot** show how silent channels behave: test that on a clean install. |
+| "Show all content", a milestone, an ongoing notification | not tested |
+
+To repeat the checks, connect the phone, then:
 
 ```powershell
 adb shell settings get secure lock_screen_show_notifications
