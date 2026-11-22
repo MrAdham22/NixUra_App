@@ -204,6 +204,8 @@ fun SettingsScreen(navigator: Navigator) {
                     Spacer(Modifier.width(8.dp))
                     NixButton(s.reminderOpenSettings, capabilities::openNotificationSettings, style = NixButtonStyle.Secondary)
                 }
+                // Phase D: the opt-in Today notification on the lock screen.
+                com.adhamelgendy.nixura.presentation.today.TodaySettingsRows(resumeTick)
                 // Phase C: pause every good-habit reminder on this phone (each habit's own switch is in its sheet).
                 Spacer(Modifier.height(14.dp))
                 PauseHabitRemindersRow()

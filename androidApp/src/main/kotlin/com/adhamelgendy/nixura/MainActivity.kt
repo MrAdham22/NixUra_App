@@ -27,6 +27,7 @@ import org.koin.compose.koinInject
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import com.adhamelgendy.nixura.domain.usecase.ObserveAnyNameHiddenUseCase
+import com.adhamelgendy.nixura.domain.notification.NotificationSyncService
 
 class MainActivity : ComponentActivity() {
 
@@ -34,7 +35,9 @@ class MainActivity : ComponentActivity() {
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* the voice sheet re-checks the permission itself */ }
 
     private val notificationPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* result handled by next isGranted() check */ }
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) refreshTodayNotification() // Today may have been turned on just before the permission
+        }
 
     // Prayer-time location (phase C): the callback waiting for the system dialog's answer.
     private var locationResult: ((Boolean) -> Unit)? = null
@@ -45,6 +48,7 @@ class MainActivity : ComponentActivity() {
         }
 
     private val appNavigator: Navigator by inject()
+    private val notificationSync: NotificationSyncService by inject()
     private val anyNameHidden: ObserveAnyNameHiddenUseCase by inject()
     private val googleAuthorizer: AndroidGoogleAuthorizer by inject()
     private val socialSignIn: AndroidSocialSignIn by inject()
@@ -139,5 +143,10 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         // Cheap resync so widgets match what the user just saw in the app.
         WidgetUpdater.requestRefresh(applicationContext)
+        refreshTodayNotification() // e.g. its type was just switched on in system settings
+    }
+
+    private fun refreshTodayNotification() {
+        lifecycleScope.launch { notificationSync.refreshToday() }
     }
 }

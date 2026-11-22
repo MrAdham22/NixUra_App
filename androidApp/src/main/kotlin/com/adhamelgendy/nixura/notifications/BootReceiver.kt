@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.koin.core.context.GlobalContext
+import android.util.Log
 
 /**
  * Alarms are cleared on reboot and app update; re-arm the stored plan. Also re-arms when the exact-alarm
@@ -20,15 +21,32 @@ import org.koin.core.context.GlobalContext
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
-            Intent.ACTION_BOOT_COMPLETED,
-            ACTION_EXACT_ALARM_PERMISSION_CHANGED,
-            -> AndroidNotificationScheduler(context).restoreFromStorage()
+            Intent.ACTION_BOOT_COMPLETED -> {
+                AndroidNotificationScheduler(context).restoreFromStorage()
+                refreshToday(context) // a reboot cleared it
+            }
+
+            ACTION_EXACT_ALARM_PERMISSION_CHANGED -> AndroidNotificationScheduler(context).restoreFromStorage()
 
             // An app update may change how reminders are planned (phase C added good-habit reminders): plan afresh.
             Intent.ACTION_MY_PACKAGE_REPLACED,
             Intent.ACTION_TIMEZONE_CHANGED,
             Intent.ACTION_TIME_CHANGED,
             -> replan(context)
+        }
+    }
+
+    /** The stored plan is enough for the alarms; only the opt-in Today notification is drawn again. */
+    private fun refreshToday(context: Context) {
+        val pending = goAsync()
+        CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
+            try {
+                GlobalContext.getOrNull()?.getOrNull<NotificationSyncService>()?.refreshToday()
+            } catch (failure: Exception) {
+                Log.w("NixUraToday", "refresh after boot failed", failure)
+            } finally {
+                pending.finish()
+            }
         }
     }
 

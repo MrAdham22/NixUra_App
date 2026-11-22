@@ -234,6 +234,9 @@ class PreferencesRepositoryImpl(
             usageStatsEnabled = map[KEY_USAGE_STATS]?.let { it == "1" } ?: defaults.usageStatsEnabled,
             aiCoachConsent = map[KEY_AI_COACH]?.let { it == "1" },
             followSystemTheme = map[KEY_FOLLOW_SYSTEM_THEME]?.let { it == "1" } ?: defaults.followSystemTheme,
+            todayNotification = map[KEY_TODAY]?.let { it == "1" } ?: defaults.todayNotification,
+            todayShowStreak = map[KEY_TODAY_STREAK]?.let { it == "1" } ?: defaults.todayShowStreak,
+            todayOfferSeen = map[KEY_TODAY_OFFER]?.let { it == "1" } ?: defaults.todayOfferSeen,
             digitStyle = map[KEY_DIGITS]?.let { v -> DigitStyle.entries.firstOrNull { it.name == v } } ?: defaults.digitStyle,
         )
     }
@@ -269,6 +272,9 @@ class PreferencesRepositoryImpl(
             PreferenceEntity(KEY_USAGE_STATS, if (settings.usageStatsEnabled) "1" else "0"),
             PreferenceEntity(KEY_FOLLOW_SYSTEM_THEME, if (settings.followSystemTheme) "1" else "0"),
             PreferenceEntity(KEY_DIGITS, settings.digitStyle.name),
+            PreferenceEntity(KEY_TODAY, if (settings.todayNotification) "1" else "0"),
+            PreferenceEntity(KEY_TODAY_STREAK, if (settings.todayShowStreak) "1" else "0"),
+            PreferenceEntity(KEY_TODAY_OFFER, if (settings.todayOfferSeen) "1" else "0"),
         ) + listOfNotNull(settings.aiCoachConsent?.let { PreferenceEntity(KEY_AI_COACH, if (it) "1" else "0") })
         dao.upsertAll(synced + local + marks)
     }
@@ -288,6 +294,9 @@ class PreferencesRepositoryImpl(
         const val KEY_USAGE_STATS = "settings.usage_stats"
         const val KEY_AI_COACH = "settings.ai_coach"
         const val KEY_DIGITS = "settings.digits"
+        const val KEY_TODAY = "settings.today"
+        const val KEY_TODAY_STREAK = "settings.today_streak"
+        const val KEY_TODAY_OFFER = "settings.today_offer"
     }
 }
 

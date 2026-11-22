@@ -50,6 +50,7 @@ object NixNotificationStyles {
         NotificationKind.QUIT_MILESTONE -> NixNotificationStyle(R.drawable.ic_notif_quit, ROSE, NotificationCompat.CATEGORY_STATUS)
         NotificationKind.COACH -> NixNotificationStyle(R.drawable.ic_notif_coach, AMBER, NotificationCompat.CATEGORY_RECOMMENDATION)
         NotificationKind.APP -> NixNotificationStyle(R.drawable.ic_notification, AMBER, NotificationCompat.CATEGORY_STATUS)
+        NotificationKind.TODAY -> NixNotificationStyle(R.drawable.ic_notification, LEAF, NotificationCompat.CATEGORY_STATUS)
     }
 
     @StringRes
@@ -59,6 +60,7 @@ object NixNotificationStyles {
         NixChannel.QUIT_PROGRESS -> R.string.channel_quit_progress_name
         NixChannel.COACH -> R.string.channel_coach_name
         NixChannel.APP -> R.string.channel_app_name
+        NixChannel.TODAY -> R.string.channel_today_name
     }
 
     @StringRes
@@ -68,6 +70,7 @@ object NixNotificationStyles {
         NixChannel.QUIT_PROGRESS -> R.string.channel_quit_progress_description
         NixChannel.COACH -> R.string.channel_coach_description
         NixChannel.APP -> R.string.channel_app_description
+        NixChannel.TODAY -> R.string.channel_today_description
     }
 
     @StringRes

@@ -91,6 +91,11 @@
             android:name=".notifications.ReminderActionReceiver"
             android:exported="false" />
 
+        <!-- The opt-in Today notification: its refresh alarm, its buttons and its dismissal. -->
+        <receiver
+            android:name=".notifications.TodayReceiver"
+            android:exported="false" />
+
         <receiver
             android:name=".notifications.BootReceiver"
             android:exported="false">

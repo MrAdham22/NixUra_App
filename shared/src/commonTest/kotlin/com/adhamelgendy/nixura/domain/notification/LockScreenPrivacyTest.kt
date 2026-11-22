@@ -30,7 +30,8 @@ class LockScreenPrivacyTest {
         return planner.plan(now, AppSettings(languageCode = code), "Sam", listOf(quit), emptyList(), listOf(event))
     }
 
-    @Test fun goodHabitsArePublic() {
+    @Test fun goodHabitsAndTodayArePublic() {
+        assertEquals(LockScreenVisibility.PUBLIC, LockScreenPrivacy.visibilityOf(NotificationKind.TODAY))
         assertEquals(LockScreenVisibility.PUBLIC, LockScreenPrivacy.visibilityOf(NotificationKind.GOOD_HABIT))
     }
 

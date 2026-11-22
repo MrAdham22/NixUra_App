@@ -26,6 +26,8 @@ import com.adhamelgendy.nixura.domain.notification.LockScreenVisibility
 import android.os.Bundle
 import com.adhamelgendy.nixura.domain.notification.HiddenNameWithdrawal
 import com.adhamelgendy.nixura.domain.notification.ShownName
+import com.adhamelgendy.nixura.domain.notification.TodayMetric
+import com.adhamelgendy.nixura.domain.notification.TodayClock
 
 /**
  * What to show. Built by the scheduler's receiver today; phase C builds it for good-habit reminders.
@@ -58,6 +60,16 @@ data class NixNotificationRequest(
     val publicTitle: String? = null,
     /** The quit habit whose name the text shows (see [NixNotifications.withdrawNamesOf]); `null` = none. */
     val namedHabitId: Long? = null,
+    /** Today only: stays against "Clear all" and while locked. Not pinned: Android 14+ lets the user swipe it away. */
+    val ongoing: Boolean = false,
+    /** A countdown to this moment, drawn and ticked by the system. */
+    val countdownTo: Long? = null,
+    val countdownLabel: String? = null,
+    val countdownClock: TodayClock? = null,
+    /** The expanded text when it says more than [body]. */
+    val expandedText: String? = null,
+    /** Today only: shown with Android 17's `MetricStyle`, where there is one. */
+    val metrics: List<TodayMetric> = emptyList(),
 )
 
 /**
@@ -86,6 +98,11 @@ object NixNotifications {
                 NotificationChannel(channel.id, context.getString(NixNotificationStyles.nameOf(channel)), channel.importance.toAndroid()).apply {
                     description = context.getString(NixNotificationStyles.descriptionOf(channel))
                     group = channel.group.id
+                    if (channel.silent) {
+                        setSound(null, null)
+                        enableVibration(false)
+                        setShowBadge(false)
+                    }
                 }
             },
         )
@@ -105,10 +122,11 @@ object NixNotifications {
             .setCategory(style.category)
             .setContentTitle(request.title)
             .setContentText(request.body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(request.body))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(request.expandedText ?: request.body))
             .setPriority(channel.importance.toCompatPriority()) // Android 7 and older have no channels
             .setGroup(group)
-            .setAutoCancel(true)
+            .setAutoCancel(!request.ongoing)
+            .setOngoing(request.ongoing)
             .setContentIntent(NotificationDeepLink.contentIntent(context, request.key, request.kind, request.targetId))
             .setOnlyAlertOnce(request.onlyAlertOnce)
             .lockScreen(context, request.kind, channel, style, request.publicTitle)
@@ -118,8 +136,17 @@ object NixNotifications {
                 request.progress?.let { setProgress(it.max.coerceAtLeast(1), it.current.coerceIn(0, it.max.coerceAtLeast(1)), false) }
                 request.timeoutAfterMillis?.let(::setTimeoutAfter)
                 request.deleteIntent?.let(::setDeleteIntent)
+                if (request.countdownTo != null) {
+                    setWhen(request.countdownTo)
+                    setShowWhen(true)
+                    setUsesChronometer(true)
+                    setChronometerCountDown(true)
+                } else if (request.ongoing) {
+                    setShowWhen(false) // "3 h ago" says nothing about a notification that is always current
+                }
             }
             .build()
+            .let { if (Build.VERSION.SDK_INT >= 37 && request.metrics.isNotEmpty()) TodayMetricStyle.applyTo(context, it, request) else it }
         val manager = NotificationManagerCompat.from(context)
         try {
             manager.notify(idOf(request.key), notification)

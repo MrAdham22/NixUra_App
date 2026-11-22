@@ -48,6 +48,7 @@ object NotificationDeepLink {
                 if (target != null) navigator.push(Route.BadHabitDetail(target))
             }
             NotificationKind.COACH -> navigator.selectTab(Route.Coach)
+            NotificationKind.TODAY -> navigator.selectTab(Route.Home)
             NotificationKind.APP, null -> Unit // just open the app
         }
         intent.removeExtra(EXTRA_KIND)

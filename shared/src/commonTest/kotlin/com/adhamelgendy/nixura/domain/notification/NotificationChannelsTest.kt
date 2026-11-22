@@ -39,8 +39,16 @@ class NotificationChannelsTest {
 
     @Test
     fun onlyTimeBoundKindsMakeSound() {
-        val loud = NixChannel.entries.filter { it.importance == ChannelImportance.DEFAULT }.toSet()
+        val loud = NixChannel.entries.filter { it.importance == ChannelImportance.DEFAULT && !it.silent }.toSet()
         assertEquals(setOf(NixChannel.EVENTS, NixChannel.GOOD_HABITS), loud)
+    }
+
+    @Test
+    fun todayIsDefaultImportanceWithoutASound() {
+        val today = NotificationChannels.channelFor(NotificationKind.TODAY)
+        assertEquals("nixura_today", today.id)
+        assertEquals(ChannelImportance.DEFAULT, today.importance) // LOW can be filtered off the lock screen
+        assertTrue(today.silent)
     }
 
     @Test

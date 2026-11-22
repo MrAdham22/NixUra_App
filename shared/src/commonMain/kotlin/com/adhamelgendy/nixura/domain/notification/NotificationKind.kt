@@ -20,6 +20,9 @@ enum class NotificationKind {
 
     /** The app itself: sync problems, account, updates. */
     APP,
+
+    /** The opt-in, silent "Today" notification that stays on the lock screen ([TodaySummary]). Never planned. */
+    TODAY,
     ;
 
     companion object {

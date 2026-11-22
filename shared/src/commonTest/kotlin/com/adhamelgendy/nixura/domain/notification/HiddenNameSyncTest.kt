@@ -78,4 +78,22 @@ class HiddenNameSyncTest {
         assertEquals(setOf(7L), scheduler.withdrawn)
         assertEquals(listOf("arm", "withdraw"), scheduler.calls) // no alarm with the old words is left to post it again
     }
+
+    @Test fun everyReplanRefreshesTodayAndARefreshAloneArmsNothing() = runTest {
+        val scheduler = Scheduler()
+        val shown = mutableListOf<TodayState>()
+        val service = NotificationSyncService(
+            Habits(), FakeGoodHabitRepository(emptyList()), FakeEventRepository(emptyList()), Prefs(),
+            NotificationPlanner(CoachEngine(), days, { stringsFor(it) }), scheduler,
+            object : Clock { override fun nowEpochMillis() = now },
+            todayBuilder = TodaySummaryBuilder(days) { stringsFor(it) },
+            today = object : TodayPresenter { override fun show(state: TodayState) { shown += state } },
+        )
+        service.syncOnce()
+        assertEquals(listOf<TodayState>(TodayState.Off), shown)
+        scheduler.calls.clear()
+        service.refreshToday()
+        assertEquals(2, shown.size)
+        assertEquals(emptyList(), scheduler.calls)
+    }
 }

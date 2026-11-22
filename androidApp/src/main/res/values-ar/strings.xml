@@ -20,6 +20,8 @@
     <string name="channel_coach_description">رسالتك اليومية وملاحظات المدرب</string>
     <string name="channel_app_name">التطبيق والحساب</string>
     <string name="channel_app_description">مشاكل المزامنة ورسائل الحساب</string>
+    <string name="channel_today_name">اليوم على شاشة القفل</string>
+    <string name="channel_today_description">إشعار صامت واحد بتقدّم يومك، إذا فعّلته</string>
     <string name="channel_group_habits">العادات</string>
     <string name="channel_group_events">المناسبات</string>
     <string name="channel_group_coach_app">المدرب والتطبيق</string>

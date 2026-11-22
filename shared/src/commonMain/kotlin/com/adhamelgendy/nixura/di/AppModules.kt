@@ -128,10 +128,17 @@ fun appModule() = module {
     }
     single { com.adhamelgendy.nixura.domain.reminder.HabitReminderPlanner(get(), get(), get()) }
     single {
+        com.adhamelgendy.nixura.domain.notification.TodaySummaryBuilder(get()) { language ->
+            com.adhamelgendy.nixura.presentation.strings.stringsFor(language)
+        }
+    }
+    single {
         NotificationSyncService(
             get(), get(), get(), get(), get(), get(), get(), get(),
             reminderPlanner = get(),
             reminderDevice = get(),
+            todayBuilder = get(),
+            today = get(),
         )
     }
 
@@ -191,6 +198,7 @@ fun appModule() = module {
         )
     }
     viewModel { com.adhamelgendy.nixura.presentation.goodhabits.reminders.HabitRemindersViewModel(get(), get(), get(), get(), get()) }
+    viewModel { com.adhamelgendy.nixura.presentation.today.TodayViewModel(get(), get(), get(), get(), get(), get(), get()) }
     viewModel { GoodHabitsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { EventsViewModel(get(), get(), get(), get(), get()) }
     viewModel { CoachViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }

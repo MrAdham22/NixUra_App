@@ -19,7 +19,9 @@ enum class LockScreenVisibility {
  */
 object LockScreenPrivacy {
     fun visibilityOf(kind: NotificationKind): LockScreenVisibility = when (kind) {
-        NotificationKind.GOOD_HABIT -> LockScreenVisibility.PUBLIC
+        NotificationKind.GOOD_HABIT,
+        NotificationKind.TODAY, // written to be safe: never an event's or a quit habit's name
+        -> LockScreenVisibility.PUBLIC
         NotificationKind.EVENT,
         NotificationKind.QUIT_MILESTONE,
         NotificationKind.COACH,

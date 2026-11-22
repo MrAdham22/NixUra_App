@@ -221,6 +221,7 @@ fun AppRoot() {
                         }
                     }
                 }
+                if (inMainApp && !guideActive) com.adhamelgendy.nixura.presentation.today.TodayOffer()
                 if (guideActive) {
                     val profileVm: ProfileViewModel = koinViewModel()
                     val profile by profileVm.uiState.collectAsStateWithLifecycle()
