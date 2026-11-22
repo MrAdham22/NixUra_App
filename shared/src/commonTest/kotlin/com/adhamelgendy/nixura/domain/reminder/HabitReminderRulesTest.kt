@@ -2,6 +2,8 @@ package com.adhamelgendy.nixura.domain.reminder
 
 import com.adhamelgendy.nixura.domain.model.GoodHabit
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
+import com.adhamelgendy.nixura.domain.time.DayCalculator
+import com.adhamelgendy.nixura.domain.time.TimeZoneOffsetProvider
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -37,13 +39,32 @@ class HabitReminderRulesTest {
         assertEquals(ReminderStrategy.WEEKLY_TIME, HabitReminderRules.strategyOf(habit(HabitTheme.PRAYER, target = 1, weekly = 2)))
     }
 
-    @Test fun quietHoursWrapAroundMidnight() {
-        assertTrue(HabitReminderRules.isQuiet(22 * 60))
-        assertTrue(HabitReminderRules.isQuiet(3 * 60))
-        assertTrue(HabitReminderRules.isQuiet(7 * 60 + 59))
-        assertFalse(HabitReminderRules.isQuiet(8 * 60))
-        assertFalse(HabitReminderRules.isQuiet(21 * 60 + 59))
+    @Test fun aWaterWindowMayPassMidnight() {
+        assertEquals(14 * 60..26 * 60, HabitReminderRules.waterWindowOf(window(14 * 60, 2 * 60)))
+        assertEquals(22 * 60..24 * 60, HabitReminderRules.waterWindowOf(window(22 * 60, 0)))
     }
+
+    @Test fun pickingATimeTooCloseMovesTheOtherOneInsteadOfResettingBoth() {
+        val evening = 9 * 60..21 * 60
+        assertEquals(20 * 60 to 22 * 60, HabitReminderRules.windowStartingAt(evening, 20 * 60))
+        assertEquals(23 * 60 to 60, HabitReminderRules.windowEndingAt(23 * 60 + 30..26 * 60, 60))
+        assertEquals(14 * 60 to 2 * 60, HabitReminderRules.windowEndingAt(14 * 60..21 * 60, 2 * 60))
+        assertEquals(15 * 60 to 2 * 60, HabitReminderRules.windowStartingAt(14 * 60..26 * 60, 15 * 60))
+    }
+
+    @Test fun pauseForTodayCoversTheLatePartOfTheWindow() {
+        val days = DayCalculator(TimeZoneOffsetProvider { 0L })
+        val hour = 3_600_000L
+        val late = window(14 * 60, 2 * 60)
+        val until = days.startOfDayMillis(21) + 2 * hour + 60_000L
+        assertEquals(until, HabitReminderRules.pauseEndOf(late, days, days.startOfDayMillis(20) + 16 * hour, 1))
+        // At 01:00 it is still that evening: tonight only, not the coming evening as well.
+        assertEquals(until, HabitReminderRules.pauseEndOf(late, days, days.startOfDayMillis(21) + hour, 1))
+        assertEquals(days.startOfDayMillis(21), HabitReminderRules.pauseEndOf(window(9 * 60, 21 * 60), days, days.startOfDayMillis(20) + hour, 1))
+    }
+
+    private fun window(start: Int, end: Int) = GoodHabit(1, "Water", 8, createdAtEpochMillis = 0, theme = HabitTheme.WATER,
+        reminder = HabitReminderSettings(windowStartMinutes = start, windowEndMinutes = end))
 
     @Test fun waterPaceIsTheGoalSpreadOverTheWindow() {
         val window = 9 * 60..21 * 60
@@ -54,8 +75,8 @@ class HabitReminderRulesTest {
     }
 
     @Test fun aBrokenWaterWindowFallsBackToTheDefault() {
-        val broken = GoodHabit(1, "Water", 8, createdAtEpochMillis = 0, theme = HabitTheme.WATER,
-            reminder = HabitReminderSettings(windowStartMinutes = 20 * 60, windowEndMinutes = 19 * 60))
-        assertEquals(9 * 60..21 * 60, HabitReminderRules.waterWindowOf(broken))
+        assertEquals(9 * 60..21 * 60, HabitReminderRules.waterWindowOf(window(20 * 60, 20 * 60)), "no length")
+        assertEquals(9 * 60..21 * 60, HabitReminderRules.waterWindowOf(window(20 * 60, 21 * 60)), "under 2 h")
+        assertEquals(9 * 60..21 * 60, HabitReminderRules.waterWindowOf(window(-5, 21 * 60)), "not a time")
     }
 }

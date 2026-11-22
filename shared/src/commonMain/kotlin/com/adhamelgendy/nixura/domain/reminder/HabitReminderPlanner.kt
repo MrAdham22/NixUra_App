@@ -21,13 +21,16 @@ import kotlin.math.abs
  * | Strategy | When | Skip |
  * |---|---|---|
  * | Prayer | 10 min after each prayer starts (computed offline from the saved location) | that prayer is marked |
- * | Water | every 2 h inside the window (09:00–21:00) | on or ahead of pace, or the goal is met |
+ * | Water | every 2 h inside the window (default 09:00–21:00, may pass midnight) | on or ahead of pace, or the goal is met |
  * | Daily | the chosen time (19:00), a second one 3 h later when the target is above 1 | today's target is met |
  * | Weekly | the chosen time, on days the week's goal is still reachable | done today, or the week's goal is met |
  *
- * Then, per local day: quiet hours 22:00–08:00 (Fajr and a snooze the user asked for are exempt), at most 8 reminders,
- * never two within 30 min (prayer and snoozes win over a chosen time, which wins over water), per-habit pause and the
- * phone-wide pause. A snoozed habit gets one reminder at the snooze time instead of the ones before it.
+ * There are no quiet hours and no limit shared between habits (owner decision 2026-11-22): the user picks the times,
+ * and each habit has its own maximum (prayer 5, water 6, daily 2, weekly 1). Prayers, chosen times and snoozes keep
+ * their moment. A water reminder that would come within 30 min of one **moves** inside its window; it is never dropped
+ * for being close. Where it moves depends on the schedule only, not on what is logged, so logging another habit cannot
+ * pull it back to a time already past. Also: per-habit pause and the phone-wide pause. A snoozed habit gets one
+ * reminder at the snooze time instead of the ones before it.
  *
  * Every reminder of a habit is posted under one key (`good:<habitId>`), so a new one replaces the one showing.
  * Each moment still has its own alarm key (`good:<habitId>:<day>:<slot>`). Logs re-plan (app, widget, notification
@@ -49,53 +52,65 @@ class HabitReminderPlanner(
         // Like the other planners: keep items up to the late grace, so NotificationArming can re-arm an undelivered one.
         val earliest = nowMillis - NotificationArming.LATE_GRACE_MILLIS
         val enabled = habits.filter { HabitReminderRules.isEnabled(it.habit) }
-        val planned = mutableListOf<PlannedNotification>()
-        for (day in today until today + HORIZON_DAYS) {
-            val candidates = enabled.flatMap { item -> candidatesFor(item, day, today, nowMillis, device, copy) }
-            planned += pickForDay(candidates).filter { it.triggerAtEpochMillis > earliest }
-        }
-        return planned.sortedBy { it.triggerAtEpochMillis }
+        // From yesterday: a window (or a late reminder) can reach past midnight.
+        val planDays = (today - 1) until (today + HORIZON_DAYS)
+        val waterTimes = placeWater(enabled.map { it.habit }, planDays, device.location)
+        return planDays
+            .flatMap { day -> enabled.flatMap { item -> remindersFor(item, day, today, nowMillis, device, waterTimes, copy) } }
+            .filter { it.triggerAtEpochMillis > earliest }
+            .sortedBy { it.triggerAtEpochMillis }
     }
 
-    // ---- candidates per habit ----
+    // ---- reminders per habit ----
 
-    private class Candidate(val notification: PlannedNotification, val priority: Int, val quietExempt: Boolean) {
-        val at: Long get() = notification.triggerAtEpochMillis
-    }
+    private data class WaterSlot(val habitId: Long, val day: Long, val minute: Int)
 
-    private fun candidatesFor(
+    private fun remindersFor(
         item: GoodHabitWithLogs,
         day: Long,
         today: Long,
         nowMillis: Long,
         device: ReminderDeviceState,
+        waterTimes: Map<WaterSlot, Long>,
         copy: HabitReminderCopy,
-    ): List<Candidate> {
+    ): List<PlannedNotification> {
         val habit = item.habit
-        // What is known now: today's real count; nothing logged yet on a later day.
-        val count = if (day == today) item.logs.firstOrNull { it.dayIndex == day }?.count ?: 0 else 0
-        val snoozeAt = device.snoozes[habit.id]?.takeIf { days.dayIndexOf(it) == day && it > nowMillis - NotificationArming.LATE_GRACE_MILLIS }
-        val scheduled = when (HabitReminderRules.strategyOf(habit)) {
+        val count = countOn(item, day) // a day still to come has nothing logged yet
+        val strategy = HabitReminderRules.strategyOf(habit)
+        val snoozeAt = device.snoozes[habit.id]?.takeIf { it > nowMillis - NotificationArming.LATE_GRACE_MILLIS }
+        val scheduled = when (strategy) {
             ReminderStrategy.PRAYER -> prayer(habit, day, count, device.location, copy)
-            ReminderStrategy.WATER -> water(habit, day, count, copy)
+            ReminderStrategy.WATER -> water(item, day, waterTimes, copy)
             ReminderStrategy.DAILY_TIME -> daily(habit, day, count, copy)
             ReminderStrategy.WEEKLY_TIME -> weekly(item, day, today, count, copy)
         }
-        val kept = if (snoozeAt != null) scheduled.filter { it.at > snoozeAt } else scheduled
-        val snoozed = snoozeAt?.let { snoozedReminder(item, day, count, it, device.location, copy) }
-        return (kept + listOfNotNull(snoozed)).filterNot { candidate ->
-            HabitReminderRules.isPausedAt(habit, candidate.at) || (device.pausedUntilEpochMillis ?: Long.MIN_VALUE) > candidate.at
+        // A snooze holds back the regular moments before it, also across midnight; water also the ones right after it.
+        val heldUntil = snoozeAt?.let { if (strategy == ReminderStrategy.WATER) it + GAP - 1 else it }
+        val kept = if (heldUntil != null) scheduled.filter { it.triggerAtEpochMillis > heldUntil } else scheduled
+        val snoozed = snoozeAt?.takeIf { days.dayIndexOf(it) == day }?.let { snoozedReminder(item, day, count, it, device.location, copy) }
+        return (kept + listOfNotNull(snoozed)).filterNot { reminder ->
+            val at = reminder.triggerAtEpochMillis
+            HabitReminderRules.isPausedAt(habit, at) || (device.pausedUntilEpochMillis ?: Long.MIN_VALUE) > at
         }
     }
 
-    private fun prayer(habit: GoodHabit, day: Long, count: Int, location: GeoPoint?, copy: HabitReminderCopy): List<Candidate> {
+    private fun countOn(item: GoodHabitWithLogs, day: Long): Int = item.logs.firstOrNull { it.dayIndex == day }?.count ?: 0
+
+    /** Glasses in the window that [at] belongs to: after midnight, the evening's and the night's together. */
+    private fun waterCountAt(item: GoodHabitWithLogs, at: Long): Int {
+        val day = days.dayIndexOf(at)
+        val windowDay = HabitReminderRules.windowDayOf(item.habit, days, at)
+        return countOn(item, day) + if (windowDay < day) countOn(item, windowDay) else 0
+    }
+
+    private fun prayer(habit: GoodHabit, day: Long, count: Int, location: GeoPoint?, copy: HabitReminderCopy): List<PlannedNotification> {
         val place = location ?: return emptyList() // no location yet: the reminders sheet explains and asks
         val times = PrayerTimeCalculator.forDay(day, place)
         return Prayer.entries.mapNotNull { prayer ->
             if (count >= prayer.index) return@mapNotNull null // already marked
             val start = times[prayer] ?: return@mapNotNull null
             val at = start + HabitReminderRules.PRAYER_OFFSET_MINUTES * MINUTE
-            Candidate(prayerNotification(habit, "$day:p${prayer.index}", at, prayer, count, copy), PRIORITY_PRAYER, quietExempt = prayer == Prayer.FAJR)
+            prayerNotification(habit, "$day:p${prayer.index}", at, prayer, count, copy)
         }
     }
 
@@ -112,16 +127,17 @@ class HabitReminderPlanner(
             timing = NotificationTiming.ON_TIME,
         )
 
-    private fun water(habit: GoodHabit, day: Long, count: Int, copy: HabitReminderCopy): List<Candidate> {
+    private fun water(item: GoodHabitWithLogs, day: Long, times: Map<WaterSlot, Long>, copy: HabitReminderCopy): List<PlannedNotification> {
+        val habit = item.habit
         val target = habit.dailyTarget.coerceAtLeast(1)
-        if (count >= target) return emptyList()
         val window = HabitReminderRules.waterWindowOf(habit)
-        return (1..HabitReminderRules.WATER_MAX_PER_DAY).mapNotNull { n ->
-            val minute = window.first + n * HabitReminderRules.WATER_INTERVAL_MINUTES
-            if (minute > window.last) return@mapNotNull null
+        return HabitReminderRules.waterSlotsOf(window).mapIndexedNotNull { n, minute ->
+            val count = countOn(item, day) + if (minute >= MINUTES_PER_DAY) countOn(item, day + 1) else 0
+            if (count >= target) return@mapIndexedNotNull null
             // Behind pace only: on or ahead of where the goal spread over the window says you'd be.
-            if (count >= HabitReminderRules.waterExpectedBy(target, window, minute)) return@mapNotNull null
-            Candidate(waterNotification(habit, "$day:w$minute", atMinute(day, minute), count, target, variant = (day + n).toInt(), copy), PRIORITY_WATER, quietExempt = false)
+            if (count >= HabitReminderRules.waterExpectedBy(target, window, minute)) return@mapIndexedNotNull null
+            val at = times[WaterSlot(habit.id, day, minute)] ?: atMinute(day, minute)
+            waterNotification(habit, "$day:w$minute", at, count, target, variant = (day + n + 1).toInt(), copy)
         }
     }
 
@@ -138,14 +154,19 @@ class HabitReminderPlanner(
             timing = NotificationTiming.FLEXIBLE,
         )
 
-    private fun daily(habit: GoodHabit, day: Long, count: Int, copy: HabitReminderCopy): List<Candidate> {
+    private fun daily(habit: GoodHabit, day: Long, count: Int, copy: HabitReminderCopy): List<PlannedNotification> {
         val target = habit.dailyTarget.coerceAtLeast(1)
         if (count >= target) return emptyList()
-        val first = HabitReminderRules.timeOf(habit)
-        val minutes = listOfNotNull(first, (first + HabitReminderRules.SECOND_REMINDER_AFTER_MINUTES).takeIf { target > 1 && it < MINUTES_PER_DAY })
-        return minutes.mapIndexed { n, minute ->
-            Candidate(dailyNotification(habit, "$day:t${n + 1}", atMinute(day, minute), count, target, variant = (day + n).toInt(), copy), PRIORITY_TIME, quietExempt = false)
+        return dailyMinutes(habit).mapIndexed { n, minute ->
+            dailyNotification(habit, "$day:t${n + 1}", atMinute(day, minute), count, target, variant = (day + n).toInt(), copy)
         }
+    }
+
+    /** The chosen time, and 3 h later when the target is above 1 and that is still the same day. */
+    private fun dailyMinutes(habit: GoodHabit): List<Int> {
+        val first = HabitReminderRules.timeOf(habit)
+        val second = first + HabitReminderRules.SECOND_REMINDER_AFTER_MINUTES
+        return listOfNotNull(first, second.takeIf { habit.dailyTarget > 1 && it < MINUTES_PER_DAY })
     }
 
     private fun dailyNotification(habit: GoodHabit, slot: String, at: Long, count: Int, target: Int, variant: Int, copy: HabitReminderCopy) =
@@ -161,11 +182,11 @@ class HabitReminderPlanner(
             timing = NotificationTiming.FLEXIBLE,
         )
 
-    private fun weekly(item: GoodHabitWithLogs, day: Long, today: Long, count: Int, copy: HabitReminderCopy): List<Candidate> {
+    private fun weekly(item: GoodHabitWithLogs, day: Long, today: Long, count: Int, copy: HabitReminderCopy): List<PlannedNotification> {
         val week = weekProgress(item, day, today) ?: return emptyList()
         if (count > 0) return emptyList() // done today
         return listOf(
-            Candidate(weeklyNotification(item.habit, "$day:t1", atMinute(day, HabitReminderRules.timeOf(item.habit)), week, variant = day.toInt(), copy), PRIORITY_TIME, quietExempt = false),
+            weeklyNotification(item.habit, "$day:t1", atMinute(day, HabitReminderRules.timeOf(item.habit)), week, variant = day.toInt(), copy),
         )
     }
 
@@ -195,7 +216,7 @@ class HabitReminderPlanner(
         )
 
     /** The reminder the user asked to see again, as it reads at [at]; `null` when there is nothing left to do. */
-    private fun snoozedReminder(item: GoodHabitWithLogs, day: Long, count: Int, at: Long, location: GeoPoint?, copy: HabitReminderCopy): Candidate? {
+    private fun snoozedReminder(item: GoodHabitWithLogs, day: Long, count: Int, at: Long, location: GeoPoint?, copy: HabitReminderCopy): PlannedNotification? {
         val habit = item.habit
         val slot = "$day:s$at"
         val notification = when (HabitReminderRules.strategyOf(habit)) {
@@ -207,8 +228,9 @@ class HabitReminderPlanner(
             }
             ReminderStrategy.WATER -> {
                 val target = habit.dailyTarget.coerceAtLeast(1)
-                if (count >= target) return null
-                waterNotification(habit, slot, at, count, target, variant = day.toInt(), copy)
+                val glasses = waterCountAt(item, at)
+                if (glasses >= target) return null
+                waterNotification(habit, slot, at, glasses, target, variant = day.toInt(), copy)
             }
             ReminderStrategy.DAILY_TIME -> {
                 val target = habit.dailyTarget.coerceAtLeast(1)
@@ -221,24 +243,56 @@ class HabitReminderPlanner(
                 weeklyNotification(habit, slot, at, week, variant = day.toInt(), copy)
             }
         }
-        // The user asked for this moment, so quiet hours do not drop it.
-        return Candidate(notification, PRIORITY_SNOOZE, quietExempt = true)
+        return notification
     }
 
-    // ---- one day's limits ----
+    // ---- water next to the other habits ----
 
-    /** Quiet hours, then the daily cap and the minimum gap, most important first. */
-    private fun pickForDay(candidates: List<Candidate>): List<PlannedNotification> {
-        val accepted = mutableListOf<Candidate>()
-        candidates
-            .filter { it.quietExempt || !HabitReminderRules.isQuiet((days.millisOfDay(it.at) / MINUTE).toInt()) }
-            .sortedWith(compareBy<Candidate>({ it.priority }, { it.at }))
-            .forEach { candidate ->
-                if (accepted.size >= HabitReminderRules.MAX_PER_DAY) return@forEach
-                if (accepted.any { abs(it.at - candidate.at) < HabitReminderRules.MIN_GAP_MINUTES * MINUTE }) return@forEach
-                accepted += candidate
+    /**
+     * Where each water slot rings. The full schedule of the other habits is used (as if nothing were logged or paused),
+     * so a slot keeps its time when they are. A close slot moves later, up to the window's end and before the next
+     * slot; else earlier, after the slot before it. With no room at all it keeps its time rather than being lost.
+     */
+    private fun placeWater(habits: List<GoodHabit>, planDays: LongRange, location: GeoPoint?): Map<WaterSlot, Long> {
+        val busy = mutableListOf<Long>()
+        for (day in planDays.first..planDays.last + 1) { // one more: the last window may pass midnight
+            for (habit in habits) busy += fixedTimesOf(habit, day, location)
+        }
+        val placed = mutableMapOf<WaterSlot, Long>()
+        for (habit in habits.filter { HabitReminderRules.strategyOf(it) == ReminderStrategy.WATER }.sortedBy { it.id }) {
+            val window = HabitReminderRules.waterWindowOf(habit)
+            val minutes = HabitReminderRules.waterSlotsOf(window)
+            for (day in planDays) {
+                var previous = atMinute(day, window.first)
+                minutes.forEachIndexed { i, minute ->
+                    val wanted = atMinute(day, minute)
+                    val latest = minutes.getOrNull(i + 1)?.let { atMinute(day, it) - 1 } ?: atMinute(day, window.last)
+                    val at = freeTimeNear(wanted, after = previous, latest = latest, busy = busy)
+                    placed[WaterSlot(habit.id, day, minute)] = at
+                    busy += at
+                    previous = at
+                }
             }
-        return accepted.map { it.notification }
+        }
+        return placed
+    }
+
+    /** The moments that never move: prayers and chosen times. */
+    private fun fixedTimesOf(habit: GoodHabit, day: Long, location: GeoPoint?): List<Long> = when (HabitReminderRules.strategyOf(habit)) {
+        ReminderStrategy.PRAYER -> location
+            ?.let { PrayerTimeCalculator.forDay(day, it).starts.values.map { start -> start + HabitReminderRules.PRAYER_OFFSET_MINUTES * MINUTE } }
+            .orEmpty()
+        ReminderStrategy.WATER -> emptyList()
+        ReminderStrategy.DAILY_TIME -> dailyMinutes(habit).map { atMinute(day, it) }
+        ReminderStrategy.WEEKLY_TIME -> listOf(atMinute(day, HabitReminderRules.timeOf(habit)))
+    }
+
+    private fun freeTimeNear(wanted: Long, after: Long, latest: Long, busy: List<Long>): Long {
+        fun isFree(at: Long) = busy.none { abs(it - at) < GAP }
+        if (isFree(wanted)) return wanted
+        // The nearest free moment is always exactly one gap away from something busy.
+        val later = busy.map { it + GAP }.filter { it in (wanted + 1)..latest && isFree(it) }.minOrNull()
+        return later ?: busy.map { it - GAP }.filter { it in (after + 1) until wanted && isFree(it) }.maxOrNull() ?: wanted
     }
 
     // ---- helpers ----
@@ -282,10 +336,7 @@ class HabitReminderPlanner(
 
         private const val MINUTE = 60_000L
         private const val MINUTES_PER_DAY = 24 * 60
+        private const val GAP = HabitReminderRules.MIN_GAP_MINUTES * MINUTE
         private const val DEFAULT_SERVING_ML = 250
-        private const val PRIORITY_SNOOZE = 0
-        private const val PRIORITY_PRAYER = 1
-        private const val PRIORITY_TIME = 2
-        private const val PRIORITY_WATER = 3
     }
 }

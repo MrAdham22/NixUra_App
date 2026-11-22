@@ -58,9 +58,16 @@ class HabitRemindersViewModel(
 
     fun setTime(habit: GoodHabit, minutes: Int) = save(habit) { it.copy(timeMinutes = minutes) }
 
-    fun setWindow(habit: GoodHabit, start: Int, end: Int) = save(habit) { it.copy(windowStartMinutes = start, windowEndMinutes = end) }
+    fun setWindowStart(habit: GoodHabit, minutes: Int) =
+        saveWindow(habit, HabitReminderRules.windowStartingAt(HabitReminderRules.waterWindowOf(habit), minutes))
 
-    /** "Pause for today": until the start of tomorrow, local time. */
+    fun setWindowEnd(habit: GoodHabit, minutes: Int) =
+        saveWindow(habit, HabitReminderRules.windowEndingAt(HabitReminderRules.waterWindowOf(habit), minutes))
+
+    private fun saveWindow(habit: GoodHabit, times: Pair<Int, Int>) =
+        save(habit) { it.copy(windowStartMinutes = times.first, windowEndMinutes = times.second) }
+
+    /** "Pause for today": until tomorrow starts, or until a late water window is over. */
     fun pauseToday(habit: GoodHabit) = pauseDays(habit, 1)
 
     fun pauseWeek(habit: GoodHabit) = pauseDays(habit, 7)
@@ -68,7 +75,7 @@ class HabitRemindersViewModel(
     fun resume(habit: GoodHabit) = save(habit) { it.copy(pausedUntilEpochMillis = null) }
 
     private fun pauseDays(habit: GoodHabit, count: Int) {
-        val until = days.startOfDayMillis(days.dayIndexOf(clock.nowEpochMillis()) + count)
+        val until = HabitReminderRules.pauseEndOf(habit, days, clock.nowEpochMillis(), count)
         save(habit) { it.copy(pausedUntilEpochMillis = until) }
     }
 

@@ -1100,6 +1100,7 @@ object ArabicStrings : Strings() {
     override fun reminderSheetRow(status: String): String = "التذكيرات: $status"
     override val reminderStatusOff: String = "متوقفة"
     override val reminderStatusWater: String = "مفعّلة · كل ساعتين"
+    override val reminderStatusWaterSpread: String = "مفعّلة · حتى 6 في اليوم"
     override val reminderStatusPrayer: String = "مفعّلة · في أوقات الصلاة"
     override fun reminderStatusAt(time: String): String = "مفعّلة · $time"
     override val reminderStatusNeedsLocation: String = "تحتاج إلى موقعك"
@@ -1108,16 +1109,14 @@ object ArabicStrings : Strings() {
     override val reminderExplainPrayer: String =
         "بعد دخول وقت كل صلاة بنحو 10 دقائق، للصلاة التي لم تسجّلها بعد. الأوقات تُحسب على هاتفك من موقعك."
     override val reminderExplainWater: String =
-        "كل ساعتين بين الوقتين أدناه، فقط عندما تكون متأخرًا عن هدف اليوم. تتوقف عندما يكتمل ماء اليوم."
+        "كل ساعتين بين الوقتين أدناه، أو 6 تذكيرات موزّعة إن زادت المدة على 12 ساعة. يمكن أن تنتهي بعد منتصف الليل. فقط عندما تكون متأخرًا، وقد يتحرك التذكير قليلًا كي لا يتزامن مع غيره."
     override val reminderExplainDaily: String =
-        "في الوقت أدناه مرة في اليوم (وتذكير ثانٍ بعد 3 ساعات إن كان هدفك أكثر من مرة). لا يصل إذا اكتمل هدف اليوم."
+        "في الوقت أدناه مرة في اليوم (وتذكير ثانٍ بعد 3 ساعات إن كان هدفك أكثر من مرة وكان ذلك قبل منتصف الليل). لا يصل إذا اكتمل هدف اليوم."
     override val reminderExplainWeekly: String =
         "في الوقت أدناه، في الأيام التي ما زال فيها هدف الأسبوع ممكنًا. لا يصل في يوم أنجزتها فيه."
-    override fun reminderQuietNote(from: String, until: String): String = "وقت الهدوء: لا شيء بين $from و$until (عدا الفجر)."
     override val reminderFrom: String = "من"
     override val reminderUntil: String = "إلى"
     override val reminderTime: String = "الوقت"
-    override val reminderTimeIsQuiet: String = "هذا الوقت ضمن وقت الهدوء، فلن يصل تذكير فيه."
     override val reminderPauseToday: String = "إيقاف لليوم"
     override val reminderPauseWeek: String = "إيقاف لأسبوع"
     override val reminderResume: String = "استئناف التذكيرات"

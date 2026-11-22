@@ -74,8 +74,13 @@ class ReminderActionHandler(
     private suspend fun logged(habitId: Long, write: Result<Int>, prayer: Prayer?): ReminderActionResult {
         val count = write.getOrNull() ?: return ReminderActionResult.Failed
         device.clearSnooze(habitId) // a snooze for something now done would only re-plan to nothing
-        val habit = habits.dayCountOf(habitId, days.dayIndexOf(clock.nowEpochMillis()))?.habit ?: return ReminderActionResult.Failed
-        return ReminderActionResult.Logged(habit, count, prayer)
+        val now = clock.nowEpochMillis()
+        val today = days.dayIndexOf(now)
+        val habit = habits.dayCountOf(habitId, today)?.habit ?: return ReminderActionResult.Failed
+        // After midnight in a late water window, confirm with the evening's glasses too, like the reminder said.
+        val windowDay = HabitReminderRules.windowDayOf(habit, days, now)
+        val evening = if (windowDay < today) habits.dayCountOf(habitId, windowDay)?.count ?: 0 else 0
+        return ReminderActionResult.Logged(habit, count + evening, prayer)
     }
 
     companion object {

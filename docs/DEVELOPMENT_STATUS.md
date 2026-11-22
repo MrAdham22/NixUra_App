@@ -7,8 +7,8 @@
 Branch `feature/habit-reminders`, details, scheduling choices, ColorOS notes and the Oppo test steps in
 `docs/ux-upgrade/C-reminders.md`.
 
-- **Built:** `domain/reminder` (pure planner for prayer / water / daily / weekly habits with quiet hours, daily cap 8,
-  30-min gap, snooze, pause; offline prayer times from a city-level location kept on the phone; button handler that
+- **Built:** `domain/reminder` (pure planner for prayer / water / daily / weekly habits with per-habit caps, 30-min gap
+  for water, snooze, pause; offline prayer times from a city-level location kept on the phone; button handler that
   logs through the widget's use cases once per press); Room v9 (`MIGRATION_8_9`, reminder columns on `good_habits`,
   synced); buttons "+1 glass" / "Prayed ✓" / "Done ✓" / Snooze handled without opening the app, notification updated
   in place with the native progress bar and removed after 4 s; re-plan after widget and button logs, each delivered
@@ -23,6 +23,11 @@ Branch `feature/habit-reminders`, details, scheduling choices, ColorOS notes and
 - **Merged 2026-11-22 (PR #21, squash) on the owner's go-ahead**, after re-running `:shared:testAndroidHostTest`
   (730 tests, 0 failures) and a clean `:androidApp:assembleDebug` on the branch (already on top of `master`).
 - **Not recorded as verified:** the individual device test steps in C-reminders.md (no per-step results were reported). iOS: not implemented (no iOS scheduler yet, location stub). Not built: PLAN.md's "auto-quiet" offer.
+- **Water bug fixed 2026-11-22 (branch `fix/water-reminders`):** water reminders within 30 min of a prayer or another
+  habit were deleted, and a shared limit of 8 a day deleted the rest. Water now moves instead. Owner decisions the
+  same day: no quiet hours, no shared limit, water windows may pass midnight (details in C-reminders.md).
+  **Verified:** 12 new or changed tests failed before the fix; `:shared:testAndroidHostTest` 741 tests, 0 failures;
+  `:androidApp:assembleDebug` OK. **Not verified:** on the phone (it was disconnected), and iOS compilation.
 
 ## UX upgrade B (2026-11-21): notification foundation
 

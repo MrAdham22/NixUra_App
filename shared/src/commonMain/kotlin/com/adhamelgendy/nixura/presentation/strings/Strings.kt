@@ -1073,6 +1073,7 @@ open class Strings : HabitReminderCopy {
     open fun reminderSheetRow(status: String): String = "Reminders: $status"
     open val reminderStatusOff: String = "Off"
     open val reminderStatusWater: String = "On · every 2 h"
+    open val reminderStatusWaterSpread: String = "On · up to 6 a day"
     open val reminderStatusPrayer: String = "On · at prayer times"
     open fun reminderStatusAt(time: String): String = "On · $time"
     open val reminderStatusNeedsLocation: String = "Needs your location"
@@ -1081,16 +1082,14 @@ open class Strings : HabitReminderCopy {
     open val reminderExplainPrayer: String =
         "About 10 minutes after each prayer starts, for the prayer you haven't marked yet. Times come from your location, worked out on this phone."
     open val reminderExplainWater: String =
-        "Every 2 hours inside the times below, only when you're behind today's goal. They stop once today's water is done."
+        "Every 2 hours between the times below, or 6 spread out if that's over 12 hours. The end can be after midnight. Only when you're behind; a reminder may move a little so it doesn't land on another."
     open val reminderExplainDaily: String =
-        "At the time below, once a day (a second one 3 hours later when your goal is more than once). Skipped once today's goal is done."
+        "At the time below, once a day (a second one 3 hours later when your goal is more than once and that's before midnight). Skipped once today's goal is done."
     open val reminderExplainWeekly: String =
         "At the time below, on days your weekly goal can still be reached. Skipped on days you've already done it."
-    open fun reminderQuietNote(from: String, until: String): String = "Quiet hours: nothing between $from and $until (Fajr excepted)."
     open val reminderFrom: String = "From"
     open val reminderUntil: String = "Until"
     open val reminderTime: String = "Time"
-    open val reminderTimeIsQuiet: String = "That's inside quiet hours, so no reminder will come at that time."
     open val reminderPauseToday: String = "Pause for today"
     open val reminderPauseWeek: String = "Pause for 1 week"
     open val reminderResume: String = "Resume reminders"

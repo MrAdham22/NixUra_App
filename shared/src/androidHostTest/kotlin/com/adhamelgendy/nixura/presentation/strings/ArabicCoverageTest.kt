@@ -81,7 +81,6 @@ class ArabicCoverageTest {
             add(a.reminderSheetRow("x") to e.reminderSheetRow("x"))
             add(a.reminderStatusAt("7:00") to e.reminderStatusAt("7:00"))
             add(a.reminderStatusPausedUntil("Sat") to e.reminderStatusPausedUntil("Sat"))
-            add(a.reminderQuietNote("22:00", "08:00") to e.reminderQuietNote("22:00", "08:00"))
         }
     }
 

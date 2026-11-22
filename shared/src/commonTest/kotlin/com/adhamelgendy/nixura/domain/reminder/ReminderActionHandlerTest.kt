@@ -35,11 +35,12 @@ class ReminderActionHandlerTest {
     private val clock = FixedClock(today * DAY + 10 * HOUR)
     private val days = utcDays()
 
-    private class Repo(vararg habits: GoodHabit) : GoodHabitRepository {
+    private class Repo(vararg habits: GoodHabit, val today: Long = 20L) : GoodHabitRepository {
+        val earlier = mutableMapOf<Long, Int>()
         val habits = habits.associateBy { it.id }.toMutableMap()
         val counts = mutableMapOf<Long, Int>()
         override fun observeGoodHabits(): Flow<List<GoodHabitWithLogs>> = error("unused")
-        override suspend fun dayCountOf(id: Long, dayIndex: Long): GoodHabitDayCount? = habits[id]?.let { GoodHabitDayCount(it, counts[id] ?: 0) }
+        override suspend fun dayCountOf(id: Long, dayIndex: Long): GoodHabitDayCount? = habits[id]?.let { GoodHabitDayCount(it, (if (dayIndex < today) earlier[id] else counts[id]) ?: 0) }
         override suspend fun setCount(id: Long, dayIndex: Long, count: Int) { counts[id] = count }
         override suspend fun create(name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?, theme: HabitTheme, water: WaterGoal?): Long = error("unused")
         override suspend fun update(id: Long, name: String, dailyTarget: Int, colorArgb: Long?, weeklyTarget: Int?, theme: HabitTheme, water: WaterGoal?) = error("unused")
@@ -91,6 +92,21 @@ class ReminderActionHandlerTest {
         // An older Dhuhr reminder pressed afterwards changes nothing (3 ≥ 2).
         handler.handle("t-dhuhr", NotificationActionType.LOG_PRAYER, 2, prayerIndex = 2)
         assertEquals(3, repo.counts[2])
+    }
+
+    @Test fun afterMidnightTheConfirmationAddsTheEveningsGlasses() = runSuspend {
+        val late = water.copy(reminder = HabitReminderSettings(windowStartMinutes = 14 * 60, windowEndMinutes = 2 * 60))
+        val night = Repo(late)
+        night.earlier[1] = 5
+        val oneAm = FixedClock(today * DAY + 1 * HOUR)
+        val result = ReminderActionHandler(
+            IncrementGoodHabitTodayUseCase(night, oneAm, days),
+            MarkGoodHabitTodayAtLeastUseCase(night, oneAm, days),
+            night, ReminderDeviceRepositoryImpl(Prefs()), oneAm, days,
+        ).handle("t-night", NotificationActionType.LOG_ONE, 1)
+        assertIs<ReminderActionResult.Logged>(result)
+        assertEquals(6, result.count)
+        assertEquals(1, night.counts[1], "the glass itself is saved on the new day")
     }
 
     @Test fun aFailedWriteCanBeRetried() = runSuspend {
