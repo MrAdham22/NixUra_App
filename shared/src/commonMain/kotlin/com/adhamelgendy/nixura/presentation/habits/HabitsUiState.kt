@@ -27,6 +27,8 @@ data class HabitCardUiModel(
     val moneySaved: MoneySaved? = null,
     /** Kind of habit, for the glyph on the card (derived from the name). */
     val topic: HabitTopic = HabitTopic.OTHER_QUIT,
+    /** "Hide name outside the app". The card itself always shows the name. */
+    val hideNameOutside: Boolean = false,
 )
 
 data class HabitsUiState(

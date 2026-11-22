@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.adhamelgendy.nixura.domain.usecase.SetHideNameOutsideUseCase
 
 class HabitsViewModel(
     observeActiveHabitTracking: ObserveActiveHabitTrackingUseCase,
@@ -37,6 +38,7 @@ class HabitsViewModel(
     private val recordRelapse: RecordRelapseUseCase,
     private val clock: Clock,
     private val updateHabit: UpdateHabitUseCase,
+    private val setHideNameOutside: SetHideNameOutsideUseCase,
     pendingDeletions: PendingDeletions,
     private val topics: HabitTopicDetector? = null,
 ) : ViewModel() {
@@ -115,10 +117,17 @@ class HabitsViewModel(
     }
 
     /** Creates a habit from the full-screen form. [onSuccess] runs after it is saved (e.g. navigate back). */
-    fun onCreateHabit(name: String, colorArgb: Long?, startAtEpochMillis: Long, cost: HabitCost?, onSuccess: () -> Unit) {
+    fun onCreateHabit(
+        name: String,
+        colorArgb: Long?,
+        startAtEpochMillis: Long,
+        cost: HabitCost?,
+        hideNameOutside: Boolean,
+        onSuccess: () -> Unit,
+    ) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, errorMessage = null) }
-            val result = createHabitAndStartTracking(name, startAtEpochMillis, colorArgb, cost)
+            val result = createHabitAndStartTracking(name, startAtEpochMillis, colorArgb, cost, hideNameOutside)
             _uiState.update { state ->
                 result.fold(
                     onSuccess = { state.copy(isSaving = false) },
@@ -130,10 +139,10 @@ class HabitsViewModel(
     }
 
     /** [cost] is the tracker as the form now shows it (`null` = no tracker). */
-    fun onUpdateHabit(habitId: Long, name: String, colorArgb: Long?, cost: HabitCost?, onSuccess: () -> Unit) {
+    fun onUpdateHabit(habitId: Long, name: String, colorArgb: Long?, cost: HabitCost?, hideNameOutside: Boolean, onSuccess: () -> Unit) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, errorMessage = null) }
-            val result = updateHabit(habitId, name, colorArgb, cost)
+            val result = updateHabit(habitId, name, colorArgb, cost, hideNameOutside)
             _uiState.update { state ->
                 result.fold(
                     onSuccess = { state.copy(isSaving = false) },
@@ -141,6 +150,14 @@ class HabitsViewModel(
                 )
             }
             if (result.isSuccess) onSuccess()
+        }
+    }
+
+    fun onHideNameOutside(habitId: Long, hidden: Boolean) {
+        viewModelScope.launch {
+            setHideNameOutside(habitId, hidden).onFailure { error ->
+                _uiState.update { it.copy(errorMessage = error.message ?: "Could not save changes") }
+            }
         }
     }
 
@@ -177,6 +194,7 @@ class HabitsViewModel(
                 .map { it.occurredAtEpochMillis }
                 .sortedDescending(),
             cost = habit.cost,
+            hideNameOutside = habit.hideNameOutside,
             // Follows the counter: the current clean streak, reset by a relapse.
             moneySaved = habit.cost?.let { MoneySavedCalculator.saved(it, tracking.activeElapsedMillis) },
             topic = topics?.let { t -> topicCache.getOrPut(habit.name) { t.quitTopic(habit.name) } } ?: HabitTopic.OTHER_QUIT,

@@ -1151,6 +1151,15 @@ object ArabicStrings : Strings() {
     override fun lockScreenEvent(inText: String?): String = if (inText == null) "مناسبة الآن" else "مناسبة بعد ${afterPreposition(inText)}"
     override fun lockScreenMilestone(): String = "وصلت إلى محطة جديدة"
     override fun lockScreenCoach(): String = "ملاحظة من مدربك"
+
+    override val hideNameTitle: String = "إخفاء الاسم خارج التطبيق"
+    override val hideNameHint: String =
+        "تحتفظ الإشعارات والأدوات بأيامك وسلسلتك، دون الاسم. داخل NixUra لا يتغيّر شيء."
+    override val hideNameLimits: String =
+        "قد يرى الآخرون أنك تقلع عن شيء، دون أن يعرفوا ما هو. الإشعارات التي ظهرت سابقًا تبقى في سجل هاتفك. " +
+            "تُخفى أيضًا معاينة التطبيقات الأخيرة (أندرويد 13 أو أحدث). يظل الاسم يُزامَن مع حسابك، ويصل إلى المدرب عبر الإنترنت إن سمحت بذلك."
+    override val hideNameConfirm: String = "إخفاء الاسم"
+    override fun hideNameSheetRow(on: Boolean): String = "$hideNameTitle: ${if (on) "مفعّل" else "متوقف"}"
     // ---- end of UX D ----
 
     /** A duration after "بعد": the dual changes case (ساعتان becomes ساعتين). */

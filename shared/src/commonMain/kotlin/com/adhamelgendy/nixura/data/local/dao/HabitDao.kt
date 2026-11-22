@@ -17,8 +17,11 @@ interface HabitDao {
     @Query("SELECT * FROM habits WHERE id = :habitId AND deleted_at IS NULL LIMIT 1")
     suspend fun getById(habitId: Long): HabitEntity?
 
-    @Query("UPDATE habits SET name = :name, color_argb = :colorArgb, updated_at = :updatedAt, dirty = 1 WHERE id = :habitId")
-    suspend fun updateDetails(habitId: Long, name: String, colorArgb: Long?, updatedAt: Long)
+    @Query(
+        "UPDATE habits SET name = :name, color_argb = :colorArgb, hide_name_outside = :hidden, " +
+            "updated_at = :updatedAt, dirty = 1 WHERE id = :habitId",
+    )
+    suspend fun updateDetails(habitId: Long, name: String, colorArgb: Long?, hidden: Boolean, updatedAt: Long)
 
     @Query(
         "UPDATE habits SET cost_item = :item, cost_unit = :unit, cost_units_per_day = :unitsPerDay, cost_price_minor = :priceMinor, " +
@@ -36,6 +39,9 @@ interface HabitDao {
         perDayInPacks: Boolean?,
         updatedAt: Long,
     )
+
+    @Query("UPDATE habits SET hide_name_outside = :hidden, updated_at = :updatedAt, dirty = 1 WHERE id = :habitId")
+    suspend fun setHideNameOutside(habitId: Long, hidden: Boolean, updatedAt: Long)
 
     @Query("UPDATE habits SET archived_at = :archivedAt, updated_at = :archivedAt, dirty = 1 WHERE id = :habitId")
     suspend fun archive(habitId: Long, archivedAt: Long)

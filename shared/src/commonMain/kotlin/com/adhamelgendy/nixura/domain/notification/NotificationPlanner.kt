@@ -18,10 +18,12 @@ import com.adhamelgendy.nixura.domain.time.DayCalculator
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.milliseconds
+import com.adhamelgendy.nixura.domain.privacy.OutsideAppPrivacy
 
 /**
  * Pure planner: turns current app data into the list of notifications that should exist.
  * Three kinds: event reminders (user-chosen lead times), streak milestones, and a daily check-in.
+ * One of the two exits where a hidden name is taken out ([OutsideAppPrivacy]).
  */
 class NotificationPlanner(
     private val coach: CoachEngine,
@@ -77,7 +79,8 @@ class NotificationPlanner(
             val elapsed = (nowMillis - start).coerceAtLeast(0).milliseconds
             val justPassed = MILESTONES.filter { it <= elapsed && start + it.inWholeMilliseconds > lateLimit }
             (justPassed + MILESTONES.filter { it > elapsed }.take(2)).forEach { threshold ->
-                val note = coach.milestoneNote(item.habit.name, threshold)
+                val name = OutsideAppPrivacy.nameOutside(item.habit)
+                val note = coach.milestoneNote(name, threshold)
                 planned += PlannedNotification(
                     key = "${NotificationKind.MILESTONE_PREFIX}${item.habit.id}:${threshold.inWholeDays}:$start",
                     triggerAtEpochMillis = start + threshold.inWholeMilliseconds,
@@ -86,6 +89,7 @@ class NotificationPlanner(
                     title = note.title,
                     body = note.body,
                     publicTitle = neutral.lockScreenMilestone(),
+                    namedHabitId = item.habit.id.takeIf { name != null },
                 )
             }
         }
@@ -103,7 +107,7 @@ class NotificationPlanner(
                     if (item.tracking.activePeriodStartEpochMillis == null) return@mapNotNull null
                     BadHabitSnapshot(
                         id = item.habit.id,
-                        name = item.habit.name,
+                        name = OutsideAppPrivacy.nameOutside(item.habit).orEmpty(), // empty = hidden
                         elapsed = item.tracking.activeElapsedMillis.milliseconds + ahead,
                         longest = item.tracking.longestStreakMillis.milliseconds + ahead,
                         relapseCount = item.events.count { it.type == HabitEventType.RELAPSE },
@@ -135,6 +139,7 @@ class NotificationPlanner(
                 title = note.title,
                 body = note.body,
                 publicTitle = neutral.lockScreenCoach(),
+                namedHabitId = coach.checkInFocus(snapshot)?.takeIf { it.name.isNotEmpty() }?.id,
             )
         }
 

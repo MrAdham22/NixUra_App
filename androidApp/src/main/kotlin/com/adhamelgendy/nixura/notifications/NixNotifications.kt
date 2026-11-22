@@ -23,6 +23,9 @@ import com.adhamelgendy.nixura.domain.theme.HabitTheme
 import com.adhamelgendy.nixura.domain.recognition.HabitTopic
 import com.adhamelgendy.nixura.domain.notification.LockScreenPrivacy
 import com.adhamelgendy.nixura.domain.notification.LockScreenVisibility
+import android.os.Bundle
+import com.adhamelgendy.nixura.domain.notification.HiddenNameWithdrawal
+import com.adhamelgendy.nixura.domain.notification.ShownName
 
 /**
  * What to show. Built by the scheduler's receiver today; phase C builds it for good-habit reminders.
@@ -53,6 +56,8 @@ data class NixNotificationRequest(
     val deleteIntent: PendingIntent? = null,
     /** The neutral line shown instead on a lock screen that hides sensitive content; `null` = the app's name only. */
     val publicTitle: String? = null,
+    /** The quit habit whose name the text shows (see [NixNotifications.withdrawNamesOf]); `null` = none. */
+    val namedHabitId: Long? = null,
 )
 
 /**
@@ -107,6 +112,7 @@ object NixNotifications {
             .setContentIntent(NotificationDeepLink.contentIntent(context, request.key, request.kind, request.targetId))
             .setOnlyAlertOnce(request.onlyAlertOnce)
             .lockScreen(context, request.kind, channel, style, request.publicTitle)
+            .addExtras(namesExtra(request.namedHabitId))
             .apply {
                 request.actions.forEach(::addAction)
                 request.progress?.let { setProgress(it.max.coerceAtLeast(1), it.current.coerceIn(0, it.max.coerceAtLeast(1)), false) }
@@ -126,6 +132,32 @@ object NixNotifications {
     /** Removes a posted notification (phase C: after "+1 glass" completes the goal). */
     fun cancel(context: Context, key: String) {
         NotificationManagerCompat.from(context).cancel(idOf(key))
+    }
+
+    /**
+     * "Hide name outside the app" was turned on: takes away what is already showing that name (a milestone, a
+     * check-in), and a bundle left with nothing in it. What is showing without the name stays.
+     */
+    fun withdrawNamesOf(context: Context, hiddenHabitIds: Set<Long>) {
+        if (hiddenHabitIds.isEmpty()) return
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        val showing = runCatching { manager.activeNotifications.toList() }.getOrDefault(emptyList())
+        for (kind in NotificationKind.entries) {
+            val group = NotificationChannels.groupKeyFor(kind)
+            val summaryId = idOf(SUMMARY_PREFIX + group)
+            val children = showing.filter { it.notification.group == group && it.id != summaryId }
+            val removed = children.filter { HiddenNameWithdrawal.shouldRemove(kind, shownNameOf(it.notification.extras), hiddenHabitIds) }
+            removed.forEach { manager.cancel(it.tag, it.id) }
+            if (removed.isNotEmpty() && removed.size == children.size) manager.cancel(summaryId)
+        }
+    }
+
+    private fun namesExtra(habitId: Long?): Bundle = Bundle().apply { putLong(EXTRA_NAMES_HABIT, habitId ?: NAMES_NOBODY) }
+
+    private fun shownNameOf(extras: Bundle): ShownName {
+        if (!extras.containsKey(EXTRA_NAMES_HABIT)) return ShownName.Unknown
+        val id = extras.getLong(EXTRA_NAMES_HABIT)
+        return if (id == NAMES_NOBODY) ShownName.None else ShownName.Of(id)
     }
 
     /** False when the user switched [kind]'s channel off (or all of the app's notifications). */
@@ -173,6 +205,7 @@ object NixNotifications {
             .setContentTitle(context.getString(NixNotificationStyles.nameOf(channel)))
             .setGroup(group)
             .setGroupSummary(true)
+            .addExtras(namesExtra(null)) // a bundle's own text is the type's name
             .lockScreen(context, kind, channel, style, context.getString(NixNotificationStyles.nameOf(channel)))
             .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
             .setAutoCancel(true)
@@ -218,4 +251,6 @@ object NixNotifications {
     }
 
     private const val SUMMARY_PREFIX = "summary:"
+    private const val EXTRA_NAMES_HABIT = "nixura.notification.names_habit"
+    private const val NAMES_NOBODY = -1L
 }

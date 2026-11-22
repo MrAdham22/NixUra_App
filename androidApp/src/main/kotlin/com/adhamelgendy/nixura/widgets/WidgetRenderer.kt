@@ -165,7 +165,9 @@ internal object WidgetRenderer {
     }
 
     private fun quitCard(env: Env, st: QuitWidgetState.Active): RenderedWidget {
-        val plan = WidgetLayoutPlanner.plan(WidgetKind.QUIT_COUNTER, env.widthDp, env.heightDp, st.clock.days, st.name)
+        // A hidden name: the "Clear for" label takes its place, once.
+        val title = st.name?.forDisplay() ?: env.s.clearFor
+        val plan = WidgetLayoutPlanner.plan(WidgetKind.QUIT_COUNTER, env.widthDp, env.heightDp, st.clock.days, title)
         val layout = when (plan.variant) {
             WidgetVariant.FULL -> R.layout.widget_bad_full
             WidgetVariant.ROW -> R.layout.widget_bad_row
@@ -186,14 +188,14 @@ internal object WidgetRenderer {
         rv.setViewPadding(R.id.w_content, px(env, plan.paddingDp), px(env, plan.paddingDp), px(env, plan.paddingDp), px(env, plan.paddingDp))
 
         badge(env, rv, plan, st.topic.icon(), primary)
-        text(rv, R.id.w_name, st.name.forDisplay(), primary)
+        text(rv, R.id.w_name, title, primary)
         // The planner shrinks the name (after dropping the badge) so that no word is split across lines
         if (plan.titleSizeDp > 0) rv.setTextViewTextSize(R.id.w_name, TypedValue.COMPLEX_UNIT_DIP, plan.titleSizeDp.toFloat())
         if (plan.variant == WidgetVariant.ROW) rv.setInt(R.id.w_name, "setMaxLines", plan.titleMaxLines)
         if (plan.variant == WidgetVariant.FULL) {
             rv.setInt(R.id.w_name, "setMaxLines", plan.titleMaxLines)
             text(rv, R.id.w_eyebrow, env.s.clearFor.uppercase(), muted)
-            show(rv, R.id.w_eyebrow, plan.showCounterEyebrow)
+            show(rv, R.id.w_eyebrow, plan.showCounterEyebrow && st.name != null)
             // One extra row fits under the counter: money saved when there is a tracker, else the longest streak.
             // (Showing both cut the second one in half at the bottom of the widget.)
             val saved = st.moneySaved

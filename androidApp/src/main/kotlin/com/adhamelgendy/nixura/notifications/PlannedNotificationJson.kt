@@ -30,6 +30,7 @@ internal object PlannedNotificationJson {
             item.topic?.let { put("topic", it.name) }
             if (item.postKey != item.key) put("post", item.postKey)
             item.publicTitle?.let { put("public", it) }
+            item.namedHabitId?.let { put("names", it) }
             item.progress?.let { put("progress", JSONArray().put(it.current).put(it.max)) }
             if (item.actions.isNotEmpty()) {
                 put(
@@ -66,6 +67,7 @@ internal object PlannedNotificationJson {
             topic = enumOrNull<HabitTopic>(o.optString("topic")),
             postKey = o.optString("post").ifEmpty { key },
             publicTitle = o.optString("public").ifEmpty { null },
+            namedHabitId = if (o.has("names")) o.getLong("names") else null,
             actions = o.optJSONArray("actions")?.let { array ->
                 (0 until array.length()).mapNotNull { i ->
                     val a = array.getJSONObject(i)

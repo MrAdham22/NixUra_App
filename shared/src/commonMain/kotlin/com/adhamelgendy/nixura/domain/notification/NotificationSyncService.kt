@@ -35,15 +35,22 @@ class NotificationSyncService(
     private val reminderDevice: ReminderDeviceRepository? = null,
 ) {
     suspend fun run() {
-        plans().distinctUntilChanged().collect { scheduler.replaceAll(it) }
+        plans().distinctUntilChanged().collect(::apply)
     }
 
     /** Re-arms once, for background work that changed data while no screen is open (alarms are per device). */
     suspend fun syncOnce() {
-        scheduler.replaceAll(plans().first())
+        apply(plans().first())
     }
 
-    private fun plans(): Flow<List<PlannedNotification>> = combine(
+    private data class SyncPlan(val notifications: List<PlannedNotification>, val hiddenHabitIds: Set<Long>)
+
+    private fun apply(plan: SyncPlan) {
+        scheduler.replaceAll(plan.notifications)
+        scheduler.withdrawNamesOf(plan.hiddenHabitIds)
+    }
+
+    private fun plans(): Flow<SyncPlan> = combine(
         tracking.observeActiveHabitTracking(),
         goodHabits.observeGoodHabits(),
         events.observeEvents(),
@@ -58,6 +65,9 @@ class NotificationSyncService(
         } else {
             emptyList()
         }
-        (base + reminders).sortedBy { it.triggerAtEpochMillis }
+        SyncPlan(
+            notifications = (base + reminders).sortedBy { it.triggerAtEpochMillis },
+            hiddenHabitIds = bad.filter { it.habit.hideNameOutside }.map { it.habit.id }.toSet(),
+        )
     }
 }

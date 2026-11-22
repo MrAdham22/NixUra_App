@@ -24,6 +24,9 @@ import com.adhamelgendy.nixura.widgets.WidgetDeepLink
 import com.adhamelgendy.nixura.widgets.WidgetUpdater
 import org.koin.android.ext.android.inject
 import org.koin.compose.koinInject
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import com.adhamelgendy.nixura.domain.usecase.ObserveAnyNameHiddenUseCase
 
 class MainActivity : ComponentActivity() {
 
@@ -42,6 +45,7 @@ class MainActivity : ComponentActivity() {
         }
 
     private val appNavigator: Navigator by inject()
+    private val anyNameHidden: ObserveAnyNameHiddenUseCase by inject()
     private val googleAuthorizer: AndroidGoogleAuthorizer by inject()
     private val socialSignIn: AndroidSocialSignIn by inject()
 
@@ -98,11 +102,23 @@ class MainActivity : ComponentActivity() {
             Build.VERSION.SDK_INT >= 33 && shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
         }
 
+        keepHiddenNamesOutOfRecents()
+
         setContent {
             val navigator = koinInject<Navigator>()
             BackHandler(enabled = navigator.canGoBack) { navigator.back() }
             App()
         }
+    }
+
+    /**
+     * The recent-apps preview is a picture of the open screen, names included, so it is off while any quit habit's
+     * name is hidden. Off until the first read too. Android 13+ only: before, FLAG_SECURE would also block screenshots.
+     */
+    private fun keepHiddenNamesOutOfRecents() {
+        if (Build.VERSION.SDK_INT < 33) return
+        setRecentsScreenshotEnabled(false)
+        lifecycleScope.launch { anyNameHidden().collect { hidden -> setRecentsScreenshotEnabled(!hidden) } }
     }
 
     override fun onNewIntent(intent: Intent) {

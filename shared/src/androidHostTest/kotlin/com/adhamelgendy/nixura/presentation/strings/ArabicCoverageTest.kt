@@ -66,6 +66,8 @@ class ArabicCoverageTest {
             add(a.lockScreenEvent("2") to e.lockScreenEvent("2"))
             add(a.lockScreenMilestone() to e.lockScreenMilestone())
             add(a.lockScreenCoach() to e.lockScreenCoach())
+            add(a.hideNameSheetRow(true) to e.hideNameSheetRow(true))
+            add(a.hideNameSheetRow(false) to e.hideNameSheetRow(false))
             t.filter { it != com.adhamelgendy.nixura.domain.theme.HabitTheme.WATER && it != com.adhamelgendy.nixura.domain.theme.HabitTheme.PRAYER }
                 .forEach { theme -> add(a.reminderHabitTitle(theme, "Gym", 0) to e.reminderHabitTitle(theme, "Gym", 0)) }
             add(a.reminderDailyBody("Gym", 1, 3) to e.reminderDailyBody("Gym", 1, 3))

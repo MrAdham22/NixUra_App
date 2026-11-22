@@ -43,6 +43,7 @@ class WidgetConfigActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= 33) setRecentsScreenshotEnabled(false) // this list shows real habit names
         widgetId = intent?.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
             ?: AppWidgetManager.INVALID_APPWIDGET_ID
         // Until the user picks something, the result is "cancelled" so the launcher drops a half-added widget.

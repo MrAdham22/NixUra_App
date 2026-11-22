@@ -1128,6 +1128,18 @@ open class Strings : HabitReminderCopy, LockScreenCopy {
     override fun lockScreenEvent(inText: String?): String = if (inText == null) "Event now" else "Event in $inText"
     override fun lockScreenMilestone(): String = "A milestone reached"
     override fun lockScreenCoach(): String = "A note from your coach"
+
+    // A quit habit's "Hide name outside the app": the add / edit form and the card's long-press sheet.
+    open val hideNameTitle: String = "Hide name outside the app"
+    open val hideNameHint: String =
+        "Notifications and widgets keep your days and streak, without the name. Inside NixUra nothing changes."
+    open val hideNameLimits: String =
+        "People may still see that you're quitting something, just not what. Notifications shown earlier stay in your phone's history. " +
+            "The recent-apps preview is hidden too (Android 13 or newer). The name still syncs to your account, and goes to the online coach if you allowed it."
+    open val hideNameConfirm: String = "Hide name"
+
+    /** The row in a quit card's long-press sheet. */
+    open fun hideNameSheetRow(on: Boolean): String = "$hideNameTitle: ${if (on) "On" else "Off"}"
     // ---- end of UX D ----
 }
 

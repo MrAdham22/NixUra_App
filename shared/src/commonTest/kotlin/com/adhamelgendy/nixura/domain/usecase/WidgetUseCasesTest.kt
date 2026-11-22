@@ -162,10 +162,11 @@ class WidgetUseCasesTest {
     // ---- LoadWidgetStateUseCase ----
     private class FakeHabits(val list: List<HabitTracking>) : HabitTrackingRepository {
         override fun observeActiveHabitTracking(): Flow<List<HabitTracking>> = flowOf(list)
-        override suspend fun createHabitAndStartTracking(name: String, startAtEpochMillis: Long, colorArgb: Long?, cost: HabitCost?): Long = error("unused")
+        override suspend fun createHabitAndStartTracking(name: String, startAtEpochMillis: Long, colorArgb: Long?, cost: HabitCost?, hideNameOutside: Boolean): Long = error("unused")
         override suspend fun updateCost(habitId: Long, cost: HabitCost?) = error("unused")
         override suspend fun recordRelapse(habitId: Long, atEpochMillis: Long) = error("unused")
-        override suspend fun updateHabit(habitId: Long, name: String, colorArgb: Long?) = error("unused")
+        override suspend fun updateHabit(habitId: Long, name: String, colorArgb: Long?, hideNameOutside: Boolean) = error("unused")
+        override suspend fun setHideNameOutside(habitId: Long, hidden: Boolean) = error("unused")
         override suspend fun archiveHabit(habitId: Long, atEpochMillis: Long) = error("unused")
     }
 

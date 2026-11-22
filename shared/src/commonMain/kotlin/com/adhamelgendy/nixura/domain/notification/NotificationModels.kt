@@ -17,6 +17,7 @@ import com.adhamelgendy.nixura.domain.recognition.HabitTopic
  * @param actions buttons shown on the notification (phase C: "+1 glass", "Prayed", Snooze).
  * @param progress shown with the platform's own progress style ("3 / 8 glasses"); `null` = none.
  * @param publicTitle the neutral line shown instead on a phone that hides sensitive content (see [LockScreenPrivacy]).
+ * @param namedHabitId the quit habit whose name the text shows, so it can be withdrawn if that name gets hidden.
  * @param timing how precisely the OS must fire it (see [NotificationTiming]).
  */
 data class PlannedNotification(
@@ -33,6 +34,7 @@ data class PlannedNotification(
     val progress: NotificationProgress? = null,
     val timing: NotificationTiming = NotificationTiming.ON_TIME,
     val publicTitle: String? = null,
+    val namedHabitId: Long? = null,
 )
 
 /** How precisely a notification must fire. */
@@ -77,6 +79,12 @@ data class NotificationAction(
 /** Schedules local notifications. Each call replaces everything previously scheduled by the app. */
 interface NotificationScheduler {
     fun replaceAll(planned: List<PlannedNotification>)
+
+    /**
+     * Removes notifications already showing the name of a habit in [hiddenHabitIds] ([HiddenNameWithdrawal]).
+     * Called after [replaceAll], so no alarm with the old words is left to post one again.
+     */
+    fun withdrawNamesOf(hiddenHabitIds: Set<Long>) = Unit
 }
 
 /** Runtime notification permission (Android 13+). iOS/older Android: always granted or no-op. */

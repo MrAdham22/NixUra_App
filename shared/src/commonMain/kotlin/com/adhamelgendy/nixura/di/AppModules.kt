@@ -140,6 +140,8 @@ fun appModule() = module {
     factory { CreateHabitAndStartTrackingUseCase(get()) }
     factory { RecordRelapseUseCase(get()) }
     factory { UpdateHabitUseCase(get()) }
+    factory { com.adhamelgendy.nixura.domain.usecase.SetHideNameOutsideUseCase(get()) }
+    factory { com.adhamelgendy.nixura.domain.usecase.ObserveAnyNameHiddenUseCase(get()) }
     // Use cases — good habits
     factory { ObserveGoodHabitsUseCase(get()) }
     factory { CreateGoodHabitUseCase(get(), get()) }
@@ -183,6 +185,7 @@ fun appModule() = module {
             recordRelapse = get(),
             clock = get(),
             updateHabit = get(),
+            setHideNameOutside = get(),
             pendingDeletions = get(),
             topics = get(),
         )

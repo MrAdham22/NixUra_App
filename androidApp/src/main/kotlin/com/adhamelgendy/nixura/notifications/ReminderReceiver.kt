@@ -52,6 +52,7 @@ class ReminderReceiver : BroadcastReceiver() {
                     theme = item.theme,
                     topic = item.topic,
                     publicTitle = item.publicTitle,
+                    namedHabitId = item.namedHabitId,
                     actions = ReminderActions.build(context, item),
                     progress = item.progress,
                 ),

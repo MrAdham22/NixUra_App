@@ -55,6 +55,9 @@ import com.adhamelgendy.nixura.presentation.theme.Nix
 import com.adhamelgendy.nixura.presentation.theme.NixType
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import com.adhamelgendy.nixura.presentation.components.NixIcon
+import com.adhamelgendy.nixura.presentation.components.NixIconView
+import com.adhamelgendy.nixura.presentation.components.NixSwitch
 
 private const val HOUR_MILLIS = 3_600_000L
 
@@ -83,6 +86,7 @@ fun BadHabitFormScreen(editId: Long?, navigator: Navigator) {
 
     var name by rememberSaveable { mutableStateOf("") }
     var color by rememberSaveable { mutableStateOf<Long?>(null) }
+    var hideName by rememberSaveable { mutableStateOf(false) }
     var startChoice by rememberSaveable { mutableStateOf(0) }
     var customDays by rememberSaveable { mutableStateOf(0) }
     var customHours by rememberSaveable { mutableStateOf(0) }
@@ -107,6 +111,7 @@ fun BadHabitFormScreen(editId: Long?, navigator: Navigator) {
             state.habits.firstOrNull { it.habitId == editId }?.let {
                 name = it.name
                 color = it.colorArgb
+                hideName = it.hideNameOutside
                 cost = CostInput.from(it.cost, countable.profileFor(it.name), defaultCurrency)
                 loadedEdit = true
             }
@@ -184,6 +189,22 @@ fun BadHabitFormScreen(editId: Long?, navigator: Navigator) {
             Text(s.cardColorHint, style = NixType.Small, color = c.textMuted)
         }
 
+        NixCard {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                NixIconView(if (hideName) NixIcon.EyeOff else NixIcon.Eye, c.accent, size = 22.dp)
+                Spacer(Modifier.width(12.dp))
+                Text(s.hideNameTitle, style = NixType.BodyStrong, color = c.textPrimary, modifier = Modifier.weight(1f))
+                Spacer(Modifier.width(8.dp))
+                NixSwitch(hideName, { hideName = it })
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(s.hideNameHint, style = NixType.Small, color = c.textMuted)
+            if (hideName) {
+                Spacer(Modifier.height(6.dp))
+                Text(s.hideNameLimits, style = NixType.Small, color = c.textMuted)
+            }
+        }
+
         if (!editing) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 SectionLabel(s.lastTimeLabel)
@@ -219,10 +240,10 @@ fun BadHabitFormScreen(editId: Long?, navigator: Navigator) {
                 if (cost.enabled && !cost.isComplete) {
                     showCostErrors = true
                 } else if (editId != null) {
-                    vm.onUpdateHabit(editId, name, color, cost.toCost()) { navigator.back() }
+                    vm.onUpdateHabit(editId, name, color, cost.toCost(), hideName) { navigator.back() }
                 } else {
                     val start = clock.nowEpochMillis() - hoursAgo * HOUR_MILLIS
-                    vm.onCreateHabit(name, color, start, cost.toCost()) { navigator.back() }
+                    vm.onCreateHabit(name, color, start, cost.toCost(), hideName) { navigator.back() }
                 }
             },
             enabled = name.isNotBlank(),

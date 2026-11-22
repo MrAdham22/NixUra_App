@@ -10,10 +10,12 @@ import com.adhamelgendy.nixura.domain.recognition.GoodHabitFillStyle
 import com.adhamelgendy.nixura.domain.recognition.HabitTopic
 import com.adhamelgendy.nixura.domain.time.CivilCalendar
 import com.adhamelgendy.nixura.domain.time.DayCalculator
+import com.adhamelgendy.nixura.domain.privacy.OutsideAppPrivacy
 
 /**
  * Maps repository data to widget states. All numbers come from the same calculators the app screens use
  * ([TrackingStateCalculator], [GoodHabitStatsCalculator]) so a widget never disagrees with the app.
+ * One of the two exits where a hidden name is taken out ([OutsideAppPrivacy]).
  */
 object WidgetStateMapper {
 
@@ -30,14 +32,14 @@ object WidgetStateMapper {
         val snapshot = TrackingStateCalculator.compute(item.events, nowEpochMillis.coerceAtLeast(0))
         return QuitWidgetState.Active(
             habitId = item.habit.id,
-            name = item.habit.name,
+            name = OutsideAppPrivacy.nameOutside(item.habit),
             elapsedMillis = snapshot.activeElapsedMillis,
             periodStartEpochMillis = snapshot.activePeriodStartEpochMillis,
             colorArgb = item.habit.colorArgb,
             longestStreakMillis = snapshot.longestStreakMillis,
-            cost = item.habit.cost,
+            cost = OutsideAppPrivacy.costOutside(item.habit),
             nowEpochMillis = nowEpochMillis,
-            topic = topicOf(item.habit.name),
+            topic = OutsideAppPrivacy.topicOutside(item.habit, topicOf),
         )
     }
 

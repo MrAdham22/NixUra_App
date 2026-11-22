@@ -50,6 +50,10 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
         prefs.edit().putString(KEY_PLAN, PlannedNotificationJson.encodeAll(armed)).apply()
     }
 
+    override fun withdrawNamesOf(hiddenHabitIds: Set<Long>) {
+        NixNotifications.withdrawNamesOf(appContext, hiddenHabitIds)
+    }
+
     /**
      * Re-arms the stored plan: after reboot or app update (including reminders that became due while the phone was
      * off), and at the hand-off wake-up, which turns the reminders now close by into alarm clocks.

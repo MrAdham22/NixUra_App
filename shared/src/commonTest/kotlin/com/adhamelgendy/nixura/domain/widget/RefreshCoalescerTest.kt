@@ -93,10 +93,11 @@ class RefreshCoalescerTest {
     private class Habits : HabitTrackingRepository {
         val flow = MutableSharedFlow<List<HabitTracking>>(replay = 1).also { it.tryEmit(emptyList()) }
         override fun observeActiveHabitTracking(): Flow<List<HabitTracking>> = flow
-        override suspend fun createHabitAndStartTracking(name: String, startAtEpochMillis: Long, colorArgb: Long?, cost: HabitCost?): Long = error("unused")
+        override suspend fun createHabitAndStartTracking(name: String, startAtEpochMillis: Long, colorArgb: Long?, cost: HabitCost?, hideNameOutside: Boolean): Long = error("unused")
         override suspend fun updateCost(habitId: Long, cost: HabitCost?) = error("unused")
         override suspend fun recordRelapse(habitId: Long, atEpochMillis: Long) = error("unused")
-        override suspend fun updateHabit(habitId: Long, name: String, colorArgb: Long?) = error("unused")
+        override suspend fun updateHabit(habitId: Long, name: String, colorArgb: Long?, hideNameOutside: Boolean) = error("unused")
+        override suspend fun setHideNameOutside(habitId: Long, hidden: Boolean) = error("unused")
         override suspend fun archiveHabit(habitId: Long, atEpochMillis: Long) = error("unused")
     }
 

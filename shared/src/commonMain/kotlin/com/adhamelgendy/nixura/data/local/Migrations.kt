@@ -171,3 +171,13 @@ val MIGRATION_8_9 = object : Migration(8, 9) {
         connection.execSQL("ALTER TABLE `good_habits` ADD COLUMN `reminder_paused_until` INTEGER")
     }
 }
+
+/**
+ * v9 → v10, additive only: "Hide name outside the app" per quit habit (phase D). Existing habits get 0 = the name
+ * shows, as before.
+ */
+val MIGRATION_9_10 = object : Migration(9, 10) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `habits` ADD COLUMN `hide_name_outside` INTEGER NOT NULL DEFAULT 0")
+    }
+}
