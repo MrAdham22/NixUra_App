@@ -90,6 +90,8 @@ object ArabicStrings : Strings() {
     }
 
     // Units
+    override val pickerHour: String = "الساعة"
+    override val pickerMinute: String = "الدقيقة"
     override val unitDays: String = "أيام"
     override val unitHours: String = "ساعات"
     override val unitMinutes: String = "دقائق"

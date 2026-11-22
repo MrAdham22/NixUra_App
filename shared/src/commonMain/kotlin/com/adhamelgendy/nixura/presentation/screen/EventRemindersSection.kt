@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import com.adhamelgendy.nixura.presentation.components.Text
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,7 +40,7 @@ import com.adhamelgendy.nixura.presentation.components.NixIcon
 import com.adhamelgendy.nixura.presentation.components.NixIconButton
 import com.adhamelgendy.nixura.presentation.components.NixIconView
 import com.adhamelgendy.nixura.presentation.components.SectionLabel
-import com.adhamelgendy.nixura.presentation.components.Stepper
+import com.adhamelgendy.nixura.presentation.components.NumberWheel
 import com.adhamelgendy.nixura.presentation.strings.LocalStrings
 import com.adhamelgendy.nixura.presentation.theme.Nix
 import com.adhamelgendy.nixura.presentation.theme.NixType
@@ -205,7 +207,7 @@ private fun ReminderEditorDialog(
     val error = validate(lead)
 
     Dialog(onDismissRequest = onDismiss) {
-        NixCard(color = c.surface, padding = PaddingValues(22.dp)) {
+        NixCard(Modifier.verticalScroll(rememberScrollState()), color = c.surface, padding = PaddingValues(22.dp)) {
             Text(if (initialLead == null) s.addReminder else s.editReminder, style = NixType.Heading, color = c.textPrimary)
             Spacer(Modifier.height(14.dp))
             Text(s.reminderUnitLabel, style = NixType.SmallStrong, color = c.textMuted)
@@ -217,7 +219,9 @@ private fun ReminderEditorDialog(
             }
             if (unit != AT_EVENT_TIME) {
                 Spacer(Modifier.height(12.dp))
-                Stepper(value, { value = it }, min = 1, max = 999)
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    NumberWheel(value, 1..MAX_LEAD_VALUE, { value = it }, s.reminderUnitLabel)
+                }
             }
             Spacer(Modifier.height(10.dp))
             Text(
@@ -236,8 +240,9 @@ private fun ReminderEditorDialog(
 }
 
 private const val AT_EVENT_TIME = 3
+private const val MAX_LEAD_VALUE = 999
 
-/** Splits a lead time into a stepper value and a unit index (largest unit that divides it evenly). */
+/** Splits a lead time into a wheel value and a unit index (largest unit that divides it evenly). */
 private fun decompose(lead: Long): Pair<Int, Int> = when {
     lead <= 0L -> 1 to AT_EVENT_TIME
     lead % DAY == 0L && lead / DAY <= 999 -> (lead / DAY).toInt() to 2

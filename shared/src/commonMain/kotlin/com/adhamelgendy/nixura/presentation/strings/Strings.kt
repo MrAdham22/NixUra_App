@@ -49,6 +49,8 @@ open class Strings : HabitReminderCopy {
     open fun errorText(message: String): String = message
     open val am: String = "AM"
     open val pm: String = "PM"
+    open val pickerHour: String = "Hour"
+    open val pickerMinute: String = "Minute"
 
     // Units
     open val unitDays: String = "days"

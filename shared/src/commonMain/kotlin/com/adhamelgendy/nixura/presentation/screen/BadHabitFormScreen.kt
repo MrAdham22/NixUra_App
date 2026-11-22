@@ -45,7 +45,7 @@ import com.adhamelgendy.nixura.presentation.components.NixChip
 import com.adhamelgendy.nixura.presentation.components.NixTextField
 import com.adhamelgendy.nixura.presentation.components.SectionLabel
 import com.adhamelgendy.nixura.presentation.components.ShadePreview
-import com.adhamelgendy.nixura.presentation.components.Stepper
+import com.adhamelgendy.nixura.presentation.components.NumberWheel
 import com.adhamelgendy.nixura.presentation.components.SubScreen
 import com.adhamelgendy.nixura.presentation.habits.HabitsViewModel
 import com.adhamelgendy.nixura.presentation.navigation.Navigator
@@ -195,14 +195,17 @@ fun BadHabitFormScreen(editId: Long?, navigator: Navigator) {
                 }
                 if (startChoice == presets.size) {
                     NixCard {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(s.unitDays, style = NixType.BodyStrong, color = c.textSecondary, modifier = Modifier.weight(1f))
-                            Stepper(customDays, { customDays = it }, max = 3650)
-                        }
-                        Spacer(Modifier.height(10.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(s.unitHours, style = NixType.BodyStrong, color = c.textSecondary, modifier = Modifier.weight(1f))
-                            Stepper(customHours, { customHours = it }, max = 23)
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                            androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(s.unitDays, style = NixType.BodyStrong, color = c.textSecondary)
+                                Spacer(Modifier.height(10.dp))
+                                NumberWheel(customDays, 0..MAX_CUSTOM_DAYS, { customDays = it }, s.unitDays)
+                            }
+                            androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(s.unitHours, style = NixType.BodyStrong, color = c.textSecondary)
+                                Spacer(Modifier.height(10.dp))
+                                NumberWheel(customHours, 0..23, { customHours = it }, s.unitHours, loop = true)
+                            }
                         }
                     }
                 }
@@ -271,3 +274,6 @@ internal fun RecognitionHints(
         }
     }
 }
+
+/** Ten years. */
+private const val MAX_CUSTOM_DAYS = 3650
