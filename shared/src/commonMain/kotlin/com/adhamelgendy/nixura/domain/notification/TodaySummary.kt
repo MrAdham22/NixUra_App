@@ -173,10 +173,11 @@ class TodaySummaryBuilder(private val days: DayCalculator, private val copies: T
 
         val water = rows.firstOrNull { it.strategy == ReminderStrategy.WATER }
         val prayers = rows.firstOrNull { it.strategy == ReminderStrategy.PRAYER }
+        // The collapsed line: water and prayer, else the first two habits, so it is never the title alone.
         val highlights = listOfNotNull(
             water?.let { copy.todayWater(it.stats.progressCount, it.stats.progressTarget) },
             prayers?.let { copy.todayPrayers(it.stats.progressCount, it.stats.progressTarget) },
-        )
+        ).ifEmpty { rows.take(2).map { copy.todayHabit(it.habit.name, it.stats.progressCount, it.stats.progressTarget) } }
         val nextLine = countdown?.let { copy.todayNext(it.label, minutesOfDay(it.atEpochMillis)) }
         val eventLine = event?.let {
             val away = days.dayIndexOf(it.targetAtEpochMillis) - today

@@ -109,6 +109,12 @@ class TodaySummaryTest {
         assertTrue("Reading: 1 of 1" in s.lines, s.lines.toString())
     }
 
+    @Test fun withoutWaterOrPrayerTheCollapsedLineStillShowsProgress() {
+        val stretch = logged(GoodHabit(9, "Stretch", 1, createdAtEpochMillis = 0), 0)
+        val run = logged(GoodHabit(10, "Run", 2, createdAtEpochMillis = 0), 1)
+        assertEquals("Stretch: 0 of 1 · Run: 1 of 2", summary(build(at(10), listOf(stretch, run))).text)
+    }
+
     @Test fun manyHabitsStayFewLines() {
         val many = (10L..19L).map { logged(GoodHabit(it, "Habit $it", 1, createdAtEpochMillis = 0), 0) }
         val lines = summary(build(at(10), many)).lines
