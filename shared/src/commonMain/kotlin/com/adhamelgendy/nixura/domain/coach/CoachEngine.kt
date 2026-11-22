@@ -77,6 +77,8 @@ class CoachEngine(
     private fun tr(en: String, arabic: String): String = if (ar) arabic else en
 
     private fun dur(d: Duration): String = durationText(d, ar)
+    /** [dur] after a preposition (منذ, بعد, إلى): an Arabic dual turns genitive ("منذ يومين"). */
+    private fun durAfter(d: Duration): String = if (ar) arAfterPreposition(dur(d)) else dur(d)
     private fun span(d: Duration): String = elapsedText(d, ar)
 
     fun categoryFor(habitName: String): HabitCategory = knowledge.match(habitName)
@@ -174,11 +176,11 @@ class CoachEngine(
             // Hidden outside the app: the days and the encouragement, which is generic, without the name.
             focus != null && focus.name.isEmpty() -> tr(
                 "${dur(focus.elapsed)} clear. ${motivation(focus.name, focus.elapsed, seed)}",
-                "صامد منذ ${dur(focus.elapsed)}. ${motivation(focus.name, focus.elapsed, seed)}",
+                "صامد منذ ${durAfter(focus.elapsed)}. ${motivation(focus.name, focus.elapsed, seed)}",
             )
             focus != null -> tr(
                 "${displayName(focus.name)}: ${dur(focus.elapsed)} clear. ${motivation(focus.name, focus.elapsed, seed)}",
-                "${displayName(focus.name)}: صامد منذ ${dur(focus.elapsed)}. ${motivation(focus.name, focus.elapsed, seed)}",
+                "${displayName(focus.name)}: صامد منذ ${durAfter(focus.elapsed)}. ${motivation(focus.name, focus.elapsed, seed)}",
             )
             pendingGood != null -> tr(
                 "Don't forget \"${pendingGood.name}\" today — ${progressLine(pendingGood)} so far.",
@@ -196,12 +198,12 @@ class CoachEngine(
     fun milestoneNote(habitName: String?, reached: Duration): CoachNote {
         val milestone = habitName?.let { name -> knowledge.match(name).milestones.lastOrNull { it.after <= reached } }
         val title = if (habitName == null) {
-            tr("${dur(reached)} clear", "صامد منذ ${dur(reached)}")
+            tr("${dur(reached)} clear", "صامد منذ ${durAfter(reached)}")
         } else {
-            tr("${dur(reached)} clear: ${displayName(habitName)}", "صامد منذ ${dur(reached)}: ${displayName(habitName)}")
+            tr("${dur(reached)} clear: ${displayName(habitName)}", "صامد منذ ${durAfter(reached)}: ${displayName(habitName)}")
         }
         val body = milestone?.let { "${it.title}. ${it.detail}" }
-            ?: tr("You reached ${dur(reached)}. Keep going — you are proving it to yourself.", "وصلت إلى ${dur(reached)}. واصل، فأنت تثبت ذلك لنفسك.")
+            ?: tr("You reached ${dur(reached)}. Keep going — you are proving it to yourself.", "وصلت إلى ${durAfter(reached)}. واصل، فأنت تثبت ذلك لنفسك.")
         return CoachNote(title, body)
     }
 
@@ -221,7 +223,7 @@ class CoachEngine(
         val status = when {
             focus != null -> tr(
                 " You're **${dur(focus.elapsed)}** clear on **${displayName(focus.name)}**.",
-                " أنت صامد منذ **${dur(focus.elapsed)}** على **${displayName(focus.name)}**.",
+                " أنت صامد منذ **${durAfter(focus.elapsed)}** على **${displayName(focus.name)}**.",
             )
             snapshot.goodHabits.isNotEmpty() -> tr(" Your good habits are waiting for today's check-in.", " عاداتك الجيدة تنتظر تسجيل اليوم.")
             else -> tr(" Add a habit you want to leave behind and I'll help you through it.", " أضف عادة تريد تركها خلفك، وسأساعدك على تجاوزها.")
@@ -499,7 +501,7 @@ class CoachEngine(
         val sb = StringBuilder(
             tr(
                 "${lead}here is what is happening with ${displayName(habit.name)} (${insight.category.label}), ${dur(habit.elapsed)} in:\n\n",
-                "${lead}إليك ما يحدث مع ${displayName(habit.name)} (${insight.category.label})، بعد ${dur(habit.elapsed)}:\n\n",
+                "${lead}إليك ما يحدث مع ${displayName(habit.name)} (${insight.category.label})، بعد ${durAfter(habit.elapsed)}:\n\n",
             ),
         )
         if (latest != null) {
@@ -508,7 +510,7 @@ class CoachEngine(
             sb.append(tr("Your recovery has just started — the first changes begin soon.\n\n", "بدأ تعافيك للتو، وأول التغييرات قريبة.\n\n"))
         }
         if (next != null) {
-            sb.append(tr("Next: ${next.title} in about ${dur(next.after - habit.elapsed)}.\n\n", "التالي: ${next.title} بعد نحو ${dur(next.after - habit.elapsed)}.\n\n"))
+            sb.append(tr("Next: ${next.title} in about ${dur(next.after - habit.elapsed)}.\n\n", "التالي: ${next.title} بعد نحو ${durAfter(next.after - habit.elapsed)}.\n\n"))
         }
         insight.category.safetyNote?.let { sb.append(tr("Important: $it\n\n", "مهم: $it\n\n")) }
         sb.append(tr("This is general information, not medical advice.", "هذه معلومات عامة، وليست نصيحة طبية."))
@@ -547,7 +549,7 @@ class CoachEngine(
             sb.append(
                 tr(
                     "• ${displayName(it.name)}: ${dur(it.elapsed)} clear (best ${dur(it.longest)})\n",
-                    "• ${displayName(it.name)}: صامد منذ ${dur(it.elapsed)} (الأفضل ${dur(it.longest)})\n",
+                    "• ${displayName(it.name)}: صامد منذ ${durAfter(it.elapsed)} (الأفضل ${dur(it.longest)})\n",
                 ),
             )
         }
@@ -642,7 +644,7 @@ class CoachEngine(
         )
         return tr(
             "Your next event is \"${event.title}\" in ${dur(event.remaining)}. Staying consistent now means you arrive feeling proud of yourself.",
-            "مناسبتك القادمة «${event.title}» بعد ${dur(event.remaining)}. استمرارك الآن يعني أن تصل إليها فخورًا بنفسك.",
+            "مناسبتك القادمة «${event.title}» بعد ${durAfter(event.remaining)}. استمرارك الآن يعني أن تصل إليها فخورًا بنفسك.",
         )
     }
 
@@ -798,3 +800,7 @@ internal fun arDays(n: Long) = ArabicPlurals.format(n, "%d يوم", "يوم وا
 internal fun arHours(n: Long) = ArabicPlurals.format(n, "%d ساعة", "ساعة واحدة", "ساعتان", "%d ساعات", "%d ساعة", "%d ساعة")
 internal fun arMinutes(n: Long) = ArabicPlurals.format(n, "%d دقيقة", "دقيقة واحدة", "دقيقتان", "%d دقائق", "%d دقيقة", "%d دقيقة")
 internal fun arWeeks(n: Long) = ArabicPlurals.format(n, "%d أسبوع", "أسبوع واحد", "أسبوعان", "%d أسابيع", "%d أسبوعًا", "%d أسبوع")
+
+/** A duration after a preposition (بعد, منذ, إلى): the dual is genitive there, so "ساعتان" becomes "ساعتين". */
+internal fun arAfterPreposition(duration: String): String = duration
+    .replace("ساعتان", "ساعتين").replace("يومان", "يومين").replace("دقيقتان", "دقيقتين").replace("أسبوعان", "أسبوعين")

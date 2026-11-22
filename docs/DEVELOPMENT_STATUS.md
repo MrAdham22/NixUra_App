@@ -18,9 +18,17 @@ owner's checks: `docs/ux-upgrade/D-lock-screen.md`, section 7.
 - **Not verified:** the lock screen itself on any device (only what the app sets, through `dumpsys`); lock-screen
   widgets on a phone that offers them; Today, hide name and the icons' look on the Oppo; sync of the flag between two
   phones; the light theme, TalkBack, Android 7-12; **iOS** (the app-switcher cover was never built).
-- **Seen, not changed:** Arabic event reminders say "بعد ساعتان" instead of "بعد ساعتين"; Arabic habit reminder lines
-  that start with a Latin name lay out left to right; the reminder action log line prints the good habit's name to
-  logcat; `room_migration_check.py` cannot read the 2 `$REMOVED_BY_IMPORT_SQL` queries.
+- **Seen, not changed:** `room_migration_check.py` cannot read the 2 `$REMOVED_BY_IMPORT_SQL` queries.
+- **Fixed after phase D (2026-11-23, branch `fix/phase-d-followups`):** Arabic event reminders now say "تبدأ بعد
+  ساعتين/يومين/دقيقتين" (`arAfterPreposition` in `CoachEngine.kt`, also used by `ArabicStrings` and by every coach line
+  after منذ/بعد/إلى, so a check-in says "صامد منذ يومين"); Arabic reminder titles and bodies that can start with a typed
+  name (`reminderHabitTitle` water/prayer/default, `reminderDailyBody`, `reminderWeeklyBody`, `reminderLoggedHabit`)
+  start with an RLM; `ReminderActionReceiver` logs only the result type and a number. **Verified:**
+  `:shared:testAndroidHostTest` 819 tests, 0 failures (new `ArabicDualAfterPrepositionTest`,
+  `ArabicReminderDirectionTest`); `:androidApp:assembleDebug`. **Not verified:** how the notifications look on a phone.
+  **Still open:** other Arabic UI strings put a duration after بعد/منذ without the genitive (`passedAgo`,
+  `nextWinLine`, `nextShadeIn`, `timelineIn`/`timelineAfter`, `stopExplorerNextIn`, the coach's "بعد نحو" stop-timeline
+  lines that use `elapsedText`).
 
 ## UX upgrade D (2026-11-22): lock-screen research (no code)
 

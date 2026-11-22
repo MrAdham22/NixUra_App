@@ -23,6 +23,12 @@ object ArabicStrings : Strings() {
     /** Left-to-right mark: keeps a sign with its number ("+300 مل", not "300+ مل") inside right-to-left text. */
     private const val LRM = "\u200E"
 
+    /**
+     * Right-to-left mark: put first on a line that can start with a typed name, so a Latin name ("Reading") does not
+     * flip the whole line to left to right. A second one after the name keeps "0 \u0645\u0646 2" in order.
+     */
+    private const val RLM = "\u200F"
+
     // ---------- plural helpers ----------
     private fun pl(n: Long, one: String, two: String, few: String, many: String, other: String = many.replace("ًا", "")): String =
         ArabicPlurals.format(n, "%d $other", one, two, "%d $few", "%d $many", "%d $other")
@@ -1082,14 +1088,14 @@ object ArabicStrings : Strings() {
         HabitTheme.WALK -> "🚶 مشية قصيرة؟"
         HabitTheme.WORKOUT -> "💪 وقت الحركة"
         HabitTheme.SLEEP -> "🌙 وقت الاستعداد للنوم"
-        HabitTheme.WATER -> "💧 $name"
-        HabitTheme.PRAYER -> "🕌 $name"
-        HabitTheme.DEFAULT -> if (variant.mod(2) == 0) "🌱 حان وقت $name" else "🌱 $name؟"
+        HabitTheme.WATER -> "$RLM💧 $name"
+        HabitTheme.PRAYER -> "$RLM🕌 $name"
+        HabitTheme.DEFAULT -> if (variant.mod(2) == 0) "🌱 حان وقت $name" else "$RLM🌱 $name؟"
     }
     override fun reminderDailyBody(name: String, count: Int, target: Int): String =
-        if (target <= 1) "$name: مرة واحدة اليوم تكفي." else "$name: $count من $target اليوم."
+        if (target <= 1) "$RLM$name: مرة واحدة اليوم تكفي." else "$RLM$name: $RLM$count من $target اليوم."
     override fun reminderWeeklyBody(name: String, doneDays: Int, goalDays: Int): String =
-        "$name: $doneDays من ${nDays(goalDays.toLong())} هذا الأسبوع."
+        "$RLM$name: $RLM$doneDays من ${nDays(goalDays.toLong())} هذا الأسبوع."
     override fun reminderActionGlass(servingMl: Int): String = "$LRM+1 كوب · $servingMl مل"
     override fun reminderActionPrayed(prayer: Prayer): String = "صلّيت ✓"
     override fun reminderActionDone(): String = "تمّ ✓"
@@ -1098,7 +1104,7 @@ object ArabicStrings : Strings() {
     override fun reminderWaterGoalDone(): String = "💧 اكتمل ماء اليوم. أحسنت."
     override fun reminderLoggedPrayer(prayer: Prayer, marked: Int): String = "سُجّلت صلاة ${prayerName(prayer)} · $marked من 5 اليوم"
     override fun reminderLoggedHabit(name: String, count: Int, target: Int): String =
-        if (count >= target) "$name: اكتمل اليوم ✓" else "$name: $count من $target اليوم"
+        if (count >= target) "$RLM$name: اكتمل اليوم ✓" else "$RLM$name: $RLM$count من $target اليوم"
     override fun reminderSnoozed(minutes: Int): String = "حسنًا، سأذكّرك بعد ${snoozeLength(minutes)}."
 
     override fun reminderSheetRow(status: String): String = "التذكيرات: $status"
@@ -1202,8 +1208,7 @@ object ArabicStrings : Strings() {
     // ---- end of UX D ----
 
     /** A duration after "بعد": the dual changes case (ساعتان becomes ساعتين). */
-    private fun afterPreposition(duration: String): String =
-        duration.replace("ساعتان", "ساعتين").replace("يومان", "يومين").replace("دقيقتان", "دقيقتين")
+    private fun afterPreposition(duration: String): String = com.adhamelgendy.nixura.domain.coach.arAfterPreposition(duration)
 
     /** The noun after a written number: 3–10 أكواب, 11–99 كوبًا, otherwise كوب. */
     private fun cupNoun(n: Int): String = when (ArabicPlurals.category(n.toLong())) {

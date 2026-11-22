@@ -50,7 +50,7 @@ class ReminderActionReceiver : BroadcastReceiver() {
             try {
                 val koin = GlobalContext.get()
                 val result = koin.get<ReminderActionHandler>().handle(token, type, habitId, prayer, snooze)
-                Log.i(TAG, "action $type habit=$habitId -> $result")
+                Log.i(TAG, "action $type habit=$habitId -> ${logSummary(result)}")
                 when (result) {
                     is ReminderActionResult.Logged -> {
                         showConfirmation(app, postKey, habitId, look, copy(), result)
@@ -71,6 +71,14 @@ class ReminderActionReceiver : BroadcastReceiver() {
                 pending.finish()
             }
         }
+    }
+
+    /** What the log may show: the result type and a number, never the habit (its name is private). */
+    private fun logSummary(result: ReminderActionResult): String = when (result) {
+        is ReminderActionResult.Logged -> "Logged count=${result.count}"
+        is ReminderActionResult.Snoozed -> "Snoozed minutes=${result.minutes}"
+        ReminderActionResult.AlreadyHandled -> "AlreadyHandled"
+        ReminderActionResult.Failed -> "Failed"
     }
 
     private suspend fun copy(): HabitReminderCopy {
