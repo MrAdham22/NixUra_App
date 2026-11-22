@@ -64,7 +64,8 @@ Branch `feature/time-wheels`. Owner request: scrolling wheels instead of +/- for
   emulator in English and Arabic (drag, tap, fling then Done, 59 to 00, save) for the check-in, a custom start, an
   event's time and a reminder lead time, plus the two event dialogs on a 360x640 dp screen at 1.6x text.
 - **Installed** on the owner's Oppo 2026-11-22 (starts without a crash).
-- **Not verified:** the wheels used on the owner's phone, the light theme, TalkBack, iOS.
+- **Used on the phone by the owner:** a check-in at 18:11 set with the wheels was saved and arrived at 18:11:04.
+- **Not verified:** the light theme, TalkBack, iOS.
 - **Seen, not changed:** at 1.6x text on a 360 dp screen "Save reminder" breaks inside the word.
 
 ## UX upgrade A2 (2026-11-21): launcher App Shortcuts
