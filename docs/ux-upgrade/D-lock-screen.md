@@ -3,6 +3,9 @@
 **Written:** 2026-11-22. **Branch:** `docs/lock-screen-research`. **Research only: no app code changed.**
 (PLAN.md called this file `D.md`; the owner's brief named it `D-lock-screen.md`.)
 
+**Owner decision (2026-11-22):** the opt-in "Today" notification is **approved**, as an exception to PLAN.md's
+no-summary rule. It is not built. **Still open:** event and coach notifications on the lock screen (section 4).
+
 **Question.** Can NixUra show habit progress, the next reminder, the nearest event or a streak on the lock screen,
 truthfully, on NixUra's SDK range and on the owner's Oppo Reno 10 5G? What does each mechanism cost, and which one
 should be built?
@@ -26,13 +29,25 @@ best design rather than the safest change.
 
 ### Privacy finding (fix it whatever else is chosen)
 
-`VISIBILITY_PRIVATE` hides content only when the **user** has set the lock screen to hide sensitive content. The
-Android docs: private shows "only basic information, such as the notification's icon and the content title", and
-`setPublicVersion()` supplies a replacement ([Create a notification, lock screen visibility][notif-build]).
-The **title** is not redacted. On a phone set to "show all notification content" (a common setting), the whole
-notification shows. Today that includes the quit-milestone notification ("7 days free of smoking"), and PLAN.md says
-quit habits must be hidden on the lock screen by default. **Not checked on the Oppo yet** (the phone was not
-connected during this session); the check is in section 6.
+How Android decides, read in the AOSP source (stock Android; ColorOS not checked):
+
+| What the app sets | Phone set to "show all content" | Phone set to "hide sensitive content" |
+|---|---|---|
+| `VISIBILITY_PUBLIC` | full content | full content |
+| `VISIBILITY_PRIVATE` (today's default) | **full content** | header only (app name, time): no title, no text |
+| `VISIBILITY_PRIVATE` + `setPublicVersion` | **full content: the public version is not used** | the public version |
+| `VISIBILITY_SECRET` | not shown | not shown |
+
+- The [guide][notif-build] says private still shows the content title. The platform code does not:
+  `Notification.Builder.makePublicContentView` drops title and text when there is no public version ([source][src-notif]).
+- Redaction of a private notification depends on the user's setting ([source][src-redact]), so a public version
+  **cannot** guarantee that a name is hidden. Only `VISIBILITY_SECRET`, or text with no private detail, can
+  ([source][src-hide]).
+- An app cannot set a lock-screen ceiling on its channels: `setLockscreenVisibility` is "Only modifiable by the
+  system and notification ranker", and Android resets the app's value ([source][src-prefs]).
+
+So today, on a phone set to show all content, the quit-milestone notification ("7 days free of smoking") shows in
+full, while PLAN.md says quit habits must be hidden by default. **Not checked on the Oppo yet** (section 6).
 
 ---
 
@@ -44,7 +59,7 @@ Effort is **on top of phase B/C** (S = under a day, M = 2-3 days, L = a week or 
 
 | | |
 |---|---|
-| **What it shows** | Any NixUra notification that is in the shade when the phone is locked: per type, its full content (`VISIBILITY_PUBLIC`), only a safe substitute (`VISIBILITY_PRIVATE` + `setPublicVersion`, e.g. "NixUra · a milestone reached"), or nothing at all (`VISIBILITY_SECRET`). Channels can set a ceiling (`NotificationChannel.setLockscreenVisibility`). |
+| **What it shows** | Any NixUra notification that is in the shade when the phone is locked: full content (`VISIBILITY_PUBLIC`), full content or a substitute depending on the phone's setting (`VISIBILITY_PRIVATE` + `setPublicVersion`), or nothing (`VISIBILITY_SECRET`). Set per notification; apps cannot set it per channel (see the privacy finding). |
 | **Android versions** | API 21+, so the whole range (24-37). |
 | **ColorOS 15 (Oppo)** | Standard Android setting; ColorOS also has its own lock-screen notification switches. Needs a device check (section 6). |
 | **Limits** | The user always wins: "the user always has ultimate control over whether their notifications are visible on the lock screen" ([docs][notif-build]). Only notifications that exist are shown; nothing here is permanent. |
@@ -57,14 +72,14 @@ Effort is **on top of phase B/C** (S = under a day, M = 2-3 days, L = a week or 
 
 | | |
 |---|---|
-| **What it shows** | One quiet, always-current line or two: "💧 3 of 8 · 🕌 2 of 5 · Next: Asr 15:12 · Mum's birthday in 2 days". Can carry a ticking countdown to the next reminder (`setUsesChronometer` + `setChronometerCountDown`, drawn by the system, no wake-ups) and the existing `+1 glass` / `Prayed ✓` buttons. Streaks of quit habits only if the user opts in. |
+| **What it shows** | One quiet, always-current line or two: "💧 3 of 8 · 🕌 2 of 5 · Next: Asr 15:12 · Event in 2 days". Can carry a ticking countdown to the next reminder (`setUsesChronometer` + `setChronometerCountDown`, drawn by the system, no wake-ups) and the existing `+1 glass` / `Prayed ✓` buttons. Streaks of quit habits only if the user opts in. |
 | **Android versions** | API 24+ (countdown chronometer is API 24). Whole range. |
 | **Is it really persistent?** | **No, and the doc must not pretend it is.** Since Android 14, `setOngoing(true)` notifications **can be swiped away**; they stay non-dismissable only "when the phone is locked" and against **Clear all** ([Android 14 behaviour changes][a14]). The phone reboots and ColorOS force-stops can also clear it. So: it stays on the lock screen while the phone is locked, the user can remove it when unlocked, and NixUra must respect that (re-post only the next day or when the user turns it back on). |
 | **ColorOS 15 (Oppo)** | A posted notification lives in the system, not in our process, so ColorOS killing NixUra does not remove it. A force-stop does. Lock-screen filtering of **silent** notifications differs by OEM (Pixel has "hide silent notifications"); to be safe the channel should be DEFAULT importance with no sound and no vibration rather than LOW. Needs a device check. |
 | **Battery** | Near zero if it is **event-driven**: re-post only where the app already writes (app log, widget +/-, notification button, reminder delivered, event change), plus one inexact wake-up at local midnight for the day roll (the widgets already have a refresh alarm and `ReminderRefreshWorker` exists). No polling, no service. |
 | **Annoyance** | One row in the shade and an icon in the status bar, all day. This is the real cost: some people will hate it, hence **opt-in only**, with an easy "Hide for today" button. |
 | **Play policy** | A plain ongoing notification needs no declaration. **A foreground service to keep it alive would be rejected:** none of the FGS types fits a passive status display; `health` needs body sensors or activity recognition; `specialUse` is reviewed in Play Console ([FGS types][fgs]). So: no service, ever. Play's spam rules also mean no ads or promos in it. |
-| **Effort** | **M.** Pure `TodaySummary` builder in `domain` (picks what fits: good-habit counts, next planned reminder from `HabitReminderPlanner`, nearest event from `NearestEventSelector`, quit streaks only with opt-in), a new channel `nixura_today` ("Today on lock screen" / "اليوم على شاشة القفل"), a Settings switch, re-post hooks next to the existing `WidgetUpdater.requestRefresh` calls, delete-intent handling, EN + AR strings, tests. |
+| **Effort** | **M.** Pure `TodaySummary` builder in `domain` (picks what fits: good-habit counts, next planned reminder from `HabitReminderPlanner`, timing only, never the name, of the nearest event from `NearestEventSelector`, quit streaks only with opt-in), a new channel `nixura_today` ("Today on lock screen" / "اليوم على شاشة القفل"), a Settings switch, re-post hooks next to the existing `WidgetUpdater.requestRefresh` calls, delete-intent handling, EN + AR strings, tests. |
 
 ### 2.3 Live Updates (promoted ongoing notifications, `ProgressStyle`)
 
@@ -72,7 +87,7 @@ Effort is **on top of phase B/C** (S = under a day, M = 2-3 days, L = a week or 
 |---|---|
 | **What it shows** | A notification promoted to the top of the shade and the lock screen and shown "as a chip in the status bar" ([Live Updates][live]); `ProgressStyle` adds a segmented progress bar with points and a tracker icon ([ProgressStyle][progress]). |
 | **Android versions** | Android 16 (API 36) and newer. Needs the normal permission `POST_PROMOTED_NOTIFICATIONS`, `setRequestPromotedOngoing(true)`, ongoing, a title, no custom views, not colorized, not a group summary, channel not `IMPORTANCE_MIN`; check `canPostPromotedNotifications()` ([Live Updates][live]). |
-| **ColorOS** | ColorOS 16 (Android 16) shows Live Updates in Fluid Cloud for more third-party apps (OPPO's page mentions rides, scores, timers). **The Reno 10 5G is not on the ColorOS 16 list**, so on the owner's phone this does nothing. Older ColorOS Fluid Cloud had no public API for third-party apps. |
+| **ColorOS** | ColorOS 16 (Android 16) shows Live Updates in Fluid Cloud for more third-party apps (OPPO's page mentions rides, scores, timers). **The Reno 10 5G is not on the ColorOS 16 list**, so on the owner's phone this does nothing. No public Fluid Cloud API for older ColorOS was found. |
 | **Allowed uses** | Google lists the acceptable cases: "Active navigation, ongoing phone calls, active rideshare tracking, and active food delivery tracking", and the unacceptable ones: "Ads, promotions, chat messages, alerts, upcoming calendar events, and quick access to app features" ([Live Updates][live]). `ProgressStyle` is for "user-initiated start-to-end journeys" ([ProgressStyle][progress]). |
 | **Fit for NixUra** | **Poor.** An all-day habit summary is not a user-started journey with an end; the event countdown is literally "upcoming calendar events". It would only fit a future feature the user starts and that ends, e.g. a 10-minute "ride out the craving" timer. Users can demote a Live Update, and "posting unwanted Live Updates might cause users to revoke an app's posting permission" ([Live Updates][live]). |
 | **Battery / annoyance** | Same as 2.2, plus a status-bar chip: more visible, more annoying when misused. |
@@ -84,7 +99,7 @@ Effort is **on top of phase B/C** (S = under a day, M = 2-3 days, L = a week or 
 | | |
 |---|---|
 | **What it shows** | Up to 3 metrics, each a label, a value and an optional unit; values can be fixed numbers/text/dates/times or a time difference. Shown in the shade, as a Live Update when promoted, and on the always-on display ([MetricStyle][metric]). |
-| **Android versions** | Android 17 (API 37) only. NixUra's `compileSdk`/`targetSdk` is already 37, so it compiles. |
+| **Android versions** | Android 17 (API 37) only. NixUra's `compileSdk`/`targetSdk` is already 37 and the class is in the installed android-37.0 SDK (not compiled in the app yet). |
 | **Fit for NixUra** | **Good, and it is a real native template:** Google names "health and fitness apps, timers" as its use cases ([MetricStyle][metric]). "Water 3/8 · Prayers 2/5 · Next 15:12" is exactly three metrics. Use it as the **look** of the Today notification (2.2) on Android 17, **without** requesting promotion. The docs do not say whether a non-promoted MetricStyle reaches the AOD; treat that as unknown until seen on an Android 17 emulator. |
 | **ColorOS** | Needs Android 17; not on the owner's phone. |
 | **Battery / annoyance / Play** | Same as 2.2. |
@@ -95,7 +110,7 @@ Effort is **on top of phase B/C** (S = under a day, M = 2-3 days, L = a week or 
 | | |
 |---|---|
 | **What it shows** | The existing widgets (good-habit quick log with +/-, events countdown, quit counter) placed by the user on the lock screen. |
-| **Android versions** | `WIDGET_CATEGORY_KEYGUARD` exists since API 17 but phones dropped lock-screen widgets in Android 5.0. They came back in AOSP after Android 16 QPR1 (Google: "Lock screen widgets will be available in AOSP for tablets and mobile starting with the release after Android 16 (QPR1)", via [Android Central][ac-lsw]); Pixel phones got them in Android 16 QPR2. API 36 added `WIDGET_CATEGORY_NOT_KEYGUARD` so a widget can refuse the lock screen ([AppWidgetProviderInfo][awpi]); the Glance docs describe `widgetCategory` "home_screen" / "keyguard" ([Glance widget][glance]). Whether a phone offers it is up to the maker. |
+| **Android versions** | `WIDGET_CATEGORY_KEYGUARD` exists since API 17 but phones dropped lock-screen widgets in Android 5.0. They came back in AOSP after Android 16 QPR1 (Google: "Lock screen widgets will be available in AOSP for tablets and mobile starting with the release after Android 16 (QPR1)", via [Android Central][ac-lsw]); Pixel phones got them in Android 16 QPR2. API 36 added `WIDGET_CATEGORY_NOT_KEYGUARD` so a widget can refuse the lock screen ([AppWidgetProviderInfo][awpi]); the Glance docs describe `widgetCategory` "home_screen" / "keyguard" ([Glance widget][glance]), though that page still carries the older note that from Android 5.0 only `home_screen` is valid. Whether a phone offers it is up to the maker. |
 | **ColorOS** | **Not on ColorOS 15** (the owner's phone). ColorOS 16 support for third-party lock-screen widgets is not documented by OPPO's page; unknown. |
 | **Is it permanent?** | Yes, in the honest sense: the user places it and it stays until they remove it. It is the only mechanism here that is truly "always on the lock screen". |
 | **Battery** | Same as today's home-screen widgets (system `Chronometer`, one inexact refresh alarm). |
@@ -111,7 +126,7 @@ Effort is **on top of phase B/C** (S = under a day, M = 2-3 days, L = a week or 
 | **Quick Settings tile** (`TileService`, API 24+; add prompt `requestAddTileService` on Android 13+) | "💧 3 of 8" with a tap to add a glass, reachable from the lock screen's pull-down; `isSecure()` / `unlockAndRun()` decide what needs unlocking ([QS tiles][qs]) | Good **later** add-on for water only. Google: "avoid using tiles that display information, but aren't interactive", max two per app, so it must be a +1 button, not a dashboard. Not a lock-screen display in itself. Effort S. |
 | **Alarm clock "next alarm"** (`setAlarmClock`) | The clock / lock screen shows the next alarm time | Already used by phase B for events and prayer within 75 min of the reminder. **Do not** extend it to show habit info: it would claim an alarm that is not an alarm, and Play's exact-alarm rules watch this. |
 | **Live wallpaper** (`WallpaperService`) | A streak drawn into the wallpaper | Rejected: replaces the user's wallpaper, ColorOS handles lock-screen wallpapers separately, costs more battery, and feels like a trick. |
-| **At a Glance / Smartspace, ColorOS AOD panels** | | No public API for third-party apps. AOD shows notification icons only (except MetricStyle on Android 17, section 2.4). |
+| **At a Glance / Smartspace, ColorOS AOD panels** | | No public API for third-party apps was found. What the ColorOS AOD shows of notifications was not checked. |
 | **Foreground service** | A notification that cannot be swiped on old Android | Rejected (no valid FGS type, Play review; section 2.2). |
 
 ### 2.7 iOS (for parity; nothing can be built or run on Windows)
@@ -120,7 +135,7 @@ Effort is **on top of phase B/C** (S = under a day, M = 2-3 days, L = a week or 
 |---|---|
 | **Lock-screen widgets** (WidgetKit accessory families, iOS 16+) | **The iOS equivalent of 2.5, and better supported than on Android.** Comes with the already-planned iOS widget work (WidgetKit extension + App Group). |
 | **Live Activities** (ActivityKit, iOS 16.1+) | Apple limits them to activities with a start and end (they end after at most 8 hours, and can stay on the lock screen a few hours more). Same verdict as Live Updates: only for a future user-started timer, not an all-day summary. Needs a Swift widget extension. |
-| **Notifications** (`UNUserNotificationCenter`) | Phase B's iOS scheduler is still a no-op. Lock-screen previews are the user's setting on iOS; there is no `setPublicVersion` equivalent, so quit text must be written neutrally for iOS. |
+| **Notifications** (`UNUserNotificationCenter`) | Phase B's iOS scheduler is still a no-op. Lock-screen previews are the user's setting on iOS; a category's hidden-preview placeholder applies only when the user hides previews, so quit text must be written neutrally for iOS. |
 
 Apple references: [WidgetKit, lock screen accessories][wk-acc], [ActivityKit][activitykit]. Unverified on this machine.
 
@@ -143,26 +158,26 @@ Apple references: [WidgetKit, lock screen accessories][wk-acc], [ActivityKit][ac
 ## 4. Recommendation: a private-by-default "Today" presence
 
 Build these three together; together they are the best honest lock-screen presence Android allows, and the first two
-work on the owner's phone today.
+should work on the owner's Android 15 phone (untested on ColorOS).
 
 1. **Lock-screen privacy rules (do first, S).** Per type, by default:
 
-   | Type | Lock screen default | Public version (what a stranger sees) |
+   | Type | Visibility | What a stranger sees |
    |---|---|---|
-   | Good habit (water, prayer, other) | full content | (not needed) |
-   | Event | title hidden | "Event in 2 hours" / "مناسبة بعد ساعتين" |
-   | Quit milestone | **nothing** (`VISIBILITY_SECRET`, channel ceiling too) | (none) |
-   | Coach | title hidden (it can greet by name) | "A note from your coach" |
-   | App / account | title hidden | "NixUra" |
-   | Today (item 2) | its own content, built without quit info unless opted in | |
+   | Good habit (water, prayer, other) | PUBLIC | full content |
+   | Quit milestone | **SECRET, always** | nothing |
+   | Today (item 2) | PUBLIC | its own content, written to be safe: never an event name or a quit-habit name |
+   | App / account | PRIVATE | follows the phone's setting |
+   | Event | **open decision** (below) | |
+   | Coach (can greet by name) | **open decision** (below) | |
 
-   One Settings row, **Lock screen**: "Show habit progress" (default on) and "Show quit streaks" (default **off**; when
-   on, quit lines appear in the Today notification and milestone notifications become PRIVATE with a neutral public
-   version, still never the habit name). The rule is a pure, tested function in `domain/notification`.
+   One opt-in, **"Show quit streaks on Today"** (default **off**): adds a streak with no habit name to the Today
+   notification. Milestone notifications stay SECRET either way, because a public version could not keep the habit
+   name hidden. The rule is a pure, tested function in `domain/notification`.
 
 2. **"Today" notification, opt-in (M).** One quiet ongoing notification on a new DEFAULT-importance, soundless,
    vibration-less channel `nixura_today`, with: good-habit progress for today, the next planned reminder with a
-   system-drawn countdown, the nearest event, and the `+1 glass` / `Prayed ✓` button for whatever is next. Re-posted
+   system-drawn countdown, the nearest event's timing ("Event in 2 days", never its name), and the `+1 glass` / `Prayed ✓` button for whatever is next. Re-posted
    only when data changes and once at midnight. If the user swipes it away, it stays away until tomorrow; a
    "Hide today" button does the same. Offered in context (when the user adds a second good habit, or from the habit
    sheet: "Show today's progress on the lock screen"), never at first launch. On Android 17 it uses **MetricStyle**
@@ -175,18 +190,27 @@ work on the owner's phone today.
 as "ride out a craving" is built, which would be a real start-to-end journey), foreground services, alarm-clock
 tricks, wallpaper. **Later, optional:** a water QS tile.
 
-### An owner decision this needs
+### Owner decisions
 
-PLAN.md says notifications never duplicate the widget's dashboard ("no 'today's summary' notifications"). Item 2 is
-exactly a today's-summary notification. It differs from the nudges that rule was about (opt-in, silent, never
-alerts, one row), but it does reverse a written rule, so it needs the owner's yes. Without it, items 1 and 3 still
-stand on their own, and the lock screen shows NixUra only when a reminder is due.
+**Decided 2026-11-22: "Today" is approved.** PLAN.md said notifications never duplicate the widget's dashboard
+("no 'today's summary' notifications"). Today is the one exception: opt-in, silent, never alerts, one row.
+
+**Open: event and coach notifications on the lock screen.** Android offers no "always show, but always hide the
+name" for a notification that has the name in it.
+
+| Option | Phone shows all content | Phone hides sensitive content | Cost |
+|---|---|---|---|
+| **A. Follow the phone's setting (recommended)**: PRIVATE + neutral public version | name visible | "Event in 2 hours" / "A note from your coach" | names can be read on show-all phones |
+| **B. Always hide**: SECRET | nothing | nothing | an event reminder is not seen until unlock, so it can be missed |
+
+A is recommended because a reminder nobody sees fails at its job, and show-all is the user's own choice for the
+phone. Quit milestones are SECRET under both options.
 
 ### What it would take
 
 | Step | Files (planned) | Size |
 |---|---|---|
-| Privacy rule + Settings row + public versions | `domain/notification/LockScreenPrivacy.kt` (+ test), `NixNotifications.kt`, channel ceiling in `NotificationChannels.kt`, Settings screen + ViewModel, `Strings` / `ArabicStrings` | S |
+| Privacy rule + quit-streak opt-in + public versions (if option A) | `domain/notification/LockScreenPrivacy.kt` (+ test), `NixNotifications.kt`, Settings screen + ViewModel, `Strings` / `ArabicStrings` | S |
 | Today builder | `domain/notification/TodaySummary.kt` (+ tests: no quit info without opt-in, nearest event, next reminder, Arabic plurals) | S-M |
 | Today channel and posting | `NotificationChannels.kt` (new `nixura_today`, freeze list before release), `NixNotifications.kt` (ongoing, chronometer, actions, delete intent), re-post hooks beside `WidgetUpdater.requestRefresh`, midnight refresh | M |
 | MetricStyle branch (API 37) | `NixNotifications.kt` | S |
@@ -226,8 +250,8 @@ adb shell settings get secure lock_screen_allow_private_notifications
 adb shell settings get secure lock_screen_show_silent_notifications
 ```
 
-1. `1` for the second means "show all content": then today's quit milestone shows in full on the lock screen (the
-   privacy finding). Confirm by triggering a milestone and locking the phone.
+1. `1` for the second means "show all content": then today's quit milestone should show in full on the lock
+   screen (the privacy finding). Confirm by triggering a milestone and locking the phone.
 2. Post a LOW-importance notification from the Coach channel (daily check-in), lock the phone, see whether it shows.
 3. After building item 2: swipe NixUra away from recents and check the Today notification is still there; reboot and
    check it is re-posted on boot.
@@ -247,6 +271,12 @@ Official Android:
 - [fgs](https://developer.android.com/develop/background-work/services/fgs/service-types): FGS types, `specialUse` Play review
 - [qs](https://developer.android.com/develop/ui/views/quicksettings-tiles): Quick Settings tiles
 
+Android 15 source:
+- [src-notif](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/android/app/Notification.java): the default redacted view (`makePublicContentView`)
+- [src-redact](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/packages/SystemUI/src/com/android/systemui/statusbar/NotificationLockscreenUserManagerImpl.java): when redaction applies (`needsRedaction`)
+- [src-hide](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/packages/SystemUI/src/com/android/systemui/statusbar/notification/interruption/KeyguardNotificationVisibilityProvider.kt): what is hidden on the lock screen
+- [src-prefs](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/notification/PreferencesHelper.java): fields apps cannot set on a channel
+
 Other:
 - [ac-lsw](https://www.androidcentral.com/apps-software/google-is-bringing-widgets-to-phone-lock-screens-with-android-16-qpr1): Google's statement on lock-screen widgets in AOSP; news site, no official developer page found
 - OPPO ColorOS 16 eligible devices: https://www.oppo.com/en/coloros16/
@@ -265,3 +295,7 @@ Other:
 [ac-lsw]: https://www.androidcentral.com/apps-software/google-is-bringing-widgets-to-phone-lock-screens-with-android-16-qpr1
 [wk-acc]: https://developer.apple.com/documentation/widgetkit/creating-accessory-widgets-and-watch-complications
 [activitykit]: https://developer.apple.com/documentation/activitykit
+[src-notif]: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/android/app/Notification.java
+[src-redact]: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/packages/SystemUI/src/com/android/systemui/statusbar/NotificationLockscreenUserManagerImpl.java
+[src-hide]: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/packages/SystemUI/src/com/android/systemui/statusbar/notification/interruption/KeyguardNotificationVisibilityProvider.kt
+[src-prefs]: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/notification/PreferencesHelper.java
