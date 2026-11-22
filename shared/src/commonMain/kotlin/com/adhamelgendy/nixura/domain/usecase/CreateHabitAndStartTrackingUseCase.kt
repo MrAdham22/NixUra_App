@@ -7,10 +7,16 @@ import com.adhamelgendy.nixura.domain.validation.HabitNameValidator
 class CreateHabitAndStartTrackingUseCase(
     private val repository: HabitTrackingRepository,
 ) {
-    suspend operator fun invoke(name: String, startAtEpochMillis: Long, colorArgb: Long? = null, cost: HabitCost? = null): Result<Long> {
+    suspend operator fun invoke(
+        name: String,
+        startAtEpochMillis: Long,
+        colorArgb: Long? = null,
+        cost: HabitCost? = null,
+        hideNameOutside: Boolean = false,
+    ): Result<Long> {
         return HabitNameValidator.validate(name).mapCatching { validName ->
             require(startAtEpochMillis >= 0) { "Start time must be non-negative" }
-            repository.createHabitAndStartTracking(validName, startAtEpochMillis, colorArgb, cost)
+            repository.createHabitAndStartTracking(validName, startAtEpochMillis, colorArgb, cost, hideNameOutside)
         }
     }
 }

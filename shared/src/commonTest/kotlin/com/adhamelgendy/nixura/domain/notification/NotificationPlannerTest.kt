@@ -13,10 +13,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
+import com.adhamelgendy.nixura.presentation.strings.stringsFor
 
 class NotificationPlannerTest {
     private val dayCalc = DayCalculator { 0L }
-    private val planner = NotificationPlanner(CoachEngine(), dayCalc)
+    private val planner = NotificationPlanner(CoachEngine(), dayCalc, { stringsFor(it) })
     private val now = dayCalc.epochMillisOf(2026, 10, 20, 10, 0)
 
     private fun event(id: Long, daysAhead: Int, vararg leads: Long) = Event(
@@ -108,7 +109,7 @@ class NotificationPlannerTest {
     fun notificationsAreWrittenInTheSavedLanguage() {
         val arabic = com.adhamelgendy.nixura.domain.locale.ContentLanguage { "en-US" }
         val kb = com.adhamelgendy.nixura.domain.coach.HabitKnowledgeBase(arabic)
-        val arPlanner = NotificationPlanner(CoachEngine(kb, arabic), dayCalc, arabic)
+        val arPlanner = NotificationPlanner(CoachEngine(kb, arabic), dayCalc, { stringsFor(it) }, arabic)
         val settings = AppSettings(languageCode = "ar")
         val plan = arPlanner.plan(now, settings, "A", listOf(bad(0)), emptyList(), listOf(event(1, 3, 3_600_000L, 0L)))
         assertTrue(plan.any { it.body == "تبدأ بعد ساعة واحدة." }, plan.toString())

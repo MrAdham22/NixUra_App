@@ -1,6 +1,7 @@
 package com.adhamelgendy.nixura.domain.notification
 
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
+import com.adhamelgendy.nixura.domain.recognition.HabitTopic
 
 /**
  * One local notification to be shown at [triggerAtEpochMillis]. [key] is stable and unique per notification
@@ -10,10 +11,13 @@ import com.adhamelgendy.nixura.domain.theme.HabitTheme
  *   also how plans stored before phase B are read back.
  * @param targetId the event or habit the notification is about (a tap opens it), or `null`.
  * @param theme for [NotificationKind.GOOD_HABIT]: the habit's stored theme (water and prayer get their own look).
+ * @param topic for [NotificationKind.GOOD_HABIT]: the kind of habit its card's glyph shows (see [NotificationGlyph]).
  * @param postKey the identity of the notification on screen. Several alarms (one per moment) may share it, so a new
  *   reminder for a habit replaces the one already showing instead of stacking. Defaults to [key].
  * @param actions buttons shown on the notification (phase C: "+1 glass", "Prayed", Snooze).
  * @param progress shown with the platform's own progress style ("3 / 8 glasses"); `null` = none.
+ * @param publicTitle the neutral line shown instead on a phone that hides sensitive content (see [LockScreenPrivacy]).
+ * @param namedHabitId the quit habit whose name the text shows, so it can be withdrawn if that name gets hidden.
  * @param timing how precisely the OS must fire it (see [NotificationTiming]).
  */
 data class PlannedNotification(
@@ -24,10 +28,13 @@ data class PlannedNotification(
     val kind: NotificationKind = NotificationKind.fromKey(key),
     val targetId: Long? = null,
     val theme: HabitTheme? = null,
+    val topic: HabitTopic? = null,
     val postKey: String = key,
     val actions: List<NotificationAction> = emptyList(),
     val progress: NotificationProgress? = null,
     val timing: NotificationTiming = NotificationTiming.ON_TIME,
+    val publicTitle: String? = null,
+    val namedHabitId: Long? = null,
 )
 
 /** How precisely a notification must fire. */
@@ -72,6 +79,12 @@ data class NotificationAction(
 /** Schedules local notifications. Each call replaces everything previously scheduled by the app. */
 interface NotificationScheduler {
     fun replaceAll(planned: List<PlannedNotification>)
+
+    /**
+     * Removes notifications already showing the name of a habit in [hiddenHabitIds] ([HiddenNameWithdrawal]).
+     * Called after [replaceAll], so no alarm with the old words is left to post one again.
+     */
+    fun withdrawNamesOf(hiddenHabitIds: Set<Long>) = Unit
 }
 
 /** Runtime notification permission (Android 13+). iOS/older Android: always granted or no-op. */

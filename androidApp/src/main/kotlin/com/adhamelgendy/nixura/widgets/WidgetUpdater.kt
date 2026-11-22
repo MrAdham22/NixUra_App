@@ -38,7 +38,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  *    (whole-day rollover of a counter, an event passing, or local midnight for the good-habit count);
  *  - a "+" / "-" tap redraws only the widgets that show that habit, right after its write ([redrawAfterTap]);
  *    redraws asked while one is running are merged into one (writes are never merged: every tap counts);
- *  - data changes while the process is alive redraw, after a 500 ms debounce, only the kinds whose data changed,
+ *  - data changes while the process is alive redraw, after a 500 ms debounce (quit counters at once: their name may
+ *    just have been hidden), only the kinds whose data changed,
  *    and skip a quick-log widget whose content is the same as already drawn (so a tap is not drawn twice);
  *  - boot, app update, time / date / time-zone changes and the launcher's own update requests redraw everything.
  */
@@ -187,9 +188,15 @@ internal object WidgetUpdater {
         scope.launch {
             val changes = KoinPlatform.getKoin().get<ObserveWidgetDataChangesUseCase>()
             // The use case already skips the first value: widgets are drawn for the current state.
+            val due = mutableSetOf<WidgetKind>()
             changes().collectLatest { kinds ->
-                delay(DEBOUNCE_MS)
-                refreshKinds(app, kinds)
+                // A newer change cancels this pass, so keep what is still to draw: a quit widget must not go on
+                // showing a name the user just hid because an event changed a moment later.
+                due += kinds
+                if (WidgetKind.QUIT_COUNTER !in due) delay(DEBOUNCE_MS) // quit changes are rare and may be a hidden name
+                val drawing = due.toSet()
+                refreshKinds(app, drawing)
+                due -= drawing
             }
         }
     }

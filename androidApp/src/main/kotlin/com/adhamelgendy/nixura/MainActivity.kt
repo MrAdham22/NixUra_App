@@ -24,6 +24,10 @@ import com.adhamelgendy.nixura.widgets.WidgetDeepLink
 import com.adhamelgendy.nixura.widgets.WidgetUpdater
 import org.koin.android.ext.android.inject
 import org.koin.compose.koinInject
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import com.adhamelgendy.nixura.domain.usecase.ObserveAnyNameHiddenUseCase
+import com.adhamelgendy.nixura.domain.notification.NotificationSyncService
 
 class MainActivity : ComponentActivity() {
 
@@ -31,7 +35,9 @@ class MainActivity : ComponentActivity() {
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* the voice sheet re-checks the permission itself */ }
 
     private val notificationPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* result handled by next isGranted() check */ }
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) refreshTodayNotification() // Today may have been turned on just before the permission
+        }
 
     // Prayer-time location (phase C): the callback waiting for the system dialog's answer.
     private var locationResult: ((Boolean) -> Unit)? = null
@@ -42,6 +48,8 @@ class MainActivity : ComponentActivity() {
         }
 
     private val appNavigator: Navigator by inject()
+    private val notificationSync: NotificationSyncService by inject()
+    private val anyNameHidden: ObserveAnyNameHiddenUseCase by inject()
     private val googleAuthorizer: AndroidGoogleAuthorizer by inject()
     private val socialSignIn: AndroidSocialSignIn by inject()
 
@@ -98,11 +106,23 @@ class MainActivity : ComponentActivity() {
             Build.VERSION.SDK_INT >= 33 && shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
         }
 
+        keepHiddenNamesOutOfRecents()
+
         setContent {
             val navigator = koinInject<Navigator>()
             BackHandler(enabled = navigator.canGoBack) { navigator.back() }
             App()
         }
+    }
+
+    /**
+     * The recent-apps preview is a picture of the open screen, names included, so it is off while any quit habit's
+     * name is hidden. Off until the first read too. Android 13+ only: before, FLAG_SECURE would also block screenshots.
+     */
+    private fun keepHiddenNamesOutOfRecents() {
+        if (Build.VERSION.SDK_INT < 33) return
+        setRecentsScreenshotEnabled(false)
+        lifecycleScope.launch { anyNameHidden().collect { hidden -> setRecentsScreenshotEnabled(!hidden) } }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -123,5 +143,10 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         // Cheap resync so widgets match what the user just saw in the app.
         WidgetUpdater.requestRefresh(applicationContext)
+        refreshTodayNotification() // e.g. its type was just switched on in system settings
+    }
+
+    private fun refreshTodayNotification() {
+        lifecycleScope.launch { notificationSync.refreshToday() }
     }
 }

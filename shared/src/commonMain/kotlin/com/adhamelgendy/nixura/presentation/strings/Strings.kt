@@ -7,6 +7,10 @@ import com.adhamelgendy.nixura.domain.model.EventCategory
 import com.adhamelgendy.nixura.domain.reminder.HabitReminderCopy
 import com.adhamelgendy.nixura.domain.reminder.Prayer
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
+import com.adhamelgendy.nixura.domain.notification.LockScreenCopy
+import com.adhamelgendy.nixura.domain.notification.TodayCopy
+import com.adhamelgendy.nixura.presentation.util.formatClockMinutes
+import com.adhamelgendy.nixura.domain.notification.TodayClock
 
 /**
  * All user-visible UI text. Defaults are English. To add a language, subclass it and override only
@@ -23,7 +27,7 @@ import com.adhamelgendy.nixura.domain.theme.HabitTheme
  * Note: the offline coach's habit knowledge base (domain/coach) is English-only for now.
  */
 @Immutable
-open class Strings : HabitReminderCopy {
+open class Strings : HabitReminderCopy, LockScreenCopy, TodayCopy {
     // Navigation
     open val navHome: String = "Home"
     open val navQuit: String = "Quit"
@@ -1022,7 +1026,7 @@ open class Strings : HabitReminderCopy {
     // ---- end of UX B ----
 
     // ---- UX C: good-habit reminders (notification text, buttons, the reminders sheet). ----
-    open fun prayerName(prayer: Prayer): String = when (prayer) {
+    override fun prayerName(prayer: Prayer): String = when (prayer) {
         Prayer.FAJR -> "Fajr"
         Prayer.DHUHR -> "Dhuhr"
         Prayer.ASR -> "Asr"
@@ -1121,6 +1125,69 @@ open class Strings : HabitReminderCopy {
     open val pauseForToday: String = "For today"
     open val pauseForWeek: String = "For 1 week"
     // ---- end of UX C ----
+
+    // ---- UX D: lock screen, names hidden outside the app, the Today notification. ----
+    // What a phone that hides sensitive content shows instead. Never a name.
+    override fun lockScreenEvent(inText: String?): String = if (inText == null) "Event now" else "Event in $inText"
+    override fun lockScreenMilestone(): String = "A milestone reached"
+    override fun lockScreenCoach(): String = "A note from your coach"
+
+    // A quit habit's "Hide name outside the app": the add / edit form and the card's long-press sheet.
+    open val hideNameTitle: String = "Hide name outside the app"
+    open val hideNameHint: String =
+        "Notifications and widgets keep your days and streak, without the name. Inside NixUra nothing changes."
+    open val hideNameLimits: String =
+        "People may still see that you're quitting something, just not what. Notifications shown earlier stay in your phone's history. " +
+            "The recent-apps preview is hidden too (Android 13 or newer). The name still syncs to your account, and goes to the online coach if you allowed it."
+    open val hideNameConfirm: String = "Hide name"
+
+    /** The row in a quit card's long-press sheet. */
+    open fun hideNameSheetRow(on: Boolean): String = "$hideNameTitle: ${if (on) "On" else "Off"}"
+
+    // The Today notification. It is readable on a locked screen: never an event's name or a quit habit's name.
+    override fun todayTitle(done: Int, total: Int): String = "Today: $done of $total done"
+    override fun todayTitleNoHabits(): String = "Today"
+    override fun todayWater(count: Int, target: Int): String = "💧 $count of $target"
+    override fun todayPrayers(count: Int, target: Int): String = "🕌 $count of $target"
+    override fun todayHabit(name: String, count: Int, target: Int): String = "$name: $count of $target"
+    override fun todayMore(count: Int): String = "+$count more"
+    override fun todayNext(label: String, minutesOfDay: Int): String = "Next: $label ${formatClockMinutes(minutesOfDay, this)}"
+    override fun todayEvent(daysAway: Long, minutesOfDay: Int?): String = when {
+        daysAway <= 0L && minutesOfDay != null -> "Event today, ${formatClockMinutes(minutesOfDay, this)}"
+        daysAway <= 0L -> "Event today"
+        daysAway == 1L -> "Event tomorrow"
+        else -> "Event in $daysAway days"
+    }
+    override fun todayStreak(days: Long): String = when (days) {
+        0L -> "Quit streak: under a day"
+        1L -> "Quit streak: 1 day"
+        else -> "Quit streak: $days days"
+    }
+    override fun todayMetricDone(): String = "Done"
+    override fun todayMetricNext(label: String): String = "Next: $label"
+    override fun todayMetricClock(minutesOfDay: Int): TodayClock {
+        val hour = minutesOfDay / 60
+        val minute = (minutesOfDay % 60).toString().padStart(2, '0')
+        return TodayClock("${if (hour % 12 == 0) 12 else hour % 12}:$minute", if (hour < 12) am else pm)
+    }
+    override fun todayHide(): String = "Hide today"
+    override fun todayActionPrayed(prayer: Prayer): String = "${prayerName(prayer)} prayed ✓"
+
+    // Today's controls: Settings, a good habit's long-press sheet, the offer after a second good habit.
+    open val todaySettingTitle: String = "Today on the lock screen"
+    open val todaySettingHint: String = "One silent notification with today's progress and what's next. Swipe it away and it returns tomorrow."
+    open val todayHiddenUntilTomorrow: String = "Hidden for today. It returns tomorrow, or turn it off and on to show it now."
+    open val todayChannelOff: String = "Turned off in system settings."
+    open val todayStreakTitle: String = "Show quit streaks on Today"
+    open val todayStreakHint: String = "Your longest current streak, never the habit's name."
+    open fun todaySheetRow(on: Boolean): String = "$todaySettingTitle: ${if (on) "On" else "Off"}"
+    open val todayOfferTitle: String = "Show today's progress on the lock screen?"
+    open val todayOfferBody: String =
+        "One silent notification with your good habits and what's next. Never a quit habit's or an event's name. " +
+            "You can swipe it away, or turn it off in Settings."
+    open val todayOfferConfirm: String = "Show it"
+    open val notificationAskTodayReason: String = "So NixUra can show today's progress on your lock screen. It never makes a sound."
+    // ---- end of UX D ----
 }
 
 /** One question and its answer on the Help screen. */

@@ -82,7 +82,8 @@ sealed interface QuitWidgetState {
 
     data class Active(
         val habitId: Long,
-        val name: String,
+        /** `null` = the user hid the name outside the app; "Clear for" takes its place. */
+        val name: String?,
         val elapsedMillis: Long,
         /** Start of the current clean period; `null` if tracking never started. */
         val periodStartEpochMillis: Long?,

@@ -37,13 +37,20 @@ class HabitTrackingRepositoryImpl(
         }
     }
 
-    override suspend fun createHabitAndStartTracking(name: String, startAtEpochMillis: Long, colorArgb: Long?, cost: HabitCost?): Long {
+    override suspend fun createHabitAndStartTracking(
+        name: String,
+        startAtEpochMillis: Long,
+        colorArgb: Long?,
+        cost: HabitCost?,
+        hideNameOutside: Boolean,
+    ): Long {
         val createdAt = clock.nowEpochMillis()
         return habitWriteDao.createHabitWithStartEvent(
             habit = HabitEntity(
                 name = name,
                 createdAtEpochMillis = createdAt,
                 colorArgb = colorArgb,
+                hideNameOutside = hideNameOutside,
             ).withCost(cost),
             startEvent = HabitEventEntity(
                 habitId = 0,
@@ -72,9 +79,14 @@ class HabitTrackingRepositoryImpl(
         )
     }
 
-    override suspend fun updateHabit(habitId: Long, name: String, colorArgb: Long?) {
+    override suspend fun updateHabit(habitId: Long, name: String, colorArgb: Long?, hideNameOutside: Boolean) {
         habitDao.getById(habitId) ?: throw IllegalArgumentException("Habit not found")
-        habitDao.updateDetails(habitId, name, colorArgb, clock.nowEpochMillis())
+        habitDao.updateDetails(habitId, name, colorArgb, hideNameOutside, clock.nowEpochMillis())
+    }
+
+    override suspend fun setHideNameOutside(habitId: Long, hidden: Boolean) {
+        habitDao.getById(habitId) ?: throw IllegalArgumentException("Habit not found")
+        habitDao.setHideNameOutside(habitId, hidden, clock.nowEpochMillis())
     }
 
     override suspend fun updateCost(habitId: Long, cost: HabitCost?) {

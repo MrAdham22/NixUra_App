@@ -41,6 +41,8 @@ fun platformModule() = module {
     single<NotificationScheduler> { NoOpNotificationScheduler }
     single<NotificationPermissionGateway> { AlwaysGrantedPermissionGateway }
     single<ReminderCapabilities> { AlwaysAvailableReminderCapabilities }
+    // iOS has no ongoing notification, so "Today" is not offered there (lock-screen widgets will be its equivalent).
+    single<com.adhamelgendy.nixura.domain.notification.TodayPresenter> { com.adhamelgendy.nixura.domain.notification.NoOpTodayPresenter }
     // Prayer-time location (phase C): CLLocationManager is not wired yet, and neither is the iOS notification
     // scheduler, so the reminders sheet says prayer reminders are not available here. Unverified: needs a Mac.
     single<com.adhamelgendy.nixura.domain.reminder.DeviceLocationGateway> { com.adhamelgendy.nixura.domain.reminder.UnavailableDeviceLocation }

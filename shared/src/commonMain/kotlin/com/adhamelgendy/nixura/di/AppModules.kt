@@ -111,7 +111,12 @@ fun appModule() = module {
     single<CoachResponder> { RuleBasedCoachResponder(get(), get()) }
 
     // Notifications
-    single { NotificationPlanner(get(), get(), get()) }
+    single<com.adhamelgendy.nixura.domain.notification.LockScreenCopyProvider> {
+        com.adhamelgendy.nixura.domain.notification.LockScreenCopyProvider { language ->
+            com.adhamelgendy.nixura.presentation.strings.stringsFor(language)
+        }
+    }
+    single { NotificationPlanner(get(), get(), get(), get()) }
     // Good-habit reminders (phase C): the words come from the app's Strings / ArabicStrings.
     single<com.adhamelgendy.nixura.domain.reminder.ReminderDeviceRepository> {
         com.adhamelgendy.nixura.data.repository.ReminderDeviceRepositoryImpl(get())
@@ -121,12 +126,19 @@ fun appModule() = module {
             com.adhamelgendy.nixura.presentation.strings.stringsFor(language)
         }
     }
-    single { com.adhamelgendy.nixura.domain.reminder.HabitReminderPlanner(get(), get()) }
+    single { com.adhamelgendy.nixura.domain.reminder.HabitReminderPlanner(get(), get(), get()) }
+    single {
+        com.adhamelgendy.nixura.domain.notification.TodaySummaryBuilder(get()) { language ->
+            com.adhamelgendy.nixura.presentation.strings.stringsFor(language)
+        }
+    }
     single {
         NotificationSyncService(
             get(), get(), get(), get(), get(), get(), get(), get(),
             reminderPlanner = get(),
             reminderDevice = get(),
+            todayBuilder = get(),
+            today = get(),
         )
     }
 
@@ -135,6 +147,8 @@ fun appModule() = module {
     factory { CreateHabitAndStartTrackingUseCase(get()) }
     factory { RecordRelapseUseCase(get()) }
     factory { UpdateHabitUseCase(get()) }
+    factory { com.adhamelgendy.nixura.domain.usecase.SetHideNameOutsideUseCase(get()) }
+    factory { com.adhamelgendy.nixura.domain.usecase.ObserveAnyNameHiddenUseCase(get()) }
     // Use cases — good habits
     factory { ObserveGoodHabitsUseCase(get()) }
     factory { CreateGoodHabitUseCase(get(), get()) }
@@ -178,11 +192,13 @@ fun appModule() = module {
             recordRelapse = get(),
             clock = get(),
             updateHabit = get(),
+            setHideNameOutside = get(),
             pendingDeletions = get(),
             topics = get(),
         )
     }
     viewModel { com.adhamelgendy.nixura.presentation.goodhabits.reminders.HabitRemindersViewModel(get(), get(), get(), get(), get()) }
+    viewModel { com.adhamelgendy.nixura.presentation.today.TodayViewModel(get(), get(), get(), get(), get(), get(), get()) }
     viewModel { GoodHabitsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { EventsViewModel(get(), get(), get(), get(), get()) }
     viewModel { CoachViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }

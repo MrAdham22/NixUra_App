@@ -22,6 +22,8 @@
     <string name="channel_coach_description">Your daily check-in and notes from the coach</string>
     <string name="channel_app_name">App &amp; account</string>
     <string name="channel_app_description">Sync problems and account messages</string>
+    <string name="channel_today_name">Today on lock screen</string>
+    <string name="channel_today_description">One silent notification with today\'s progress, if you turn it on</string>
     <string name="channel_group_habits">Habits</string>
     <string name="channel_group_events">Events</string>
     <string name="channel_group_coach_app">Coach &amp; app</string>

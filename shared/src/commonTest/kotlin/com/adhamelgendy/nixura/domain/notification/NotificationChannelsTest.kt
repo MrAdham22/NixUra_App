@@ -13,6 +13,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
+import com.adhamelgendy.nixura.presentation.strings.stringsFor
 
 class NotificationChannelsTest {
 
@@ -38,8 +39,16 @@ class NotificationChannelsTest {
 
     @Test
     fun onlyTimeBoundKindsMakeSound() {
-        val loud = NixChannel.entries.filter { it.importance == ChannelImportance.DEFAULT }.toSet()
+        val loud = NixChannel.entries.filter { it.importance == ChannelImportance.DEFAULT && !it.silent }.toSet()
         assertEquals(setOf(NixChannel.EVENTS, NixChannel.GOOD_HABITS), loud)
+    }
+
+    @Test
+    fun todayIsDefaultImportanceWithoutASound() {
+        val today = NotificationChannels.channelFor(NotificationKind.TODAY)
+        assertEquals("nixura_today", today.id)
+        assertEquals(ChannelImportance.DEFAULT, today.importance) // LOW can be filtered off the lock screen
+        assertTrue(today.silent)
     }
 
     @Test
@@ -75,7 +84,7 @@ class NotificationChannelsTest {
         val now = days.epochMillisOf(2026, 10, 20, 10, 0)
         val event = Event(5, "Trip", EventCategory.TRAVEL, now + 2.days.inWholeMilliseconds, listOf(1.hours.inWholeMilliseconds), now)
         val quit = HabitTracking(Habit(7, "Smoking", 0), emptyList(), TrackingSnapshot(now - 1_000, 1_000, 1_000))
-        val plan = NotificationPlanner(CoachEngine(), days).plan(now, AppSettings(), "A", listOf(quit), emptyList(), listOf(event))
+        val plan = NotificationPlanner(CoachEngine(), days, { stringsFor(it) }).plan(now, AppSettings(), "A", listOf(quit), emptyList(), listOf(event))
 
         plan.forEach { assertEquals(NotificationKind.fromKey(it.key), it.kind, it.key) } // explicit kind agrees with the key
         assertTrue(plan.filter { it.kind == NotificationKind.EVENT }.all { it.targetId == 5L })

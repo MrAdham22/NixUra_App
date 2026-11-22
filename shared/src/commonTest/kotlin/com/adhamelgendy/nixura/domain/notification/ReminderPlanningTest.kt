@@ -9,6 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import com.adhamelgendy.nixura.presentation.strings.stringsFor
 
 /**
  * The OS schedule is always replaced by the plan built from the stored event, so an edited or removed reminder
@@ -16,7 +17,7 @@ import kotlin.test.assertTrue
  */
 class ReminderPlanningTest {
     private val dayCalc = DayCalculator { 0L }
-    private val planner = NotificationPlanner(CoachEngine(), dayCalc)
+    private val planner = NotificationPlanner(CoachEngine(), dayCalc, { stringsFor(it) })
     private val now = dayCalc.epochMillisOf(2026, 10, 20, 10, 0)
     private val hour = 3_600_000L
     private val day = 24 * hour

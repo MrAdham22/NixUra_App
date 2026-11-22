@@ -30,4 +30,6 @@ data class HabitEntity(
     @ColumnInfo(name = "cost_units_per_pack") val costUnitsPerPack: Int? = null,
     @ColumnInfo(name = "cost_currency") val costCurrency: String? = null,
     @ColumnInfo(name = "cost_per_day_in_packs") val costPerDayInPacks: Boolean? = null,
+    // "Hide name outside the app" (v10).
+    @ColumnInfo(name = "hide_name_outside", defaultValue = "0") val hideNameOutside: Boolean = false,
 )

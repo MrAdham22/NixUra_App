@@ -30,7 +30,12 @@ internal data class HabitPayload(
     val colorArgb: Long? = null,
     /** Money-saved tracker; absent in records from older app versions (= no tracker). */
     val cost: HabitCostPayload? = null,
+    /** "Hide name outside the app" (v10), so a second phone does not show the name. Absent in older records = false. */
+    val hideNameOutside: Boolean = false,
 )
+
+/** A guest's habit joining the same habit in the account: hidden on either stays hidden. */
+internal fun hiddenAfterMerge(local: Boolean, remote: Boolean): Boolean = local || remote
 
 @Serializable
 internal data class HabitCostPayload(
@@ -120,7 +125,7 @@ internal class RoomSyncLocalStore(
         val out = ArrayList<SyncRecord>()
         val room = { limit - out.size }
         dao.dirtyHabits(limit).forEach {
-            out += record(SyncType.Habit, it.syncId, it.updatedAtEpochMillis, it.deletedAtEpochMillis, HabitPayload.serializer(), HabitPayload(it.name, it.createdAtEpochMillis, it.archivedAtEpochMillis, it.colorArgb, it.costPayload()))
+            out += record(SyncType.Habit, it.syncId, it.updatedAtEpochMillis, it.deletedAtEpochMillis, HabitPayload.serializer(), HabitPayload(it.name, it.createdAtEpochMillis, it.archivedAtEpochMillis, it.colorArgb, it.costPayload(), it.hideNameOutside))
         }
         if (room() > 0) dao.dirtyGoodHabits(room()).forEach {
             out += record(SyncType.GoodHabit, it.syncId, it.updatedAtEpochMillis, it.deletedAtEpochMillis, GoodHabitPayload.serializer(), GoodHabitPayload(it.name, it.dailyTarget, it.colorArgb, it.createdAtEpochMillis, it.archivedAtEpochMillis, it.weeklyTarget, it.theme, it.waterGoalMl, it.waterServingMl, it.waterUnit, it.reminderEnabled, it.reminderTime, it.reminderWindowStart, it.reminderWindowEnd, it.reminderPausedUntil))
@@ -232,18 +237,26 @@ internal class RoomSyncLocalStore(
         }
         val p = decode(HabitPayload.serializer(), r) ?: return
         var existing = dao.habitBySyncId(r.id)
+        var mergedHidden: Boolean? = null // set when a guest's habit joins the account's
         if (existing == null && adopt && !r.deleted && p.archivedAt == null) {
             existing = dao.guestHabitNamed(normalize(p.name))?.also {
                 dao.rekeyHabit(it.id, r.id)
                 merged += it.id
+                mergedHidden = hiddenAfterMerge(local = it.hideNameOutside, remote = p.hideNameOutside)
             }?.copy(syncId = r.id)
         }
         if (existing == null) {
-            if (!r.deleted) dao.insertHabit(HabitEntity(name = p.name, createdAtEpochMillis = p.createdAt, archivedAtEpochMillis = p.archivedAt, colorArgb = p.colorArgb, syncId = r.id, updatedAtEpochMillis = r.updatedAt, dirty = false).withCostPayload(p.cost))
+            if (!r.deleted) dao.insertHabit(HabitEntity(name = p.name, createdAtEpochMillis = p.createdAt, archivedAtEpochMillis = p.archivedAt, colorArgb = p.colorArgb, hideNameOutside = p.hideNameOutside, syncId = r.id, updatedAtEpochMillis = r.updatedAt, dirty = false).withCostPayload(p.cost))
             return
         }
-        if (!SyncRules.remoteWins(existing.dirty, existing.updatedAtEpochMillis, r.updatedAt)) return
-        val updated = existing.copy(name = p.name, createdAtEpochMillis = p.createdAt, archivedAtEpochMillis = p.archivedAt, colorArgb = p.colorArgb, updatedAtEpochMillis = r.updatedAt, deletedAtEpochMillis = deletedAt(r), dirty = false).withCostPayload(p.cost)
+        if (!SyncRules.remoteWins(existing.dirty, existing.updatedAtEpochMillis, r.updatedAt)) {
+            if (mergedHidden == true && !existing.hideNameOutside) dao.updateHabit(existing.copy(hideNameOutside = true, dirty = true))
+            return
+        }
+        val hidden = mergedHidden ?: p.hideNameOutside
+        val upload = hidden != p.hideNameOutside // hidden only on this phone: the account has to learn it
+        val updatedAt = if (upload) maxOf(clock.nowEpochMillis(), r.updatedAt + 1) else r.updatedAt
+        val updated = existing.copy(name = p.name, createdAtEpochMillis = p.createdAt, archivedAtEpochMillis = p.archivedAt, colorArgb = p.colorArgb, hideNameOutside = hidden, updatedAtEpochMillis = updatedAt, deletedAtEpochMillis = deletedAt(r), dirty = upload).withCostPayload(p.cost)
         if (updated != existing) dao.updateHabit(updated)
     }
 

@@ -11,6 +11,8 @@ data class Habit(
     val colorArgb: Long? = null,
     /** What the habit used to cost, for the money-saved tracker; `null` = not tracked. */
     val cost: HabitCost? = null,
+    /** The user's choice to keep this name off everything outside the app (see `domain/privacy/OutsideAppPrivacy`). */
+    val hideNameOutside: Boolean = false,
 ) {
     val isArchived: Boolean get() = archivedAtEpochMillis != null
 }

@@ -168,9 +168,14 @@ class CoachEngine(
             name.isEmpty() -> tr("Daily check-in", "رسالة اليوم")
             else -> tr("Daily check-in, $name", "رسالة اليوم يا $name")
         }
-        val focus = snapshot.badHabits.minByOrNull { it.elapsed }
+        val focus = checkInFocus(snapshot)
         val pendingGood = snapshot.goodHabits.firstOrNull { it.pendingToday }
         val body = when {
+            // Hidden outside the app: the days and the encouragement, which is generic, without the name.
+            focus != null && focus.name.isEmpty() -> tr(
+                "${dur(focus.elapsed)} clear. ${motivation(focus.name, focus.elapsed, seed)}",
+                "صامد منذ ${dur(focus.elapsed)}. ${motivation(focus.name, focus.elapsed, seed)}",
+            )
             focus != null -> tr(
                 "${displayName(focus.name)}: ${dur(focus.elapsed)} clear. ${motivation(focus.name, focus.elapsed, seed)}",
                 "${displayName(focus.name)}: صامد منذ ${dur(focus.elapsed)}. ${motivation(focus.name, focus.elapsed, seed)}",
@@ -184,10 +189,17 @@ class CoachEngine(
         return CoachNote(title, body)
     }
 
-    fun milestoneNote(habitName: String, reached: Duration): CoachNote {
-        val category = knowledge.match(habitName)
-        val milestone = category.milestones.lastOrNull { it.after <= reached }
-        val title = tr("${dur(reached)} clear: ${displayName(habitName)}", "صامد منذ ${dur(reached)}: ${displayName(habitName)}")
+    /** The quit habit the daily check-in is about: the newest streak, which needs it most. */
+    fun checkInFocus(snapshot: CoachSnapshot): BadHabitSnapshot? = snapshot.badHabits.minByOrNull { it.elapsed }
+
+    /** [habitName] `null` = hidden outside the app: no name, and no category text either, which would name it too. */
+    fun milestoneNote(habitName: String?, reached: Duration): CoachNote {
+        val milestone = habitName?.let { name -> knowledge.match(name).milestones.lastOrNull { it.after <= reached } }
+        val title = if (habitName == null) {
+            tr("${dur(reached)} clear", "صامد منذ ${dur(reached)}")
+        } else {
+            tr("${dur(reached)} clear: ${displayName(habitName)}", "صامد منذ ${dur(reached)}: ${displayName(habitName)}")
+        }
         val body = milestone?.let { "${it.title}. ${it.detail}" }
             ?: tr("You reached ${dur(reached)}. Keep going — you are proving it to yourself.", "وصلت إلى ${dur(reached)}. واصل، فأنت تثبت ذلك لنفسك.")
         return CoachNote(title, body)

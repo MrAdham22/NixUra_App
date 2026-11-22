@@ -41,6 +41,7 @@ The pure parts live in shared code so they are unit-tested and iOS can mirror th
 | `nixura_quit_progress` (new) | Quit progress / تقدّم الإقلاع | LOW (silent) | Habits | streak milestones |
 | `nixura_coach` (new) | Coach / المدرب | LOW (silent) | Coach & app | daily check-in, coach notes |
 | `nixura_app` (new) | App & account / التطبيق والحساب | LOW (silent) | Coach & app | sync problems, account (nothing posts here yet) |
+| `nixura_today` (phase D) | Today on lock screen / اليوم على شاشة القفل | DEFAULT, no sound or vibration | Habits | the opt-in ongoing Today notification |
 
 - **Why the old ID is kept for events:** it already carried event reminders, so a phone that has the app keeps the
   user's sound/silence choice for it. Only the name changed (allowed; importance cannot change after creation).
@@ -55,12 +56,13 @@ The pure parts live in shared code so they are unit-tested and iOS can mirror th
 | Type | Small icon | Accent | Category | Tap opens |
 |---|---|---|---|---|
 | Event | calendar | `#862549` | `event` | Events tab → that event |
-| Good habit (default) | leaf | `#E8BCB9` | `reminder` | Build tab → habit detail |
+| Good habit (default) | its card's glyph; the NixUra mark if not recognised or a bundle (phase D) | `#E8BCB9` | `reminder` | Build tab → habit detail |
 | Good habit, theme WATER | drop | `#5BB6EC` (water card blue) | `reminder` | same |
 | Good habit, theme PRAYER | arch + star | `#F1B451` (prayer gold) | `reminder` | same |
 | Quit milestone | broken chain | `#AE445A` | `status` | Quit tab → habit detail |
 | Coach | sparkle | `#F39F5A` | `recommendation` | Coach tab |
-| App | NixUra leaf | `#F39F5A` | `status` | Home |
+| App | NixUra mark (phase D) | `#F39F5A` | `status` | Home |
+| Today (phase D) | NixUra mark | `#E8BCB9` | `status` | Home |
 
 Icons: `res/drawable/ic_notif_*.xml` (white strokes; Android tints them).
 

@@ -23,12 +23,21 @@ enum class NixChannelGroup(val id: String) {
  * [EVENTS] keeps the pre-phase-B ID `nixura_reminders` (it already carried event reminders), so existing
  * installs keep their channel settings; only its name changed ("Reminders & coaching" → "Events").
  */
-enum class NixChannel(val id: String, val group: NixChannelGroup, val importance: ChannelImportance) {
+enum class NixChannel(
+    val id: String,
+    val group: NixChannelGroup,
+    val importance: ChannelImportance,
+    /** Created with no sound and no vibration, whatever its importance. */
+    val silent: Boolean = false,
+) {
     EVENTS("nixura_reminders", NixChannelGroup.EVENTS, ChannelImportance.DEFAULT),
     GOOD_HABITS("nixura_good_habits", NixChannelGroup.HABITS, ChannelImportance.DEFAULT),
     QUIT_PROGRESS("nixura_quit_progress", NixChannelGroup.HABITS, ChannelImportance.LOW),
     COACH("nixura_coach", NixChannelGroup.COACH_AND_APP, ChannelImportance.LOW),
     APP("nixura_app", NixChannelGroup.COACH_AND_APP, ChannelImportance.LOW),
+
+    /** DEFAULT, not LOW: phones can keep LOW notifications off the lock screen, the one place this is for. */
+    TODAY("nixura_today", NixChannelGroup.HABITS, ChannelImportance.DEFAULT, silent = true),
 }
 
 /** Pure mapping from a notification's kind to where and how it is posted. Shared so iOS can mirror it. */
@@ -43,6 +52,7 @@ object NotificationChannels {
         NotificationKind.QUIT_MILESTONE -> NixChannel.QUIT_PROGRESS
         NotificationKind.COACH -> NixChannel.COACH
         NotificationKind.APP -> NixChannel.APP
+        NotificationKind.TODAY -> NixChannel.TODAY
     }
 
     /**

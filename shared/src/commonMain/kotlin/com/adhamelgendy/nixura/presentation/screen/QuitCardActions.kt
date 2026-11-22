@@ -20,7 +20,7 @@ import com.adhamelgendy.nixura.presentation.navigation.Route
 import com.adhamelgendy.nixura.presentation.strings.LocalStrings
 import org.koin.compose.viewmodel.koinViewModel
 
-/** What a quit card can do from a list: its options sheet and the craving shortcut. */
+/** What a quit card can do from a list: its options sheet (with "Hide name outside the app") and the craving shortcut. */
 class QuitCardActions(
     val openOptions: (HabitCardUiModel) -> Unit,
     val craving: (HabitCardUiModel) -> Unit,
@@ -37,6 +37,7 @@ fun rememberQuitCardActions(navigator: Navigator, deleteFlow: DeleteFlow): QuitC
     // The same coach instance the Coach tab shows (one view model per activity).
     val coachVm: CoachViewModel = koinViewModel()
     var slipFor by remember { mutableStateOf<HabitCardUiModel?>(null) }
+    var hideFor by remember { mutableStateOf<HabitCardUiModel?>(null) }
     val addToHome = rememberAddToHomeAction()
 
     slipFor?.let { habit ->
@@ -54,6 +55,21 @@ fun rememberQuitCardActions(navigator: Navigator, deleteFlow: DeleteFlow): QuitC
         )
     }
 
+    // Hiding says what it does and what it cannot do first; showing the name again just happens.
+    hideFor?.let { habit ->
+        ConfirmDialog(
+            title = s.hideNameTitle,
+            message = "${s.hideNameHint}\n\n${s.hideNameLimits}",
+            confirmText = s.hideNameConfirm,
+            cancelText = s.cancel,
+            onConfirm = {
+                habitsVm.onHideNameOutside(habit.habitId, true)
+                hideFor = null
+            },
+            onDismiss = { hideFor = null },
+        )
+    }
+
     return QuitCardActions(
         openOptions = { habit ->
             deleteFlow.open(
@@ -62,6 +78,9 @@ fun rememberQuitCardActions(navigator: Navigator, deleteFlow: DeleteFlow): QuitC
                 listOf(
                     SheetAction(s.slipAction, NixIcon.Reset) { slipFor = habit },
                     SheetAction(s.editHabit, NixIcon.Pencil) { navigator.push(Route.BadHabitForm(habit.habitId)) },
+                    SheetAction(s.hideNameSheetRow(habit.hideNameOutside), if (habit.hideNameOutside) NixIcon.EyeOff else NixIcon.Eye) {
+                        if (habit.hideNameOutside) habitsVm.onHideNameOutside(habit.habitId, false) else hideFor = habit
+                    },
                 ) + listOfNotNull(addToHome?.let { pin -> SheetAction(s.widgetAddToHome, NixIcon.Home) { pin(WidgetKind.QUIT_COUNTER, habit.habitId) } }),
             )
         },

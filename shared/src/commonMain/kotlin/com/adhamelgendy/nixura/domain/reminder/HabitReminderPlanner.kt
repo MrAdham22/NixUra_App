@@ -13,6 +13,7 @@ import com.adhamelgendy.nixura.domain.notification.NotificationTiming
 import com.adhamelgendy.nixura.domain.notification.PlannedNotification
 import com.adhamelgendy.nixura.domain.time.DayCalculator
 import kotlin.math.abs
+import com.adhamelgendy.nixura.domain.recognition.HabitTopicDetector
 
 /**
  * Pure planner for good-habit reminders (phase C). Turns habits, today's logs and this phone's reminder state into the
@@ -39,6 +40,8 @@ import kotlin.math.abs
 class HabitReminderPlanner(
     private val days: DayCalculator,
     private val copies: HabitReminderCopyProvider,
+    /** The card's own glyph rule, so a notification shows the same icon (D-lock-screen 4.2). */
+    private val topics: HabitTopicDetector,
 ) {
 
     fun plan(
@@ -55,8 +58,13 @@ class HabitReminderPlanner(
         // From yesterday: a window (or a late reminder) can reach past midnight.
         val planDays = (today - 1) until (today + HORIZON_DAYS)
         val waterTimes = placeWater(enabled.map { it.habit }, planDays, device.location)
+        val topicOf = enabled.associate { it.habit.id to topics.buildTopic(it.habit.name) }
         return planDays
-            .flatMap { day -> enabled.flatMap { item -> remindersFor(item, day, today, nowMillis, device, waterTimes, copy) } }
+            .flatMap { day ->
+                enabled.flatMap { item ->
+                    remindersFor(item, day, today, nowMillis, device, waterTimes, copy).map { it.copy(topic = topicOf[item.habit.id]) }
+                }
+            }
             .filter { it.triggerAtEpochMillis > earliest }
             .sortedBy { it.triggerAtEpochMillis }
     }

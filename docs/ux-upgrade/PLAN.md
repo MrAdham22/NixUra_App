@@ -27,7 +27,7 @@ Reminders exist to support the habit, not to raise engagement: no guilt, no dark
 | A2 | Done, merged 2026-11-21 (PR #17) | `feature/app-shortcuts` (deleted) | `docs/ux-upgrade/A2-app-shortcuts.md` | yes: owner device test passed 2026-11-21 |
 | B | Done, merged 2026-11-21 (PR #19) | `feature/notification-foundation` (deleted) | `docs/ux-upgrade/B-notifications.md` | yes: adb timing measurements + owner device test passed 2026-11-21 |
 | C | Done, merged 2026-11-22 (PR #21) | `feature/habit-reminders` (deleted) | `docs/ux-upgrade/C-reminders.md` | installed and `dumpsys alarm` checked; owner approved the merge 2026-11-22 |
-| D | Research merged 2026-11-22 (PR #22); all decisions taken (including habit icons in notifications); build next, in its own session | `docs/lock-screen-research` | `docs/ux-upgrade/D-lock-screen.md` | partly: hidden-content test passed 2026-11-22 (see the doc, section 6) |
+| D | Done, merged 2026-11-23 (PR #25) without the owner's device test | `feature/lock-screen-presence` | `docs/ux-upgrade/D-lock-screen.md` (section 7) | partly: installed, migration and alarms checked; lock screen not seen |
 
 Update this table at the end of every phase.
 
@@ -303,7 +303,7 @@ owner in the C session.
 - **Notification = the right moment, app-initiated, rare**: one nudge when the behaviour is due (prayer time, behind
   on water), with one action. It never duplicates the widget's dashboard (no "today's summary" notifications),
   with **one exception the owner approved on 2026-11-22**: the opt-in, silent "Today" lock-screen notification
-  (phase D, `D-lock-screen.md`; not built yet).
+  (phase D, `D-lock-screen.md`; built 2026-11-22).
 - Shared state: both write through the same use cases; each write refreshes widgets and re-plans reminders, so a
   glass logged on the widget cancels the pending water reminder, and "+1" from a notification moves the widget.
 - If a habit has a widget on the home screen, its reminder default stays the same (the widget does not prove the

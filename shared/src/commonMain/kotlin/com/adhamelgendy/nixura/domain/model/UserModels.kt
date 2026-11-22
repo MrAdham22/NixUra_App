@@ -26,6 +26,12 @@ data class AppSettings(
      * services, `false` = declined (offline coach only). Per device, never synced.
      */
     val aiCoachConsent: Boolean? = null,
+    /** The opt-in "Today" notification on the lock screen. Per device, never synced. */
+    val todayNotification: Boolean = false,
+    /** Today also shows the longest quit streak, without a name. Off until the user asks for it. Per device. */
+    val todayShowStreak: Boolean = false,
+    /** Today was offered once, when a second good habit was added. Per device. */
+    val todayOfferSeen: Boolean = false,
 )
 
 /** The language choice that follows the phone's language. */

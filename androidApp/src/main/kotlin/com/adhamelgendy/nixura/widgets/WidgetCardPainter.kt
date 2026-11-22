@@ -112,9 +112,9 @@ internal object WidgetCardPainter {
         return image.asAndroidBitmap()
     }
 
-    /** One of the app's line icons ([NixIcon]) in [color], [sizePx] square. */
-    fun icon(sizePx: Int, density: Float, icon: NixIcon, color: Color): Bitmap =
-        compose(sizePx, sizePx, density) { drawNixIcon(icon, color) }
+    /** One of the app's line icons ([NixIcon]) in [color], [sizePx] square, [strokeWidth] on the 24-unit grid. */
+    fun icon(sizePx: Int, density: Float, icon: NixIcon, color: Color, strokeWidth: Float = 1.8f): Bitmap =
+        compose(sizePx, sizePx, density) { drawNixIcon(icon, color, strokeWidth) }
 
     /**
      * The whole prayer card (`drawPrayerCard`: night sky, star tiling, mosque, moon, gold frame) clipped to the

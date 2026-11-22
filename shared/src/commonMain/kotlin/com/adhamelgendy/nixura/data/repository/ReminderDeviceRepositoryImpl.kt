@@ -37,6 +37,10 @@ class ReminderDeviceRepositoryImpl(private val dao: PreferenceDao) : ReminderDev
 
     override suspend fun clearSnooze(habitId: Long) = dao.delete(SNOOZE_PREFIX + habitId)
 
+    override suspend fun setTodayHiddenDay(day: Long?) {
+        if (day == null) dao.delete(KEY_TODAY_HIDDEN) else dao.upsertAll(listOf(PreferenceEntity(KEY_TODAY_HIDDEN, day.toString())))
+    }
+
     override suspend fun claimAction(token: String, nowEpochMillis: Long): Boolean = lock.withLock {
         val rows = dao.getAll()
         if (rows.any { it.key == HANDLED_PREFIX + token }) return@withLock false
@@ -55,6 +59,7 @@ class ReminderDeviceRepositoryImpl(private val dao: PreferenceDao) : ReminderDev
             runCatching { GeoPoint(lat.toDouble(), lon.toDouble()) }.getOrNull()
         },
         pausedUntilEpochMillis = map[KEY_PAUSED]?.toLongOrNull(),
+        todayHiddenDay = map[KEY_TODAY_HIDDEN]?.toLongOrNull(),
         snoozes = map.mapNotNull { (key, value) ->
             if (!key.startsWith(SNOOZE_PREFIX)) return@mapNotNull null
             val id = key.removePrefix(SNOOZE_PREFIX).toLongOrNull() ?: return@mapNotNull null
@@ -65,6 +70,7 @@ class ReminderDeviceRepositoryImpl(private val dao: PreferenceDao) : ReminderDev
     internal companion object {
         const val KEY_LOCATION = "device.reminders.location"
         const val KEY_PAUSED = "device.reminders.paused_until"
+        const val KEY_TODAY_HIDDEN = "device.today.hidden_day"
         const val SNOOZE_PREFIX = "device.reminders.snooze."
         const val HANDLED_PREFIX = "device.reminders.handled."
         const val KEEP_MILLIS = 2 * 24 * 60 * 60_000L

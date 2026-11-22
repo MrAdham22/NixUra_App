@@ -7,6 +7,8 @@ import com.adhamelgendy.nixura.domain.money.CostUnit
 import com.adhamelgendy.nixura.domain.notification.ReminderError
 import com.adhamelgendy.nixura.domain.reminder.Prayer
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
+import com.adhamelgendy.nixura.domain.coach.arDays
+import com.adhamelgendy.nixura.presentation.util.formatClockMinutes
 
 /**
  * Arabic text: friendly Modern Standard Arabic, written for the meaning rather than word for word. Counts go through
@@ -1146,6 +1148,62 @@ object ArabicStrings : Strings() {
     override val pauseForToday: String = "لليوم"
     override val pauseForWeek: String = "لأسبوع"
     // ---- end of UX C ----
+
+    // ---- UX D: lock screen, names hidden outside the app, the Today notification. ----
+    override fun lockScreenEvent(inText: String?): String = if (inText == null) "مناسبة الآن" else "مناسبة بعد ${afterPreposition(inText)}"
+    override fun lockScreenMilestone(): String = "وصلت إلى محطة جديدة"
+    override fun lockScreenCoach(): String = "ملاحظة من مدربك"
+
+    override val hideNameTitle: String = "إخفاء الاسم خارج التطبيق"
+    override val hideNameHint: String =
+        "تحتفظ الإشعارات والأدوات بأيامك وسلسلتك، دون الاسم. داخل NixUra لا يتغيّر شيء."
+    override val hideNameLimits: String =
+        "قد يرى الآخرون أنك تقلع عن شيء، دون أن يعرفوا ما هو. الإشعارات التي ظهرت سابقًا تبقى في سجل هاتفك. " +
+            "تُخفى أيضًا معاينة التطبيقات الأخيرة (أندرويد 13 أو أحدث). يظل الاسم يُزامَن مع حسابك، ويصل إلى المدرب عبر الإنترنت إن سمحت بذلك."
+    override val hideNameConfirm: String = "إخفاء الاسم"
+    override fun hideNameSheetRow(on: Boolean): String = "$hideNameTitle: ${if (on) "مفعّل" else "متوقف"}"
+
+    // A name may be in Latin letters: the leading RLM keeps the line right to left, the second keeps "3 من 8" in order.
+    override fun todayTitle(done: Int, total: Int): String = "اليوم: أنجزت $done من $total"
+    override fun todayTitleNoHabits(): String = "اليوم"
+    override fun todayWater(count: Int, target: Int): String = "💧 $count من $target"
+    override fun todayPrayers(count: Int, target: Int): String = "🕌 $count من $target"
+    override fun todayHabit(name: String, count: Int, target: Int): String = "\u200f$name: \u200f$count من $target"
+    override fun todayMore(count: Int): String = ArabicPlurals.format(
+        count.toLong(), "", "وعادة أخرى", "وعادتان أخريان", "و%d عادات أخرى", "و%d عادة أخرى", "و%d عادة أخرى",
+    )
+    override fun todayNext(label: String, minutesOfDay: Int): String = "التالي: $label \u200f${formatClockMinutes(minutesOfDay, this)}"
+    override fun todayEvent(daysAway: Long, minutesOfDay: Int?): String = when {
+        daysAway <= 0L && minutesOfDay != null -> "مناسبة اليوم، ${formatClockMinutes(minutesOfDay, this)}"
+        daysAway <= 0L -> "مناسبة اليوم"
+        daysAway == 1L -> "مناسبة غدًا"
+        else -> "مناسبة بعد ${afterPreposition(arDays(daysAway))}"
+    }
+    override fun todayStreak(days: Long): String =
+        if (days == 0L) "سلسلة الإقلاع: أقل من يوم" else "سلسلة الإقلاع: ${arDays(days)}"
+    override fun todayMetricDone(): String = "أُنجز"
+    override fun todayMetricNext(label: String): String = "التالي: $label"
+    override fun todayHide(): String = "أخفِ لليوم"
+    override fun todayActionPrayed(prayer: Prayer): String = "صلّيت ${prayerName(prayer)} ✓"
+
+    override val todaySettingTitle: String = "اليوم على شاشة القفل"
+    override val todaySettingHint: String = "إشعار صامت واحد بتقدّم اليوم وما يلي. اسحبه ليختفي، ويعود غدًا."
+    override val todayHiddenUntilTomorrow: String = "مخفي لليوم. يعود غدًا، أو أوقفه ثم فعّله ليظهر الآن."
+    override val todayChannelOff: String = "متوقف في إعدادات النظام."
+    override val todayStreakTitle: String = "أظهر سلسلة الإقلاع في «اليوم»"
+    override val todayStreakHint: String = "أطول سلسلة حالية، دون اسم العادة أبدًا."
+    override fun todaySheetRow(on: Boolean): String = "$todaySettingTitle: ${if (on) "مفعّل" else "متوقف"}"
+    override val todayOfferTitle: String = "هل تُظهر تقدّم اليوم على شاشة القفل؟"
+    override val todayOfferBody: String =
+        "إشعار صامت واحد بعاداتك الجيدة وما يلي. لا يذكر أبدًا اسم عادة تقلع عنها أو اسم مناسبة. " +
+            "يمكنك سحبه ليختفي، أو إيقافه من الإعدادات."
+    override val todayOfferConfirm: String = "أظهره"
+    override val notificationAskTodayReason: String = "ليعرض NixUra تقدّم يومك على شاشة القفل. لا يُصدر صوتًا أبدًا."
+    // ---- end of UX D ----
+
+    /** A duration after "بعد": the dual changes case (ساعتان becomes ساعتين). */
+    private fun afterPreposition(duration: String): String =
+        duration.replace("ساعتان", "ساعتين").replace("يومان", "يومين").replace("دقيقتان", "دقيقتين")
 
     /** The noun after a written number: 3–10 أكواب, 11–99 كوبًا, otherwise كوب. */
     private fun cupNoun(n: Int): String = when (ArabicPlurals.category(n.toLong())) {

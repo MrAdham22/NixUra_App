@@ -33,17 +33,33 @@ class NotificationSyncService(
     /** Good-habit reminders (phase C); `null` in tests that only cover events, milestones and the check-in. */
     private val reminderPlanner: HabitReminderPlanner? = null,
     private val reminderDevice: ReminderDeviceRepository? = null,
+    /** The opt-in "Today" notification (phase D). It follows every re-plan. */
+    private val todayBuilder: TodaySummaryBuilder? = null,
+    private val today: TodayPresenter = NoOpTodayPresenter,
 ) {
     suspend fun run() {
-        plans().distinctUntilChanged().collect { scheduler.replaceAll(it) }
+        plans().distinctUntilChanged().collect(::apply)
     }
 
     /** Re-arms once, for background work that changed data while no screen is open (alarms are per device). */
     suspend fun syncOnce() {
-        scheduler.replaceAll(plans().first())
+        apply(plans().first())
     }
 
-    private fun plans(): Flow<List<PlannedNotification>> = combine(
+    /** Only redraws "Today" (its refresh moment, boot, coming back to the app, "Hide today"). Arms nothing. */
+    suspend fun refreshToday() {
+        today.show(plans().first().today)
+    }
+
+    private data class SyncPlan(val notifications: List<PlannedNotification>, val hiddenHabitIds: Set<Long>, val today: TodayState)
+
+    private fun apply(plan: SyncPlan) {
+        scheduler.replaceAll(plan.notifications)
+        scheduler.withdrawNamesOf(plan.hiddenHabitIds)
+        today.show(plan.today)
+    }
+
+    private fun plans(): Flow<SyncPlan> = combine(
         tracking.observeActiveHabitTracking(),
         goodHabits.observeGoodHabits(),
         events.observeEvents(),
@@ -53,11 +69,16 @@ class NotificationSyncService(
         val now = clock.nowEpochMillis()
         val base = planner.plan(now, settings, profile.name, bad, good, upcoming)
         // The app-wide switch in Settings turns habit reminders off too.
+        val shownLanguage = language.update(settings.languageCode)
         val reminders = if (settings.notificationsEnabled && reminderPlanner != null) {
-            reminderPlanner.plan(now, language.update(settings.languageCode), good, device)
+            reminderPlanner.plan(now, shownLanguage, good, device)
         } else {
             emptyList()
         }
-        (base + reminders).sortedBy { it.triggerAtEpochMillis }
+        SyncPlan(
+            notifications = (base + reminders).sortedBy { it.triggerAtEpochMillis },
+            hiddenHabitIds = bad.filter { it.habit.hideNameOutside }.map { it.habit.id }.toSet(),
+            today = todayBuilder?.build(now, shownLanguage, settings, good, bad, upcoming, reminders, device) ?: TodayState.Off,
+        )
     }
 }

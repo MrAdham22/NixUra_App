@@ -8,11 +8,13 @@ import kotlinx.coroutines.flow.Flow
  * @param location where prayer times are computed for (read once when the user allowed it; PLAN.md decision 1).
  * @param pausedUntilEpochMillis "Pause habit reminders" in Settings: none before this moment, on this phone.
  * @param snoozes habit id → when the snoozed reminder shows again.
+ * @param todayHiddenDay the day "Today" was dismissed on: it stays away for that day.
  */
 data class ReminderDeviceState(
     val location: GeoPoint? = null,
     val pausedUntilEpochMillis: Long? = null,
     val snoozes: Map<Long, Long> = emptyMap(),
+    val todayHiddenDay: Long? = null,
 )
 
 /** Stores [ReminderDeviceState] and the record of handled notification buttons. */
@@ -26,6 +28,9 @@ interface ReminderDeviceRepository {
     suspend fun snooze(habitId: Long, untilEpochMillis: Long)
 
     suspend fun clearSnooze(habitId: Long)
+
+    /** "Hide today" or a swipe: the Today notification stays away for [day]. `null` brings it back. */
+    suspend fun setTodayHiddenDay(day: Long?)
 
     /**
      * Records that the button [token] was handled. Returns false when it already was: Android can deliver the same

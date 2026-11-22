@@ -10,5 +10,6 @@ fun MainViewController() = ComposeUIViewController {
     initKoinIfNeeded(platformModule(), appModule(), authModule())
     // A quick action that cold-started the app arrived before Koin existed (IosShortcuts).
     androidx.compose.runtime.remember { IosShortcuts.applyPending(org.koin.mp.KoinPlatform.getKoin().get()); true }
+    androidx.compose.runtime.LaunchedEffect(Unit) { PrivacyCover.follow(org.koin.mp.KoinPlatform.getKoin().get()) }
     App()
 }

@@ -46,12 +46,14 @@ fun GoodHabitsScreen(navigator: Navigator) {
     val deleteFlow = rememberDeleteFlow()
     val addToHome = rememberAddToHomeAction()
     val reminders = com.adhamelgendy.nixura.presentation.goodhabits.reminders.rememberHabitReminders()
-    // Long-press sheet of a good habit: Edit, Add to Home screen (where widgets exist), then Delete.
+    val today = com.adhamelgendy.nixura.presentation.today.rememberTodaySheetAction()
+    // Long-press sheet of a good habit: Edit, Reminders, Today on lock screen, Add to Home screen (where widgets exist), then Delete.
     fun goodHabitSheetActions(id: Long): List<SheetAction> = listOf(
         SheetAction(s.editHabit, NixIcon.Pencil) { navigator.push(Route.GoodHabitForm(id)) },
     ) + listOfNotNull(
         // Phase C: "Reminders: On · every 2 h", between Edit and Add to Home screen (PLAN.md).
         reminders.sheetAction(id),
+        today, // phase D
         addToHome?.let { pin -> SheetAction(s.widgetAddToHome, NixIcon.Home) { pin(WidgetKind.GOOD_QUICK_LOG, id) } },
     )
 

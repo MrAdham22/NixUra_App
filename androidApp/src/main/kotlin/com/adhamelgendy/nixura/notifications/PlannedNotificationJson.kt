@@ -9,6 +9,7 @@ import com.adhamelgendy.nixura.domain.notification.PlannedNotification
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
 import org.json.JSONArray
 import org.json.JSONObject
+import com.adhamelgendy.nixura.domain.recognition.HabitTopic
 
 /**
  * One planned notification as JSON: the stored plan (re-armed after reboot) and the alarm's own extra (so the
@@ -26,7 +27,10 @@ internal object PlannedNotificationJson {
         .apply {
             item.targetId?.let { put("target", it) }
             item.theme?.let { put("theme", it.name) }
+            item.topic?.let { put("topic", it.name) }
             if (item.postKey != item.key) put("post", item.postKey)
+            item.publicTitle?.let { put("public", it) }
+            item.namedHabitId?.let { put("names", it) }
             item.progress?.let { put("progress", JSONArray().put(it.current).put(it.max)) }
             if (item.actions.isNotEmpty()) {
                 put(
@@ -60,7 +64,10 @@ internal object PlannedNotificationJson {
             kind = enumOrNull<NotificationKind>(o.optString("kind")) ?: NotificationKind.fromKey(key),
             targetId = if (o.has("target")) o.getLong("target") else null,
             theme = enumOrNull<HabitTheme>(o.optString("theme")),
+            topic = enumOrNull<HabitTopic>(o.optString("topic")),
             postKey = o.optString("post").ifEmpty { key },
+            publicTitle = o.optString("public").ifEmpty { null },
+            namedHabitId = if (o.has("names")) o.getLong("names") else null,
             actions = o.optJSONArray("actions")?.let { array ->
                 (0 until array.length()).mapNotNull { i ->
                     val a = array.getJSONObject(i)

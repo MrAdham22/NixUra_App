@@ -26,12 +26,13 @@ class ApplyCoachActionsUseCaseTest {
     private class Quits : HabitTrackingRepository {
         val created = mutableListOf<Pair<String, Long>>()
         override fun observeActiveHabitTracking(): Flow<List<HabitTracking>> = emptyFlow()
-        override suspend fun createHabitAndStartTracking(name: String, startAtEpochMillis: Long, colorArgb: Long?, cost: HabitCost?): Long {
+        override suspend fun createHabitAndStartTracking(name: String, startAtEpochMillis: Long, colorArgb: Long?, cost: HabitCost?, hideNameOutside: Boolean): Long {
             created += name to startAtEpochMillis
             return created.size.toLong()
         }
         override suspend fun recordRelapse(habitId: Long, atEpochMillis: Long) = error("unused")
-        override suspend fun updateHabit(habitId: Long, name: String, colorArgb: Long?) = error("unused")
+        override suspend fun updateHabit(habitId: Long, name: String, colorArgb: Long?, hideNameOutside: Boolean) = error("unused")
+        override suspend fun setHideNameOutside(habitId: Long, hidden: Boolean) = error("unused")
         override suspend fun updateCost(habitId: Long, cost: HabitCost?) = error("unused")
         override suspend fun archiveHabit(habitId: Long, atEpochMillis: Long) = error("unused")
     }

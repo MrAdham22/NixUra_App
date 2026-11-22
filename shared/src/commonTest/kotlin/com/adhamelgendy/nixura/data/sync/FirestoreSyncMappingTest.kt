@@ -30,6 +30,20 @@ class FirestoreSyncMappingTest {
         )
     }
 
+    @Test fun aHiddenNameSyncsWithTheHabit() {
+        val sent = SyncJson.encodeToString(HabitPayload.serializer(), HabitPayload("Smoking", 10, hideNameOutside = true))
+        val received = FirestoreValues.decode(FirestoreValues.encode(SyncJson.parseToJsonElement(sent))).toString()
+        assertTrue(SyncJson.decodeFromString(HabitPayload.serializer(), received).hideNameOutside)
+        val older = SyncJson.decodeFromString(HabitPayload.serializer(), """{"name":"Smoking","createdAt":10}""")
+        assertEquals(false, older.hideNameOutside)
+    }
+
+    @Test fun aHiddenNameStaysHiddenWhenAGuestHabitJoinsTheAccount() {
+        assertTrue(hiddenAfterMerge(local = true, remote = false))
+        assertTrue(hiddenAfterMerge(local = false, remote = true))
+        assertEquals(false, hiddenAfterMerge(local = false, remote = false))
+    }
+
     @Test fun numbersKeepTheirKind() {
         val encoded = FirestoreValues.encode(SyncJson.parseToJsonElement("""{"a":3,"b":2.5,"c":1.0,"d":"7","e":null,"f":[true]}""")).toString()
         assertTrue("\"integerValue\":\"3\"" in encoded, encoded)

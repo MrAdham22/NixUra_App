@@ -98,3 +98,10 @@ class AiCoachResponder(
 The offline knowledge base (`HabitKnowledgeBase`, `CoachEngine`) is English with a few Arabic keywords
 for habit matching. A real multilingual AI makes Arabic replies possible without translating that
 content by hand.
+
+## Hidden habit names (2026-11-22)
+
+"Hide name outside the app" masks what is displayed outside the app: the coach's daily check-in and milestone
+notifications use `CoachEngine`'s no-name wording. The chat is inside the app and keeps names, and a user who allowed
+the online coach still sends habit names. An AI that ever writes notification text must be given the masked name
+(`OutsideAppPrivacy.nameOutside`).

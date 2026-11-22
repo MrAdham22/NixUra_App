@@ -22,6 +22,7 @@ import com.adhamelgendy.nixura.widgets.AndroidWidgetPinner
 import com.adhamelgendy.nixura.widgets.WidgetUpdater
 import org.koin.core.context.loadKoinModules
 import org.koin.dsl.module
+import com.adhamelgendy.nixura.notifications.AndroidTodayNotification
 
 class NixUraApplication : Application() {
 
@@ -44,7 +45,7 @@ class NixUraApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         NixNotifications.ensureChannels(this) // channels and groups; names follow the app language
-        initAndroidKoin(this, AndroidNotificationScheduler(this), notificationPermission)
+        initAndroidKoin(this, AndroidNotificationScheduler(this), notificationPermission, AndroidTodayNotification(this))
         // Backend address comes from BuildConfig (the shared module cannot see it). Cleartext only in debug builds.
         loadKoinModules(
             module {

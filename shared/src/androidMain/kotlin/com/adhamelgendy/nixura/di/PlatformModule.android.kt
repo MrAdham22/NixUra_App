@@ -23,16 +23,19 @@ import com.adhamelgendy.nixura.data.support.AndroidSupportEnvironment
 import com.adhamelgendy.nixura.domain.support.SupportActions
 import com.adhamelgendy.nixura.domain.support.SupportEnvironmentProvider
 import org.koin.dsl.module
+import com.adhamelgendy.nixura.domain.notification.TodayPresenter
 
 fun platformModule(
     context: Context,
     scheduler: NotificationScheduler,
     permissionGateway: NotificationPermissionGateway,
+    today: TodayPresenter,
 ) = module {
     single<NixUraDatabase> {
         getRoomDatabase(getDatabaseBuilder(context))
     }
     single<NotificationScheduler> { scheduler }
+    single<TodayPresenter> { today }
     single<NotificationPermissionGateway> { permissionGateway }
     // The Android gateway also reports blocked notifications / exact alarms; any other gateway reports "all allowed".
     single<ReminderCapabilities> { permissionGateway as? ReminderCapabilities ?: AlwaysAvailableReminderCapabilities }

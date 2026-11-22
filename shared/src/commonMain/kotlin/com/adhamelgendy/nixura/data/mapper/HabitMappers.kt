@@ -29,6 +29,7 @@ fun HabitEntity.toDomain(): Habit = Habit(
     archivedAtEpochMillis = archivedAtEpochMillis,
     colorArgb = colorArgb,
     cost = costOrNull(),
+    hideNameOutside = hideNameOutside,
 )
 
 /** A half-written or unreadable tracker (unknown unit, zero amounts) counts as no tracker, never as a crash. */
