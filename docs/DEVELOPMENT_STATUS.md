@@ -2,6 +2,26 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## UX upgrade D (2026-11-22): lock screen and persistent presence, built
+
+Branch `feature/lock-screen-presence`, PR open, **not merged: waiting for the owner**. Details, differences from the design and the
+owner's checks: `docs/ux-upgrade/D-lock-screen.md`, section 7.
+
+- **Built:** a good habit's card glyph as its notification icon, and the NixUra mark instead of the leaf (owner's
+  evening decision); lock-screen visibility per type with neutral public versions; "Hide name outside the app" per bad
+  habit (Room v10, synced; masks the name, the category's text and icon and the tracked item; withdraws what is showing,
+  recents preview off on Android 13+); the opt-in silent ongoing "Today" notification (`nixura_today`, MetricStyle on
+  Android 17, no foreground service, no promotion); `keyguard` on all three widgets.
+- **Verified:** `:shared:testAndroidHostTest` 812 tests, 0 failures; `:androidApp:assembleDebug`;
+  `tools/room_migration_check.py` (v10 OK, the 2 old script errors remain); Android 17 and 16 emulators in English and
+  Arabic (reboot included); installed on the owner's Oppo: 9 to 10, row counts and the alarm plan unchanged, no crash.
+- **Not verified:** the lock screen itself on any device (only what the app sets, through `dumpsys`); lock-screen
+  widgets on a phone that offers them; Today, hide name and the icons' look on the Oppo; sync of the flag between two
+  phones; the light theme, TalkBack, Android 7-12; **iOS** (the app-switcher cover was never built).
+- **Seen, not changed:** Arabic event reminders say "بعد ساعتان" instead of "بعد ساعتين"; Arabic habit reminder lines
+  that start with a Latin name lay out left to right; the reminder action log line prints the good habit's name to
+  logcat; `room_migration_check.py` cannot read the 2 `$REMOVED_BY_IMPORT_SQL` queries.
+
 ## UX upgrade D (2026-11-22): lock-screen research (no code)
 
 Branch `docs/lock-screen-research`, `docs/ux-upgrade/D-lock-screen.md`. Compares lock-screen visibility, an ongoing

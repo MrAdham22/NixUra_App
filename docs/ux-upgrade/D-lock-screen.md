@@ -1,9 +1,10 @@
-# UX phase D: lock screen and persistent presence (research)
+# UX phase D: lock screen and persistent presence
 
-**Written:** 2026-11-22. **Branch:** `docs/lock-screen-research`. **Research only: no app code changed.**
+**Researched:** 2026-11-22 (PR #22). **Built:** 2026-11-22, branch `feature/lock-screen-presence`. Sections 1-6 are the research
+and design as written before the build. **Section 7 says what was built, where it differs and what is untested.**
 (PLAN.md called this file `D.md`; the owner's brief named it `D-lock-screen.md`.)
 
-**Owner decisions (2026-11-22), none built yet:**
+**Owner decisions (2026-11-22), all built (section 7):**
 1. The opt-in "Today" notification is **approved**, as an exception to PLAN.md's no-summary rule.
 2. Event and coach notifications **follow the phone's lock-screen setting**.
 3. The user can **hide a bad habit's name everywhere it shows outside the app** (notifications, widgets, anything
@@ -13,6 +14,9 @@
 5. The quit-counter widget **may be placed on the lock screen**, like the other two widgets. The user places it;
    "hide name" applies there too.
 6. A good habit's notification shows **that habit's own icon**, the one on its card, instead of the leaf (section 4.2).
+7. **Evening, during the build: no notification shows the leaf.** The NixUra mark (the logo's broken N, one colour,
+   `ic_notification`) is used for Today, app messages, a bundle of several habits and a habit that is not recognised.
+   This replaces the two "leaf" exceptions in 4.2. The card inside the app keeps its leaf.
 
 **No decisions are open.**
 
@@ -287,7 +291,7 @@ make it the category or habit icon." The water and prayer notification icons sta
   "snoozed"). Draw the small icon from the same glyph, white on transparent: either `IconCompat.createWithBitmap` with
   the existing `WidgetCardPainter.icon` / `drawNixIcon`, or vector drawables from the same path data. It must be
   readable at 24 dp in the status bar, in the shade and on the lock screen.
-- **Leaf:** only for a habit that is not recognised (`OTHER_BUILD`), as on its card. A bundle of several good-habit
+- **Leaf** (replaced by decision 7: the NixUra mark): only for a habit that is not recognised (`OTHER_BUILD`), as on its card. A bundle of several good-habit
   reminders keeps the leaf, because it stands for more than one habit.
 - **Quit habits keep the broken chain:** a category icon there would reveal the habit (4.1).
 - **Check on the Oppo:** ColorOS may show the app's icon instead of the small icon in some places.
@@ -358,6 +362,77 @@ adb shell settings get secure lock_screen_show_silent_notifications
    check it is re-posted on boot.
 
 ---
+
+## 7. As built (2026-11-22)
+
+### What and where
+
+| Part | Where | Notes |
+|---|---|---|
+| Habit icons | `NotificationGlyph`, `PlannedNotification.topic`, `NotificationIconPainter` | The planner resolves the topic with the card's detector. It travels in the stored plan, the alarm and the confirmations. Drawn by the card's own code. |
+| Visibility | `LockScreenPrivacy`, `PlannedNotification.publicTitle`, `NixNotifications.lockScreen` | Set on every notification and summary. The neutral title is written at plan time in the saved language. |
+| Hide name | `domain/privacy/OutsideAppPrivacy`, Room v10 `habits.hide_name_outside`, `HiddenNameWithdrawal` | Masked in `NotificationPlanner` and `WidgetStateMapper`. A change re-arms first, then withdraws what is showing that name, and redraws quit widgets at once. |
+| Today | `TodaySummaryBuilder`, `TodayPresenter`, `AndroidTodayNotification`, `TodayReceiver`, `TodayMetricStyle` | Follows every re-plan. Boot and its refresh alarm call `refreshToday()`, which arms no reminders. |
+| Today's controls | `presentation/today/` | Settings, the good-habit long-press sheet, one offer after a second good habit. |
+| Widgets | `res/xml/widget_*_info.xml` | `home_screen\|keyguard` on all three. |
+
+### Where the build differs from the design, and why
+
+- **A third thing named the habit:** the money tracker's item ("Marlboro Red") was in the widget's state. It is
+  blank when the name is hidden. The sums stay.
+- **The widget's own chooser** lists real names, so its recents preview is always off (Android 13+).
+- **The recents preview is also off until the first read** of the habits, so a cold start cannot leak one.
+- **A guest habit joining the account:** hidden on either side stays hidden, and the account learns it.
+- **Today's "Prayed" button names the prayer and is offered only once that prayer has started.** Marking prayer N
+  marks the ones before it, so the first unmarked prayer is the one offered. A button left from another day does not
+  log (it would have marked all five on the new day).
+- **Today refreshes at midnight or sooner when something it shows stops being true** (the countdown ran out, a prayer
+  started, the event or a streak day passed). One alarm with a 10-minute window, never a wake-up.
+- **MetricStyle:** the countdown stays in the header and the third metric is the next time. As metrics, the countdown
+  and `FixedTime` were both cut off on a Pixel 9 ("1h 22…", "8:50 …"). MetricStyle has no line for the event or the
+  streak, so on Android 17 those are not visible.
+- **Today is not offered while the app-wide notifications switch is off**, and not on iOS (no ongoing notification).
+
+### Verified
+
+| Check | Result |
+|---|---|
+| `:shared:testAndroidHostTest` | 812 tests, 0 failures (baseline 755). Each step's tests failed before its code. |
+| `:androidApp:assembleDebug` | OK |
+| `python tools/room_migration_check.py` | v10 column and default OK. Still reports the 2 old `$REMOVED_BY_IMPORT_SQL` errors (a script limitation). |
+| Android 17 emulator (Pixel 9) | every glyph in the status bar; visibility and public titles in `dumpsys`; v9 to v10 with data; hiding withdrew a showing milestone, re-wrote the plan, masked the widget and blanked recents; Today with MetricStyle: +1, Hide today, swipe, streak opt-in, stale-day button ignored; English and Arabic |
+| Android 16 emulator, clean install | channel importance (Quit progress, Coach, App LOW; Today DEFAULT without sound); no offer at first launch, offer after the second habit; permission flow; Today back after a reboot without opening the app; icons in the shade |
+| Owner's Oppo, install over the app | schema 9 to 10; every row count, the 35 planned notifications, their times and the 37 alarm entries unchanged, night reminders included; no crash on opening; topics and public versions in the stored plan |
+
+### Not tested
+
+- **The lock screen itself, on any device.** Neither emulator image shows a lock screen without changing its security
+  settings, which was not done. What the app sets was checked in `dumpsys`; what Android then shows was not seen.
+- **On the Oppo:** how the icons and the N mark look, Today (off until the owner turns it on), hide name, and whether
+  Today survives a swipe from recents and a reboot on ColorOS.
+- **Lock-screen widgets:** only that Android registers the category (3). The installed Android 36.1 image is
+  incomplete, so no emulator that offers them was available.
+- **Silent channels on a lock screen**, sync of the flag between two phones, the midnight roll-over in real time, the
+  light theme, TalkBack, Android 7-12.
+- **iOS:** masking is shared code. The app-switcher cover (`PrivacyCover`, `ContentView.swift`) was written on
+  Windows and never built. On a Mac: `./gradlew :shared:iosSimulatorArm64Test :shared:linkDebugFrameworkIosSimulatorArm64`,
+  then build and run `iosApp/iosApp.xcodeproj`.
+
+### Known limits
+
+- A notification the user snoozed with Android's own snooze cannot be withdrawn when the name is hidden: apps cannot
+  list those.
+- A remote change of "hide name" received in the background reaches the recents picture the next time the app pauses.
+
+### Owner's checks on the Oppo
+
+1. Wait for a reminder of a habit other than water or prayer: its card's icon. An unrecognised habit: the N mark.
+2. Settings, Notifications, turn on "Today on the lock screen". Lock the phone: it shows in full, with no sound.
+3. Swipe NixUra away from recents: Today stays. Restart the phone: Today returns within a few minutes.
+4. Swipe Today away: it stays away until tomorrow. Turning it off and on brings it back.
+5. Long-press a bad habit, "Hide name outside the app": its widget shows "Clear for" with a shield, and recents
+   shows no preview. Turn it off again: both return.
+6. With sensitive content hidden, a check-in on the lock screen reads "A note from your coach".
 
 ## Sources
 

@@ -345,6 +345,13 @@ Each category has its own colour (`eventCategoryColor`): Personal rose, Travel w
 - **Good-habit "−" and "+" match their card (owner request 2026-11-14, `GoodHabitButton`):** on plain cards the buttons follow the card's fill: while the card is empty (night-coloured) the "+" is the rose action in the cards' recipe and the "−" a quiet tint of the card's ink; as the card fills with emerald (by 40%) both turn emerald; the done tick is pale emerald (never plain white). On water the "+" starts exactly like the other cards' rose "+" (same `cardGlow` recipe) and its colours blend gradually into a blue drop as the glass fills (fully blue by 40%); the "−" stays frosted white. Prayer keeps its gold stars.
 - Prayer look: selections are gold (`PrayerPalette.Gold` with night text) instead of rose; decorative stars stay in the side margins; the moon has a soft glow, never a button-shaped circle.
 
+## Notifications (Android)
+
+- **Small icon:** one colour, white on transparent, 24dp with 2-unit round lines (Android tints it). A good habit shows its card's glyph (`HabitTopic.icon()`, drawn by the same code). Water and prayer keep the drop and the arch with a star. A quit habit always shows the broken chain, never its category.
+- **NixUra mark (`ic_notification`, owner's choice 2026-11-22):** the logo's broken N with the spark "i", simplified for one colour. Used for Today, app messages, a bundle of several habits and a habit that is not recognised. No notification shows the leaf (cards keep it).
+- **Accent:** event wine, quit rose, coach and app amber, water blue, prayer gold, other good habits and Today blush.
+- **Today:** one silent row. Never an event's or a quit habit's name, never promoted.
+
 ## Calendars and time
 
 - Every week starts on **Saturday** and ends on Friday, in every language: the card week strips (always this week, days still to come dimmed), the month calendar, the date picker, weekly goals, widgets and reminders (owner decision 2026-11-18, replacing Sunday-first from 2026-11-14; one rule: `CivilCalendar.WEEK_START_ISO_DAY`, `weekColumn`, `weekStartOf`, `inWeekOrder`). In right-to-left layouts the grid runs right to left.

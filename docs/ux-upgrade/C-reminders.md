@@ -229,7 +229,7 @@ adb shell cmd deviceidle unforce
 11. **Pause:** "Pause for today" on a habit: the row says "Paused until <tomorrow>", nothing today, back tomorrow.
     Settings → Notifications → "Pause habit reminders" → For today: no habit reminder today (events still come).
 12. **Default off:** create "Read" (daily): long-press → "Reminders: Off". Turn it on, set 2 min from now: reading
-    reminder, leaf icon, "📖 Your reading time", "Done ✓".
+    reminder, book icon (phase D), "📖 Your reading time", "Done ✓".
 13. **Reboot:** with reminders armed, restart the phone; `dumpsys alarm` lists them again; they fire.
 14. **Time zone / clock / DST:** Settings → Date & time → turn off automatic, change the time zone: the next water
     reminder is re-planned to the same local time (check `origWhen`). Set the clock forward past a reminder: it fires
