@@ -20,6 +20,7 @@ import com.adhamelgendy.nixura.domain.notification.NotificationChannels
 import com.adhamelgendy.nixura.domain.notification.NotificationKind
 import com.adhamelgendy.nixura.domain.notification.NotificationProgress
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
+import com.adhamelgendy.nixura.domain.recognition.HabitTopic
 
 /**
  * What to show. Built by the scheduler's receiver today; phase C builds it for good-habit reminders.
@@ -37,6 +38,8 @@ data class NixNotificationRequest(
     val body: String,
     val targetId: Long? = null,
     val theme: HabitTheme? = null,
+    /** A good habit's kind, for the card glyph as small icon (see [NixNotificationStyles.of]). */
+    val topic: HabitTopic? = null,
     val actions: List<NotificationCompat.Action> = emptyList(),
     /** Native progress bar ("3 / 8 glasses"); `null` = none. Never an animation: the app shows that on tap. */
     val progress: NotificationProgress? = null,
@@ -84,10 +87,10 @@ object NixNotifications {
         if (!canPost(context)) return
         ensureChannels(context)
         val channel = NotificationChannels.channelFor(request.kind)
-        val style = NixNotificationStyles.of(request.kind, request.theme)
+        val style = NixNotificationStyles.of(request.kind, request.theme, request.topic)
         val group = NotificationChannels.groupKeyFor(request.kind)
         val notification = NotificationCompat.Builder(context, channel.id)
-            .setSmallIcon(style.smallIcon)
+            .setSmallIcon(NotificationIconPainter.smallIcon(context, style))
             .setColor(style.accent)
             .setCategory(style.category)
             .setContentTitle(request.title)
@@ -108,7 +111,7 @@ object NixNotifications {
         val manager = NotificationManagerCompat.from(context)
         try {
             manager.notify(idOf(request.key), notification)
-            postSummaryIfGrouped(context, request.kind, channel, style)
+            postSummaryIfGrouped(context, request.kind, channel)
         } catch (denied: SecurityException) {
             // Permission revoked between the check and the call: nothing to show.
         }
@@ -149,13 +152,14 @@ object NixNotifications {
      * Android only bundles a group when a summary exists. Post one once two or more of this kind are showing, so a
      * lone notification stays a plain notification. The summary itself never alerts (children do).
      */
-    private fun postSummaryIfGrouped(context: Context, kind: NotificationKind, channel: NixChannel, style: NixNotificationStyle) {
+    private fun postSummaryIfGrouped(context: Context, kind: NotificationKind, channel: NixChannel) {
         if (Build.VERSION.SDK_INT < 24) return
         val group = NotificationChannels.groupKeyFor(kind)
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         val summaryId = idOf(SUMMARY_PREFIX + group)
         val children = manager.activeNotifications.count { it.notification.group == group && it.id != summaryId }
         if (children < 2) return
+        val style = NixNotificationStyles.of(kind) // the bundle stands for several: the leaf, not the newest one's glyph
         val summary = NotificationCompat.Builder(context, channel.id)
             .setSmallIcon(style.smallIcon)
             .setColor(style.accent)

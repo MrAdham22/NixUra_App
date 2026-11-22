@@ -1,6 +1,7 @@
 package com.adhamelgendy.nixura.domain.notification
 
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
+import com.adhamelgendy.nixura.domain.recognition.HabitTopic
 
 /**
  * One local notification to be shown at [triggerAtEpochMillis]. [key] is stable and unique per notification
@@ -10,6 +11,7 @@ import com.adhamelgendy.nixura.domain.theme.HabitTheme
  *   also how plans stored before phase B are read back.
  * @param targetId the event or habit the notification is about (a tap opens it), or `null`.
  * @param theme for [NotificationKind.GOOD_HABIT]: the habit's stored theme (water and prayer get their own look).
+ * @param topic for [NotificationKind.GOOD_HABIT]: the kind of habit its card's glyph shows (see [NotificationGlyph]).
  * @param postKey the identity of the notification on screen. Several alarms (one per moment) may share it, so a new
  *   reminder for a habit replaces the one already showing instead of stacking. Defaults to [key].
  * @param actions buttons shown on the notification (phase C: "+1 glass", "Prayed", Snooze).
@@ -24,6 +26,7 @@ data class PlannedNotification(
     val kind: NotificationKind = NotificationKind.fromKey(key),
     val targetId: Long? = null,
     val theme: HabitTheme? = null,
+    val topic: HabitTopic? = null,
     val postKey: String = key,
     val actions: List<NotificationAction> = emptyList(),
     val progress: NotificationProgress? = null,

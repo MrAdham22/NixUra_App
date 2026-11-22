@@ -121,7 +121,7 @@ fun appModule() = module {
             com.adhamelgendy.nixura.presentation.strings.stringsFor(language)
         }
     }
-    single { com.adhamelgendy.nixura.domain.reminder.HabitReminderPlanner(get(), get()) }
+    single { com.adhamelgendy.nixura.domain.reminder.HabitReminderPlanner(get(), get(), get()) }
     single {
         NotificationSyncService(
             get(), get(), get(), get(), get(), get(), get(), get(),

@@ -9,6 +9,10 @@ import com.adhamelgendy.nixura.domain.notification.NixChannel
 import com.adhamelgendy.nixura.domain.notification.NixChannelGroup
 import com.adhamelgendy.nixura.domain.notification.NotificationKind
 import com.adhamelgendy.nixura.domain.theme.HabitTheme
+import com.adhamelgendy.nixura.domain.notification.NotificationGlyph
+import com.adhamelgendy.nixura.domain.recognition.HabitTopic
+import com.adhamelgendy.nixura.presentation.components.NixIcon
+import com.adhamelgendy.nixura.presentation.components.icon
 
 /** How one notification looks: the parts that let the user tell its type apart before reading it. */
 data class NixNotificationStyle(
@@ -16,6 +20,8 @@ data class NixNotificationStyle(
     @ColorInt val accent: Int,
     /** A `NotificationCompat.CATEGORY_*`: lets the system rank it and apply Do Not Disturb rules correctly. */
     val category: String,
+    /** A habit's card glyph, drawn instead of [smallIcon]; `null` = [smallIcon]. */
+    val glyph: NixIcon? = null,
 )
 
 /**
@@ -30,7 +36,11 @@ object NixNotificationStyles {
     @ColorInt private const val WATER = 0xFF5BB6EC.toInt() // HabitThemeVisuals.WaterDark
     @ColorInt private const val GOLD = 0xFFF1B451.toInt() // HabitThemeVisuals.GoldDark
 
-    fun of(kind: NotificationKind, theme: HabitTheme? = null): NixNotificationStyle = when (kind) {
+    /** [theme] and [topic] describe one good habit; a bundle passes neither and gets the kind's plain look. */
+    fun of(kind: NotificationKind, theme: HabitTheme? = null, topic: HabitTopic? = null): NixNotificationStyle =
+        base(kind, theme).copy(glyph = NotificationGlyph.topicToDraw(kind, theme, topic)?.icon())
+
+    private fun base(kind: NotificationKind, theme: HabitTheme?): NixNotificationStyle = when (kind) {
         NotificationKind.EVENT -> NixNotificationStyle(R.drawable.ic_notif_event, WINE, NotificationCompat.CATEGORY_EVENT)
         NotificationKind.GOOD_HABIT -> when (theme) {
             HabitTheme.WATER -> NixNotificationStyle(R.drawable.ic_notif_water, WATER, NotificationCompat.CATEGORY_REMINDER)

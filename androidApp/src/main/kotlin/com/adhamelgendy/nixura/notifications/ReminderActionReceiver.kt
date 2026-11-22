@@ -20,6 +20,7 @@ import com.adhamelgendy.nixura.widgets.WidgetUpdater
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import org.koin.core.context.GlobalContext
+import com.adhamelgendy.nixura.domain.recognition.HabitTopic
 
 /**
  * Runs a reminder button ("+1 glass", "Prayed", "Done", Snooze) without opening the app (phase C), with the same
@@ -37,7 +38,10 @@ class ReminderActionReceiver : BroadcastReceiver() {
         val type = intent.getStringExtra(ReminderActions.EXTRA_TYPE)?.let { n -> NotificationActionType.entries.firstOrNull { it.name == n } } ?: return
         val habitId = intent.getLongExtra(ReminderActions.EXTRA_HABIT, -1L).takeIf { it > 0 } ?: return
         val postKey = intent.getStringExtra(ReminderActions.EXTRA_POST_KEY) ?: return
-        val theme = intent.getStringExtra(ReminderActions.EXTRA_THEME)?.let { n -> HabitTheme.entries.firstOrNull { it.name == n } }
+        val look = HabitLook(
+            theme = intent.getStringExtra(ReminderActions.EXTRA_THEME)?.let { n -> HabitTheme.entries.firstOrNull { it.name == n } },
+            topic = intent.getStringExtra(ReminderActions.EXTRA_TOPIC)?.let { n -> HabitTopic.entries.firstOrNull { it.name == n } },
+        )
         val prayer = intent.getIntExtra(ReminderActions.EXTRA_PRAYER, -1).takeIf { it > 0 }
         val snooze = intent.getIntExtra(ReminderActions.EXTRA_SNOOZE, -1).takeIf { it > 0 }
         val app = context.applicationContext
@@ -49,10 +53,10 @@ class ReminderActionReceiver : BroadcastReceiver() {
                 Log.i(TAG, "action $type habit=$habitId -> $result")
                 when (result) {
                     is ReminderActionResult.Logged -> {
-                        showConfirmation(app, postKey, habitId, theme, copy(), result)
+                        showConfirmation(app, postKey, habitId, look, copy(), result)
                         WidgetUpdater.requestRefresh(app)
                     }
-                    is ReminderActionResult.Snoozed -> confirm(app, postKey, habitId, theme, copy().reminderSnoozed(result.minutes), null, progress = null)
+                    is ReminderActionResult.Snoozed -> confirm(app, postKey, habitId, look, copy().reminderSnoozed(result.minutes), null, progress = null)
                     // A repeated press: the first one already updated the notification and the widgets.
                     ReminderActionResult.AlreadyHandled -> Unit
                     // The habit is gone or the write failed: take the stale notification away.
@@ -75,7 +79,7 @@ class ReminderActionReceiver : BroadcastReceiver() {
         return koin.get<HabitReminderCopyProvider>().forLanguage(koin.get<ContentLanguage>().update(settings.languageCode))
     }
 
-    private fun showConfirmation(context: Context, postKey: String, habitId: Long, theme: HabitTheme?, copy: HabitReminderCopy, result: ReminderActionResult.Logged) {
+    private fun showConfirmation(context: Context, postKey: String, habitId: Long, look: HabitLook, copy: HabitReminderCopy, result: ReminderActionResult.Logged) {
         val habit = result.habit
         val target = habit.dailyTarget.coerceAtLeast(1)
         val prayer = result.prayer
@@ -86,11 +90,11 @@ class ReminderActionReceiver : BroadcastReceiver() {
                     NotificationProgress(result.count, target)
             else -> copy.reminderLoggedHabit(habit.name, result.count, target) to NotificationProgress(result.count, target).takeIf { target > 1 }
         }
-        confirm(context, postKey, habitId, theme ?: habit.theme, title, habit.name, progress)
+        confirm(context, postKey, habitId, look.copy(theme = look.theme ?: habit.theme), title, habit.name, progress)
     }
 
     /** Re-posts the same notification (same key: replaces it) without buttons or sound, and lets it go by itself. */
-    private fun confirm(context: Context, postKey: String, habitId: Long, theme: HabitTheme?, title: String, body: String?, progress: NotificationProgress?) {
+    private fun confirm(context: Context, postKey: String, habitId: Long, look: HabitLook, title: String, body: String?, progress: NotificationProgress?) {
         NixNotifications.post(
             context,
             NixNotificationRequest(
@@ -99,13 +103,17 @@ class ReminderActionReceiver : BroadcastReceiver() {
                 title = title,
                 body = body.orEmpty(),
                 targetId = habitId,
-                theme = theme,
+                theme = look.theme,
+                topic = look.topic,
                 progress = progress,
                 onlyAlertOnce = true,
                 timeoutAfterMillis = CONFIRMATION_MILLIS,
             ),
         )
     }
+
+    /** What the reminder looked like, so its confirmation keeps the same icon and colour. */
+    private data class HabitLook(val theme: HabitTheme?, val topic: HabitTopic?)
 
     private companion object {
         const val TAG = "NixUraReminder"

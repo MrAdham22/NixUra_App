@@ -24,6 +24,7 @@ internal object ReminderActions {
     const val EXTRA_SNOOZE = "snooze"
     const val EXTRA_POST_KEY = "post"
     const val EXTRA_THEME = "theme"
+    const val EXTRA_TOPIC = "topic"
 
     fun build(context: Context, item: PlannedNotification): List<NotificationCompat.Action> =
         item.actions.map { action -> NotificationCompat.Action.Builder(iconOf(action), action.label, pendingIntent(context, item, action)).build() }
@@ -42,6 +43,7 @@ internal object ReminderActions {
                 action.prayerIndex?.let { putExtra(EXTRA_PRAYER, it) }
                 action.snoozeMinutes?.let { putExtra(EXTRA_SNOOZE, it) }
                 item.theme?.let { putExtra(EXTRA_THEME, it.name) }
+                item.topic?.let { putExtra(EXTRA_TOPIC, it.name) }
             }
         return PendingIntent.getBroadcast(context, token.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     }

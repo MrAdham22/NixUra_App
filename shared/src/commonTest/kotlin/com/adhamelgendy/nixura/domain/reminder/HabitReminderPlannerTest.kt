@@ -23,12 +23,13 @@ class HabitReminderPlannerTest {
     private val hour = 3_600_000L
     private val minute = 60_000L
     private val copy = HabitReminderCopyProvider { EnglishStrings }
+    private val topics = com.adhamelgendy.nixura.domain.recognition.HabitTopicDetector(com.adhamelgendy.nixura.domain.coach.HabitKnowledgeBase())
 
     /** A Thursday (2026-01-15), so weekly tests have a known place in the Saturday-to-Friday week. */
     private val today = CivilCalendar.dayIndexFromCivil(2026, 1, 15)
 
     private fun days(offsetHours: Long = 0) = DayCalculator(TimeZoneOffsetProvider { offsetHours * hour })
-    private fun planner(d: DayCalculator = days()) = HabitReminderPlanner(d, copy)
+    private fun planner(d: DayCalculator = days()) = HabitReminderPlanner(d, copy, topics)
     private fun local(d: DayCalculator, day: Long, h: Int, m: Int = 0) = d.epochMillisOfLocal(day * DayCalculator.MILLIS_PER_DAY + h * hour + m * minute)
 
     private fun water(id: Long = 1, reminder: HabitReminderSettings = HabitReminderSettings()) =
