@@ -27,7 +27,7 @@ Reminders exist to support the habit, not to raise engagement: no guilt, no dark
 | A2 | Done, merged 2026-11-21 (PR #17) | `feature/app-shortcuts` (deleted) | `docs/ux-upgrade/A2-app-shortcuts.md` | yes: owner device test passed 2026-11-21 |
 | B | Done, merged 2026-11-21 (PR #19) | `feature/notification-foundation` (deleted) | `docs/ux-upgrade/B-notifications.md` | yes: adb timing measurements + owner device test passed 2026-11-21 |
 | C | Done, merged 2026-11-22 (PR #21) | `feature/habit-reminders` (deleted) | `docs/ux-upgrade/C-reminders.md` | installed and `dumpsys alarm` checked; owner approved the merge 2026-11-22 |
-| D | Research written 2026-11-22; PR waiting for owner review ("Today", event/coach visibility and "hide bad-habit name outside the app" decided; quit habits follow the phone's setting; open: quit widget on the lock screen) | `docs/lock-screen-research` | `docs/ux-upgrade/D-lock-screen.md` | n/a (research; Oppo checks listed in the doc) |
+| D | Research written 2026-11-22; PR waiting for owner review; all decisions taken, nothing built | `docs/lock-screen-research` | `docs/ux-upgrade/D-lock-screen.md` | n/a (research; Oppo checks listed in the doc) |
 
 Update this table at the end of every phase.
 
