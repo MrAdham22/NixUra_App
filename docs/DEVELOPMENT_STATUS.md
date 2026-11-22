@@ -63,7 +63,8 @@ Branch `feature/time-wheels`. Owner request: scrolling wheels instead of +/- for
 - **Verified:** `:shared:testAndroidHostTest` 738 tests, 0 failures; `:androidApp:assembleDebug`; used on the Pixel 9
   emulator in English and Arabic (drag, tap, fling then Done, 59 to 00, save) for the check-in, a custom start, an
   event's time and a reminder lead time, plus the two event dialogs on a 360x640 dp screen at 1.6x text.
-- **Not verified:** the owner's phone, the light theme, TalkBack, iOS.
+- **Installed** on the owner's Oppo 2026-11-22 (starts without a crash).
+- **Not verified:** the wheels used on the owner's phone, the light theme, TalkBack, iOS.
 - **Seen, not changed:** at 1.6x text on a 360 dp screen "Save reminder" breaks inside the word.
 
 ## UX upgrade A2 (2026-11-21): launcher App Shortcuts
