@@ -258,9 +258,9 @@ All shared paths are under `shared/src/commonMain/kotlin/com/adhamelgendy/nixura
   re-built on every log, **including logs made from a widget or a notification action while the UI is closed**: the
   widget receiver and the action receiver call `NotificationSyncService.syncOnce()` after writing (today only the
   sync worker does). Horizon: today + tomorrow (water/prayer change daily), so the 60-alarm cap is never hit.
-- **Inexact alarms** for good-habit reminders (`setAndAllowWhileIdle`, a few minutes late is fine). Prayer may use
-  exact only if the user already granted exact alarms for events. No new exact-alarm usage that Play would
-  question.
+- **Alarms** (owner decision 2026-11-22, replaces "inexact for all good habits"): prayer and times the user picked are
+  on time (exact only when the user allowed exact alarms; inexact but allowed in deep sleep otherwise). Water stays
+  inexact. No new permission, never `USE_EXACT_ALARM`.
 
 **Bottom-sheet controls** (long-press sheet, existing `SheetAction` list): one new row between Edit and Add to Home
 screen: "🔔 Reminders: On · every 2 h" (or "Off"). Tapping opens a small sheet: on/off switch, the schedule
@@ -320,7 +320,7 @@ ActivityKit + Swift target). Recommendation and cost for each.
 
 | Risk | Detail | Mitigation |
 |---|---|---|
-| Exact alarms / Play policy | `SCHEDULE_EXACT_ALARM` is declared. Play restricts `USE_EXACT_ALARM` to alarm/calendar apps; `SCHEDULE_EXACT_ALARM` is user-granted and denied by default on Android 14+ for new installs. | Good-habit reminders use inexact alarms. Keep exact only for events when the user allowed it. Never add `USE_EXACT_ALARM`. Check the Play declaration form before release. |
+| Exact alarms / Play policy | `SCHEDULE_EXACT_ALARM` is declared. Play restricts `USE_EXACT_ALARM` to alarm/calendar apps; `SCHEDULE_EXACT_ALARM` is user-granted and denied by default on Android 14+ for new installs. | Water uses inexact alarms. Exact only for events, prayer and user-picked times, and only when the user allowed it. Never add `USE_EXACT_ALARM`. Check the Play declaration form before release. |
 | Android 13+ notification permission | Denied = nothing shows; asking at launch hurts trust. | Ask in context with a reason card; show a fix card when denied; check per-channel enabled state. |
 | Reboot / update | Alarms are cleared. | Already re-armed by `BootReceiver`; C extends the stored plan with kind and habit id (backward-compatible decode). |
 | Time zone / clock / DST | `BootReceiver` does not listen to `TIMEZONE_CHANGED`/`TIME_SET`; prayer times and water windows are local-time. | Re-plan on those broadcasts; plan with local dates (`DayCalculator`), never "+24 h"; tests across DST days (Egypt observes DST since 2023). |

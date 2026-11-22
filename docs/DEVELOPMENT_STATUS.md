@@ -31,6 +31,12 @@ Branch `feature/habit-reminders`, details, scheduling choices, ColorOS notes and
   and 02. Installed on the owner's Oppo 2026-11-22 18:09 (data unchanged, no crash): the next day's plan
   has all six water reminders (11:00, 13:00, 16:00, 17:39, 19:01, 21:00) and the chosen times the old rules deleted
   (17:00, 00:50, 03:50). **Not verified:** those reminders actually firing on the phone, and iOS compilation.
+- **Night reminders fixed 2026-11-22 (same branch, owner decision):** a chosen time was a flexible alarm, which deep
+  sleep holds and the receiver drops after 45 min. Chosen times are now on time (only water stays flexible) and the
+  second daily reminder may pass midnight. **Verified:** 6 new tests failed first; `:shared:testAndroidHostTest`
+  747 tests, 0 failures; emulator in forced deep sleep: the old build did not deliver, the fixed one was on time
+  (78 s late with exact alarms denied); installed on the Oppo 18:42 (data unchanged, chosen times armed on time).
+  **Not verified:** a night reminder firing on the Oppo, iOS compilation.
 
 ## UX upgrade B (2026-11-21): notification foundation
 
