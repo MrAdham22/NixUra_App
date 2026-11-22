@@ -32,7 +32,7 @@ object NixNotificationStyles {
     @ColorInt private const val ROSE = 0xFFAE445A.toInt() // quit cards
     @ColorInt private const val WINE = 0xFF862549.toInt() // events
     @ColorInt private const val AMBER = 0xFFF39F5A.toInt() // coach and app
-    @ColorInt private const val LEAF = 0xFFE8BCB9.toInt() // other good habits: the palette's soft blush
+    @ColorInt private const val BLUSH = 0xFFE8BCB9.toInt() // other good habits and Today: the palette's soft blush
     @ColorInt private const val WATER = 0xFF5BB6EC.toInt() // HabitThemeVisuals.WaterDark
     @ColorInt private const val GOLD = 0xFFF1B451.toInt() // HabitThemeVisuals.GoldDark
 
@@ -45,12 +45,12 @@ object NixNotificationStyles {
         NotificationKind.GOOD_HABIT -> when (theme) {
             HabitTheme.WATER -> NixNotificationStyle(R.drawable.ic_notif_water, WATER, NotificationCompat.CATEGORY_REMINDER)
             HabitTheme.PRAYER -> NixNotificationStyle(R.drawable.ic_notif_prayer, GOLD, NotificationCompat.CATEGORY_REMINDER)
-            else -> NixNotificationStyle(R.drawable.ic_notif_good, LEAF, NotificationCompat.CATEGORY_REMINDER)
+            else -> NixNotificationStyle(R.drawable.ic_notification, BLUSH, NotificationCompat.CATEGORY_REMINDER)
         }
         NotificationKind.QUIT_MILESTONE -> NixNotificationStyle(R.drawable.ic_notif_quit, ROSE, NotificationCompat.CATEGORY_STATUS)
         NotificationKind.COACH -> NixNotificationStyle(R.drawable.ic_notif_coach, AMBER, NotificationCompat.CATEGORY_RECOMMENDATION)
         NotificationKind.APP -> NixNotificationStyle(R.drawable.ic_notification, AMBER, NotificationCompat.CATEGORY_STATUS)
-        NotificationKind.TODAY -> NixNotificationStyle(R.drawable.ic_notification, LEAF, NotificationCompat.CATEGORY_STATUS)
+        NotificationKind.TODAY -> NixNotificationStyle(R.drawable.ic_notification, BLUSH, NotificationCompat.CATEGORY_STATUS)
     }
 
     @StringRes

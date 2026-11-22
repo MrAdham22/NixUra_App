@@ -65,7 +65,18 @@ class NotificationGlyphTest {
         assertNull(NotificationGlyph.topicToDraw(NotificationKind.GOOD_HABIT, HabitTheme.PRAYER, HabitTopic.PRAYER))
     }
 
-    @Test fun onlyAnUnrecognisedHabitKeepsTheLeaf() {
+    @Test fun noNotificationShowsTheLeaf() {
+        // Owner decision 2026-11-22 (evening): the NixUra mark took the leaf's place in every notification.
+        for (kind in NotificationKind.entries) {
+            for (theme in HabitTheme.entries) {
+                for (topic in HabitTopic.entries) {
+                    assertTrue(NotificationGlyph.topicToDraw(kind, theme, topic)?.icon() != NixIcon.Leaf, "$kind $theme $topic")
+                }
+            }
+        }
+    }
+
+    @Test fun anUnrecognisedHabitGetsTheNixUraMark() {
         val item = planned("Zzqxv")
         assertEquals(HabitTopic.OTHER_BUILD, item.topic)
         assertNull(NotificationGlyph.topicToDraw(item.kind, item.theme, item.topic))

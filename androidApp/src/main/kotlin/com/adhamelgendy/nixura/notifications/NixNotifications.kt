@@ -224,7 +224,7 @@ object NixNotifications {
         val summaryId = idOf(SUMMARY_PREFIX + group)
         val children = manager.activeNotifications.count { it.notification.group == group && it.id != summaryId }
         if (children < 2) return
-        val style = NixNotificationStyles.of(kind) // the bundle stands for several: the leaf, not the newest one's glyph
+        val style = NixNotificationStyles.of(kind) // the bundle stands for several: the NixUra mark, not the newest one's glyph
         val summary = NotificationCompat.Builder(context, channel.id)
             .setSmallIcon(style.smallIcon)
             .setColor(style.accent)

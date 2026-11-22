@@ -1,14 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  The NixUra mark for notifications (owner's choice, 2026-11-22): the logo's broken N with the spark "i" through it,
+  simplified for 24 dp and drawn in one colour, because Android uses only a small icon's alpha and tints it.
+  Used by Today, the app's messages, bundles of good habits and a habit that is not recognised.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M5,19 C5,10 10,5 19,5 C19,14 14,19 5,19 Z" />
+        android:pathData="M4.5,19.5 L4.5,6.5 L9.2,11.2 M14.8,14.8 L19.5,19.5 L19.5,6.5"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="2.4" />
     <path
-        android:strokeColor="#00000000"
-        android:fillColor="#00000000"
-        android:pathData="M5,19 L13,11" />
+        android:pathData="M13.6,8.6 L10.4,17.4"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="2" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M13.2,4.6 a1.7,1.7 0 1,0 3.4,0 a1.7,1.7 0 1,0 -3.4,0 Z" />
 </vector>
