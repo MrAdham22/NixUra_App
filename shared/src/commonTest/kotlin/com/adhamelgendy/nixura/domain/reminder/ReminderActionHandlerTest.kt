@@ -109,6 +109,27 @@ class ReminderActionHandlerTest {
         assertEquals(1, night.counts[1], "the glass itself is saved on the new day")
     }
 
+    /** The last water reminder comes exactly at the window's end, so its button is always pressed after it. */
+    @Test fun aPressShortlyAfterTheLastNightReminderStillCountsTheEvening() = runSuspend {
+        val read = GoodHabit(3, "Read", 2, createdAtEpochMillis = 0, reminder = HabitReminderSettings(enabled = true, timeMinutes = 22 * 60 + 50))
+        val late = water.copy(reminder = HabitReminderSettings(windowStartMinutes = 14 * 60, windowEndMinutes = 2 * 60))
+        val night = Repo(late, read)
+        night.earlier[1] = 5
+        night.earlier[3] = 1
+        val afterEnd = FixedClock(today * DAY + 2 * HOUR + 5 * 60_000L)
+        val buttons = ReminderActionHandler(
+            IncrementGoodHabitTodayUseCase(night, afterEnd, days),
+            MarkGoodHabitTodayAtLeastUseCase(night, afterEnd, days),
+            night, ReminderDeviceRepositoryImpl(Prefs()), afterEnd, days,
+        )
+        val glass = buttons.handle("t-glass", NotificationActionType.LOG_ONE, 1)
+        assertIs<ReminderActionResult.Logged>(glass)
+        assertEquals(6, glass.count)
+        val done = buttons.handle("t-read", NotificationActionType.LOG_ONE, 3)
+        assertIs<ReminderActionResult.Logged>(done)
+        assertEquals(2, done.count)
+    }
+
     @Test fun aFailedWriteCanBeRetried() = runSuspend {
         repo.habits.remove(1L)
         assertEquals(ReminderActionResult.Failed, handler.handle("t", NotificationActionType.LOG_ONE, 1))

@@ -160,6 +160,48 @@ class HabitReminderPlannerTest {
         assertEquals(EnglishStrings.reminderWeeklyBody("Gym", 1, 3), plan.single().body)
     }
 
+    // ---- chosen times at night ----
+
+    /** A flexible alarm is held by deep sleep and then dropped when 45 min late: a time the user picked must not be. */
+    @Test fun chosenTimesAndTheirSnoozesRingOnTime() {
+        val d = days()
+        val weekly = GoodHabit(4, "Gym", 1, createdAtEpochMillis = 0, weeklyTarget = 1, reminder = HabitReminderSettings(enabled = true, timeMinutes = 6 * 60 + 30))
+        val habits = listOf(with(daily(3, time = 50, target = 2)), GoodHabitWithLogs(weekly, emptyList()))
+        val plan = planner(d).plan(local(d, today, 0), "en", habits, ReminderDeviceState(snoozes = mapOf(3L to local(d, today, 2))))
+        assertTrue(plan.any { it.key.contains(":s") }, "the snooze is planned")
+        assertEquals(setOf(3L, 4L), plan.mapNotNull { it.targetId }.toSet())
+        assertTrue(plan.all { it.timing == NotificationTiming.ON_TIME })
+    }
+
+    @Test fun theSecondReminderMayPassMidnight() {
+        val d = days()
+        val plan = planner(d).plan(local(d, today, 20), "en", listOf(with(daily(3, time = 22 * 60 + 50, target = 2))), ReminderDeviceState())
+        val expected = listOf(local(d, today, 22, 50), local(d, today + 1, 1, 50))
+        assertEquals(expected, plan.filter { it.key.startsWith("good:3:$today:") }.map { it.triggerAtEpochMillis })
+    }
+
+    @Test fun theSecondReminderAfterMidnightCountsTheEvening() {
+        val d = days()
+        val now = local(d, today, 0, 30)
+        val habit = daily(3, time = 22 * 60 + 50, target = 2)
+        fun second(evening: Int, night: Int) = planner(d)
+            .plan(now, "en", listOf(with(habit, night, today - 1 to evening)), ReminderDeviceState())
+            .filter { it.key == "good:3:${today - 1}:t2" }
+        val one = second(evening = 1, night = 0).single()
+        assertEquals(local(d, today, 1, 50), one.triggerAtEpochMillis)
+        assertEquals(1, one.progress?.current)
+        assertTrue(second(evening = 2, night = 0).isEmpty(), "done in the evening")
+        assertTrue(second(evening = 1, night = 1).isEmpty(), "finished after midnight")
+    }
+
+    @Test fun aNightSnoozeRemembersTheEvening() {
+        val d = days()
+        val at = local(d, today, 2, 50) // snoozed from 01:50
+        val habit = daily(3, time = 22 * 60 + 50, target = 2)
+        val plan = planner(d).plan(local(d, today, 1, 51), "en", listOf(with(habit, 0, today - 1 to 1)), ReminderDeviceState(snoozes = mapOf(3L to at)))
+        assertEquals(1, plan.single { it.triggerAtEpochMillis == at }.progress?.current)
+    }
+
     // ---- habits next to each other ----
 
     private fun List<PlannedNotification>.waterSlots(day: Long, id: Long = 1) = filter { it.key.startsWith("good:$id:$day:w") }

@@ -24,7 +24,7 @@ import org.json.JSONObject
  *   plan so that reminder becomes an alarm clock in time (the icon shows only 15-75 min before a reminder).
  * Without the permission everything is inexact (Android may deliver it up to an hour late).
  *
- * Phase C: [NotificationTiming.FLEXIBLE] items (water, a habit's chosen time) skip all of that: `setWindow` with a
+ * Phase C: [NotificationTiming.FLEXIBLE] items (water only) skip all of that: `setWindow` with a
  * 10-minute window, no exact-alarm permission and no alarm icon (see docs/ux-upgrade/C-reminders.md).
  *
  * Every notification has a stable key (`event:<id>:<lead>`, `milestone:...`, `daily:<day>`). The key is both the
@@ -107,7 +107,7 @@ class AndroidNotificationScheduler(context: Context) : NotificationScheduler {
         val at = item.triggerAtEpochMillis
         try {
             when {
-                // A nudge (water, a habit's chosen time): a short window, no exact-alarm permission, no alarm icon.
+                // A nudge (water): a short window, no exact-alarm permission, no alarm icon.
                 // Android may hold it while the phone sleeps deeply (Doze) and deliver it when the screen wakes.
                 item.timing == NotificationTiming.FLEXIBLE ->
                     alarmManager.setWindow(AlarmManager.RTC_WAKEUP, at, FLEXIBLE_WINDOW_MILLIS, operation)

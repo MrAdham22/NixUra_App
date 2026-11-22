@@ -77,9 +77,10 @@ class ReminderActionHandler(
         val now = clock.nowEpochMillis()
         val today = days.dayIndexOf(now)
         val habit = habits.dayCountOf(habitId, today)?.habit ?: return ReminderActionResult.Failed
-        // After midnight in a late water window, confirm with the evening's glasses too, like the reminder said.
-        val windowDay = HabitReminderRules.windowDayOf(habit, days, now)
-        val evening = if (windowDay < today) habits.dayCountOf(habitId, windowDay)?.count ?: 0 else 0
+        // After midnight, confirm with the evening's count too, like the reminder said. The button is pressed after
+        // the reminder came, so the day's last one needs the grace.
+        val from = HabitReminderRules.reminderDayOf(habit, days, now, HabitReminderRules.SNOOZE_MINUTES)
+        val evening = if (from < today) habits.dayCountOf(habitId, from)?.count ?: 0 else 0
         return ReminderActionResult.Logged(habit, count + evening, prayer)
     }
 

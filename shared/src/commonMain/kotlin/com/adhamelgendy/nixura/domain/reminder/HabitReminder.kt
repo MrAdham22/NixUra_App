@@ -113,23 +113,40 @@ object HabitReminderRules {
             .filter { it <= window.last }
     }
 
-    /**
-     * The day whose water window [atMillis] belongs to: after midnight, until a late window ends, still the day before.
-     * Any other habit: the calendar day.
-     */
-    fun windowDayOf(habit: GoodHabit, days: DayCalculator, atMillis: Long): Long {
-        val day = days.dayIndexOf(atMillis)
-        if (strategyOf(habit) != ReminderStrategy.WATER) return day
-        val afterMidnight = waterWindowOf(habit).last - MINUTES_PER_DAY
-        return if (days.millisOfDay(atMillis) <= afterMidnight * MILLIS_PER_MINUTE) day - 1 else day
+    /** The chosen time, and 3 h later when the target is above 1. The second may be past 24:00, on the next day. */
+    fun dailyTimesOf(habit: GoodHabit): List<Int> {
+        val first = timeOf(habit)
+        return if (habit.dailyTarget > 1) listOf(first, first + SECOND_REMINDER_AFTER_MINUTES) else listOf(first)
     }
 
-    /** When "Pause for today" ([count] = 1) or "for 1 week" (7) ends: not before the late part of a water window is over. */
+    /** How far past midnight [habit]'s reminders of one day reach, in minutes; negative when they all end before it. */
+    private fun minutesPastMidnight(habit: GoodHabit): Int = when (strategyOf(habit)) {
+        ReminderStrategy.WATER -> waterWindowOf(habit).last - MINUTES_PER_DAY
+        ReminderStrategy.DAILY_TIME -> dailyTimesOf(habit).last() - MINUTES_PER_DAY
+        ReminderStrategy.PRAYER, ReminderStrategy.WEEKLY_TIME -> -1
+    }
+
+    /**
+     * The day whose reminders [atMillis] belongs to: after midnight, until a late water window or second reminder is
+     * over, still the day before. Any other time: the calendar day.
+     *
+     * @param graceMinutes for answering a reminder (a button, a snooze), which happens after it came. It never reaches
+     *   into that habit's next day of reminders.
+     */
+    fun reminderDayOf(habit: GoodHabit, days: DayCalculator, atMillis: Long, graceMinutes: Int = 0): Long {
+        val day = days.dayIndexOf(atMillis)
+        val past = minutesPastMidnight(habit)
+        if (past < 0) return day
+        val nextStart = if (strategyOf(habit) == ReminderStrategy.WATER) waterWindowOf(habit).first else timeOf(habit)
+        val until = minOf(past + graceMinutes, nextStart - 1)
+        return if (days.millisOfDay(atMillis) <= until * MILLIS_PER_MINUTE) day - 1 else day
+    }
+
+    /** When "Pause for today" ([count] = 1) or "for 1 week" (7) ends: not before that day's last reminder is over. */
     fun pauseEndOf(habit: GoodHabit, days: DayCalculator, nowMillis: Long, count: Int): Long {
-        val midnight = days.startOfDayMillis(windowDayOf(habit, days, nowMillis) + count)
-        if (strategyOf(habit) != ReminderStrategy.WATER) return midnight
-        val afterMidnight = waterWindowOf(habit).last - MINUTES_PER_DAY
-        return if (afterMidnight >= 0) midnight + (afterMidnight + 1) * MILLIS_PER_MINUTE else midnight
+        val midnight = days.startOfDayMillis(reminderDayOf(habit, days, nowMillis) + count)
+        val past = minutesPastMidnight(habit)
+        return if (past >= 0) midnight + (past + 1) * MILLIS_PER_MINUTE else midnight
     }
 
     /** True when [habit] is paused at [atMillis]. */

@@ -1084,7 +1084,7 @@ open class Strings : HabitReminderCopy {
     open val reminderExplainWater: String =
         "Every 2 hours between the times below, or 6 spread out if that's over 12 hours. The end can be after midnight. Only when you're behind; a reminder may move a little so it doesn't land on another."
     open val reminderExplainDaily: String =
-        "At the time below, once a day (a second one 3 hours later when your goal is more than once and that's before midnight). Skipped once today's goal is done."
+        "At the time below, once a day (a second one 3 hours later when your goal is more than once, even after midnight). Skipped once today's goal is done."
     open val reminderExplainWeekly: String =
         "At the time below, on days your weekly goal can still be reached. Skipped on days you've already done it."
     open val reminderFrom: String = "From"

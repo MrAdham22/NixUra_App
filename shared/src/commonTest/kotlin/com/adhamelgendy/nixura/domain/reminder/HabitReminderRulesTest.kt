@@ -63,6 +63,15 @@ class HabitReminderRulesTest {
         assertEquals(days.startOfDayMillis(21), HabitReminderRules.pauseEndOf(window(9 * 60, 21 * 60), days, days.startOfDayMillis(20) + hour, 1))
     }
 
+    @Test fun pauseForTodayCoversTheSecondReminderAfterMidnight() {
+        val days = DayCalculator(TimeZoneOffsetProvider { 0L })
+        val minute = 60_000L
+        val night = GoodHabit(1, "Read", 2, createdAtEpochMillis = 0, reminder = HabitReminderSettings(enabled = true, timeMinutes = 22 * 60 + 50))
+        val second = days.startOfDayMillis(21) + 110 * minute
+        assertEquals(second + minute, HabitReminderRules.pauseEndOf(night, days, days.startOfDayMillis(20) + 16 * 60 * minute, 1))
+        assertEquals(second + minute, HabitReminderRules.pauseEndOf(night, days, days.startOfDayMillis(21) + 30 * minute, 1))
+    }
+
     private fun window(start: Int, end: Int) = GoodHabit(1, "Water", 8, createdAtEpochMillis = 0, theme = HabitTheme.WATER,
         reminder = HabitReminderSettings(windowStartMinutes = start, windowEndMinutes = end))
 
