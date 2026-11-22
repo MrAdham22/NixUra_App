@@ -2,6 +2,22 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## UX upgrade D (2026-11-22): lock-screen research (no code)
+
+Branch `docs/lock-screen-research`, `docs/ux-upgrade/D-lock-screen.md`. Compares lock-screen visibility, an ongoing
+"Today" notification, Live Updates / ProgressStyle (Android 16), MetricStyle (Android 17), lock-screen widgets, QS
+tiles and iOS options for NixUra's SDK range (24-37) and the Oppo (Android 15; the Reno 10 5G is not on OPPO's
+ColorOS 16 list). **Found:** notifications never set a lock-screen visibility, so on a phone set to show all content
+the quit-milestone text shows on the lock screen. **Tested on the Oppo 2026-11-22:** set to hide sensitive content, the
+daily check-in showed on the lock screen with its details hidden ("show all" and silent channels not tested). **Recommended, not built:** per-type
+lock-screen privacy, an opt-in ongoing "Today" notification, `keyguard` on all three widgets.
+**Owner decisions 2026-11-22 (not built):** Today is approved (the one exception to PLAN.md's no-summary rule); event
+and coach notifications follow the phone's setting; a per-habit option hides a bad habit's name everywhere outside
+the app (needs Room v10; milestone text and widget icon must be neutral too, as both reveal the habit).
+Quit-habit notifications follow the phone's setting too (replaces "hidden by default"), and the quit widget may be
+placed on the lock screen. Good-habit notifications will show the habit's own icon instead of the leaf (section 4.2).
+No decisions are open. About 7-8 days to build, in its own session.
+
 ## UX upgrade C (2026-11-21): good-habit reminders and notification buttons
 
 Branch `feature/habit-reminders`, details, scheduling choices, ColorOS notes and the Oppo test steps in

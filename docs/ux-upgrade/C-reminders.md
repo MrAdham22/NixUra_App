@@ -224,7 +224,8 @@ adb shell cmd deviceidle unforce
 - A new button type: add it to `NotificationActionType`, handle it in `ReminderActionHandler` through an existing use
   case, add its icon in `ReminderActions`.
 - Phase D (lock screen): `NotificationProgress` and the one-notification-per-habit key are the hooks for a progress-
-  style or ongoing notification; quit habits must stay off the lock screen.
+  style or ongoing notification. Quit habits follow the phone's lock-screen setting (owner decision 2026-11-22,
+  replaces "must stay off the lock screen"; see `D-lock-screen.md`).
 
 ## Limits and follow-ups
 
