@@ -1,6 +1,6 @@
 # UX phase D: lock screen and persistent presence
 
-**Researched:** 2026-11-22 (PR #22). **Built:** 2026-11-22, branch `feature/lock-screen-presence`. Sections 1-6 are the research
+**Researched:** 2026-11-22 (PR #22). **Built:** 2026-11-22, branch `feature/lock-screen-presence`; **merged 2026-11-23 (PR #25) without the owner's device checks**, so the checks below are still open. Sections 1-6 are the research
 and design as written before the build. **Section 7 says what was built, where it differs and what is untested.**
 (PLAN.md called this file `D.md`; the owner's brief named it `D-lock-screen.md`.)
 

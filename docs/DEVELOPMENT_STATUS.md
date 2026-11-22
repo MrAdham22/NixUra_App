@@ -4,7 +4,7 @@
 
 ## UX upgrade D (2026-11-22): lock screen and persistent presence, built
 
-Branch `feature/lock-screen-presence`, PR open, **not merged: waiting for the owner**. Details, differences from the design and the
+Branch `feature/lock-screen-presence`, merged 2026-11-23 (PR #25, squash) on the owner's go-ahead **without the device checks**, after re-running `:shared:testAndroidHostTest` (812, 0 failures) and `:androidApp:assembleDebug` on the branch (already on top of `master`). Details, differences from the design and the
 owner's checks: `docs/ux-upgrade/D-lock-screen.md`, section 7.
 
 - **Built:** a good habit's card glyph as its notification icon, and the NixUra mark instead of the leaf (owner's
