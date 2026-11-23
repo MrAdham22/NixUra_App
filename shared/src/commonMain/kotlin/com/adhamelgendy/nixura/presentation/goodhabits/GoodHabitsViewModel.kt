@@ -1,5 +1,8 @@
 package com.adhamelgendy.nixura.presentation.goodhabits
 
+import com.adhamelgendy.nixura.domain.analytics.UsageStats
+import com.adhamelgendy.nixura.domain.analytics.UsageAction
+import com.adhamelgendy.nixura.domain.analytics.NoUsageStats
 import com.adhamelgendy.nixura.domain.recognition.HabitTopic
 import com.adhamelgendy.nixura.domain.recognition.HabitTopicDetector
 import androidx.lifecycle.ViewModel
@@ -95,6 +98,8 @@ class GoodHabitsViewModel(
     pendingDeletions: PendingDeletions,
     private val topics: HabitTopicDetector? = null,
     private val themes: HabitThemeDetector? = null,
+    /** Anonymous usage stats (fixed action names only). */
+    private val usageStats: UsageStats = NoUsageStats,
 ) : ViewModel() {
 
     private val transient = MutableStateFlow(GoodHabitsUiState())
@@ -133,6 +138,8 @@ class GoodHabitsViewModel(
     fun onChangeToday(habitId: Long, delta: Int) {
         val state = uiState.value
         val habit = state.habits.firstOrNull { it.id == habitId } ?: return
+        if (delta > 0) usageStats.logAction(UsageAction.GoodHabitLogged)
+        if (delta < 0 && habit.todayCount > 0) usageStats.logAction(UsageAction.GoodHabitUnlogged)
         onSetCount(habitId, state.todayIndex, habit.todayCount + delta)
     }
 
@@ -165,6 +172,7 @@ class GoodHabitsViewModel(
         viewModelScope.launch {
             transient.update { it.copy(isSaving = true, errorMessage = null) }
             val result = createGoodHabit(name, dailyTarget, colorArgb, weeklyTarget, water, remindersOn)
+            if (result.isSuccess) usageStats.logAction(UsageAction.GoodHabitCreated)
             transient.update { state ->
                 state.copy(isSaving = false, errorMessage = result.exceptionOrNull()?.message)
             }

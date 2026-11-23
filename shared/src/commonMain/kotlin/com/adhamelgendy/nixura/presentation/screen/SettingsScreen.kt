@@ -1,5 +1,10 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -107,7 +112,7 @@ fun SettingsScreen(navigator: Navigator) {
         SectionLabel(s.appearance)
         NixCard {
             // Same height for all three, even when "Same as phone" wraps.
-            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(Modifier.height(IntrinsicSize.Min).selectableGroup(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 ThemeOption(s.darkMode, NixIcon.Moon, !settings.followSystemTheme && settings.darkTheme, Modifier.weight(1f).fillMaxHeight()) { vm.onDarkTheme(true) }
                 ThemeOption(s.lightMode, NixIcon.Sun, !settings.followSystemTheme && !settings.darkTheme, Modifier.weight(1f).fillMaxHeight()) { vm.onDarkTheme(false) }
                 ThemeOption(s.systemMode, NixIcon.Phone, settings.followSystemTheme, Modifier.weight(1f).fillMaxHeight()) { vm.onFollowSystemTheme() }
@@ -125,7 +130,7 @@ fun SettingsScreen(navigator: Navigator) {
             Spacer(Modifier.height(12.dp))
             // Each language is written in its own language; "System default" in the language now shown.
             FlowRow(
-                Modifier.fillMaxWidth(),
+                Modifier.fillMaxWidth().selectableGroup(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -258,7 +263,8 @@ fun SettingsScreen(navigator: Navigator) {
             },
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                NixIconView(NixIcon.Sparkle, c.accent, size = 22.dp)
+                // Info, not Sparkle: Sparkle already marks the AI coach row above.
+                NixIconView(NixIcon.Info, c.accent, size = 22.dp)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(s.guideReplay, style = NixType.BodyStrong, color = c.textPrimary)
@@ -309,7 +315,8 @@ fun SettingsScreen(navigator: Navigator) {
 private fun ThemeOption(label: String, icon: NixIcon, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val c = Nix.colors
     NixCard(
-        modifier = modifier,
+        // One of three choices: TalkBack says which one is selected.
+        modifier = modifier.semantics { this.selected = selected; role = Role.RadioButton },
         onClick = onClick,
         color = if (selected) c.accent.copy(alpha = 0.16f) else c.surfaceRaised,
         borderColor = if (selected) c.accent else c.border,

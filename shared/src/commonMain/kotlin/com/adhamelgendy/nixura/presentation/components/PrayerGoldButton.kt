@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import androidx.compose.runtime.State
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -59,8 +60,7 @@ fun PrayerGoldButton(
     loading: Boolean = false,
 ) {
     val reduced = rememberReducedMotion()
-    val sweep = rememberInfiniteTransition(label = "goldButton")
-        .animateFloat(0f, 1f, infiniteRepeatable(tween(3600, easing = LinearEasing)), label = "sweep")
+    val sweep: State<Float>? = if (reduced) null else rememberLoop(3600)
     Row(
         modifier = modifier
             .pressable(enabled = enabled && !loading, pressedScale = 0.97f, haptic = true, onClick = onClick)
@@ -99,7 +99,7 @@ fun PrayerGoldButton(
                     // Faint star pattern engraved into the metal
                     drawPath(starTiling(w, h, 26.dp.toPx()), Engraving.copy(alpha = 0.08f), style = Stroke(1.dp.toPx()))
                     // Sweeping light: two bands half a loop apart, each wrapping only while outside the button
-                    val p = if (reduced) 0.3f else sweep.value
+                    val p = sweep?.value ?: 0.3f
                     for (phase in listOf(p, (p + 0.5f) % 1f)) {
                         val band = h * 1.1f
                         val x = -band * 2f + phase * (w + band * 4f)

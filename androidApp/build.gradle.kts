@@ -31,7 +31,7 @@ dependencies {
     implementation(libs.androidx.work.runtime)
     // Google Calendar import: Google Identity Authorization API (calendar.readonly), Android only.
     implementation(libs.play.services.auth)
-    // Accounts: Firebase Analytics (off until the user opts in), Google sign-in through Credential Manager, Facebook Login.
+    // Accounts: Firebase Analytics (on by default, can be turned off in Settings), Google sign-in through Credential Manager, Facebook Login.
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.androidx.credentials)

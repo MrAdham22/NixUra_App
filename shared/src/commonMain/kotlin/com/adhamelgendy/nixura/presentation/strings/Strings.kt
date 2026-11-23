@@ -229,6 +229,9 @@ open class Strings : HabitReminderCopy, LockScreenCopy, TodayCopy {
     open val addHabit: String = "Add habit"
     open val todayLabel: String = "Today"
     open val habitsDoneToday: (Int, Int) -> String = { done, total -> "$done of $total done" }
+    /** Screen-reader labels for a good-habit card's + and - buttons. */
+    open val goodPlusA11y: (String) -> String = { name -> "Log one for $name" }
+    open val goodMinusA11y: (String) -> String = { name -> "Remove one from $name" }
     open val todayProgress: (Int, Int) -> String = { count, target -> "$count / $target today" }
     open val streakDays: (Int) -> String = { if (it == 1) "1 day streak" else "$it day streak" }
     open val timesDoneTotal: (Int) -> String = { if (it == 1) "1 time in total" else "$it times in total" }
@@ -534,7 +537,7 @@ open class Strings : HabitReminderCopy, LockScreenCopy, TodayCopy {
     open val errEmailInUse: String = "This email already has a NixUra account. Sign in instead, with your password or with Google or Facebook if you used one."
     open val errRecentLogin: String = "For your safety, sign out, sign back in, then try again."
     open val usageStatsToggle: String = "Share anonymous usage stats"
-    open val usageStatsHint: String = "Things like how often the app is opened, to help improve NixUra. Never your habits, notes or chats. Off unless you turn it on."
+    open val usageStatsHint: String = "Things like how often the app is opened, to help improve NixUra. Never your habits, notes or chats. You can turn it off anytime."
     open fun errLocked(seconds: Int?): String =
         if (seconds == null) "Too many attempts. Try again later." else "Too many attempts. Try again in ${(seconds + 59) / 60} min."
     open val errRateLimited: String = "Too many requests. Please wait a moment."
@@ -1199,9 +1202,10 @@ data class AppLanguage(val code: String, val nativeName: String?)
 
 /** Settings → Language: follow the phone, English, Arabic (each written in its own language). */
 val availableLanguages: List<AppLanguage> = listOf(
-    AppLanguage(com.adhamelgendy.nixura.domain.model.LANGUAGE_SYSTEM, null),
+    // "Same as phone" comes last, like the Appearance row above it in Settings.
     AppLanguage("en", "English"),
     AppLanguage("ar", "العربية"),
+    AppLanguage(com.adhamelgendy.nixura.domain.model.LANGUAGE_SYSTEM, null),
 )
 
 val EnglishStrings: Strings = Strings()

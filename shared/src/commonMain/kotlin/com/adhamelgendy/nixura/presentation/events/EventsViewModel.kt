@@ -1,5 +1,8 @@
 package com.adhamelgendy.nixura.presentation.events
 
+import com.adhamelgendy.nixura.domain.analytics.UsageStats
+import com.adhamelgendy.nixura.domain.analytics.UsageAction
+import com.adhamelgendy.nixura.domain.analytics.NoUsageStats
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.adhamelgendy.nixura.domain.model.Event
@@ -40,6 +43,8 @@ class EventsViewModel(
     private val reminderEditor: EventReminderEditor,
     private val clock: Clock,
     pendingDeletions: PendingDeletions,
+    /** Anonymous usage stats (fixed action names only). */
+    private val usageStats: UsageStats = NoUsageStats,
 ) : ViewModel() {
 
     private val transient = MutableStateFlow(EventsUiState())
@@ -64,6 +69,7 @@ class EventsViewModel(
         viewModelScope.launch {
             transient.update { it.copy(isSaving = true, errorMessage = null) }
             val result = saveEvent(id, title, category, targetAtEpochMillis, reminderLeadMillis)
+            if (result.isSuccess && id == null) usageStats.logAction(UsageAction.EventCreated)
             transient.update { it.copy(isSaving = false, errorMessage = result.exceptionOrNull()?.message) }
             if (result.isSuccess) onSuccess()
         }

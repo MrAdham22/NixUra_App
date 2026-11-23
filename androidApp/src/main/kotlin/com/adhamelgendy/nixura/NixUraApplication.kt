@@ -20,6 +20,8 @@ import com.adhamelgendy.nixura.integrations.AndroidGoogleAuthorizer
 import com.adhamelgendy.nixura.sync.AndroidBackgroundSync
 import com.adhamelgendy.nixura.widgets.AndroidWidgetPinner
 import com.adhamelgendy.nixura.widgets.WidgetUpdater
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import org.koin.core.context.loadKoinModules
 import org.koin.dsl.module
 import com.adhamelgendy.nixura.notifications.AndroidTodayNotification
@@ -39,6 +41,16 @@ class NixUraApplication : Application() {
     fun ensureFacebookSdk() {
         if (BuildConfig.FACEBOOK_ENABLED && !FacebookSdk.isInitialized()) {
             runCatching { @Suppress("DEPRECATION") FacebookSdk.sdkInitialize(applicationContext) }
+        }
+    }
+
+    private fun applyUsageStatsSetting() {
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO).launch {
+            runCatching {
+                val koin = org.koin.core.context.GlobalContext.get()
+                val settings = koin.get<com.adhamelgendy.nixura.domain.usecase.ObserveSettingsUseCase>()().first()
+                koin.get<UsageStats>().setCollectionEnabled(settings.usageStatsEnabled)
+            }
         }
     }
 
@@ -62,6 +74,8 @@ class NixUraApplication : Application() {
                 single<com.adhamelgendy.nixura.domain.reminder.DeviceLocationGateway> { deviceLocation }
             },
         )
+        // Usage stats: apply the stored choice (on by default, can be turned off in Settings > Privacy).
+        applyUsageStatsSetting()
         // Good-habit reminders: a daily re-plan as a safety net (phase C). Never let it stop the app from starting.
         runCatching { com.adhamelgendy.nixura.notifications.ReminderRefreshWorker.schedule(this) }
         // Home-screen widgets: keep them in sync with data/time changes while the process is alive.

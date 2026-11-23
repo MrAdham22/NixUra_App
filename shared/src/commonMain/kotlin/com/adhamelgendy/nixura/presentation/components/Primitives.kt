@@ -1,5 +1,12 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.runtime.remember
 import com.adhamelgendy.nixura.presentation.strings.LocalStrings
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.geometry.Offset
@@ -213,6 +220,7 @@ fun NixChip(
     Row(
         modifier = modifier
             .pressable(pressedScale = 0.94f, onClick = onClick)
+            .semantics { this.selected = selected }
             .clip(shape)
             .background(bg, shape)
             .border(1.dp, if (selected) Color.Transparent else c.border, shape)
@@ -277,14 +285,26 @@ fun NixSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Mo
     val c = Nix.colors
     val track by animateColorAsState(if (checked) c.accent else c.surfaceRaised, tween(160))
     val thumbX by animateDpAsState(if (checked) 22.dp else 2.dp, tween(160))
+    // TalkBack hears "Switch, on/off"; the touch area is at least 48 dp around the 28 dp track.
     Box(
         modifier = modifier
+            .minimumInteractiveComponentSize()
+            .toggleable(
+                value = checked,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Switch,
+                onValueChange = onCheckedChange,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+    Box(
+        modifier = Modifier
             .width(48.dp)
             .height(28.dp)
             .clip(RoundedCornerShape(50))
             .background(track)
-            .border(1.dp, c.border, RoundedCornerShape(50))
-            .clickable(interactionSource = MutableInteractionSource(), indication = null) { onCheckedChange(!checked) },
+            .border(1.dp, c.border, RoundedCornerShape(50)),
     ) {
         Box(
             Modifier
@@ -293,6 +313,7 @@ fun NixSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Mo
                 .clip(CircleShape)
                 .background(if (checked) c.onAccent else c.textSecondary),
         )
+    }
     }
 }
 
@@ -462,11 +483,12 @@ fun Modifier.cardGlow(shape: Shape, colors: List<Color>): Modifier {
 
 /** A round button ("+" and similar) in the cards' look, see [cardGlow]. */
 @Composable
-fun GlowIconButton(icon: NixIcon, onClick: () -> Unit, modifier: Modifier = Modifier, size: Dp = 42.dp, haptic: Boolean = false) {
+fun GlowIconButton(icon: NixIcon, onClick: () -> Unit, modifier: Modifier = Modifier, size: Dp = 42.dp, haptic: Boolean = false, label: String? = null) {
     val c = Nix.colors
     Box(
         modifier = modifier
             .pressable(pressedScale = 0.9f, haptic = haptic, onClick = onClick)
+            .then(if (label != null) Modifier.semantics { contentDescription = label } else Modifier)
             .size(size)
             .cardGlow(CircleShape, listOf(c.accent, lerp(c.accent, c.accentWarm, 0.45f))),
         contentAlignment = Alignment.Center,

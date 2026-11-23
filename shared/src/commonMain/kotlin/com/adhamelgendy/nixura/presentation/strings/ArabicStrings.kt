@@ -262,6 +262,8 @@ object ArabicStrings : Strings() {
     override val addHabit: String = "أضف العادة"
     override val todayLabel: String = "اليوم"
     override val habitsDoneToday: (Int, Int) -> String = { done, total -> "أنجزت $done من $total" }
+    override val goodPlusA11y: (String) -> String = { name -> "سجّل مرة لـ $name" }
+    override val goodMinusA11y: (String) -> String = { name -> "احذف مرة من $name" }
     override val todayProgress: (Int, Int) -> String = { count, target -> "$count / $target اليوم" }
     override val streakDays: (Int) -> String = { "${nDays(it.toLong())} على التوالي" }
     override val timesDoneTotal: (Int) -> String = { "${times(it.toLong())} إجمالًا" }
@@ -565,7 +567,7 @@ object ArabicStrings : Strings() {
     override val errEmailInUse: String = "لهذا البريد حساب في NixUra بالفعل. سجّل الدخول بدلًا من ذلك، بكلمة المرور أو عبر Google أو Facebook إن كنت استخدمت أحدهما."
     override val errRecentLogin: String = "حفاظًا على أمانك، سجّل الخروج ثم الدخول مجددًا، وحاول بعدها."
     override val usageStatsToggle: String = "شارك إحصاءات استخدام مجهولة"
-    override val usageStatsHint: String = "مثل عدد مرات فتح التطبيق، لتحسين NixUra. لا تشمل عاداتك أو ملاحظاتك أو محادثاتك أبدًا. متوقفة ما لم تشغّلها."
+    override val usageStatsHint: String = "مثل عدد مرات فتح التطبيق، لتحسين NixUra. لا تشمل عاداتك أو ملاحظاتك أو محادثاتك أبدًا. يمكنك إيقافها في أي وقت."
     override fun errLocked(seconds: Int?): String =
         if (seconds == null) "محاولات كثيرة. حاول لاحقًا." else "محاولات كثيرة. حاول بعد ${nMinutes(((seconds + 59) / 60).toLong())}."
     override val errRateLimited: String = "طلبات كثيرة. انتظر قليلًا."

@@ -1,5 +1,9 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.layer.CompositingStrategy
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.border
@@ -198,6 +202,13 @@ class PrayerCardScene(val width: Float, val height: Float, density: Density, max
  * the burst of a counted prayer at [burst] (1 = none) and the double gold frame. [fill] is today's progress (0..1).
  */
 fun DrawScope.drawPrayerCard(scene: PrayerCardScene, fill: Float, shimmer: Float = PRAYER_STILL_SHINE, burst: Float = 1f) {
+    drawPrayerCardBase(scene, fill)
+    drawPrayerCardLight(scene, shimmer, burst)
+    drawPrayerCardFrame(scene, fill)
+}
+
+/** Everything under the moving light: sky, tiling, dawn, rays, mosque and moon. Still while [fill] stays the same. */
+internal fun DrawScope.drawPrayerCardBase(scene: PrayerCardScene, fill: Float) {
     val w = scene.width
     val h = scene.height
     val done = prayerCardColors(fill).done
@@ -248,12 +259,23 @@ fun DrawScope.drawPrayerCard(scene: PrayerCardScene, fill: Float, shimmer: Float
     val moonColor = lerp(PrayerPalette.GoldLight, PrayerPalette.Night, done)
     drawCircle(moonColor.copy(alpha = 0.16f), 15.dp.toPx(), scene.moonCenter)
     drawPath(scene.moon, moonColor.copy(alpha = 0.92f))
+}
+
+/** The parts that move: the sliding light and the burst of stars after a counted prayer. */
+internal fun DrawScope.drawPrayerCardLight(scene: PrayerCardScene, shimmer: Float, burst: Float) {
+    val w = scene.width
+    val h = scene.height
     // Light that keeps sliding across. Two bands half a loop apart: one leaves the card while the other is in
     // the middle, and each wraps around only while it is fully outside, so the loop never shows a seam.
     drawShine(shimmer, w, h)
     drawShine((shimmer + 0.5f) % 1f, w, h)
     drawBurst(burst, w, h)
-    // Double gold frame with a small star at each corner
+}
+
+/** Double gold frame with a small star at each corner, drawn over the light. */
+internal fun DrawScope.drawPrayerCardFrame(scene: PrayerCardScene, fill: Float) {
+    val w = scene.width
+    val h = scene.height
     val frameBrush = Brush.linearGradient(listOf(PrayerPalette.GoldLight, PrayerPalette.GoldDeep, PrayerPalette.Gold), Offset.Zero, Offset(w, h))
     drawRoundRect(
         frameBrush,
@@ -290,15 +312,23 @@ internal fun rememberPrayerArt(fill: Float, count: Int): PrayerArt {
         }
         lastCount = count
     }
-    val transition = rememberInfiniteTransition(label = "prayerShimmer")
-    val shimmerAnim = transition.animateFloat(0f, 1f, infiniteRepeatable(tween(7000, easing = LinearEasing)), label = "shimmer")
     val still = remember { FixedState(PRAYER_STILL_SHINE) }
-    val shimmer: State<Float> = if (reduced) still else shimmerAnim
+    // Pauses off screen and in the background (LocalAnimationsRunning).
+    val shimmer: State<Float> = if (reduced) still else rememberLoop(7000)
 
     val colors = prayerCardColors(fill)
     val art = Modifier.drawWithCache {
         val scene = PrayerCardScene(size.width, size.height, this)
-        onDrawBehind { drawPrayerCard(scene, fill, shimmer.value, burst.value) }
+        // The still parts are painted once into an offscreen layer that the GPU keeps as a picture; each frame only
+        // draws that picture, the moving light and the frame (it was repainting the whole tiling and mosque at 60-120
+        // frames a second). Same pixels as before.
+        val base = obtainGraphicsLayer().apply { compositingStrategy = CompositingStrategy.Offscreen }
+        base.record { drawPrayerCardBase(scene, fill) }
+        onDrawBehind {
+            drawLayer(base)
+            drawPrayerCardLight(scene, shimmer.value, burst.value)
+            drawPrayerCardFrame(scene, fill)
+        }
     }
     return PrayerArt(
         modifier = art,
@@ -474,15 +504,14 @@ fun PrayerStarButton(
     haptic: Boolean = false,
 ) {
     val reduced = rememberReducedMotion()
-    val spinAnim = rememberInfiniteTransition(label = "starSpin")
-        .animateFloat(0f, 360f, infiniteRepeatable(tween(26000, easing = LinearEasing)), label = "spin")
+    val spinAnim: State<Float>? = if (reduced) null else rememberLoop(26000, 0f, 360f)
     val box = size * 1.18f
     Box(
         modifier.pressable(pressedScale = 0.88f, haptic = haptic, onClick = onClick).size(box),
         contentAlignment = Alignment.Center,
     ) {
         Canvas(Modifier.fillMaxSize()) {
-            drawPrayerStar(secondary, onGold, ink, spin = if (reduced) 0f else spinAnim.value * (PI_F / 180f))
+            drawPrayerStar(secondary, onGold, ink, spin = (spinAnim?.value ?: 0f) * (PI_F / 180f))
         }
         NixIconView(icon, prayerStarIconTint(secondary, onGold, ink), size = size * 0.42f)
     }
@@ -540,9 +569,12 @@ fun GoodHabitButton(
     background: Color,
     secondary: Boolean = false,
     haptic: Boolean = false,
+    /** What a screen reader says for this button ("Log one for Water"). */
+    label: String? = null,
 ) {
+    val a11y = if (label != null) Modifier.semantics { contentDescription = label } else Modifier
     if (style == GoodHabitFillStyle.PRAYER) {
-        PrayerStarButton(icon, onClick, size, onGold = look.fill >= 0.99f, secondary = secondary, ink = look.content, haptic = haptic)
+        PrayerStarButton(icon, onClick, size, onGold = look.fill >= 0.99f, secondary = secondary, ink = look.content, modifier = a11y, haptic = haptic)
         return
     }
     val done = !secondary && background == look.content
@@ -607,7 +639,7 @@ fun GoodHabitButton(
         }
     }
     Box(
-        Modifier.pressable(pressedScale = 0.9f, haptic = haptic, onClick = onClick).size(size).then(paint),
+        Modifier.pressable(pressedScale = 0.9f, haptic = haptic, onClick = onClick).then(a11y).size(size).then(paint),
         contentAlignment = Alignment.Center,
     ) {
         NixIconView(icon, iconTint, size = size * 0.5f)

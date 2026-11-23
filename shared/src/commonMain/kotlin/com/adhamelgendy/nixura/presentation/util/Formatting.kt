@@ -17,7 +17,10 @@ import org.koin.compose.koinInject
 fun rememberNowMillis(periodMillis: Long = 1_000L): State<Long> {
     val clock = koinInject<Clock>()
     val now = remember { mutableStateOf(clock.nowEpochMillis()) }
-    LaunchedEffect(periodMillis) {
+    // Pauses with the animations (app in the background, hidden tab page) and catches up at once when shown.
+    val running = com.adhamelgendy.nixura.presentation.components.LocalAnimationsRunning.current
+    LaunchedEffect(periodMillis, running) {
+        if (!running) return@LaunchedEffect
         while (true) {
             now.value = clock.nowEpochMillis()
             delay(periodMillis)

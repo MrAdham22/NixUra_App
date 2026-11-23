@@ -1,5 +1,7 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import androidx.compose.ui.unit.Dp
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -24,6 +26,7 @@ import com.adhamelgendy.nixura.presentation.theme.NixType
 /** Scrollable page used by the five bottom-navigation tabs. */
 @Composable
 fun TabScreen(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    val underBar = LocalFloatingBarInset.current
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -32,10 +35,17 @@ fun TabScreen(modifier: Modifier = Modifier, content: @Composable ColumnScope.()
         verticalArrangement = Arrangement.spacedBy(18.dp),
         content = {
             content()
-            Spacer(Modifier.height(16.dp))
+            // Room to scroll the last card above the floating nav bar (and the phone's own bar under it).
+            Spacer(Modifier.height(16.dp + underBar))
         },
     )
 }
+
+/**
+ * How much of the bottom of a tab page the floating nav bar covers, with the phone's navigation bar under it. Tab pages
+ * run to the bottom edge of the screen and scroll behind the bar; [TabScreen] ends with this much space.
+ */
+val LocalFloatingBarInset = compositionLocalOf<Dp> { 0.dp }
 
 /** Page with a back button, used by detail, form, profile and settings routes. */
 @Composable

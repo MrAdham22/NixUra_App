@@ -57,8 +57,8 @@ class AppLocaleTest {
         assertSame(ArabicStrings, stringsFor("ar-EG"))
         assertSame(EnglishStrings, stringsFor("en"))
         assertSame(EnglishStrings, stringsFor("system"))
-        assertEquals(listOf("system", "en", "ar"), availableLanguages.map { it.code })
-        assertEquals("العربية", availableLanguages.last().nativeName)
+        assertEquals(listOf("en", "ar", "system"), availableLanguages.map { it.code })
+        assertEquals("العربية", availableLanguages[1].nativeName)
     }
 
     @Test

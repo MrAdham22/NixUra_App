@@ -92,14 +92,15 @@ fun AccountSheet(displayName: String, navigator: Navigator, onDismiss: () -> Uni
         SheetRow(NixIcon.Leaf, s.profileTitle) { onDismiss(); navigator.pushFromAccountSheet(Route.Profile) }
         SheetRow(NixIcon.Gear, s.settingsTitle) { onDismiss(); navigator.pushFromAccountSheet(Route.Settings) }
         if (u != null) {
-            SheetRow(NixIcon.Back, s.accountSignOut, color = c.danger) { confirmSignOut = true }
+            // An action, not a place to go: only the leading icon, no trailing chevron.
+            SheetRow(NixIcon.Back, s.accountSignOut, color = c.danger, showChevron = false) { confirmSignOut = true }
         }
     }
     SignOutDialogs(vm, confirmSignOut, onCloseConfirm = { confirmSignOut = false })
 }
 
 @Composable
-private fun SheetRow(icon: NixIcon, label: String, color: Color = Nix.colors.textPrimary, onClick: () -> Unit) {
+private fun SheetRow(icon: NixIcon, label: String, color: Color = Nix.colors.textPrimary, showChevron: Boolean = true, onClick: () -> Unit) {
     val c = Nix.colors
     Row(
         Modifier.fillMaxWidth().pressable(pressedScale = 0.98f, onClick = onClick).padding(vertical = 13.dp),
@@ -108,6 +109,6 @@ private fun SheetRow(icon: NixIcon, label: String, color: Color = Nix.colors.tex
         NixIconView(icon, if (color == c.textPrimary) c.textSecondary else color, size = 20.dp)
         Spacer(Modifier.width(14.dp))
         Text(label, style = NixType.Body, color = color, modifier = Modifier.weight(1f))
-        NixIconView(NixIcon.Chevron, c.textMuted, size = 16.dp)
+        if (showChevron) NixIconView(NixIcon.Chevron, c.textMuted, size = 16.dp)
     }
 }

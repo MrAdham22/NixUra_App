@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.auth
 
+import com.adhamelgendy.nixura.presentation.components.rememberLoop
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -122,13 +123,7 @@ fun AshWord(text: String, style: TextStyle, brush: Brush, modifier: Modifier = M
 @Composable
 fun AuraBackdrop(modifier: Modifier = Modifier) {
     val reducedMotion = rememberReducedMotion()
-    val transition = rememberInfiniteTransition(label = "aura")
-    val clock = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(24_000, easing = LinearEasing), RepeatMode.Restart),
-        label = "auraClock",
-    )
+    val clock = rememberLoop(24_000) // pauses in the background
     val embers = remember {
         val random = Random(11)
         List(26) { floatArrayOf(random.nextFloat(), random.nextFloat(), 0.5f + random.nextFloat(), random.nextFloat() * 6.283f, 1f + random.nextInt(3)) }

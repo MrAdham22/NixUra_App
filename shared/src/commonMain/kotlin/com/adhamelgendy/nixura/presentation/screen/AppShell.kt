@@ -1,5 +1,21 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.components.LocalAnimationsRunning
+import androidx.compose.runtime.derivedStateOf
+import kotlin.math.abs
+import androidx.compose.foundation.interaction.DragInteraction
+import androidx.compose.foundation.MutatePriority
+import androidx.compose.foundation.gestures.stopScroll
+import com.adhamelgendy.nixura.presentation.components.LocalFloatingBarInset
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.WindowInsetsSides
+import kotlinx.coroutines.flow.distinctUntilChanged
+import com.adhamelgendy.nixura.presentation.navigation.screenNameOf
+import com.adhamelgendy.nixura.domain.analytics.UsageStats
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.draw.blur
@@ -115,6 +131,11 @@ fun AppRoot() {
     val settingsVm: SettingsViewModel = koinViewModel()
     val state by settingsVm.uiState.collectAsStateWithLifecycle()
     val navigator = koinInject<Navigator>()
+    // Usage stats: one screen_view per screen change (fixed names, never ids). Dropped by Firebase while stats are off.
+    val usageStats = koinInject<UsageStats>()
+    LaunchedEffect(navigator) {
+        snapshotFlow { screenNameOf(navigator.current) }.distinctUntilChanged().collect { usageStats.logScreen(it) }
+    }
     val sync = koinInject<NotificationSyncService>()
     LaunchedEffect(Unit) { sync.run() }
 
@@ -195,6 +216,8 @@ fun AppRoot() {
     ) {
     NixUraTheme(darkTheme = darkTheme) {
         SystemBarsEffect(darkTheme)
+        // Looping animations stop while the app is in the background (battery), and resume where they were.
+        com.adhamelgendy.nixura.presentation.components.AnimationsWhileVisible {
         CompositionLocalProvider(LocalStrings provides stringsFor(language)) {
             // The starter guide runs once per device, over the real app. It covers the whole window, bars included.
             val inMainApp = state.loaded && session !is SessionState.Loading && authPromptSeen != null && !inGate
@@ -204,18 +227,21 @@ fun AppRoot() {
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .windowInsetsPadding(WindowInsets.safeDrawing), // status/nav bars, cutout, keyboard; NOT gesture insets (those caused wide side/bottom gaps)
+                        // Status bar, cutout and sides here; NOT gesture insets (those caused wide side/bottom gaps). The bottom
+                        // (navigation bar, keyboard) is applied by each screen, so the tab pages can scroll behind the
+                        // floating nav bar down to the edge of the screen.
+                        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)),
                 ) {
                     when {
                         !state.loaded -> Unit
                         session is SessionState.Loading || authPromptSeen == null -> Unit
-                        inGate -> AuthGate(
+                        inGate -> Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))) { AuthGate(
                             navigator,
                             onEnterAsGuest = {
                                 navigator.selectTab(Route.Home) // the guest link can be tapped from inside the sign-in screens
                                 scope.launch { sessionManager.markAuthPromptSeen(); authPromptSeen = true }
                             },
-                        )
+                        ) }
                         else -> CompositionLocalProvider(LocalGuideTargets provides guideTargets.takeIf { guideActive }) {
                             MainContent(navigator)
                         }
@@ -234,6 +260,7 @@ fun AppRoot() {
                     )
                 }
             }
+        }
         }
     }
     }
@@ -259,7 +286,9 @@ private fun MainContent(navigator: Navigator) {
                 TabsHost(navigator, initialTab = if (MainTabs.isPagerTab(navigator.current)) navigator.current else Route.Home)
             } else {
                 // The coach is full-screen: no top bar, no bottom nav (it has its own compact header with a back button).
-                RouteContent(entry.route, navigator)
+                Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))) {
+                    RouteContent(entry.route, navigator)
+                }
             }
         }
     }
@@ -279,14 +308,32 @@ private fun TabsHost(navigator: Navigator, initialTab: Route) {
     val haptic = LocalHapticFeedback.current
     val reducedMotion = rememberReducedMotion()
     val pagerState = rememberPagerState(initialPage = MainTabs.pageOf(initialTab) ?: 0) { MainTabs.pagerTabs.size }
-    // Page the user just tapped; its haptic tick is given on the tap, not again when the pager settles.
-    val tappedPage = remember { intArrayOf(-1) }
+    // True from the moment a finger drags the pages until the next tap, link or Back moves them. Only then is a page
+    // the pager stops on the user's choice. A tap that cuts off the animation of an earlier tap also lets the pager
+    // "settle" for a moment on the page it was passing (Events, then Home quickly, stopped on Quit or half-way);
+    // that page must never override the tap.
+    val fingerDriven = remember { booleanArrayOf(false) }
+    LaunchedEffect(pagerState) {
+        pagerState.interactionSource.interactions.collect { if (it is DragInteraction.Start) fingerDriven[0] = true }
+    }
+    // Page the pager itself just reported to the navigator. That change must not be sent back as an animation:
+    // a touch that stops a fling settles the pager for a moment, and animating to that page then pulled the pager
+    // against the user's reverse swipe (it stopped, then carried on to the first page).
+    val pagerReported = remember { intArrayOf(-1) }
 
     // navigator -> pager
     val navigatorTab = navigator.current
     LaunchedEffect(navigatorTab) {
         val page = MainTabs.pageOf(navigatorTab) ?: return@LaunchedEffect // leaving the host (detail, coach...)
-        if (page != pagerState.targetPage) {
+        if (page == pagerReported[0]) {
+            pagerReported[0] = -1
+            return@LaunchedEffect
+        }
+        pagerReported[0] = -1
+        fingerDriven[0] = false
+        // A new tap always wins: stop a fling still running, then go all the way (also from half-way between pages).
+        pagerState.stopScroll(MutatePriority.UserInput)
+        if (pagerState.currentPage != page || pagerState.currentPageOffsetFraction != 0f) {
             if (reducedMotion) {
                 pagerState.animateScrollToPage(page, animationSpec = tween(120))
             } else {
@@ -294,18 +341,21 @@ private fun TabsHost(navigator: Navigator, initialTab: Route) {
             }
         }
     }
-    // pager -> navigator (settled page only)
+    // pager -> navigator (settled page only, and only after a finger moved the pages)
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }.collect { page ->
+            if (!fingerDriven[0]) return@collect
             val tab = MainTabs.pagerTabs[page]
-            if (MainTabs.isPagerTab(navigator.current) && navigator.current != tab) navigator.selectTab(tab)
+            if (MainTabs.isPagerTab(navigator.current) && navigator.current != tab) {
+                pagerReported[0] = page
+                navigator.selectTab(tab)
+            }
         }
     }
-    // Haptic tick when a swipe lands on a different page.
+    // Haptic tick when a swipe lands on a different page (taps give theirs on the tap).
     LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.settledPage }.drop(1).collect { page ->
-            if (tappedPage[0] != page) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-            tappedPage[0] = -1
+        snapshotFlow { pagerState.settledPage }.drop(1).collect {
+            if (fingerDriven[0]) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         }
     }
 
@@ -319,9 +369,13 @@ private fun TabsHost(navigator: Navigator, initialTab: Route) {
         )
     }
 
+    // The bar floats over the pages: they run to the bottom edge and scroll behind it (owner, 2026-11-23).
+    val density = LocalDensity.current
+    var barHeight by remember { mutableStateOf(0.dp) }
     Column(Modifier.fillMaxSize()) {
         TopBar(navigator)
         Box(Modifier.weight(1f).fillMaxWidth()) {
+        CompositionLocalProvider(LocalFloatingBarInset provides barHeight) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
@@ -336,17 +390,33 @@ private fun TabsHost(navigator: Navigator, initialTab: Route) {
                     if (page != pagerState.currentPage) hideFromAccessibility()
                 },
             ) {
-                when (MainTabs.pagerTabs[page]) {
-                    Route.Home -> HomeScreen(navigator)
-                    Route.BadHabits -> BadHabitsScreen(navigator)
-                    Route.GoodHabits -> GoodHabitsScreen(navigator)
-                    else -> EventsScreen(navigator)
+                // The pager keeps the neighbours composed; their looping animations run only while any part of the
+                // page is on screen (both pages during a swipe), so a hidden prayer card no longer redraws the app.
+                val parentRunning = LocalAnimationsRunning.current
+                val onScreen by remember(page) {
+                    derivedStateOf { abs(page - (pagerState.currentPage + pagerState.currentPageOffsetFraction)) < 1f }
+                }
+                CompositionLocalProvider(LocalAnimationsRunning provides (parentRunning && onScreen)) {
+                    when (MainTabs.pagerTabs[page]) {
+                        Route.Home -> HomeScreen(navigator)
+                        Route.BadHabits -> BadHabitsScreen(navigator)
+                        Route.GoodHabits -> GoodHabitsScreen(navigator)
+                        else -> EventsScreen(navigator)
+                    }
                 }
             }
         }
-            // Undo for a long-press delete, just above the bar, on every tab.
-            UndoDeleteBar(Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp, vertical = 8.dp))
         }
+            // Undo for a long-press delete, just above the bar, on every tab.
+            UndoDeleteBar(Modifier.align(Alignment.BottomCenter).padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp + barHeight))
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .onSizeChanged { barHeight = with(density) { it.height.toDp() } }
+                    // Above the phone's navigation bar and the keyboard; the pages still show in the gap under the bar.
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)),
+            ) {
         DropletNavBar(
             items = items,
             modifier = Modifier.guideTarget(GuideTarget.NavBar),
@@ -355,12 +425,13 @@ private fun TabsHost(navigator: Navigator, initialTab: Route) {
             onSelect = { index ->
                 val tab = MainTabs.barTabs[index]
                 if (tab != navigator.current) {
-                    tappedPage[0] = MainTabs.pageOf(tab) ?: -1
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     navigator.selectTab(tab)
                 }
             },
         )
+            }
+        }
     }
 }
 

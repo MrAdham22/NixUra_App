@@ -67,6 +67,7 @@ fun GoodHabitsScreen(navigator: Navigator) {
                     NixIcon.Plus,
                     { navigator.push(Route.GoodHabitForm()) },
                     modifier = Modifier.guideTarget(GuideTarget.AddGood),
+                    label = s.goodAdd,
                 )
             },
         )

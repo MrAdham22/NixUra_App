@@ -27,7 +27,7 @@
         android:supportsRtl="true"
         android:localeConfig="@xml/locales_config"
         android:theme="@style/Theme.NixUra">
-        <!-- Usage stats (Firebase Analytics) stay off until the user turns them on in Settings > Privacy. -->
+        <!-- Usage stats (Firebase Analytics) stay off until NixUraApplication applies the stored setting (on by default). -->
         <meta-data android:name="firebase_analytics_collection_enabled" android:value="false" />
         <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
 

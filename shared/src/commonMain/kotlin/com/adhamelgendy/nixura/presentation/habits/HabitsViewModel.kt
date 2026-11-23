@@ -1,5 +1,8 @@
 package com.adhamelgendy.nixura.presentation.habits
 
+import com.adhamelgendy.nixura.domain.analytics.UsageStats
+import com.adhamelgendy.nixura.domain.analytics.UsageAction
+import com.adhamelgendy.nixura.domain.analytics.NoUsageStats
 import com.adhamelgendy.nixura.domain.recognition.HabitTopic
 import com.adhamelgendy.nixura.domain.recognition.HabitTopicDetector
 import androidx.lifecycle.ViewModel
@@ -41,6 +44,8 @@ class HabitsViewModel(
     private val setHideNameOutside: SetHideNameOutsideUseCase,
     pendingDeletions: PendingDeletions,
     private val topics: HabitTopicDetector? = null,
+    /** Anonymous usage stats (fixed action names only). */
+    private val usageStats: UsageStats = NoUsageStats,
 ) : ViewModel() {
 
     private val topicCache = HashMap<String, HabitTopic>()
@@ -51,7 +56,15 @@ class HabitsViewModel(
     private val trackingFromDb = observeActiveHabitTracking()
         .onEach { _uiState.update { it.copy(isLoading = false) } }
 
-    private val tick = MutableStateFlow(0L)
+    // The live counter's 1 s tick. A cold flow: it only runs while the screen collects [uiState] (WhileSubscribed below
+    // stops it 5 s after the app goes to the background), instead of ticking in the view model forever.
+    private val tick = kotlinx.coroutines.flow.flow {
+        var n = 0L
+        while (true) {
+            emit(n++)
+            kotlinx.coroutines.delay(1_000)
+        }
+    }
 
     private val liveTracking = combine(trackingFromDb, tick) { trackingList, _ ->
         val now = clock.nowEpochMillis()
@@ -69,15 +82,6 @@ class HabitsViewModel(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = HabitsUiState(),
     )
-
-    init {
-        viewModelScope.launch {
-            while (true) {
-                kotlinx.coroutines.delay(1_000)
-                tick.update { it + 1 }
-            }
-        }
-    }
 
     fun onAddHabitClick() {
         _uiState.update { it.copy(showCreateDialog = true, createNameInput = "", errorMessage = null) }
@@ -128,6 +132,7 @@ class HabitsViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, errorMessage = null) }
             val result = createHabitAndStartTracking(name, startAtEpochMillis, colorArgb, cost, hideNameOutside)
+            if (result.isSuccess) usageStats.logAction(UsageAction.QuitHabitCreated)
             _uiState.update { state ->
                 result.fold(
                     onSuccess = { state.copy(isSaving = false) },
@@ -164,7 +169,7 @@ class HabitsViewModel(
     fun onRecordRelapse(habitId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(errorMessage = null) }
-            recordRelapse(habitId, clock.nowEpochMillis()).onFailure { error ->
+            recordRelapse(habitId, clock.nowEpochMillis()).onSuccess { usageStats.logAction(UsageAction.RelapseLogged) }.onFailure { error ->
                 _uiState.update {
                     it.copy(errorMessage = error.message ?: "Could not record relapse")
                 }

@@ -18,7 +18,7 @@ NixUra helps people quit bad habits and stay quit. It shows honest, lasting prog
 
 The owner confirmed three things that make NixUra different (2026-11-14):
 
-- **Private and offline by default.** Everything works with no account and no network. Guests make no network calls except anonymous usage stats, and only if they opt in.
+- **Private and offline by default.** Everything works with no account and no network. Guests make no network calls except anonymous usage stats (on by default since 2026-11-23, owner decision; one switch in Settings turns them off).
 - **Cards that lighten as you go.** Each quit habit is a card with a live counter ticking every second, and its colour moves from dark to light as the active streak grows (0/1/3/7/14/30 days). The colour is worked out from the streak, never stored.
 - **Recovery without shame.** A relapse only resets the current streak. The history and the longest streak stay. The coach never shames a slip.
 
@@ -57,7 +57,7 @@ The owner confirmed three things that make NixUra different (2026-11-14):
 ## Product Principles
 
 1. **Progress is never wiped.** A slip resets the current streak, not the person's record.
-2. **Private comes first.** Everything works offline with no account. Anything online is opt-in.
+2. **Private comes first.** Everything works offline with no account. Anything online is opt-in, except anonymous usage stats (on by default, easy to turn off).
 3. **Built for the hard moment.** The counter, logging a slip and the coach are always one tap away and quick to read in a weak moment.
 4. **Kind, never preachy.** Encourage, never shame. Crisis messages always get a local support reply.
 5. **Quitting leads.** Good habits and events support quitting. They don't compete with it.

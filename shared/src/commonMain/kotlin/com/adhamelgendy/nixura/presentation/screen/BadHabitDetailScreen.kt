@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.presentation.components.rememberLoop
 import com.adhamelgendy.nixura.presentation.util.forDisplay
 import com.adhamelgendy.nixura.presentation.components.habitCardEdge
 import com.adhamelgendy.nixura.presentation.components.habitCardLift
@@ -429,13 +430,13 @@ private fun TimelineNode(state: StepState, size: Dp) {
         StepState.Next -> {
             // A soft halo breathes around the step being worked on (a steady one when motion is reduced).
             val still = rememberReducedMotion()
-            val pulse = rememberInfiniteTransition(label = "next")
-            val wave by pulse.animateFloat(0f, 1f, infiniteRepeatable(tween(1800), RepeatMode.Restart), label = "halo")
-            val t = if (still) 0.5f else wave
+            // Read only while drawing (no recomposition per frame); pauses off screen.
+            val wave = if (still) null else rememberLoop(1800, easing = androidx.compose.animation.core.FastOutSlowInEasing)
             Box(
                 Modifier
                     .size(size)
                     .drawBehind {
+                        val t = wave?.value ?: 0.5f
                         drawCircle(c.accent.copy(alpha = 0.35f * (1f - t)), radius = this.size.minDimension / 2 * (1f + 0.6f * t))
                     }
                     .clip(CircleShape)

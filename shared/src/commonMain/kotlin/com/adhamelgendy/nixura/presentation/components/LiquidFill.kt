@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import androidx.compose.runtime.State
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
@@ -43,7 +44,6 @@ fun Modifier.liquidFill(level: Float, colors: LiquidColors): Modifier {
     val target = level.coerceIn(0f, 1f)
     val shown = remember { Animatable(target) }
     val splash = remember { Animatable(0f) }
-    val phase = remember { Animatable(0f) }
     val sweep = remember { Animatable(0f) }
     var wasFull by remember { mutableStateOf(target >= 1f) }
 
@@ -59,14 +59,11 @@ fun Modifier.liquidFill(level: Float, colors: LiquidColors): Modifier {
         }
         shown.animateTo(target, spring(dampingRatio = 0.82f, stiffness = Spring.StiffnessVeryLow))
     }
-    // The wave only runs while there is a surface to move; an empty or full card costs nothing.
+    // The wave only runs while there is a surface to move; an empty or full card costs nothing. It also holds still
+    // off screen and in the background (LocalAnimationsRunning) and picks up from the same point.
+    // rememberLoop pauses with LocalAnimationsRunning and steps at the ambient rate (read only while drawing).
     val waving = !reducedMotion && target > 0f && target < 1f
-    LaunchedEffect(waving) {
-        while (waving) {
-            phase.animateTo(1f, tween(WAVE_PERIOD_MS, easing = LinearEasing))
-            phase.snapTo(0f)
-        }
-    }
+    val phase: State<Float>? = if (waving) rememberLoop(WAVE_PERIOD_MS) else null
     LaunchedEffect(target >= 1f, reducedMotion) {
         val full = target >= 1f
         if (full && !wasFull && !reducedMotion) {
@@ -89,7 +86,7 @@ fun Modifier.liquidFill(level: Float, colors: LiquidColors): Modifier {
             val edge = LiquidGeometry.calmness(l)
             val amplitude = baseAmplitude * (1f + 1.6f * splash.value) * edge
             val top = size.height * (1f - l)
-            val p = phase.value * 2f * PI.toFloat()
+            val p = (phase?.value ?: 0f) * 2f * PI.toFloat()
             wave(back, top - amplitude * 0.4f, amplitude * 0.8f, p + 1.7f, 1.3f)
             drawPath(back, colors.surface.copy(alpha = 0.45f))
             wave(front, top, amplitude, -p, 1f)

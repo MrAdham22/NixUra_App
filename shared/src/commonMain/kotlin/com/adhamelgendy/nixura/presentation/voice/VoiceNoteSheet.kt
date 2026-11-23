@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.voice
 
+import com.adhamelgendy.nixura.presentation.components.rememberLoop
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -193,11 +194,12 @@ fun AiConsentContent(onAgree: () -> Unit, onDecline: () -> Unit) {
 private fun MicOrb(level: Float, busy: Boolean, icon: NixIcon, onClick: (() -> Unit)?) {
     val c = Nix.colors
     val reduced = rememberReducedMotion()
-    val loop = rememberInfiniteTransition(label = "orb")
-    val wave by loop.animateFloat(0f, 1f, infiniteRepeatable(tween(if (busy) 1100 else 1800, easing = LinearEasing), RepeatMode.Restart), label = "wave")
-    val swell by animateFloatAsState(level, spring(dampingRatio = 0.6f, stiffness = 300f), label = "swell")
+    val waveLoop = rememberLoop(if (busy) 1100 else 1800) // read only inside the Canvas
+    val swellState = animateFloatAsState(level, spring(dampingRatio = 0.6f, stiffness = 300f), label = "swell")
     Box(Modifier.size(180.dp), contentAlignment = Alignment.Center) {
         Canvas(Modifier.size(180.dp)) {
+            val wave = waveLoop.value
+            val swell = swellState.value
             val core = 46.dp.toPx()
             if (!reduced) {
                 // Two rings, half a cycle apart, fading as they grow.

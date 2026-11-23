@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -100,6 +101,7 @@ fun DropletNavBar(
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .then(modifier) // after the outer padding, so measuring the bar (starter guide) gets the visible pill
+            .softLift(shape, Color.Black) // it floats over the cards scrolling behind it
             .clip(shape)
             .background(c.surface)
             .border(1.dp, c.border, shape)
