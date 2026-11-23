@@ -1,15 +1,14 @@
-# Google Play Data Safety checklist (accounts, as shipped by Agent 2)
+# Google Play Data Safety checklist
 
 Fill the form from the real data flows below. Other agents append their own rows at the marked anchors; re-check the form after each release.
 
 ## Data collected and shared
 | Play category | Data type | Collected | Shared with third parties | Required or optional | Purpose |
 |---|---|---|---|---|---|
-| Personal info | Email address | Yes | Email delivery provider acts as a service provider (processing on our behalf; Play does not count this as "sharing") | Required for an account (the app works without one) | Account management |
+| Personal info | Email address | Yes | No (Firebase Authentication acts as a service provider; Play does not count this as "sharing") | Required for an account (the app works without one) | Account management |
 | Personal info | Name | Yes (optional field) | No | Optional | App functionality |
 | Personal info | Age (not "date of birth") | Yes (optional field) | No | Optional | App functionality |
-| App info and performance / Device or other IDs | Device sessions (device model name, platform) and an account id | Yes | No | Required for an account | Account management, security |
-| Security log | Account events | Yes | No | Required for an account | Security, fraud prevention |
+| App info and performance | Bug reports the user chooses to send (text, app/OS version, device model) | Yes, only when sent | No | Optional | App functionality (support) |
 | App activity / Other user-generated content | Habit names, relapse dates, good-habit logs, events, reminders (cloud sync; habit names can reveal health information, so review whether to also declare Health info) | Yes, with an account only | No | Optional (no account means nothing leaves the device) | App functionality |
 | App activity / Other actions | Theme, language and notification settings | Yes, with an account only | No | Optional | App functionality |
 
@@ -20,7 +19,7 @@ Approximate location (`ACCESS_COARSE_LOCATION`, UX phase C): read once on the de
 ## Security practices section
 - Data is encrypted in transit (HTTPS): **Yes**.
 - You can request data deletion: **Yes** (in-app and web path in `ACCOUNT_DELETION.md`).
-- Passwords are hashed (Argon2id); tokens are encrypted on the device.
+- Passwords are handled only by Firebase Authentication (hashed by Google); sign-in tokens are encrypted on the device; database rules limit each account to its own data.
 
 ## Account deletion
 - In-app path: Settings > Account > Delete account.
@@ -43,4 +42,4 @@ Google Calendar access is read-only and its token is not stored; the Notion toke
 | Device or other IDs | Firebase app-instance id | Yes | No (service provider) | Optional (same switch) | Analytics |
 | App info and performance | Device model, OS and app version, session length | Yes | No (service provider) | Optional (same switch) | Analytics |
 
-Not sent: habit names or kinds of habits, notes, chats, name, email, account id, advertising id (`google_analytics_adid_collection_enabled` is false in the manifest). Before submitting, compare these rows with Google's official Firebase data-disclosure page (it may also list approximate location derived from the IP address) and set the Analytics data-retention period in Firebase (2 or 14 months) to match the privacy policy. Consider an EU/UK consent step, since collection is on by default.
+Not sent: habit names or kinds of habits, notes, chats, name, email, account id, advertising id (`google_analytics_adid_collection_enabled` is false in the manifest). Before submitting, compare these rows with Google's official Firebase data-disclosure page (it may also list approximate location derived from the IP address) and keep the Analytics data-retention period in Firebase at 2 months to match the privacy policy. Consider an EU/UK consent step, since collection is on by default.
