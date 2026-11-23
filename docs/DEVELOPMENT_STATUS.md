@@ -8,10 +8,13 @@
 service provider, how to turn them off) and the AI coach row that was only in the generated file; the in-app text
 (`LegalContent.kt`) was regenerated with `tools/gen_legal_text.py`, so the location row is now in the app too.
 `docs/legal/PLAY_DATA_SAFETY.md` has the usage-stats rows. The Settings hint mentions screens (EN + AR).
-**Still for the owner before release:** fill the bracketed fields (date, legal name, retention 2 or 14 months, which must
-match Firebase's setting), check the rows against Google's Firebase data-disclosure page, consider an EU/UK consent
-step, and have it reviewed. The policy still describes the old Node backend (Argon2id passwords, own server, Resend)
-in places; accounts now run on Firebase Authentication, so sections 2-4 need a pass before release.
+**Done 2026-11-24:** all bracketed fields filled (24 November 2026; developer Adham Elgendy, individual developer, Egypt;
+governing law Egypt; liability capped at what was paid in 12 months; Analytics retention 2 months). Sections 2-5 now
+describe the real setup: Firebase Authentication, Firestore in europe-west1 with no backups (point-in-time recovery off),
+Cloudflare Worker (AI relay, Notion link, AI message counts deleted after 3 days), bug reports in `bugReports` (kept;
+not erased by account deletion). `ACCOUNT_DELETION.md` and `PLAY_DATA_SAFETY.md` match. **Still for the owner:** a
+legal review; keep Firebase Analytics retention at 2 months; "Egypt" was inferred, so correct it if wrong; consider an
+EU/UK consent step; publish the policy and deletion page at public URLs.
 
 ## Navigation, Settings and screen-reader fixes (2026-11-23)
 

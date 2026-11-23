@@ -1,8 +1,8 @@
 # NixUra Terms of Use
 
-*Draft prepared with the app. Have it reviewed by a lawyer and fill the bracketed fields before release.*
+*Have these terms reviewed by a lawyer before release.*
 
-**Last updated:** [date]  **Provider:** [your legal name or company]  **Contact:** adhamelgendydev@gmail.com
+**Last updated:** 24 November 2026  **Provider:** Adham Elgendy, individual developer, Egypt  **Contact:** adhamelgendydev@gmail.com
 
 1. **Agreement.** By using NixUra or creating an account you accept these terms and the Privacy Policy.
 2. **The service.** NixUra is a habit-tracking and countdown app. It works offline; an account is optional.
@@ -12,8 +12,8 @@
 6. **Your data.** You own your content. You give us the limited permission needed to store and process it to run the service as described in the Privacy Policy.
 7. **Deleting your account.** You can delete your account at any time in the app (Settings > Account > Delete account). Server data is then erased as described in the Privacy Policy.
 8. **Availability and changes.** We may change, suspend or end features, with notice where reasonable. We aim for reliability but do not promise uninterrupted service.
-9. **Disclaimer and liability.** The app is provided "as is". To the extent the law allows, we are not liable for indirect or consequential loss, and our total liability is limited to [amount / the amount you paid]. Nothing limits liability that cannot be limited by law.
+9. **Disclaimer and liability.** The app is provided "as is". To the extent the law allows, we are not liable for indirect or consequential loss, and our total liability is limited to the amount you paid us for NixUra in the 12 months before the claim (nothing, if you used it for free). Nothing limits liability that cannot be limited by law.
 10. **Termination.** We may suspend accounts that break these terms.
-11. **Governing law.** [Country/State]; courts of [place], without affecting mandatory consumer rights where you live.
+11. **Governing law.** The laws of Egypt; the courts of Egypt, without affecting mandatory consumer rights where you live.
 12. **Changes to the terms.** We will update the date above and notify you in the app for material changes.
 13. **Contact.** adhamelgendydev@gmail.com
