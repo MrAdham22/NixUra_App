@@ -2,6 +2,68 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## Navigation, Settings and screen-reader fixes (2026-11-23)
+
+Branch `claude/nav-settings-improvements-63aa4a`. `:androidApp:assembleDebug` and `:shared:testAndroidHostTest` pass;
+checked on the Pixel 9 emulator (Arabic, guest).
+
+- **Swipe reversal fixed** (`AppShell.TabsHost`): swiping toward a tab and quickly swiping back no longer stops and then
+  carries on to the first tab. Cause: a touch that stops a fling lets the pager settle for a moment; the pager reported
+  that page to the `Navigator`, and the navigator-to-pager effect then animated to it against the user's reverse swipe.
+  The page the pager reports itself is no longer sent back as an animation. Emulator: reverse swipes with 0.1/0.2/0.3 s
+  gaps land back on the starting tab; single swipes and taps still move tabs. Real-finger feel on the phone: **unverified**.
+- **Sign-out row:** one arrow only (the trailing chevron is gone, in the account sheet and on the Account screen; it is an
+  action, not a place to go). Not seen on the emulator (guest has no sign-out row).
+- **Language order:** English, Arabic, then "System default" last, like "Same as phone" last in Appearance.
+- **Usage stats on by default** (owner decision 2026-11-23): `AppSettings.usageStatsEnabled = true`; `NixUraApplication`
+  applies the stored choice to Firebase at every start (the manifest still keeps collection off until then). An install
+  that already saved "off" keeps it. **To do for the owner:** update `docs/legal/PRIVACY_POLICY.md` and the Play Data
+  safety form (analytics collected by default, user can turn it off); consider an EU/UK consent prompt before release.
+- **Impeccable audit fixes** (Settings, Good habits, Events): `NixSwitch` is a real switch for TalkBack (role and
+  on/off state) with a 48 dp touch area; chips and the theme options announce "selected"; the good-habit + / - buttons
+  and the header + buttons have spoken labels (new strings `goodPlusA11y`, `goodMinusA11y`, EN + AR); the "Replay the
+  guide" row uses the Info icon (Sparkle stays for the AI coach); Events builds both lists with one card function.
+  Checked with a UI dump on the emulator.
+- **Screen and action tracking** (owner decision 2026-11-23): `UsageStats.logScreen` / `logAction` (no-op on iOS,
+  `NoUsageStats`). `AppRoot` logs a `screen_view` on every screen change with a fixed name (`screenNameOf`, never an
+  id or the email; `ScreenNamesTest`). ViewModels log `quit_habit_created`, `relapse_logged`, `good_habit_created`,
+  `good_habit_logged`, `good_habit_unlogged`, `event_created`, `coach_message_sent`, `craving_help_used`,
+  `voice_note_added` (an optional `usageStats` constructor parameter, wired in `AppModules`). No habit category or
+  theme is sent (addictions and prayer are sensitive). Emulator: `screen_view` (home, good_habits, events) and
+  `good_habit_logged` seen in the Firebase debug log; the other actions are type-checked, not exercised. Firebase
+  console (DebugView, Events, Pages and screens): **unverified**. On the owner's phone, collection is on and Firebase
+  logs `screen_view` events. The re-downloaded `google-services.json` is identical to the old one (Analytics is linked
+  on Firebase's side), so no file change was needed.
+- **Battery and smoothness pass, every animation kept** (owner, 2026-11-23): all looping animations now go through
+  `rememberLoop` (`components/AnimationGate.kt`, `LoopMath` + `LoopMathTest`), which freezes in place while
+  `LocalAnimationsRunning` is false (app below STARTED via `AnimationsWhileVisible` in `AppRoot`; tab pages not on screen,
+  provided per page in `TabsHost`) and steps ambient loops at most every 16 ms on one shared clock. Converted: prayer
+  shimmer, star spin, gold button sweep, gold wash twinkle (now only created while the wash shows), loading shimmer,
+  event "breath", quit-detail halo, coach typing dots, voice orb, sign-in aura, water wave; theme scenes and
+  `rememberNowMillis` also pause. The event breath, halo, typing dots and orb no longer recompose every frame (read
+  while drawing). The prayer card paints its still parts once into an offscreen `GraphicsLayer`. The quit counter's
+  1 s tick is a cold flow that stops with `WhileSubscribed`. Measured: emulator idle frames in 5 s, Quit 131 -> 0 and
+  Events 134 -> 0; owner's phone (debug build, 120 Hz) Home 178% -> 91% of one core, about 64 frames a second, and 0% in
+  the background. Release builds still have `isMinifyEnabled = false`; R8 and a baseline profile before launch would
+  cut more (not done).
+- **Fast taps on the nav bar fixed** (`AppShell.TabsHost`): tapping Events then Home quickly could land on Quit or
+  freeze half-way between pages. A tap that cuts off the previous tap's animation lets the pager "settle" for a moment
+  on the page it was passing, and that page was taken as the user's choice. Now a settled page only counts after a
+  finger dragged the pages (`DragInteraction.Start`); a tap also stops a running fling and always finishes the move,
+  even from half-way. Emulator: 12 fast-tap cases (0.05/0.15/0.3 s gaps, 2 to 4 taps) all land on the last tab;
+  the swipe-reversal, single-swipe and swipe-then-tap checks still pass. Phone: **unverified**.
+- **Owner's phone crashing when connected (2026-11-23), not an app bug:** the phone runs near out of memory (about
+  186 MB free, 3.9 GB swap used); while connected, the system core stopped answering, the system UI and launcher
+  restarted (black screen) and hundreds of DeadSystemException crashes followed. NixUra's own crash there was a
+  victim of it (its debug build aborts on that error). Debug logging props set on the phone for DebugView were removed.
+  Use the emulator for Firebase debug checks.
+- **Floating nav bar** (owner, 2026-11-23): the tab pages run to the bottom edge and scroll behind the droplet bar,
+  showing in the gap under it; the bar has the soft black lift. `AppRoot` now pads only the top and sides, and each
+  screen applies the bottom inset itself (the bar, the auth gate, every pushed route), so non-tab screens are unchanged.
+  `TabScreen` ends with `LocalFloatingBarInset` so the last card scrolls fully above the bar; the undo bar sits above
+  it. Emulator: checked with a short screen (card behind and under the bar, last card fully above at the end) and
+  Settings (stops above the system bar as before). On the owner's phone: **unverified**.
+
 ## UX upgrade D (2026-11-22): lock screen and persistent presence, built
 
 Branch `feature/lock-screen-presence`, merged 2026-11-23 (PR #25, squash) on the owner's go-ahead **without the device checks**, after re-running `:shared:testAndroidHostTest` (812, 0 failures) and `:androidApp:assembleDebug` on the branch (already on top of `master`). Details, differences from the design and the

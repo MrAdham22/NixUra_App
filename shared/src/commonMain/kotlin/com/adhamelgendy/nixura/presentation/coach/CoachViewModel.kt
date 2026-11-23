@@ -1,5 +1,8 @@
 package com.adhamelgendy.nixura.presentation.coach
 
+import com.adhamelgendy.nixura.domain.analytics.UsageStats
+import com.adhamelgendy.nixura.domain.analytics.UsageAction
+import com.adhamelgendy.nixura.domain.analytics.NoUsageStats
 import com.adhamelgendy.nixura.domain.coach.ChatFocus
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -72,6 +75,8 @@ class CoachViewModel(
     private val setAiConsent: SetAiConsentUseCase,
     private val getQuota: GetAiQuotaUseCase,
     private val buildVisuals: BuildCoachVisualsUseCase,
+    /** Anonymous usage stats (fixed action names only). */
+    private val usageStats: UsageStats = NoUsageStats,
 ) : ViewModel() {
 
     private val transient = MutableStateFlow(CoachUiState())
@@ -148,6 +153,7 @@ class CoachViewModel(
         viewModelScope.launch {
             transient.update { it.copy(isTyping = true, errorMessage = null, notice = null) }
             val result = sendMessage(chat, text, replyDelayMillis = REPLY_DELAY_MILLIS, focusHabitId = selectedHabitId)
+            if (result.isSuccess) usageStats.logAction(UsageAction.CoachMessageSent)
             val outcome = result.getOrNull()
             transient.update {
                 it.copy(
@@ -184,6 +190,7 @@ class CoachViewModel(
      * coach opens.
      */
     fun onCraving(habitId: Long, text: String) {
+        usageStats.logAction(UsageAction.CravingHelpUsed)
         viewModelScope.launch {
             if (activeChat.value == null) activeChat.value = ensureGreeting(null)
             selectedHabitId = habitId

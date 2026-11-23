@@ -1,5 +1,8 @@
 package com.adhamelgendy.nixura.presentation.voice
 
+import com.adhamelgendy.nixura.domain.analytics.UsageStats
+import com.adhamelgendy.nixura.domain.analytics.UsageAction
+import com.adhamelgendy.nixura.domain.analytics.NoUsageStats
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.adhamelgendy.nixura.domain.coach.ai.AiMode
@@ -58,6 +61,8 @@ class VoiceNoteViewModel(
     private val setConsent: SetAiConsentUseCase,
     private val clock: Clock,
     private val days: DayCalculator,
+    /** Anonymous usage stats (fixed action names only). */
+    private val usageStats: UsageStats = NoUsageStats,
 ) : ViewModel() {
 
     private val _stage = MutableStateFlow<VoiceStage>(VoiceStage.Idle)
@@ -193,6 +198,7 @@ class VoiceNoteViewModel(
         _stage.value = review.copy(items = items, adding = true)
         work = viewModelScope.launch {
             val outcome = apply(chosen)
+            if (outcome.added > 0) usageStats.logAction(UsageAction.VoiceNoteAdded)
             // If the sheet was closed meanwhile, the items are still added but the sheet stays closed.
             if (_stage.value is VoiceStage.Review) _stage.value = VoiceStage.Done(outcome.added, outcome.failed)
         }

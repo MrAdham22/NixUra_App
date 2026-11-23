@@ -110,7 +110,7 @@ fun HabitThemeBackdrop(
 ) {
     val reduced = still || rememberReducedMotion()
     val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
-    val running = !reduced && lifecycleState.isAtLeast(Lifecycle.State.STARTED)
+    val running = !reduced && lifecycleState.isAtLeast(Lifecycle.State.STARTED) && com.adhamelgendy.nixura.presentation.components.LocalAnimationsRunning.current
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val density = LocalDensity.current
     val direction = LocalLayoutDirection.current

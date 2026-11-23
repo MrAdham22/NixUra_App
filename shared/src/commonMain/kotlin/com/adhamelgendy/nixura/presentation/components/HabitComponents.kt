@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.components
 
+import androidx.compose.runtime.State
 import kotlin.time.Duration.Companion.days
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -666,7 +667,7 @@ fun GoodHabitCard(
                 Text(habit.name.forDisplay(), style = NixType.Heading, color = look.content, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(goodProgressText(habit, s), style = NixType.Small, color = look.contentMuted)
             }
-            GoodHabitButton(habit.fillStyle, look, NixIcon.Minus, onMinus, size = 38.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), secondary = true)
+            GoodHabitButton(habit.fillStyle, look, NixIcon.Minus, onMinus, size = 38.dp, tint = look.content, background = look.content.copy(alpha = 0.10f), secondary = true, label = s.goodMinusA11y(habit.name.forDisplay()))
             Spacer(Modifier.width(8.dp))
             val water = habit.water
             // A water habit adds one serving with a labelled button ("+1 cup" / "+250 ml").
@@ -678,6 +679,7 @@ fun GoodHabitCard(
                 tint = if (habit.doneToday) look.background else c.onAccent,
                 background = if (habit.doneToday) look.content else c.accent,
                 haptic = true,
+                label = s.goodPlusA11y(habit.name.forDisplay()),
             )
         }
         if (habit.fillStyle == GoodHabitFillStyle.PRAYER && !habit.isWeekly && habit.dailyTarget in 2..MAX_PRAYER_BEADS) {
@@ -767,11 +769,8 @@ fun EventCard(
     // On the last day the card's glow breathes slowly, so a near event feels alive (still with "remove animations").
     val soon = !passed && remaining < 1.days
     val reducedMotion = rememberReducedMotion()
-    val breath = if (soon && !reducedMotion) {
-        rememberInfiniteTransition(label = "eventBreath").animateFloat(
-            0.55f, 1f, infiniteRepeatable(tween(2200, easing = NixEasing), RepeatMode.Reverse), label = "eventGlow",
-        ).value
-    } else 1f
+    // Read only while drawing, so the breathing repaints the glow without recomposing the card.
+    val breath: State<Float>? = if (soon && !reducedMotion) rememberLoop(2200, 0.55f, 1f, NixEasing, reverse = true) else null
     val shape = RoundedCornerShape(22.dp)
     NixCard(
         modifier.fillMaxWidth(),
@@ -782,7 +781,7 @@ fun EventCard(
         paint = Modifier.clip(shape).drawWithCache {
             val fill = Brush.linearGradient(listOf(look.start, look.end), Offset.Zero, Offset(size.width, size.height))
             val glow = Brush.radialGradient(
-                listOf(look.glow.copy(alpha = look.glow.alpha * breath), Color.Transparent),
+                listOf(look.glow.copy(alpha = look.glow.alpha * (breath?.value ?: 1f)), Color.Transparent),
                 center = Offset(size.width * 0.92f, 0f),
                 radius = size.maxDimension * 0.7f,
             )

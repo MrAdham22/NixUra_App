@@ -1,5 +1,6 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import com.adhamelgendy.nixura.domain.model.Event
 import com.adhamelgendy.nixura.presentation.components.GlowIconButton
 import com.adhamelgendy.nixura.domain.widget.WidgetKind
 import com.adhamelgendy.nixura.presentation.components.rememberAddToHomeAction
@@ -48,6 +49,18 @@ fun EventsScreen(navigator: Navigator) {
     val upcoming = state.events.filter { it.targetAtEpochMillis > now }
     val past = state.events.filter { it.targetAtEpochMillis <= now }.sortedByDescending { it.targetAtEpochMillis }
 
+    // One card for both lists. Long press (or the card's More button): Edit, Add to Home screen where widgets exist, Delete.
+    @Composable
+    fun EventRow(event: Event) {
+        val actions = listOf(SheetAction(s.editEvent, NixIcon.Pencil) { navigator.push(Route.EventForm(event.id)) }) +
+            listOfNotNull(addToHome?.let { pin -> SheetAction(s.widgetAddToHome, NixIcon.Home) { pin(WidgetKind.EVENT, event.id) } })
+        EventCard(
+            event, now, formatDateTime(event.targetAtEpochMillis, days, s),
+            onClick = { navigator.push(Route.EventForm(event.id)) },
+            onLongClick = { deleteFlow.open(DeletableItem.Event(event.id), event.title, actions) },
+        )
+    }
+
     TabScreen {
         ScreenHeader(
             eyebrow = s.eventsEyebrow,
@@ -58,6 +71,7 @@ fun EventsScreen(navigator: Navigator) {
                     NixIcon.Plus,
                     { navigator.push(Route.EventForm()) },
                     modifier = Modifier.guideTarget(GuideTarget.AddEvent),
+                    label = s.eventsAdd,
                 )
             },
         )
@@ -74,27 +88,11 @@ fun EventsScreen(navigator: Navigator) {
         }
         if (upcoming.isNotEmpty()) {
             SectionLabel(s.upcoming)
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                upcoming.forEach { event ->
-                    EventCard(
-                        event, now, formatDateTime(event.targetAtEpochMillis, days, s),
-                        onClick = { navigator.push(Route.EventForm(event.id)) },
-                        onLongClick = { deleteFlow.open(DeletableItem.Event(event.id), event.title, listOf(SheetAction(s.editEvent, NixIcon.Pencil) { navigator.push(Route.EventForm(event.id)) }) + listOfNotNull(addToHome?.let { pin -> SheetAction(s.widgetAddToHome, NixIcon.Home) { pin(WidgetKind.EVENT, event.id) } })) },
-                    )
-                }
-            }
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) { upcoming.forEach { EventRow(it) } }
         }
         if (past.isNotEmpty()) {
             SectionLabel(s.pastEvents)
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                past.forEach { event ->
-                    EventCard(
-                        event, now, formatDateTime(event.targetAtEpochMillis, days, s),
-                        onClick = { navigator.push(Route.EventForm(event.id)) },
-                        onLongClick = { deleteFlow.open(DeletableItem.Event(event.id), event.title, listOf(SheetAction(s.editEvent, NixIcon.Pencil) { navigator.push(Route.EventForm(event.id)) }) + listOfNotNull(addToHome?.let { pin -> SheetAction(s.widgetAddToHome, NixIcon.Home) { pin(WidgetKind.EVENT, event.id) } })) },
-                    )
-                }
-            }
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) { past.forEach { EventRow(it) } }
         }
     }
 }

@@ -48,12 +48,7 @@ fun Modifier.shimmer(shape: Shape = RectangleShape): Modifier {
     val sweep: State<Float>? = if (rememberReducedMotion()) {
         null
     } else {
-        rememberInfiniteTransition(label = "shimmer").animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(tween(SWEEP_MILLIS, easing = LinearEasing), RepeatMode.Restart),
-            label = "shimmerSweep",
-        )
+        rememberLoop(SWEEP_MILLIS)
     }
     return this.clip(shape).drawWithCache {
         val band = size.width * 0.55f

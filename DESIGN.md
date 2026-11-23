@@ -191,7 +191,7 @@ components:
 
 NixUra starts in the dark and lets progress bring the light. The app lives on a deep navy night (`navy`). Every quit-habit card begins in the same darkness and warms through purple, plum and rose to orange and blush as the streak grows, so a month of holding out literally looks like sunrise. Light is earned, never decoration: the brighter something is, the more it means.
 
-The interface is playful and lively on top of that calm night (owner direction, 2026-11-14). Things respond to the finger: they dip and spring back, liquid rises in a good-habit card with a splash, the nav bar's droplet stretches between tabs, a reached target bounces with a firm tap, and a counted prayer sends a burst of gold stars. Motion celebrates the user's own actions and progress. It always honours "remove animations".
+The interface is playful and lively on top of that calm night (owner direction, 2026-11-14). Things respond to the finger: they dip and spring back, liquid rises in a good-habit card with a splash, the nav bar's droplet stretches between tabs, a reached target bounces with a firm tap, and a counted prayer sends a burst of gold stars. Motion celebrates the user's own actions and progress. It always honours "remove animations". Looping (ambient) animations use `rememberLoop`: they pause off screen and in the background, resume where they stopped, and step at most 60 times a second; touch feedback keeps the screen's full rate.
 
 Density is comfortable, not sparse: one column, generous 20dp gutters, cards that carry real numbers (a live counter ticking every second, a calendar, a 7-day row) rather than empty space. One NixUra look runs on Android and iPhone alike. Only native details change (safe areas, back gestures, status bar).
 
@@ -266,7 +266,7 @@ A six-colour night-to-dawn ramp on navy, with rose doing the work and a few docu
 
 One column on a phone. Tab screens use a 20dp side gutter (`gutter`) and 8dp top padding, and stack their blocks 18dp apart (`lg`), with 16dp of extra space at the end. Sub-screens use the same 20dp gutter with a 10dp header row, a back button, and 24dp at the end. Cards pad 18dp inside (habit cards 20dp, with 12dp between their rows). Sheets pad 22dp. Buttons are at least 50dp tall and grow when a label wraps, so labels are never cut off. Icon buttons are 42dp, nav items at least 56dp.
 
-Screens respect the safe area on both phones (`WindowInsets.safeDrawing`). The coach is full-screen with its own compact header: no top bar, no bottom nav. Tab screens show the logo and "NixUra" on the left of the top bar and the profile avatar on the right, with the floating droplet nav bar at the bottom.
+Screens respect the safe area on both phones (`WindowInsets.safeDrawing`; the top and sides for the whole app, the bottom per screen, so tab pages can pass under the floating nav bar). The coach is full-screen with its own compact header: no top bar, no bottom nav. Tab screens show the logo and "NixUra" on the left of the top bar and the profile avatar on the right, with the floating droplet nav bar at the bottom.
 
 ## Elevation & Depth
 
@@ -321,7 +321,7 @@ Playful and physical: they dip under the finger and spring back, with no ripple.
 - **Dialogs with a wheel scroll**, so the buttons stay reachable on small screens and with large text.
 
 ### Navigation
-- **Droplet nav bar:** a floating pill (24dp corners, Dusk Surface, hairline, 6dp padding) with 12dp outside margin. Items are at least 56dp tall with a 22dp icon over a small label. Muted by default, rose when selected. A liquid droplet follows the finger while the pages are dragged, stretches toward the new tab and settles with a small overshoot. With reduced motion it simply jumps.
+- **Droplet nav bar:** a floating pill (24dp corners, Dusk Surface, hairline, 6dp padding, the soft black `softLift` shadow) with 12dp outside margin. It floats over the tab pages: they run to the bottom edge of the screen, scroll behind the bar and show in the gap under it; `TabScreen` ends with `LocalFloatingBarInset` of space so the last card can scroll fully above it (owner, 2026-11-23). Items are at least 56dp tall with a 22dp icon over a small label. Muted by default, rose when selected. A liquid droplet follows the finger while the pages are dragged, stretches toward the new tab and settles with a small overshoot. With reduced motion it simply jumps.
 - **Top bar:** logo and "NixUra" on the left, avatar on the right. The avatar is a circle with a rose-to-orange gradient.
 - **Sheets:** bottom sheets with 28dp top corners and 22dp padding.
 

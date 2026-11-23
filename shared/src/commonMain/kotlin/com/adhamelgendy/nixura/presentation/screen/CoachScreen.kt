@@ -1,5 +1,7 @@
 package com.adhamelgendy.nixura.presentation.screen
 
+import androidx.compose.ui.graphics.graphicsLayer
+import com.adhamelgendy.nixura.presentation.components.rememberLoop
 import com.adhamelgendy.nixura.presentation.components.GlowIconButton
 import com.adhamelgendy.nixura.presentation.util.forDisplay
 import androidx.compose.animation.core.LinearEasing
@@ -415,7 +417,6 @@ private fun coachRichText(text: String, highlight: Color): AnnotatedString = bui
 @Composable
 private fun TypingDots() {
     val c = Nix.colors
-    val transition = rememberInfiniteTransition(label = "typing")
     Row(
         Modifier
             .clip(RoundedCornerShape(20.dp))
@@ -425,13 +426,8 @@ private fun TypingDots() {
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         repeat(3) { index ->
-            val alpha by transition.animateFloat(
-                initialValue = 0.25f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(tween(600, delayMillis = index * 150, easing = LinearEasing), RepeatMode.Reverse),
-                label = "dot$index",
-            )
-            Box(Modifier.size(8.dp).alpha(alpha).clip(CircleShape).background(c.textSecondary))
+            val alpha = rememberLoop(600, 0.25f, 1f, delayMillis = index * 150, reverse = true)
+            Box(Modifier.size(8.dp).graphicsLayer { this.alpha = alpha.value }.clip(CircleShape).background(c.textSecondary))
         }
     }
 }

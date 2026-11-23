@@ -140,11 +140,10 @@ fun AccountScreen(navigator: Navigator) {
                         Text(s.accountSignOut, style = NixType.BodyStrong, color = c.textPrimary)
                         Text(s.accountSignOutHint, style = NixType.Small, color = c.textMuted)
                     }
-                    Spacer(Modifier.width(8.dp))
+                    // An action, not a place to go: no trailing chevron next to the sign-out arrow.
                     if (signOutState.inProgress) {
+                        Spacer(Modifier.width(8.dp))
                         CircularProgressIndicator(color = c.accent, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
-                    } else {
-                        NixIconView(NixIcon.Chevron, c.textMuted, size = 16.dp)
                     }
                 }
             }

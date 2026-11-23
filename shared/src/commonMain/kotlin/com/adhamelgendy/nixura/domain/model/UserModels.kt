@@ -19,8 +19,8 @@ data class AppSettings(
     val dailyCheckInMinutes: Int = 8 * 60 + 30,
     /** The starter guide runs once per device; Settings can replay it. Not synced. */
     val guideCompleted: Boolean = false,
-    /** Anonymous usage stats (Firebase Analytics). Off until the user turns it on; per device, never synced. */
-    val usageStatsEnabled: Boolean = false,
+    /** Anonymous usage stats (Firebase Analytics). On by default (owner decision 2026-11-23); per device, never synced. */
+    val usageStatsEnabled: Boolean = true,
     /**
      * The real AI coach: `null` = not asked yet, `true` = the user agreed that messages and habit data go to online AI
      * services, `false` = declined (offline coach only). Per device, never synced.

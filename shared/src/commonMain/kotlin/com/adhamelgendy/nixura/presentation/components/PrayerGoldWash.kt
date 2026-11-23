@@ -82,8 +82,6 @@ fun PrayerGoldWash(active: Boolean, modifier: Modifier = Modifier) {
             else -> down.animateTo(0f, tween(350))
         }
     }
-    val twinkle = rememberInfiniteTransition(label = "washTwinkle")
-        .animateFloat(0f, 1f, infiniteRepeatable(tween(4200, easing = LinearEasing)), label = "twinkle")
     val density = LocalDensity.current
     val direction = LocalLayoutDirection.current
     val insets = WindowInsets.safeDrawing
@@ -93,6 +91,8 @@ fun PrayerGoldWash(active: Boolean, modifier: Modifier = Modifier) {
     val extraRight = insets.getRight(density, direction).toFloat()
 
     if (down.value <= 0.001f) return
+    // Created only while the wash shows (it used to tick every frame even when hidden), and paused off screen.
+    val twinkle = rememberLoop(4200)
     Spacer(modifier.fillMaxSize().drawWithCache {
         // The whole screen, in this canvas's coordinates: the page sits inside the system bars.
         val left = -extraLeft
