@@ -567,7 +567,7 @@ object ArabicStrings : Strings() {
     override val errEmailInUse: String = "لهذا البريد حساب في NixUra بالفعل. سجّل الدخول بدلًا من ذلك، بكلمة المرور أو عبر Google أو Facebook إن كنت استخدمت أحدهما."
     override val errRecentLogin: String = "حفاظًا على أمانك، سجّل الخروج ثم الدخول مجددًا، وحاول بعدها."
     override val usageStatsToggle: String = "شارك إحصاءات استخدام مجهولة"
-    override val usageStatsHint: String = "مثل عدد مرات فتح التطبيق، لتحسين NixUra. لا تشمل عاداتك أو ملاحظاتك أو محادثاتك أبدًا. يمكنك إيقافها في أي وقت."
+    override val usageStatsHint: String = "مثل الشاشات التي تُفتح وعدد المرات، لتحسين NixUra. لا تشمل عاداتك أو ملاحظاتك أو محادثاتك أبدًا. يمكنك إيقافها في أي وقت."
     override fun errLocked(seconds: Int?): String =
         if (seconds == null) "محاولات كثيرة. حاول لاحقًا." else "محاولات كثيرة. حاول بعد ${nMinutes(((seconds + 59) / 60).toLong())}."
     override val errRateLimited: String = "طلبات كثيرة. انتظر قليلًا."

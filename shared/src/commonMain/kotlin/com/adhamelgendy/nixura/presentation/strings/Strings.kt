@@ -537,7 +537,7 @@ open class Strings : HabitReminderCopy, LockScreenCopy, TodayCopy {
     open val errEmailInUse: String = "This email already has a NixUra account. Sign in instead, with your password or with Google or Facebook if you used one."
     open val errRecentLogin: String = "For your safety, sign out, sign back in, then try again."
     open val usageStatsToggle: String = "Share anonymous usage stats"
-    open val usageStatsHint: String = "Things like how often the app is opened, to help improve NixUra. Never your habits, notes or chats. You can turn it off anytime."
+    open val usageStatsHint: String = "Things like which screens are opened and how often, to help improve NixUra. Never your habits, notes or chats. You can turn it off anytime."
     open fun errLocked(seconds: Int?): String =
         if (seconds == null) "Too many attempts. Try again later." else "Too many attempts. Try again in ${(seconds + 59) / 60} min."
     open val errRateLimited: String = "Too many requests. Please wait a moment."
