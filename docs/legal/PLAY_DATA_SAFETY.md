@@ -13,7 +13,7 @@ Fill the form from the real data flows below. Other agents append their own rows
 | App activity / Other user-generated content | Habit names, relapse dates, good-habit logs, events, reminders (cloud sync; habit names can reveal health information, so review whether to also declare Health info) | Yes, with an account only | No | Optional (no account means nothing leaves the device) | App functionality |
 | App activity / Other actions | Theme, language and notification settings | Yes, with an account only | No | Optional | App functionality |
 
-Not collected by this release: location, contacts, photos, files, financial info, advertising ID. Guests send nothing.
+Not collected by this release: location, contacts, photos, files, financial info, advertising ID. Guests send nothing except the anonymous usage stats below (on by default, can be turned off).
 
 Approximate location (`ACCESS_COARSE_LOCATION`, UX phase C): read once on the device, only when the user asks for prayer-time reminders, rounded to about 1 km and used only on the device to calculate prayer times. It is never transmitted off the device, so under Play's definition it is **not collected** (data processed only on the device). Declare the permission's use in the store listing / permissions section if asked; re-check if prayer reminders ever sync the location.
 
@@ -35,4 +35,12 @@ Approximate location (`ACCESS_COARSE_LOCATION`, UX phase C): read once on the de
 | Files and docs | Notion database pages (title and date properties only) | Yes, only when Notion is linked | No | Optional | App functionality |
 
 Google Calendar access is read-only and its token is not stored; the Notion token is stored encrypted on the server. Google's OAuth verification for the sensitive `calendar.readonly` scope is needed before release (see README, "Linking calendars").
-<!-- AGENT-6: analytics (app interactions, crash logs, diagnostics), opt-in. -->
+
+## Usage stats (Firebase Analytics, on by default since 2026-11-23)
+| Play category | Data type | Collected | Shared with third parties | Required or optional | Purpose |
+|---|---|---|---|---|---|
+| App activity | App interactions (screens viewed, a fixed list of actions such as "good habit logged") | Yes | No (Firebase acts as a service provider) | Optional: users can turn it off in Settings > Privacy | Analytics |
+| Device or other IDs | Firebase app-instance id | Yes | No (service provider) | Optional (same switch) | Analytics |
+| App info and performance | Device model, OS and app version, session length | Yes | No (service provider) | Optional (same switch) | Analytics |
+
+Not sent: habit names or kinds of habits, notes, chats, name, email, account id, advertising id (`google_analytics_adid_collection_enabled` is false in the manifest). Before submitting, compare these rows with Google's official Firebase data-disclosure page (it may also list approximate location derived from the IP address) and set the Analytics data-retention period in Firebase (2 or 14 months) to match the privacy policy. Consider an EU/UK consent step, since collection is on by default.

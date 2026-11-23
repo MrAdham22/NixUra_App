@@ -2,6 +2,17 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## Privacy policy updated for usage stats (2026-11-24)
+
+`docs/legal/PRIVACY_POLICY.md` now lists the anonymous usage stats (on by default, what is and isn't sent, Firebase as
+service provider, how to turn them off) and the AI coach row that was only in the generated file; the in-app text
+(`LegalContent.kt`) was regenerated with `tools/gen_legal_text.py`, so the location row is now in the app too.
+`docs/legal/PLAY_DATA_SAFETY.md` has the usage-stats rows. The Settings hint mentions screens (EN + AR).
+**Still for the owner before release:** fill the bracketed fields (date, legal name, retention 2 or 14 months, which must
+match Firebase's setting), check the rows against Google's Firebase data-disclosure page, consider an EU/UK consent
+step, and have it reviewed. The policy still describes the old Node backend (Argon2id passwords, own server, Resend)
+in places; accounts now run on Firebase Authentication, so sections 2-4 need a pass before release.
+
 ## Navigation, Settings and screen-reader fixes (2026-11-23)
 
 Branch `claude/nav-settings-improvements-63aa4a`. `:androidApp:assembleDebug` and `:shared:testAndroidHostTest` pass;

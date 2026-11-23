@@ -18,6 +18,8 @@ NixUra helps you quit bad habits, build good habits and count down to events. Th
 | Habits (including their names and colours), relapse dates, good-habit logs, events, reminders, theme, language and notification settings | You use the app | The core features; with an account, the same data on all your devices | On your device. With an account also on our server. Without an account it never leaves your device |
 | Approximate location (city level, rounded to about 1 km) | Only if you tap "Use my location" for a prayer habit's reminders | Work out prayer times on your phone | On your device only. Never synced, never sent to our server or anyone else. Delete it by turning off the location permission and erasing app data |
 | Coach chat messages | You use the coach | The offline coach | On your device only |
+| AI coach (only if you turn it on): your messages and voice notes, your habit names with their numbers, and your event titles and dates | You send a message to the AI coach or record a voice note | Sent through NixUra's server to online AI services (Google Gemini, Groq, Cloudflare, Mistral, OpenRouter) to write the reply | Not kept by NixUra; never with your name, email or account. Some of these services may use what they receive to improve their products |
+| Anonymous usage stats: which screens you open, a fixed list of actions (for example "a good habit was logged", "a coach message was sent"), app opens and time in the app, device model, system version, app version, approximate country or region, and a random app-instance id | On by default while you use the app; turn it off in Settings > Privacy > Share anonymous usage stats | Learn which features are used and where people get stuck, to improve NixUra | Sent to Google Firebase Analytics and kept there for [2 or 14] months. Never your habit names or kinds of habits, notes, chats, name, email or account id, and no advertising id |
 | Authentication tokens | You sign in | Keep you signed in | Encrypted on your device (Android Keystore / iOS Keychain) |
 
 We do **not** sell your data and do not use it for advertising.
@@ -27,7 +29,6 @@ We do **not** sell your data and do not use it for advertising.
 - **Google Calendar:** access is granted on your phone with Google's own screen, read-only (`calendar.readonly`). The short-lived access token is asked for at each sync and is not stored, on the phone or on our server. NixUra's use of data from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements.
 - **Notion:** you approve access on Notion's page. Our server receives a Notion access token and stores it encrypted (AES-256-GCM); it is never sent to your phone. Our server reads the chosen database on your behalf and passes only event data to the app.
 - **Disconnect** (Settings > Integrations) revokes Google access, deletes the stored Notion token and removes the imported events from your devices and account. You can also remove NixUra in your Google Account (Security > Third-party access) or in Notion (Settings > Connections). Signing out removes the links from that device; deleting your account deletes the Notion token.
-<!-- AGENT-6 (analytics, crash, support): add Firebase Analytics/Crashlytics (opt-in), diagnostics in support reports. -->
 
 ## 3. How we protect it
 HTTPS only; passwords hashed with Argon2id; one-time codes and refresh tokens stored hashed; rate limiting and lockout; encrypted token storage on the device. See `SECURITY.md`. No system is perfectly secure; we will tell affected users and authorities where the law requires it.
@@ -35,6 +36,7 @@ HTTPS only; passwords hashed with Argon2id; one-time codes and refresh tokens st
 ## 4. Service providers
 - **Email delivery provider** (Resend or equivalent): receives your email address and the message text (the code) to deliver it.
 - **Hosting and database provider:** [name, region] hosts the server and database.
+- **Google Firebase Analytics:** receives the anonymous usage stats described in section 2, while they are turned on. Google processes them for us as a service provider; we do not use them for advertising.
 Providers act on our instructions. [Add transfers/safeguards if hosting outside your users' region.]
 
 ## 5. Retention
@@ -44,6 +46,7 @@ Account data, including synced habits and events, is kept while the account exis
 - **Delete your account and its server data:** in the app, Settings > Account > Delete account (password required), or by email (section 8 of `ACCOUNT_DELETION.md`).
 - **Access / correct:** name and age are editable in Profile; for a copy of your account data email us.
 - **Sign out of other devices:** Settings > Account > Devices, or change your password.
+- **Usage stats:** turn them off at any time in Settings > Privacy > Share anonymous usage stats. Collection stops on that device at once.
 - Depending on where you live you may also have rights to object, restrict processing, portability, and to complain to your data-protection authority.
 
 ## 7. Children
