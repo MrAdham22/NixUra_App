@@ -737,14 +737,19 @@ fun rememberCompletionPulse(done: Boolean): Animatable<Float, AnimationVector1D>
     val reducedMotion = rememberReducedMotion()
     var wasDone by remember { mutableStateOf(done) }
     LaunchedEffect(done) {
-        if (done && !wasDone) {
+        val justDone = done && !wasDone
+        // Set before animating: undoing mid-bounce cancels this effect, and the next run must compare to this one.
+        wasDone = done
+        if (justDone) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             if (!reducedMotion) {
                 scale.animateTo(1.03f, tween(110))
                 scale.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = Spring.StiffnessMediumLow))
             }
+        } else {
+            // Undone mid-bounce: settle back to normal size instead of staying enlarged.
+            scale.snapTo(1f)
         }
-        wasDone = done
     }
     return scale
 }

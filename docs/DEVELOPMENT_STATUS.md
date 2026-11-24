@@ -2,6 +2,12 @@
 
 **Last updated:** 2026-11-03 (Round 3: water fill, widget parity, delete with undo, money saved, calendar imports)
 
+## Prayer card light froze after "+" then "-" (2026-11-24, fixed)
+
+- **Bug:** on a prayer card, tapping "+" starts a 1.7 s light burst; tapping "-" before it ended cancelled the animation and nothing reset it, so the light stayed frozen mid-sweep (more "-" taps did not clear it). Same flaw in the completion bounce (a card undone mid-bounce could stay slightly enlarged).
+- **Fix:** `rememberPrayerArt` (`IslamicArt.kt`) snaps the burst to its end when the count did not grow; `rememberCompletionPulse` (`HabitComponents.kt`) snaps the scale back to 1 when the habit is undone. Both now record the last value before animating, so a cancelled run cannot leave it stale.
+- **Verified:** `:shared:testAndroidHostTest` and `:androidApp:assembleDebug` pass. **Not yet checked on the phone** (it was not connected).
+
 ## Privacy policy updated for usage stats (2026-11-24)
 
 `docs/legal/PRIVACY_POLICY.md` now lists the anonymous usage stats (on by default, what is and isn't sent, Firebase as
