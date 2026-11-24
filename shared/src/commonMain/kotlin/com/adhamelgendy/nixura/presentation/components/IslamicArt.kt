@@ -306,11 +306,16 @@ internal fun rememberPrayerArt(fill: Float, count: Int): PrayerArt {
     val burst = remember { Animatable(1f) }
     var lastCount by remember { mutableIntStateOf(count) }
     LaunchedEffect(count) {
-        if (count > lastCount && !reduced) {
+        val grew = count > lastCount
+        // Set before animating: a new count cancels this effect mid-burst, and the next run must compare to this one.
+        lastCount = count
+        if (grew && !reduced) {
             burst.snapTo(0f)
             burst.animateTo(1f, tween(1700, easing = LinearEasing))
+        } else {
+            // A "-" (or any change that is not a "+") cancels a running burst; end it instead of leaving it frozen.
+            burst.snapTo(1f)
         }
-        lastCount = count
     }
     val still = remember { FixedState(PRAYER_STILL_SHINE) }
     // Pauses off screen and in the background (LocalAnimationsRunning).
